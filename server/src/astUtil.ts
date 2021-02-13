@@ -7,27 +7,31 @@ import {
 } from "@babel/types";
 
 
-interface Position {
+interface Position
+{
     line: number;
     column: number;
 }
 
 
-interface IXtype {
+interface IXtype
+{
     value: string;
     start: Position;
     end: Position;
 }
 
 
-interface IRequestProperty {
+interface IRequestProperty
+{
     value: string[];
     start: Position;
     end: Position;
 }
 
 
-interface IExtjsComponent {
+interface IExtjsComponent
+{
     componentClass: string;
     requires?: IRequestProperty;
     widgets: string[];

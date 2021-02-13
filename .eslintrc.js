@@ -171,10 +171,10 @@ module.exports = {
         "id-match": "warn",
         "import/no-extraneous-dependencies": [
             "warn", {
-                "devDependencies": false
-            },
-            "error", { 
-                "packageDir": "./" 
+                "devDependencies": false,
+                "packageDir": [
+                    "./", "./server", "./client" 
+                ]
             }
         ],
         "import/no-internal-modules": "off",
