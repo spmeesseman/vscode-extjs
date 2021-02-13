@@ -1,0 +1,100 @@
+{
+	"name": "vscode-extjs",
+	"version": "0.0.1",
+	"displayName": "ExtJs Language Server",
+	"author": "Scott Meesseman",
+	"description": "Language Server for ExtJS since they cant write one on their own that works",
+	"icon": "res/gears-r-colors.png",
+	"engines": {
+		"vscode": "^1.44.0"
+	},
+	"publisher": "spmeesseman",
+	"license": "MIT",
+    "homepage": "https://github.com/spmeesseman/vscode-extjs/blob/master/README.md",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/spmeesseman/vscode-extjs.git"
+	},
+	"bugs": {
+        "url": "https://github.com/spmeesseman/vscode-extjs/issues"
+    },
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		"extjs",
+		"sencha",
+		"multi-root ready"
+	],
+	"activationEvents": [
+		"workspaceContains:.extjsrc.json"
+	],
+	"main": "./dist/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "vscode-extjs:ensure-require",
+				"title": "vscode-extjs:ensure-require"
+			}
+		]
+	},
+	"galleryBanner": {
+        "color": "#EEEEEE",
+        "theme": "light"
+    },
+	"scripts": {
+		"clean": "rimraf out && rimraf dist",
+		"compile": "tsc -b",
+		"compile2": "npx tsc -p ./",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"pretest": "npm run compile && npm run lint",
+		"test": "node ./out/test/runTest.js",
+		"vscode:prepublish": "npm run webpack-prod",
+		"lint": "eslint -c .eslintrc.json --ext .js ./client ./server",
+		"semantic_release-release": "semantic-release",
+		"semantic_release-release-no-ci": "semantic-release --no-ci",
+		"semantic_release-release-dry": "semantic-release --dry-run",
+		"watch": "npm run webpack-dev",
+		"webpack-prod:client": "webpack --mode production --config ./webpack.config.client.js",
+		"webpack-prod:server": "webpack --mode production --config ./webpack.config.server.js",
+		"webpack-dev:client": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js",
+		"webpack-dev:server": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.server.js",
+		"webpack-prod": "npm run webpack-prod:client && npm run webpack-prod:server",
+		"webpack-dev": "npm run webpack-dev:client & npm run webpack-dev:server"
+	},
+	"devDependencies": {
+		"@babel/types": "^7.12.13",
+		"@types/babel__traverse": "^7.11.0",
+		"@types/glob": "^7.1.3",
+		"@types/json5": "0.0.30",
+		"@types/mocha": "^7.0.2",
+		"@types/node": "^13.13.41",
+		"@typescript-eslint/eslint-plugin": "^2.34.0",
+		"@typescript-eslint/eslint-plugin-tslint": "^4.15.0",
+		"@typescript-eslint/parser": "^2.34.0",
+		"conventional-changelog-spm": "^1.2.5",
+		"eslint": "^7.20.0",
+		"eslint-plugin-import": "^2.22.1",
+		"eslint-plugin-jsdoc": "^31.6.1",
+		"eslint-plugin-no-null": "^1.0.2",
+		"eslint-plugin-prefer-arrow": "^1.2.3",
+		"glob": "^7.1.6",
+		"mocha": "^7.2.0",
+		"rimraf": "^3.0.2",
+		"semantic-release": "^17.3.9",
+		"semantic-release-vsce": "^3.1.3",
+		"semver": "^7.3.4",
+		"ts-loader": "^7.0.5",
+		"tslint": "^6.1.3",
+		"typescript": "^4.1.5",
+		"vsce": "^1.85.0",
+		"vscode-test": "^1.5.0",
+		"webpack": "^4.46.0",
+		"webpack-cli": "^3.3.12"
+	},
+	"dependencies": {
+		"@babel/parser": "^7.12.16",
+		"@babel/traverse": "^7.12.13",
+		"json5": "^2.2.0"
+	}
+}
