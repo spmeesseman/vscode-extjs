@@ -162,8 +162,9 @@ interface IConf {
 }
 
 
-async function initConfig() {
-    const confUris = await vscode.workspace.findFiles(".extjsrc.json");
+async function initConfig()
+{
+    const confUris = await vscode.workspace.findFiles(".extjsrc{.json,}");
     for (const uri of confUris) {
         const fileSystemPath = uri.fsPath || uri.path;
         const confJson = fs.readFileSync(fileSystemPath, "utf8");
