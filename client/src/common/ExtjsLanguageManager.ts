@@ -26,6 +26,7 @@ export const widgetToComponentClassMapping: { [widget: string]: string | undefin
 const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
 
+
 class ExtjsLanguageManager
 {
     private serverRequest: ServerRequest;

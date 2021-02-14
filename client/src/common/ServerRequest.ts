@@ -1,35 +1,7 @@
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient";
+import { IExtjsComponent, Position } from "../common/interface";
 
-
-interface Position
-{
-    line: number;
-    column: number;
-}
-interface IXtype
-{
-    value: string;
-    start: Position;
-    end: Position;
-}
-
-interface IRequestProperty
-{
-    value: string[];
-    start: Position;
-    end: Position;
-}
-
-interface IExtjsComponent
-{
-    componentClass: string;
-    requires?: IRequestProperty;
-    widgets: string[];
-    xtypes: IXtype[];
-    singleton?: boolean;
-    aliases?: string;
-}
 
 export function toVscodePosition(position: Position)
 {

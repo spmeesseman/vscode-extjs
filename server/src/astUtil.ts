@@ -2,64 +2,12 @@
 import { parse } from "@babel/parser";
 import traverse, { NodePath } from "@babel/traverse";
 import * as util from "./util";
+import { IExtjsComponent, Position, IXtype, IConfig, IMethod, IRequestProperty } from "./interface";
 import {
     isArrayExpression, isCallExpression, isIdentifier, isMemberExpression, isObjectExpression,
     isObjectMember, ObjectMethod, Comment, isObjectProperty, isStringLiteral, ObjectExpression,
     ObjectProperty, StringLiteral, MemberExpression, isObjectMethod, isFunctionExpression
 } from "@babel/types";
-
-
-interface Position
-{
-    line: number;
-    column: number;
-}
-
-
-interface IXtype
-{
-    value: string;
-    start: Position;
-    end: Position;
-}
-
-
-interface IConfig
-{
-    name: string;
-    doc?: string;
-    value: string;
-    start: Position;
-    end: Position;
-}
-
-interface IMethod
-{
-    value: string;
-    doc?: string;
-    name: string;
-    start: Position;
-    end: Position;
-}
-
-
-interface IRequestProperty
-{
-    value: string[];
-    start: Position;
-    end: Position;
-}
-
-
-interface IExtjsComponent
-{
-    componentClass: string;
-    requires?: IRequestProperty;
-    widgets: string[];
-    xtypes: IXtype[];
-    configs?: IConfig[];
-    methods?: IMethod[];
-}
 
 
 function isRequiresObjectProperty(nodePath: NodePath<ObjectProperty>)
@@ -156,7 +104,9 @@ export async function parseExtJsFile(text: string)
                         const componentInfo: IExtjsComponent = {
                             componentClass: args[0].value,
                             xtypes: [],
-                            widgets: []
+                            widgets: [],
+                            methods: [],
+                            configs: []
                         };
                         components.push(componentInfo);
 
@@ -192,17 +142,11 @@ export async function parseExtJsFile(text: string)
 
                         if (isObjectProperty(propertyConfig))
                         {
-                            if (!componentInfo.configs) {
-                                componentInfo.configs = [];
-                            }
                             componentInfo.configs.push(...parseConfig(propertyConfig));
                         }
 
                         if (propertyMethod && propertyMethod.length)
                         {
-                            if (!componentInfo.methods) {
-                                componentInfo.methods = [];
-                            }
                             componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[]));
                         }
 
@@ -273,6 +217,54 @@ export async function parseExtJsFile(text: string)
         }
     });
     return components;
+}
+
+
+function createXType(objEx: ObjectExpression, text: string): IXtype
+{
+    let xtype: IXtype = {
+        value: "", start: objEx.loc!.start, end: objEx.loc!.end
+    };
+    const line = objEx.loc!.start.line - 1;
+    const column = objEx.loc!.start.column;
+    const subText = "a(" + text.substring(objEx.start!, objEx.end!) + ")";
+
+    const _ast = parse(subText);
+    traverse(_ast,
+    {
+        ObjectProperty(_path) {
+            const _node = _path.node;
+            const valueNode = _node.value;
+            if (!isIdentifier(_node.key)) {
+                return;
+            }
+            if (_node.key.name !== "xtype") {
+                return;
+            }
+            if (!isStringLiteral(valueNode)) {
+                return;
+            }
+
+            const start = valueNode.loc!.start;
+            const end = valueNode.loc!.end;
+            if (start.line === 1) {
+                start.column += + column - 2;
+            }
+            if (end.line === 1) {
+                end.column += + column - 2;
+            }
+            start.line += line;
+            end.line += line;
+
+            xtype = {
+                value: valueNode.value,
+                start,
+                end
+            };
+        }
+    });
+
+    return xtype;
 }
 
 
