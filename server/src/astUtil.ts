@@ -1,12 +1,12 @@
 
 import { parse } from "@babel/parser";
 import traverse, { NodePath } from "@babel/traverse";
-import {
-    isArrayExpression, isCallExpression, isIdentifier, isMemberExpression, isObjectExpression, isObjectMember, ObjectMethod, Comment,
-    isObjectProperty, isStringLiteral, ObjectExpression, ObjectProperty, StringLiteral, MemberExpression, isObjectMethod, isFunctionExpression
-} from "@babel/types";
-import { connection } from "./server";
 import * as util from "./util";
+import {
+    isArrayExpression, isCallExpression, isIdentifier, isMemberExpression, isObjectExpression,
+    isObjectMember, ObjectMethod, Comment, isObjectProperty, isStringLiteral, ObjectExpression,
+    ObjectProperty, StringLiteral, MemberExpression, isObjectMethod, isFunctionExpression
+} from "@babel/types";
 
 
 interface Position
@@ -121,166 +121,157 @@ export async function parseExtJsFile(text: string)
     // Construct our syntax tree to be able to serve the goods
     //
     traverse(ast,
+    {
+    // ObjectExpression(nodePath, parent) {
+    //     if (isExtjsDefineObjectExpression(nodePath)) {
+    //         const properties = nodePath.node.properties;
+    //         const propertyRequires = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'requires');
+    //         const propertyAlias = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'alias');
+    //         const propertyXtype = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'xtype');
+
+        //         debugger;
+        //     }
+        // },
+        CallExpression(path)
         {
-        // ObjectExpression(nodePath, parent) {
-        //     if (isExtjsDefineObjectExpression(nodePath)) {
-        //         const properties = nodePath.node.properties;
-        //         const propertyRequires = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'requires');
-        //         const propertyAlias = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'alias');
-        //         const propertyXtype = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'xtype');
+            const callee = path.node.callee,
+                args = path.node.arguments;
 
-            //         debugger;
-            //     }
-            // },
-            CallExpression(path)
-            {
-                const callee = path.node.callee,
-                    args = path.node.arguments;
-
-                if (callee.type === "MemberExpression")
-                {   //
-                    // Check to see if the callee is 'Ext.define'
+            if (callee.type === "MemberExpression")
+            {   //
+                // Check to see if the callee is 'Ext.define'
+                //
+                if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
+                {
+                    util.log("Parse ExtJs file", 1);
                     //
-                    if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
+                    // Ext.define should be in the form:
+                    //
+                    //     Ext.define('MyApp.view.users.User', { ... });
+                    //
+                    // Check to make sure the callee args are a string for param 1 and an object for param 2
+                    //
+                    if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
                     {
-                        util.log("Parse ExtJs file", 1);
+                        const componentInfo: IExtjsComponent = {
+                            componentClass: args[0].value,
+                            xtypes: [],
+                            widgets: []
+                        };
+                        components.push(componentInfo);
+
+                        util.log(" ", 1);
+                        util.logValue("   Component", args[0].value, 1);
+
+                        const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
+                        const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
+                        const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
+                        const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
+                        const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
                         //
-                        // Ext.define should be in the form:
+                        // TODO properties on object hasOwnProperty()
                         //
-                        //     Ext.define('MyApp.view.users.User', { ... });
-                        //
-                        // Check to make sure the callee args are a string for param 1 and an object for param 2
-                        //
-                        if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
-                        {
-                            const componentInfo: IExtjsComponent = {
-                                componentClass: args[0].value,
-                                xtypes: [],
-                                widgets: []
+                        const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
+
+                        if (isObjectProperty(propertyRequires)) {
+                            componentInfo.requires = {
+                                value: parseRequires(propertyRequires),
+                                start: propertyRequires.loc!.start,
+                                end: propertyRequires.loc!.end,
                             };
-                            components.push(componentInfo);
-                            util.log(" ", 1);
-                            util.logValue("   Component", args[0].value, 1);
+                        }
 
-                            const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
-                            const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
-                            const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
-                            const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
-                            const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
-                            const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
+                        if (isObjectProperty(propertyAlias)) {
+                            componentInfo.widgets.push(...parseXtype(propertyAlias));
+                        }
 
-                            if (isObjectProperty(propertyRequires)) {
-                                componentInfo.requires = {
-                                    value: parseRequires(propertyRequires),
-                                    start: propertyRequires.loc!.start,
-                                    end: propertyRequires.loc!.end,
-                                };
+                        if (isObjectProperty(propertyXtype))
+                        {
+                            componentInfo.widgets.push(...parseXtype(propertyXtype));
+                        }
+
+                        if (isObjectProperty(propertyConfig))
+                        {
+                            if (!componentInfo.configs) {
+                                componentInfo.configs = [];
                             }
+                            componentInfo.configs.push(...parseConfig(propertyConfig));
+                        }
 
-                            if (isObjectProperty(propertyAlias)) {
-                                componentInfo.widgets.push(...parseXtype(propertyAlias));
+                        if (propertyMethod && propertyMethod.length)
+                        {
+                            if (!componentInfo.methods) {
+                                componentInfo.methods = [];
                             }
+                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[]));
+                        }
 
-                            if (isObjectProperty(propertyXtype))
-                            {
-                                componentInfo.widgets.push(...parseXtype(propertyXtype));
-                            }
-
-                            if (isObjectProperty(propertyConfig))
-                            {
-                                if (!componentInfo.configs) {
-                                    componentInfo.configs = [];
-                                }
-                                componentInfo.configs.push(...parseConfig(propertyConfig));
-                            }
-
-                            if (propertyMethod && propertyMethod.length)
-                            {
-                                if (!componentInfo.methods) {
-                                    componentInfo.methods = [];
-                                }
-                                componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[]));
-                            }
-                            //if (isObjectProperty(propertyConfig)) {
-                            //    if (!componentInfo.configs) {
-                            //        componentInfo.configs = [];
-                            //    }
-                            //    componentInfo.configs.push({
-                            //        value: parseConfig(propertyConfig),
-                            //        start: propertyConfig.loc!.start,
-                            //        end: propertyConfig.loc!.end,
-                            //    });
-                            //}
-                            //
-                            // Functions/ properties / configs
-                            //
-
-                            util.logValue("   # of requires found", componentInfo.requires?.value?.length, 2);
-                            util.logValue("   # of widgets found", componentInfo.widgets?.length, 2);
-                            if (componentInfo.configs)
-                            {
-                                util.logValue("   # of configs found", componentInfo.configs.length, 2);
-                                componentInfo.configs.forEach((c) => {
-                                    util.log("      " + c.name);
-                                    if (c.doc) {
-                                        util.log(c.doc);
-                                    }
-                                });
-                            }
-                            if (componentInfo.methods)
-                            {
-                                util.logValue("   # of methods found", componentInfo.methods.length, 2);
-                                componentInfo.methods.forEach((m) => {
-                                    util.log("      " + m.name);
-                                    if (m.doc) {
-                                        util.log(m.doc);
-                                    }
-                                });
-                            }
-
-                            //
-                            const line = args[1].loc!.start.line - 1;
-                            const column = args[1].loc!.start.column;
-                            const subText = "a(" + text.substring(args[1].start!, args[1].end!) + ")";
-
-                            const _ast = parse(subText);
-                            traverse(_ast, {
-                                ObjectProperty(_path) {
-                                    const _node = _path.node;
-                                    const valueNode = _node.value;
-                                    if (!isIdentifier(_node.key)) {
-                                        return;
-                                    }
-                                    if (_node.key.name !== "xtype") {
-                                        return;
-                                    }
-                                    if (!isStringLiteral(valueNode)) {
-                                        return;
-                                    }
-
-                                    const start = valueNode.loc!.start;
-                                    const end = valueNode.loc!.end;
-                                    if (start.line === 1) {
-                                        start.column += + column - 2;
-                                    }
-                                    if (end.line === 1) {
-                                        end.column += + column - 2;
-                                    }
-                                    start.line += line;
-                                    end.line += line;
-
-                                    componentInfo.xtypes.push({
-                                        value: valueNode.value,
-                                        start,
-                                        end
-                                    });
+                        util.logValue("   # of requires found", componentInfo.requires?.value?.length, 2);
+                        util.logValue("   # of widgets found", componentInfo.widgets?.length, 2);
+                        if (componentInfo.configs)
+                        {
+                            util.logValue("   # of configs found", componentInfo.configs.length, 2);
+                            componentInfo.configs.forEach((c) => {
+                                util.log("      " + c.name, 3);
+                                if (c.doc) {
+                                    util.log(c.doc, 4);
                                 }
                             });
                         }
+                        if (componentInfo.methods)
+                        {
+                            util.logValue("   # of methods found", componentInfo.methods.length, 2);
+                            componentInfo.methods.forEach((m) => {
+                                util.log("      " + m.name, 3);
+                                if (m.doc) {
+                                    util.log(m.doc, 4);
+                                }
+                            });
+                        }
+
+                        //
+                        const line = args[1].loc!.start.line - 1;
+                        const column = args[1].loc!.start.column;
+                        const subText = "a(" + text.substring(args[1].start!, args[1].end!) + ")";
+
+                        const _ast = parse(subText);
+                        traverse(_ast, {
+                            ObjectProperty(_path) {
+                                const _node = _path.node;
+                                const valueNode = _node.value;
+                                if (!isIdentifier(_node.key)) {
+                                    return;
+                                }
+                                if (_node.key.name !== "xtype") {
+                                    return;
+                                }
+                                if (!isStringLiteral(valueNode)) {
+                                    return;
+                                }
+
+                                const start = valueNode.loc!.start;
+                                const end = valueNode.loc!.end;
+                                if (start.line === 1) {
+                                    start.column += + column - 2;
+                                }
+                                if (end.line === 1) {
+                                    end.column += + column - 2;
+                                }
+                                start.line += line;
+                                end.line += line;
+
+                                componentInfo.xtypes.push({
+                                    value: valueNode.value,
+                                    start,
+                                    end
+                                });
+                            }
+                        });
                     }
                 }
             }
-        });
+        }
+    });
     return components;
 }
 

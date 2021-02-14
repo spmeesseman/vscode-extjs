@@ -11,7 +11,7 @@ function isLoggingEnabled()
 }
 
 function getLogLevel() {
-    return 3; // configuration.get("debug") === true;
+    return 5; // configuration.get("debug") === true;
 }
 
 

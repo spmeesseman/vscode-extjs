@@ -8,7 +8,23 @@ import ServerRequest, { toVscodeRange } from "./ServerRequest";
 
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection("extjs-lint");
+const conf: IConf = {
+    extjsDir: "",
+    extjsBase: "",
+    workspaceRoot: "",
+};
 
+interface IConf {
+    extjsDir: string;
+    extjsBase: string;
+    workspaceRoot: string;
+}
+
+const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
+export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
+
+const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
+const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
 
 class ExtjsLanguageManager
 {
@@ -25,10 +41,12 @@ class ExtjsLanguageManager
     {
         const components = await this.serverRequest.parseExtJsFile(text);
 
-        components?.forEach(cmp => {
+        components?.forEach(cmp =>
+        {
             const { componentClass, requires, widgets } = cmp;
             componentClassToFsPathMapping[componentClass] = fsPath;
             componentClassToWidgetsMapping[componentClass] = widgets;
+
             widgets.forEach(xtype => {
                 widgetToComponentClassMapping[xtype] = componentClass;
             });
@@ -78,7 +96,9 @@ class ExtjsLanguageManager
     private async indexingAll()
     {
         const uris = await vscode.workspace.findFiles(`${conf.extjsDir}/**/*.js`);
-
+        //
+        // TODO - put message in status bar - indexing , 0-100% progress
+        //
         for (const uri of uris) {
             const text = (await vscode.workspace.fs.readFile(uri)).toString();
             await this.indexing(uri.fsPath, text);
@@ -96,31 +116,32 @@ class ExtjsLanguageManager
             await this.validateExtjsDocument(activeTextDocument);
         }
 
-        const confWatcher = vscode.workspace.createFileSystemWatcher(".extjsrc.json");
+        const confWatcher = vscode.workspace.createFileSystemWatcher(".extjsrc{.json,}");
         context.subscriptions.push(confWatcher);
         confWatcher.onDidChange(initConfig);
 
         vscode.workspace.onDidChangeTextDocument(async (event) =>
-        {
-            // TODO debounce
-
+        {   //
+            // TODO - debounce
+            //
             const textDocument = event.document;
-
-            if (textDocument.languageId === "javascript") {
+            if (textDocument.languageId === "javascript")
+            {
                 const fsPath = textDocument.uri.fsPath;
-                await handleDeleFile(fsPath);
+                handleDeleFile(fsPath);
                 await this.indexing(textDocument.uri.fsPath, textDocument.getText());
-
                 await this.validateExtjsDocument(textDocument);
             }
         }, context.subscriptions);
 
         vscode.workspace.onDidDeleteFiles(async (event) =>
         {
-            event.files.forEach(async file => {
-                await handleDeleFile(file.fsPath);
-
-                // TODO activeDocument Validating
+            event.files.forEach(async file =>
+            {
+                handleDeleFile(file.fsPath);
+                //
+                // TODO - activeDocument Validating
+                //
                 const activeTextDocument = vscode.window.activeTextEditor?.document;
                 if (activeTextDocument && activeTextDocument.languageId === "javascript") {
                     await this.validateExtjsDocument(activeTextDocument);
@@ -148,20 +169,6 @@ class ExtjsLanguageManager
 }
 
 
-const conf: IConf = {
-    extjsDir: "",
-    extjsBase: "",
-    workspaceRoot: "",
-};
-
-
-interface IConf {
-    extjsDir: string;
-    extjsBase: string;
-    workspaceRoot: string;
-}
-
-
 async function initConfig()
 {
     const confUris = await vscode.workspace.findFiles(".extjsrc{.json,}");
@@ -172,13 +179,6 @@ async function initConfig()
         Object.assign(conf, _conf);
     }
 }
-
-
-const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
-export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
-
-const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
-const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
 
 
 export function fsPathToCmpClass(fsPath: string)

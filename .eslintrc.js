@@ -75,7 +75,7 @@ module.exports = {
                 accessibility: "explicit"
             }
         ],
-        "@typescript-eslint/indent": "warn",
+        "@typescript-eslint/indent": "off",
         "@typescript-eslint/member-delimiter-style": [
             "warn",
             {

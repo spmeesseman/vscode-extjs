@@ -30,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext)
 
 
 async function run(context: vscode.ExtensionContext)
-{ 
+{
     //
     // Create an output channel for the server to log to
     //
