@@ -49,7 +49,7 @@ Ext.define('VSCodeExtJS',
 	 */
 	testFn2: function(a, b)
 	{
-		testFn(1, 2);;
+		testFn(1, 2);
 	} 
 
 });
