@@ -14,7 +14,7 @@ const clients: Map<string, LanguageClient> = new Map();
 
 export async function activate(context: vscode.ExtensionContext)
 {
-    util.initLog("etxjsLang", "ExtJs Language Debug", context);
+    util.initLog("etxjsLang", "ExtJs Language Client", context);
 
     util.log("The ExtJs Language Server is now active!");
 
@@ -30,8 +30,20 @@ export async function activate(context: vscode.ExtensionContext)
 
 
 async function run(context: vscode.ExtensionContext)
-{
-    const outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("vscode-extjs");
+{ 
+    //
+    // Create an output channel for the server to log to
+    //
+    // To enable chatter between client and server on this channel, set the following setting
+    // in settings.json:
+    //
+    //    "extjsLangServer.trace.server": "verbose"
+    //
+    // Otherwise, extension debug logging only will occur on this channel, if it is enabled in
+    // the user's settings.
+    //
+    const outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("ExtJs Language Server");
+
     //
     // The server is implemented in nodevscode.
     //
@@ -138,7 +150,7 @@ async function run(context: vscode.ExtensionContext)
     // Create the language client and start the client.
     //
     client = new LanguageClient(
-        "vscode-extjs",
+        "extjsLangServer",
         "VSCode ExtJs Language Server",
         serverOptions,
         clientOptions

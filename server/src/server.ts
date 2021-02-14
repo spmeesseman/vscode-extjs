@@ -31,3 +31,5 @@ connection.onRequest("parseExtJsFile", async (text: string) =>
 // Listen
 //
 connection.listen();
+
+export { connection };
