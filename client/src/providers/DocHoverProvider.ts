@@ -14,17 +14,16 @@ class DocHoverProvider implements HoverProvider
         if (range === undefined) {
             return;
         }
-
         const line = position.line,
+              nextLine = document.lineAt(line + 1),
 			  property = document.getText(range),
-			  text = document.getText(new Range(new Position(line, 0), new Position(line, range.end.character + 1)));
-
-        if (new RegExp(`${property}\(\\W*\\w*\)`).test(text))
+			  text = document.getText(new Range(new Position(line, 0), nextLine.range.start));
+        if (text.match(new RegExp(`${property}\\([\\W\\w]*\\)\\s*;\\s*$`)))
         {
-            //const cmpClass = getExtjsComponentClass(property);
-            //if (cmpClass) {
+            // const cmpClass = getExtjsComponentClass(property);
+            // if (cmpClass) {
                 return new Hover(`* **gonna get the docs**: ${property} \n* **docs**: ${property}`);
-            //}
+            // }
         }
 
         return undefined;
