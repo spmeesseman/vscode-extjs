@@ -2,8 +2,8 @@
 import { parse } from "@babel/parser";
 import traverse, { NodePath } from "@babel/traverse";
 import {
-    isArrayExpression, isCallExpression, isIdentifier, isMemberExpression, isObjectExpression,
-    isObjectProperty, isStringLiteral, ObjectExpression, ObjectProperty, StringLiteral
+    isArrayExpression, isCallExpression, isIdentifier, isMemberExpression, isObjectExpression, isObjectMember, ObjectMethod, Comment,
+    isObjectProperty, isStringLiteral, ObjectExpression, ObjectProperty, StringLiteral, MemberExpression, isObjectMethod, isFunctionExpression
 } from "@babel/types";
 import { connection } from "./server";
 import * as util from "./util";
@@ -27,6 +27,7 @@ interface IXtype
 interface IConfig
 {
     name: string;
+    doc?: string;
     value: string;
     start: Position;
     end: Position;
@@ -35,7 +36,7 @@ interface IConfig
 interface IMethod
 {
     value: string;
-    doc: string;
+    doc?: string;
     name: string;
     start: Position;
     end: Position;
@@ -55,8 +56,6 @@ interface IExtjsComponent
     componentClass: string;
     requires?: IRequestProperty;
     widgets: string[];
-    methodNames?: string[];
-    configNames?: string[];
     xtypes: IXtype[];
     configs?: IConfig[];
     methods?: IMethod[];
@@ -104,11 +103,23 @@ function isExtjsDefineObjectExpression(nodePath: NodePath<ObjectExpression>)
 }
 
 
+function isExtjsMethod(nodePath: NodePath<ObjectExpression>)
+{
+    if (!isMemberExpression(nodePath.parentPath.node)) {
+        return false;
+    }
+    return true;
+}
+
+
 export async function parseExtJsFile(text: string)
 {
     const ast = parse(text);
     const components: IExtjsComponent[] = [];
 
+    //
+    // Construct our syntax tree to be able to serve the goods
+    //
     traverse(ast,
         {
         // ObjectExpression(nodePath, parent) {
@@ -127,11 +138,19 @@ export async function parseExtJsFile(text: string)
                     args = path.node.arguments;
 
                 if (callee.type === "MemberExpression")
-                {
+                {   //
+                    // Check to see if the callee is 'Ext.define'
+                    //
                     if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                     {
                         util.log("Parse ExtJs file", 1);
-
+                        //
+                        // Ext.define should be in the form:
+                        //
+                        //     Ext.define('MyApp.view.users.User', { ... });
+                        //
+                        // Check to make sure the callee args are a string for param 1 and an object for param 2
+                        //
                         if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
                         {
                             const componentInfo: IExtjsComponent = {
@@ -147,6 +166,8 @@ export async function parseExtJsFile(text: string)
                             const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
                             const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
                             const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
+                            const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
+                            const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
 
                             if (isObjectProperty(propertyRequires)) {
                                 componentInfo.requires = {
@@ -159,18 +180,27 @@ export async function parseExtJsFile(text: string)
                             if (isObjectProperty(propertyAlias)) {
                                 componentInfo.widgets.push(...parseXtype(propertyAlias));
                             }
+
                             if (isObjectProperty(propertyXtype))
                             {
                                 componentInfo.widgets.push(...parseXtype(propertyXtype));
                             }
+
                             if (isObjectProperty(propertyConfig))
                             {
-                                if (!componentInfo.configNames) {
-                                    componentInfo.configNames = [];
+                                if (!componentInfo.configs) {
+                                    componentInfo.configs = [];
                                 }
-                                componentInfo.configNames.push(...parseConfig(propertyConfig));
+                                componentInfo.configs.push(...parseConfig(propertyConfig));
                             }
 
+                            if (propertyMethod && propertyMethod.length)
+                            {
+                                if (!componentInfo.methods) {
+                                    componentInfo.methods = [];
+                                }
+                                componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[]));
+                            }
                             //if (isObjectProperty(propertyConfig)) {
                             //    if (!componentInfo.configs) {
                             //        componentInfo.configs = [];
@@ -181,21 +211,30 @@ export async function parseExtJsFile(text: string)
                             //        end: propertyConfig.loc!.end,
                             //    });
                             //}
-
                             //
                             // Functions/ properties / configs
                             //
-                            else {
-
-                            }
 
                             util.logValue("   # of requires found", componentInfo.requires?.value?.length, 2);
                             util.logValue("   # of widgets found", componentInfo.widgets?.length, 2);
-                            if (componentInfo.configNames)
+                            if (componentInfo.configs)
                             {
-                                util.logValue("   # of configs found", componentInfo.configNames.length, 2);
-                                componentInfo.configNames.forEach((c) => {
-                                    util.log("      " + c);
+                                util.logValue("   # of configs found", componentInfo.configs.length, 2);
+                                componentInfo.configs.forEach((c) => {
+                                    util.log("      " + c.name);
+                                    if (c.doc) {
+                                        util.log(c.doc);
+                                    }
+                                });
+                            }
+                            if (componentInfo.methods)
+                            {
+                                util.logValue("   # of methods found", componentInfo.methods.length, 2);
+                                componentInfo.methods.forEach((m) => {
+                                    util.log("      " + m.name);
+                                    if (m.doc) {
+                                        util.log(m.doc);
+                                    }
                                 });
                             }
 
@@ -246,16 +285,59 @@ export async function parseExtJsFile(text: string)
 }
 
 
+function getComments(comments: readonly Comment[] | null)
+{
+    let commentsStr = "";
+    comments?.forEach((c) => {
+        commentsStr += c.value;
+    });
+    return commentsStr;
+}
+
+
+
+function parseMethods(propertyMethods: ObjectProperty[]): IMethod[]
+{
+    const methods: IMethod[] = [];
+    propertyMethods.forEach((m) =>
+    {
+        if (isFunctionExpression(m.value))
+        {
+            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
+            if (propertyName)
+            {
+                methods.push({
+                    name: propertyName,
+                    value: "",
+                    doc: getComments(m.value.body.leadingComments),
+                    start: m.loc!.start,
+                    end: m.loc!.end
+                });
+            }
+        }
+    });
+    return methods;
+}
+
+
 function parseConfig(propertyConfig: ObjectProperty)
 {
-    const requires: string[] = [];
-    if (isObjectExpression(propertyConfig.value)) {
-        propertyConfig.value.properties
-            .reduce<string[]>((p, it) => {
-            p.push(it.type);
+    const requires: IConfig[] = [];
+    if (isObjectExpression(propertyConfig.value))
+    {
+        propertyConfig.value.properties.reduce<IConfig[]>((p, it) =>
+        {
             if (it?.type === "ObjectProperty") {
-                if (it?.value.type === "StringLiteral") {
-                    p.push(it.value.value);
+                const propertyName = isIdentifier(it.key) ? it.key.name : undefined;
+                if (propertyName)
+                {
+                    p.push({
+                        name: propertyName,
+                        value: "",
+                        doc: getComments(it.leadingComments),
+                        start: it.loc!.start,
+                        end: it.loc!.end
+                    });
                 }
             }
             return p;
@@ -268,7 +350,8 @@ function parseConfig(propertyConfig: ObjectProperty)
 function parseRequires(propertyRequires: ObjectProperty)
 {
     const requires: string[] = [];
-    if (isArrayExpression(propertyRequires.value)) {
+    if (isArrayExpression(propertyRequires.value))
+    {
         propertyRequires.value.elements
             .reduce<string[]>((p, it) => {
             if (it?.type === "StringLiteral") {

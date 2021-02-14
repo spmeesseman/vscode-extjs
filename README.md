@@ -14,21 +14,29 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-## Description
-
-ExtJs Intellisense and Language Server because Sencha gives us a garbage, non-configurable, not free intellisense.
-
 ## Table of Contents
 
 - [ExtJs Intellisense - Because Sencha Can't](#extjs-intellisense---because-sencha-cant)
   - [NOT YET RELEASED!!  DO NOT INSTALL](#not-yet-released--do-not-install)
-  - [Description](#description)
   - [Table of Contents](#table-of-contents)
+  - [Description](#description)
+  - [Thank You](#thank-you)
   - [Feedback & Contributing](#feedback--contributing)
     - [Rate It - Leave Some Stars](#rate-it---leave-some-stars)
-  - [Thank You](#thank-you)
   - [Other Code Extensions by spmeesseman](#other-code-extensions-by-spmeesseman)
   - [Donations](#donations)
+
+## Description
+
+ExtJs Intellisense and Language Server, additional functionality that the Sencha extnsion doesn't provide:
+
+- XType validation (credits to original author **qzsiniong**)
+- Method hover jsdoc
+- Function inline parameter highlighting
+
+## Thank You
+
+Whenever I start a project I always look for a good base to start from and for this extension I lucked out and found a perfect base project written by **qzsiniong** from GitHub, his project is located [here](https://github.com/qzsiniong/vscode-extjs).
 
 ## Feedback & Contributing
 
@@ -41,11 +49,6 @@ ExtJs Intellisense and Language Server because Sencha gives us a garbage, non-co
 ### Rate It - Leave Some Stars
 
 Please rate your experience with stars... [like five of them ;)](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-extjs&ssr=false#review-details)
-
-## Thank You
-
-Whenever I start a project I always look for a good base to start from rather than start from scratch and for this extension I found a perfect one by **qzsiniong**, his project is located [here](https://github.com/qzsiniong/vscode-extjs).  Thanks to this developer for getting me started on this!!!
-
 ## Other Code Extensions by spmeesseman
 
 | Package           | Repository                                                     | Marketplace                                                                                                          |

@@ -11,6 +11,10 @@ Ext.define('VSCodeExtJS',
 
 	config:
 	{
+		/**
+		 * @property test
+		 * Test variable #1
+		 */
 		test: true,
 		test2: false
 	},
@@ -19,7 +23,7 @@ Ext.define('VSCodeExtJS',
 	{
 		xtype: "physiciandropdown"
 	},
-	{
+	{ 
 		xtype: "patientdropdown"
 	},
 	{
