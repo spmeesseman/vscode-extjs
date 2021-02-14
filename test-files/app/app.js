@@ -9,6 +9,12 @@ Ext.define('VSCodeExtJS',
 		'VSCodeExtJS.common.UserDropdown'
 	],
 
+	config:
+	{
+		test: true,
+		test2: false
+	},
+
 	items: [
 	{
 		xtype: "physiciandropdown"
@@ -24,6 +30,26 @@ Ext.define('VSCodeExtJS',
 	},
 	{
 		xtype: 'component'
-	}]
+	}],
+
+	/**
+	 * Test fn description
+	 * @param {*} a Test a
+	 * @param {*} b Test b
+	 */
+	testFn: function(a, b)
+	{
+		testFn2(1, 2);
+	},
+
+	/**
+	 * Test fn description
+	 * @param {*} a Test a
+	 * @param {*} b Test b
+	 */
+	testFn2: function(a, b)
+	{
+		testFn(1, 2);;
+	} 
 
 });

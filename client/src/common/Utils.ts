@@ -4,7 +4,7 @@ import { OutputChannel, ExtensionContext, commands, window } from "vscode";
 
 
 const logValueWhiteSpace = 40;
-let writeToConsole = false;
+let writeToConsole = true;
 let writeToConsoleLevel = 2;
 let logOutputChannel: OutputChannel | undefined;
 

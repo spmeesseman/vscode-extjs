@@ -27,6 +27,8 @@ interface IExtjsComponent
     requires?: IRequestProperty;
     widgets: string[];
     xtypes: IXtype[];
+    singleton?: boolean;
+    aliases?: string;
 }
 
 export function toVscodePosition(position: Position)
