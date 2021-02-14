@@ -1,6 +1,7 @@
 
 import * as path from "path";
 import * as vscode from "vscode";
+import * as util from "./common/Utils";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
 import registerEnsureRequireCommand from "./commands/EnsureRequireCommand";
 import { registerProviders } from "./providers/ProviderManager";
@@ -13,7 +14,9 @@ const clients: Map<string, LanguageClient> = new Map();
 
 export async function activate(context: vscode.ExtensionContext)
 {
-    console.log("The ExtJs Language Server is now active!");
+    util.initLog("etxjsLang", "ExtJs Language Debug", context);
+
+    util.log("The ExtJs Language Server is now active!");
 
     registerProviders(context);
     await run(context);

@@ -30,14 +30,6 @@
 		"workspaceContains:.extjsrc.json"
 	],
 	"main": "./dist/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "vscode-extjs:ensure-require",
-				"title": "vscode-extjs:ensure-require"
-			}
-		]
-	},
 	"galleryBanner": {
         "color": "#EEEEEE",
         "theme": "light"
@@ -97,5 +89,37 @@
 		"@babel/parser": "^7.12.16",
 		"@babel/traverse": "^7.12.13",
 		"json5": "^2.2.0"
+	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "vscode-extjs:ensure-require",
+				"title": "vscode-extjs:ensure-require"
+			}
+		],
+		"configuration": {
+            "id": "etxjsLang",
+            "type": "object",
+            "title": "ExtJs Language Server",
+            "properties": {
+				"etxjsLang.debug": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Turn on logging."
+                },
+                "etxjsLang.debugLevel": {
+                    "type": "number",
+                    "enum": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                    ],
+                    "default": 1,
+                    "description": "Set debug verbosity (1 - Low / 5 - High)."
+                }
+			}
+		}
 	}
 }
