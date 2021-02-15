@@ -47,13 +47,11 @@
 		"semantic_release-release_no_ci": "semantic-release --no-ci",
 		"semantic_release-release_dry": "semantic-release --dry-run",
 		"watch": "tsc -b -w",
-		"webpack-watch": "npm run webpack-dev",
-		"webpack-prod:client": "webpack --mode production --config ./webpack.config.client.js",
-		"webpack-prod:server": "webpack --mode production --config ./webpack.config.server.js",
-		"webpack-dev:client": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js",
-		"webpack-dev:server": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.server.js",
-		"webpack-prod": "npm run webpack-prod:client && npm run webpack-prod:server",
-		"webpack-dev": "npm run webpack-dev:client & npm run webpack-dev:server"
+		"webpack-watch": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js --config ./webpack.config.server.js",
+		"webpack-build:client": "webpack --mode production --config ./webpack.config.client.js",
+		"webpack-build:server": "webpack --mode production --config ./webpack.config.server.js",
+		"webpack-watch:client": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js",
+		"webpack-watch:server": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.server.js"
 	},
 	"devDependencies": {
 		"@types/babel__traverse": "^7.11.0",
