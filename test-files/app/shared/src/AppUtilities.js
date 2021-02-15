@@ -56,7 +56,6 @@ Ext.define('VSCodeExtJS.AppUtilities',
      *     4 - Tech Support
      * 
      * @param {Function} fn Callback function
-     * 
     */
     alertError: function(msg, code, showHelpDeskBtn, helpType, fn)
     {
