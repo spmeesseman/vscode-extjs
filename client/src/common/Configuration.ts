@@ -5,7 +5,7 @@ import {
     WorkspaceConfiguration, ConfigurationTarget, Uri
 } from "vscode";
 
-const extensionName = "taskExplorer";
+const extensionName = "etxjsLang";
 
 class Configuration
 {
