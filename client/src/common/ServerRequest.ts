@@ -27,6 +27,11 @@ class ServerRequest
     {
         return this.client.sendRequest<IExtjsComponent[] | null>("parseExtJsFile", text);
     }
+
+    async getExtJsComponent(text: string)
+    {
+        return this.client.sendRequest<string | null>("getExtJsComponent", text);
+    }
 }
 
 export default ServerRequest;

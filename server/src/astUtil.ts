@@ -10,53 +10,45 @@ import {
 } from "@babel/types";
 
 
-function isRequiresObjectProperty(nodePath: NodePath<ObjectProperty>)
+export async function getExtJsComponent(text: string)
 {
-    if (!isObjectExpression(nodePath.parentPath)) {
-        return false;
-    }
-    if (!isCallExpression(nodePath.parentPath.parentPath.node)) {
-        return false;
-    }
-    const callee = nodePath.parentPath.parentPath.node.callee;
-    if (!isMemberExpression(callee)) {
-        return false;
-    }
-    if (!isIdentifier(callee.object) || callee.object.name !== "Ext") {
-        return false;
-    }
-    if (!isIdentifier(callee.property) || callee.property.name !== "define") {
-        return false;
-    }
-    return true;
-}
+    const ast = parse(text);
+    let componentName = "";
 
+    //
+    // Construct our syntax tree to be able to serve the goods
+    //
+    traverse(ast,
+    {
+        CallExpression(path)
+        {
+            const callee = path.node.callee,
+                args = path.node.arguments;
 
-function isExtjsDefineObjectExpression(nodePath: NodePath<ObjectExpression>)
-{
-    if (!isCallExpression(nodePath.parentPath.node)) {
-        return false;
-    }
-    const callee = nodePath.parentPath.node.callee;
-    if (!isMemberExpression(callee)) {
-        return false;
-    }
-    if (!isIdentifier(callee.object) || callee.object.name !== "Ext") {
-        return false;
-    }
-    if (!isIdentifier(callee.property) || callee.property.name !== "define") {
-        return false;
-    }
-    return true;
-}
+            if (callee.type === "MemberExpression")
+            {   //
+                // Check to see if the callee is 'Ext.define'
+                //
+                if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
+                {
+                    util.log("Parse ExtJs file", 1);
+                    //
+                    // Ext.define should be in the form:
+                    //
+                    //     Ext.define('MyApp.view.users.User', { ... });
+                    //
+                    // Check to make sure the callee args are a string for param 1 and an object for param 2
+                    //
+                    if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
+                    {
+                        componentName = args[0].value;
+                    }
+                }
+            }
+        }
+    });
 
-
-function isExtjsMethod(nodePath: NodePath<ObjectExpression>)
-{
-    if (!isMemberExpression(nodePath.parentPath.node)) {
-        return false;
-    }
-    return true;
+    return componentName;
 }
 
 
@@ -70,16 +62,6 @@ export async function parseExtJsFile(text: string)
     //
     traverse(ast,
     {
-    // ObjectExpression(nodePath, parent) {
-    //     if (isExtjsDefineObjectExpression(nodePath)) {
-    //         const properties = nodePath.node.properties;
-    //         const propertyRequires = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'requires');
-    //         const propertyAlias = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'alias');
-    //         const propertyXtype = properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === 'xtype');
-
-        //         debugger;
-        //     }
-        // },
         CallExpression(path)
         {
             const callee = path.node.callee,
@@ -173,6 +155,11 @@ export async function parseExtJsFile(text: string)
                             });
                         }
 
+                        // createXType(args[1], text)
+                        // .then((x) => {
+                        //     componentInfo.xtypes.push(x);
+                        // });
+
                         //
                         const line = args[1].loc!.start.line - 1;
                         const column = args[1].loc!.start.column;
@@ -219,61 +206,104 @@ export async function parseExtJsFile(text: string)
     return components;
 }
 
-
-function createXType(objEx: ObjectExpression, text: string): IXtype
+/*
+function createXType(objEx: ObjectExpression, text: string): Promise<IXtype>
 {
-    let xtype: IXtype = {
-        value: "", start: objEx.loc!.start, end: objEx.loc!.end
-    };
-    const line = objEx.loc!.start.line - 1;
-    const column = objEx.loc!.start.column;
-    const subText = "a(" + text.substring(objEx.start!, objEx.end!) + ")";
+    return new Promise ((resolve, reject) => {
+        const line = objEx.loc!.start.line - 1;
+        const column = objEx.loc!.start.column;
+        const subText = "a(" + text.substring(objEx.start!, objEx.end!) + ")";
 
-    const _ast = parse(subText);
-    traverse(_ast,
-    {
-        ObjectProperty(_path) {
-            const _node = _path.node;
-            const valueNode = _node.value;
-            if (!isIdentifier(_node.key)) {
-                return;
-            }
-            if (_node.key.name !== "xtype") {
-                return;
-            }
-            if (!isStringLiteral(valueNode)) {
-                return;
-            }
+        const _ast = parse(subText);
+        traverse(_ast,
+        {
+            ObjectProperty(_path) {
+                const _node = _path.node;
+                const valueNode = _node.value;
+                if (!isIdentifier(_node.key)) {
+                    return;
+                }
+                if (_node.key.name !== "xtype") {
+                    return;
+                }
+                if (!isStringLiteral(valueNode)) {
+                    return;
+                }
 
-            const start = valueNode.loc!.start;
-            const end = valueNode.loc!.end;
-            if (start.line === 1) {
-                start.column += + column - 2;
-            }
-            if (end.line === 1) {
-                end.column += + column - 2;
-            }
-            start.line += line;
-            end.line += line;
+                const start = valueNode.loc!.start;
+                const end = valueNode.loc!.end;
+                if (start.line === 1) {
+                    start.column += + column - 2;
+                }
+                if (end.line === 1) {
+                    end.column += + column - 2;
+                }
+                start.line += line;
+                end.line += line;
 
-            xtype = {
-                value: valueNode.value,
-                start,
-                end
-            };
-        }
+                resolve({
+                    value: valueNode.value,
+                    start,
+                    end
+                });
+            }
+        });
     });
-
-    return xtype;
 }
-
+*/
 
 function getComments(comments: readonly Comment[] | null)
 {
     let commentsStr = "";
+
     comments?.forEach((c) => {
         commentsStr += c.value;
     });
+
+    //
+    // JSDoc comments in the following form:
+    //
+    //     /**
+    //     * @property propName
+    //     * The property description
+    //     * @returns {Boolean}
+    //     */
+    //
+    //     /**
+    //     * @method methodName
+    //     * The method description
+    //     * @property prop1 Property 1 description
+    //     * @property prop2 Property 2 description
+    //     * @returns {Boolean}
+    //     */
+    //
+    // VSCode Hover API takes Clojure based markdown text.  See:
+    //
+    //     https://clojure.org/community/editing
+    //
+    // commentsStr = commentsStr?.trim()
+    //     .replace(/^[\* \t\n\r]+/, "")
+    //     //
+    //     // FOrmat line breaks to CLojure standard
+    //     //
+    //     .replace(/\n/, "  \n")
+    //     //
+    //     // Remove leading "* " for each line in the comment
+    //     //
+    //     .replace(/\* /, "")
+    //     //
+    //     // Bold @ tags
+    //     //
+    //     .replace(/@[a-z]+ /, function(match) {
+    //         return "_**" + match.trim() + "**_ ";
+    //     })
+    //     .trim();
+
+    // const docLines = config.doc.split("* ");
+    // docLines.forEach((line) => {
+    //     markdown.appendCodeblock(line);
+    // });
+
     return commentsStr;
 }
 

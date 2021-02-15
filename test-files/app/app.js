@@ -12,7 +12,7 @@ Ext.define('VSCodeExtJS',
 	config:
 	{
 		/**
-		 * @property test
+		 * @cfg test
 		 * Test variable #1
 		 */
 		test: true,
@@ -54,6 +54,7 @@ Ext.define('VSCodeExtJS',
 	testFn2: function(a, b)
 	{
 		testFn(1, 2);
+		console.log(this.test);
 	} 
 
 });

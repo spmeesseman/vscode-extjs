@@ -14,10 +14,17 @@ export interface IXtype
 }
 
 
+export interface IJSDoc
+{
+
+}
+
+
 export interface IConfig
 {
     name: string;
     doc?: string;
+    jsDoc?: IJSDoc;
     value: string;
     start: Position;
     end: Position;

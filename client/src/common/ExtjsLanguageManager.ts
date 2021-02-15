@@ -5,6 +5,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { isNeedRequire } from "./Utils";
 import ServerRequest, { toVscodeRange } from "./ServerRequest";
+import { IConfig, IMethod } from "./interface";
 
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection("extjs-lint");
@@ -20,11 +21,15 @@ interface IConf {
     workspaceRoot: string;
 }
 
-const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
 export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
+export const configToComponentClassMapping: { [property: string]: string | undefined } = {};
+export const methodToComponentClassMapping: { [method: string]: string | undefined } = {};
 
+const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
+const componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | undefined } = {};
+const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
 
 
 class ExtjsLanguageManager
@@ -44,12 +49,22 @@ class ExtjsLanguageManager
 
         components?.forEach(cmp =>
         {
-            const { componentClass, requires, widgets } = cmp;
+            const { componentClass, requires, widgets, methods, configs } = cmp;
             componentClassToFsPathMapping[componentClass] = fsPath;
             componentClassToWidgetsMapping[componentClass] = widgets;
+            componentClassToMethodsMapping[componentClass] = methods;
+            componentClassToConfigsMapping[componentClass] = configs;
 
             widgets.forEach(xtype => {
                 widgetToComponentClassMapping[xtype] = componentClass;
+            });
+
+            methods.forEach(method => {
+                methodToComponentClassMapping[method.name] = componentClass;
+            });
+
+            configs.forEach(config => {
+                configToComponentClassMapping[config.name] = componentClass;
             });
 
             if (requires) {
@@ -208,6 +223,7 @@ function handleDeleFile(fsPath: string)
     delete componentClassToWidgetsMapping[componentClass];
     delete componentClassToFsPathMapping[componentClass];
     delete componentClassToRequiresMapping[componentClass];
+    delete componentClassToConfigsMapping[componentClass];
 }
 
 
@@ -237,6 +253,26 @@ export function getExtjsFilePath(componentClass: string)
 export function getExtjsComponentClass(widget: string)
 {
     return widgetToComponentClassMapping[widget];
+}
+
+
+export function getExtjsComponentByConfig(property: string)
+{
+    return configToComponentClassMapping[property];
+}
+
+
+export function getExtjsConfigByComponent(cmp: string, property: string): IConfig | undefined
+{
+    const configs = componentClassToConfigsMapping[cmp];
+    if (configs) {
+        for (let c = 0; c < configs.length; c++) {
+            if (configs[c].name === property) {
+                return configs[c];
+            }
+        }
+    }
+    return undefined;
 }
 
 
