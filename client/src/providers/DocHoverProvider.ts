@@ -100,16 +100,17 @@ function getCmpClass(property: string, txt: string)
     {
         if (cmpClass[i] < "A" || cmpClass > "z")
         {
-            if (cmpClass[i] < "0" || cmpClass > "1") {
+            if (cmpClass[i] < "0" || cmpClass > "9") {
                 if (cmpClass[i] !== ".") {
                     cutAt = i;
+                    console.log(i);
                     break;
                 }
             }
         }
     }
 
-    cmpClass = cmpClass.substring(cutAt).replace(/^\w./g, "").trim();
+    cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
 
     if (!cmpClass || cmpClass === "this")
     {
@@ -124,20 +125,31 @@ function getCmpClass(property: string, txt: string)
 
 enum MarkdownStringMode
 {
+    Code,
     Config,
     Method,
     Normal,
     Property,
-    Param
+    Param,
+    Returns
 }
 
 
 function commentToMarkdown(property: string, comment: string): MarkdownString
 {
-    const markdown = new MarkdownString();
-    const newLine = "  \n";
-    const longDash = "&#8212;";
-    let mode: MarkdownStringMode = MarkdownStringMode.Normal;
+    const markdown = new MarkdownString(),
+          newLine = "  \n",
+          longDash = "&#8212;",
+          black = "\\u001b[30m",
+          red = "\\u001b[31",
+          Green = "\\u001b[32m",
+          yellow = "\\u001b[33m",
+          blue = "\\u001b[34m",
+          magenta = "\\u001b[35",
+          cyan = "\\u001b[36m",
+          white = "\\u001b[37m";
+    let mode = MarkdownStringMode.Normal,
+        indented = "", lineProperty = "", lineType = "", lineTrail = "", hdrMode = true;
 
     //
     // JSDoc comments in the following form:
@@ -185,41 +197,66 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
         // })
         // .trim();
 
-    const docLines = commentFmt.split("* ");
+    const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/);
     docLines.forEach((line) =>
     {
         util.log("   process unformatted line:", 4);
         util.log("      " + line, 4);
 
+        if (!line.trim()) {
+            return; // continue forEach()
+        }
+
+        if (markdown.value.length > 0 && mode !== MarkdownStringMode.Code) {
+            markdown.appendMarkdown(newLine);
+        }
+
         line = line
         //
-        // Format line breaks to Clojure standard
+        // Remove line breaks, we format later depending on comment parts, done w/ Clojure
+        // standard line breaks
         //
-        .replace(/\n/, newLine)
+        .replace(/\n/, "")
         //
         // Remove leading "* " for each line in the comment
         //
         .replace(/\* /, "")
+        .replace(/\s*\*$/, ""); // <- Blank lines
         //
-        // Bold @ tags
+        // Italicize @ tags
         //
         // .replace(/@[a-z]+ /, function(match) {
-        //     return "_**" + match.trim() + "**_ ";
-        // })
-        .trim();
+        //     return "_" + match.trim() + "_";
+        // });
+        // .trim();
 
         util.log("   formatted line:", 4);
         util.log("      " + line, 4);
 
-        if (mode === MarkdownStringMode.Normal && line.startsWith("@"))
-        {
+        if (!line.trim()) {
+            return; // continue forEach()
+        }
 
+        if (mode === MarkdownStringMode.Code)
+        {
+            if (line.length > 3 && line.substring(0, 3) === "   " || line[0] === "\t")
+            {
+                util.logValue("      indented line", line, 4);
+                indented += newLine + line.trim();
+                return; // continue forEach()
+            }
+            else {
+                markdown.appendCodeblock(indented.trim());
+                mode = MarkdownStringMode.Normal;
+                indented = "";
+            }
+        }
+
+        hdrMode = line.startsWith("@");
+        if (hdrMode)
+        {
             const lineParts = line.split(property);
             const partOne = lineParts[0].trim();
-            markdown.appendMarkdown(lineParts[0] + "_**" + property + "**_ " + lineParts[1]);
-
-            util.logValue("      found @ tag", partOne, 4);
-
             switch (partOne)
             {
                 case "@cfg":
@@ -228,44 +265,93 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
                 case "@property":
                     mode = MarkdownStringMode.Property;
                     break;
+                case "@param":
+                    mode = MarkdownStringMode.Param;
+                    break;
+                case "@returns":
+                    mode = MarkdownStringMode.Returns;
+                    break;
                 default:
+                    mode = MarkdownStringMode.Normal;
                     break;
             }
+            util.logValue("      found @ tag", partOne, 4);
+            util.logValue("      set mode", mode.toString(), 4);
         }
-        else if (mode === MarkdownStringMode.Config)
+
+        if (mode !== MarkdownStringMode.Param)
         {
-            const cfgLine = newLine + " " + line.trim();
-            util.logValue("      config line", cfgLine.trim(), 4);
+            lineType = "";
+            lineProperty = "";
+            lineTrail = "";
+        }
+
+        if (mode === MarkdownStringMode.Config || mode === MarkdownStringMode.Property || mode === MarkdownStringMode.Method)
+        {
+            let cfgLine = "";
+            if (hdrMode) {
+                const lineParts = line.split(property);
+                cfgLine = lineParts[0] + "_**" + property + "**_ " + lineParts[1];
+            }
+            else {
+                cfgLine = line.trim();
+            }
+            util.logValue("      add line", cfgLine.trim(), 4);
             markdown.appendMarkdown(cfgLine);
-            mode = MarkdownStringMode.Normal;
-        }
-        else if (mode === MarkdownStringMode.Property)
-        {
-            const propLine = newLine + " " + line.trim();
-            util.logValue("      property line", propLine.trim(), 4);
-            markdown.appendMarkdown(propLine);
-            mode = MarkdownStringMode.Normal;
         }
         else if (mode === MarkdownStringMode.Param)
         {
-            const propLine = longDash + " " + line.trim();
+            let type;
+            const lineParts = line.split(property);
+            let propLine = line.trim();
+            const partTwo = lineParts[1].trim(),
+                      partTwoParts = partTwo.split(" ");
+            if (partTwoParts[0].search(/\{[A-Z]\}/i) === -1)
+            {
+                lineType = "";
+                lineProperty = partTwoParts[0];
+                if (partTwoParts.length > 1)
+                {
+                    lineTrail = partTwoParts.join(" ");
+                }
+                else {
+                    lineTrail = "";
+                }
+            }
+            else {
+                lineType = partTwoParts[0];
+                lineProperty = partTwoParts[1];
+                if (partTwoParts.length > 1)
+                {
+                    lineTrail = partTwoParts.join(" ");
+                }
+            }
+            util.logValue("          name", lineProperty, 4);
+            util.logValue("          type", lineType, 4);
+
+            propLine = propLine.replace(/\{[A-Z]\}/, "");
             util.logValue("      param line", propLine.trim(), 4);
             markdown.appendMarkdown(propLine);
             mode = MarkdownStringMode.Normal;
         }
-        else if (mode === MarkdownStringMode.Method)
-        {
-            const methodLine = longDash + " " + line.trim();
-            util.logValue("      method line", methodLine.trim(), 4);
-            markdown.appendMarkdown(methodLine);
-            mode = MarkdownStringMode.Normal;
-        }
         else
         {
-            const textLine = line.trim();
-            util.logValue("      text line", textLine, 4);
-            markdown.appendText(newLine + textLine);
-            mode = MarkdownStringMode.Normal;
+            const textLine = line;
+            if (textLine.length > 3 && textLine.substring(0, 3) === "   " || textLine[0] === "\t")
+            {
+                util.logValue("      indented line", textLine, 4);
+                if (!indented) {
+                    indented += newLine;
+                }
+                indented += textLine.trim();
+                mode = MarkdownStringMode.Code;
+            }
+            else
+            {
+                util.logValue("      text line", textLine, 4);
+                markdown.appendText(textLine);
+                mode = MarkdownStringMode.Normal;
+            }
         }
     });
 
