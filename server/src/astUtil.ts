@@ -8,6 +8,7 @@ import {
     isObjectMember, ObjectMethod, Comment, isObjectProperty, isStringLiteral, ObjectExpression,
     ObjectProperty, StringLiteral, MemberExpression, isObjectMethod, isFunctionExpression
 } from "@babel/types";
+import { connection } from "./server";
 
 
 export async function getExtJsComponent(text: string)
@@ -74,6 +75,7 @@ export async function parseExtJsFile(text: string)
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
                     util.log("Parse ExtJs file", 1);
+
                     //
                     // Ext.define should be in the form:
                     //
@@ -322,7 +324,7 @@ function parseMethods(propertyMethods: ObjectProperty[]): IMethod[]
                 methods.push({
                     name: propertyName,
                     value: "",
-                    doc: getComments(m.value.body.leadingComments),
+                    doc: getComments(m.leadingComments),
                     start: m.loc!.start,
                     end: m.loc!.end
                 });

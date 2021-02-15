@@ -276,4 +276,18 @@ export function getExtjsConfigByComponent(cmp: string, property: string): IConfi
 }
 
 
+export function getExtjsConfigByMethod(cmp: string, property: string): IConfig | undefined
+{
+    const methods = componentClassToMethodsMapping[cmp];
+    if (methods) {
+        for (let c = 0; c < methods.length; c++) {
+            if (methods[c].name === property) {
+                return methods[c];
+            }
+        }
+    }
+    return undefined;
+}
+
+
 export default ExtjsLanguageManager;
