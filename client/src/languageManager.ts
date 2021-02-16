@@ -3,7 +3,6 @@ import * as fs from "fs";
 import json5 from "json5";
 import * as path from "path";
 import * as vscode from "vscode";
-import { isNeedRequire } from "./common/utils";
 import ServerRequest, { toVscodeRange } from "./common/ServerRequest";
 import { IConfig, IExtjsComponent, IMethod } from "./common/interface";
 import { configuration } from "./common/configuration";
@@ -76,7 +75,7 @@ class ExtjsLanguageManager
     }
 
 
-    async validateExtjsDocument(textDocument: vscode.TextDocument): Promise<void>
+    async validateDocument(textDocument: vscode.TextDocument): Promise<void>
     {
         const diagnostics: vscode.Diagnostic[] = [];
         const text = textDocument.getText();
@@ -185,7 +184,7 @@ class ExtjsLanguageManager
         await this.indexingAllWithProgress();
         const activeTextDocument = vscode.window.activeTextEditor?.document;
         if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateExtjsDocument(activeTextDocument);
+            await this.validateDocument(activeTextDocument);
         }
         return this.registerFileWatchers(context);
     }
@@ -214,7 +213,7 @@ class ExtjsLanguageManager
                 const fsPath = textDocument.uri.fsPath;
                 handleDeleFile(fsPath);
                 await this.indexing(textDocument.uri.fsPath, textDocument.getText());
-                await this.validateExtjsDocument(textDocument);
+                await this.validateDocument(textDocument);
             }
         }, context.subscriptions));
 
@@ -228,7 +227,7 @@ class ExtjsLanguageManager
                 handleDeleFile(file.fsPath);
                 const activeTextDocument = vscode.window.activeTextEditor?.document;
                 if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-                    await this.validateExtjsDocument(activeTextDocument);
+                    await this.validateDocument(activeTextDocument);
                 }
             });
         }, context.subscriptions));
@@ -241,7 +240,7 @@ class ExtjsLanguageManager
             const textDocument = e?.document;
             if (textDocument) {
                 if (textDocument.languageId === "javascript") {
-                    await this.validateExtjsDocument(textDocument);
+                    await this.validateDocument(textDocument);
                 }
             }
         }, context.subscriptions));
@@ -252,7 +251,7 @@ class ExtjsLanguageManager
         disposables.push(vscode.workspace.onDidOpenTextDocument(async (textDocument: vscode.TextDocument) =>
         {
             if (textDocument.languageId === "javascript") {
-                await this.validateExtjsDocument(textDocument);
+                await this.validateDocument(textDocument);
             }
         }, context.subscriptions));
 
@@ -283,78 +282,100 @@ async function initConfig()
 }
 
 
-export function fsPathToCmpClass(fsPath: string)
+export function getCmpClassFromPath(fsPath: string)
 {
     const wsf = vscode.workspace.getWorkspaceFolder(vscode.Uri.parse(fsPath));
+
+    util.log("get component by fs path", 1);
+    util.logValue("   path", fsPath, 2);
+
     if (wsf) {
         if (conf.workspaceRoot === "") {
             conf.workspaceRoot = wsf.uri.fsPath;
         }
         fsPath = fsPath.replace(wsf.uri.fsPath, "");
     }
+
     fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.extjsDir}${path.sep}*`), "");
     fsPath = fsPath.replace(/\..+$/, "");
-    return conf.extjsBase + "." + fsPath.split(path.sep).join(".");
+    const cmpClass = conf.extjsBase + "." + fsPath.split(path.sep).join(".");
+
+    util.logValue("   component class", cmpClass, 2);
+    return cmpClass;
 }
 
 
-function handleDeleFile(fsPath: string)
+function getXtypes(cmp: string, log = true, logPad = "")
 {
-    const componentClass = fsPathToCmpClass(fsPath);
-    if (componentClass)
-    {
-        getXtypes(componentClass)?.forEach(xtype => {
-            delete widgetToComponentClassMapping[xtype];
-        });
-        delete componentClassToWidgetsMapping[componentClass];
-        delete componentClassToFsPathMapping[componentClass];
-        delete componentClassToRequiresMapping[componentClass];
-        delete componentClassToConfigsMapping[componentClass];
+    const xTypes = componentClassToWidgetsMapping[cmp];
+    if (log) {
+        util.log(logPad + "get xtypes by component class", 1);
+        util.logValue(logPad + "   component class", cmp, 2);
+        util.logValue(logPad + "   # of xtypes", xTypes?.length, 2);
     }
-}
-
-
-function getXtypes(cmp: string)
-{
-    return componentClassToWidgetsMapping[cmp];
+    return xTypes;
 }
 
 
 function getRequiredXtypes(cmp: string)
 {
-    const requires = Object.keys(componentClassToWidgetsMapping).filter(it => !isNeedRequire(it));
+    const requires = []; // Object.keys(componentClassToWidgetsMapping).filter(it => util.isNeedRequire(it));
+    util.log("get required xtypes by component class", 1);
+    util.logValue("   component class", cmp, 2);
     requires.push(...(componentClassToRequiresMapping[cmp] || []));
-    return requires.reduce<string[]>((previousValue, currentCmpClass) => {
-        previousValue.push(...(getXtypes(currentCmpClass) || []));
+    const reqXTypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
+        previousValue.push(...(getXtypes(currentCmpClass, false) || []));
         return previousValue;
     }, []);
+    util.logValue("   # of required xtypes", reqXTypes.length, 2);
+    reqXTypes.forEach((x) => {
+        util.log("      " + x);
+    });
+    util.log("completed get required xtypes by component class", 1);
+    return reqXTypes;
 }
 
 
 export function getFilePath(componentClass: string)
 {
-    return componentClassToFsPathMapping[componentClass];
+    const fsPath = componentClassToFsPathMapping[componentClass];
+    util.log("get fs path by component", 1);
+    util.logValue("   path", fsPath, 2);
+    return fsPath;
 }
 
 
 export function getComponentClass(widget: string)
 {
-    return widgetToComponentClassMapping[widget];
+    const cmpClass = widgetToComponentClassMapping[widget];
+    util.log("get component class by widget", 1);
+    util.logValue("   path", widget, 2);
+    return cmpClass;
 }
 
 
 export function getComponentByConfig(property: string)
 {
-    return configToComponentClassMapping[property];
+    const cmpClass = configToComponentClassMapping[property];
+    util.log("get component class by config", 1);
+    util.logValue("   path", property, 2);
+    return cmpClass;
 }
 
 
 export function getConfigByComponent(cmp: string, property: string): IConfig | undefined
 {
     const configs = componentClassToConfigsMapping[cmp];
+    util.log("get config by component class", 1);
+    util.logValue("   component class", cmp, 2);
+    util.logValue("   property", property, 2);
     if (configs) {
         for (let c = 0; c < configs.length; c++) {
             if (configs[c].name === property) {
+                util.log("   found config", 3);
+                util.logValue("      name", configs[c].name, 4);
+                util.logValue("      start", configs[c].start, 4);
+                util.logValue("      end", configs[c].end, 4);
                 return configs[c];
             }
         }
@@ -363,17 +384,45 @@ export function getConfigByComponent(cmp: string, property: string): IConfig | u
 }
 
 
-export function getConfigByMethod(cmp: string, property: string): IConfig | undefined
+export function getMethodByComponent(cmp: string, property: string): IConfig | undefined
 {
     const methods = componentClassToMethodsMapping[cmp];
-    if (methods) {
-        for (let c = 0; c < methods.length; c++) {
+    util.log("get config by method", 1);
+    util.logValue("   component class", cmp, 2);
+    util.logValue("   property", property, 2);
+    if (methods)
+    {
+        for (let c = 0; c < methods.length; c++)
+        {
             if (methods[c].name === property) {
+                util.log("   found method", 3);
+                util.logValue("      name", methods[c].name, 4);
+                util.logValue("      start", methods[c].start, 4);
+                util.logValue("      end", methods[c].end, 4);
                 return methods[c];
             }
         }
     }
     return undefined;
+}
+
+
+function handleDeleFile(fsPath: string)
+{
+    const componentClass = getCmpClassFromPath(fsPath);
+    if (componentClass)
+    {
+        util.log("handle file depetion", 1);
+        util.logValue("   path", fsPath, 2);
+        util.logValue("   component class", componentClass, 2);
+        getXtypes(componentClass)?.forEach(xtype => {
+            delete widgetToComponentClassMapping[xtype];
+        });
+        delete componentClassToWidgetsMapping[componentClass];
+        delete componentClassToFsPathMapping[componentClass];
+        delete componentClassToRequiresMapping[componentClass];
+        delete componentClassToConfigsMapping[componentClass];
+    }
 }
 
 

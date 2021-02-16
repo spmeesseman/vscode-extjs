@@ -3,7 +3,7 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { getComponentClass, getConfigByComponent, getConfigByMethod } from "../languageManager";
+import { getComponentClass, getConfigByComponent, getMethodByComponent } from "../languageManager";
 import * as util from "../common/utils";
 
 enum MarkdownChars
@@ -71,7 +71,7 @@ class DocHoverProvider implements HoverProvider
                 }
                 else
                 {
-                    const method = getConfigByMethod(cmpClass, property);
+                    const method = getMethodByComponent(cmpClass, property);
                     if (method && method.doc) {
                         return new Hover(commentToMarkdown(property, method.doc));
                     }

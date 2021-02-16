@@ -6,7 +6,9 @@ Ext.define('VSCodeExtJS',
 		'VSCodeExtJS.AppUtilities',
 		'VSCodeExtJS.common.PatientDropdown',
 		'VSCodeExtJS.common.PhysicianDropdown',
-		'VSCodeExtJS.common.UserDropdown'
+		'VSCodeExtJS.common.UserDropdown',
+		"Ext.Component",
+		"Ext.form.Panel"
 	],
 
 	/**
