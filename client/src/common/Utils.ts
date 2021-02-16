@@ -9,6 +9,28 @@ let writeToConsoleLevel = 2;
 let logOutputChannel: OutputChannel | undefined;
 
 
+export async function forEachAsync(array: any, callback: any)
+{
+    for (let index = 0; index < array.length; index++) {
+        const result = await callback(array[index], index, array);
+        if (result === false) {
+            break;
+        }
+    }
+}
+
+
+export async function forEachMapAsync(map: any, callback: any)
+{
+    for (const entry of map.entries()) {
+        const result = await callback(entry[1], entry[0], map);
+        if (result === false) {
+            break;
+        }
+    }
+}
+
+
 function initLog(settingGrpName: string, dispName: string, context?: ExtensionContext, showLog?: boolean)
 {
     function showLogOutput(show?: boolean)
@@ -122,4 +144,13 @@ function setWriteToConsole(set: boolean, level = 2)
 }
 
 
-export { initLog, isLoggingEnabled, isNeedRequire, log, logError, logValue, logBlank, setWriteToConsole };
+function timeout(ms: number)
+{
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+export {
+    initLog, isLoggingEnabled, isNeedRequire, log, logError, logValue,
+    logBlank, setWriteToConsole, timeout
+};

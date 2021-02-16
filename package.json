@@ -125,9 +125,9 @@
                     "items": {
                         "type": "string"
                     },
-                    "default": [ "app/**/*" ],
+                    "default": [ "app" ],
                     "title": "Include",
-                    "description": "Glob patterns to use when indexing ExtJs files"
+                    "description": "Directories to search when indexing ExtJs files"
                 }
 			}
 		}

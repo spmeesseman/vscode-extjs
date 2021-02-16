@@ -5,7 +5,7 @@ import * as path from "path";
 import * as vscode from "vscode";
 import { isNeedRequire } from "./Utils";
 import ServerRequest, { toVscodeRange } from "./ServerRequest";
-import { IConfig, IMethod } from "./interface";
+import { IConfig, IExtjsComponent, IMethod } from "./interface";
 import { configuration } from "./Configuration";
 import * as util from "./Utils";
 
@@ -49,7 +49,7 @@ class ExtjsLanguageManager
     {
         const components = await this.serverRequest.parseExtJsFile(text);
 
-        components?.forEach(cmp =>
+        await util.forEachAsync(components, (cmp: IExtjsComponent) =>
         {
             const { componentClass, requires, widgets, methods, configs } = cmp;
             componentClassToFsPathMapping[componentClass] = fsPath;
@@ -113,7 +113,9 @@ class ExtjsLanguageManager
 
     private async indexingAll()
     {
-        let dirs: string[] = [];
+        let dirs: string[] = [],
+            numFiles = 0,
+            currentFileIdx = 0;
 
         util.log("start indexing", 1);
 
@@ -125,57 +127,48 @@ class ExtjsLanguageManager
             dirs = conf.extjsDir;
         }
 
-        //
-        // Status bar
-        //
-        let numFiles = 0;
-        let currentFileIdx = 0;
-        const statusBarSpace = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, -10000);
-        statusBarSpace.tooltip = "Task Explorer is building the task cache";
-        statusBarSpace.show();
-
-        for (const dir of dirs)
+        await vscode.window.withProgress(
         {
-            const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
-            numFiles += uris.length;
-        }
-
-        util.logValue("   # of files to index", numFiles, 1);
-
-        for (const dir of dirs)
+            location: vscode.ProgressLocation.Notification,
+            cancellable: false,
+            title: "Indexing ExtJs Files"
+        },
+        async (progress) =>
         {
-            const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
-            for (const uri of uris)
+            // if (token.isCancellationRequested)
+            // {
+            //     progress.report({
+            //         increment: 100,
+            //         message: "100%"
+            //     });
+            //     return;
+            // }
+
+            for (const dir of dirs)
             {
-                util.logValue("   Indexing file", uri.fsPath, 1);
-                statusBarSpace.text = this.getStatusString(++currentFileIdx, numFiles);
-                const text = (await vscode.workspace.fs.readFile(uri)).toString();
-                await this.indexing(uri.fsPath, text);
+                const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
+                numFiles += uris.length;
             }
-        }
+            const increment = Math.round(1 / numFiles * 100);
 
-        //
-        // Release status bar reserved space
-        //
-        this.disposeStatusBarSpace(statusBarSpace);
-    }
+            util.logValue("   # of files to index", numFiles, 1);
 
-
-    private disposeStatusBarSpace(statusBarSpace: vscode.StatusBarItem)
-    {
-        statusBarSpace?.hide();
-        statusBarSpace?.dispose();
-    }
-
-
-    private getStatusString(current: number, all: number)
-    {
-        if (all > 0)
-        {
-            const pct = Math.round(current / all * 100);util.log("" + pct);
-            return "$(loading~spin) Indexing ExtJs Files " + pct + "%";
-        }
-        return "";
+            for (const dir of dirs)
+            {
+                const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
+                for (const uri of uris)
+                {
+                    util.logValue("      Indexing file", uri.fsPath, 1);
+                    const text = (await vscode.workspace.fs.readFile(uri)).toString();
+                    await this.indexing(uri.fsPath, text);
+                    const pct = Math.round(++currentFileIdx / numFiles * 100);
+                    progress.report({
+                        increment,
+                        message: pct + "%"
+                    });
+                }
+            };
+        });
     }
 
 
@@ -183,17 +176,22 @@ class ExtjsLanguageManager
     {
         await initConfig();
         await this.indexingAll();
-
         const activeTextDocument = vscode.window.activeTextEditor?.document;
         if (activeTextDocument && activeTextDocument.languageId === "javascript") {
             await this.validateExtjsDocument(activeTextDocument);
         }
+        this.registerFileWatchers(context);
+    }
 
+
+    registerFileWatchers(context: vscode.ExtensionContext): vscode.Disposable[]
+    {
+        const disposables: vscode.Disposable[] = [];
         const confWatcher = vscode.workspace.createFileSystemWatcher(".extjsrc{.json,}");
         context.subscriptions.push(confWatcher);
         confWatcher.onDidChange(initConfig);
 
-        vscode.workspace.onDidChangeTextDocument(async (event) =>
+        disposables.push(vscode.workspace.onDidChangeTextDocument(async (event) =>
         {   //
             // TODO - debounce
             //
@@ -205,9 +203,9 @@ class ExtjsLanguageManager
                 await this.indexing(textDocument.uri.fsPath, textDocument.getText());
                 await this.validateExtjsDocument(textDocument);
             }
-        }, context.subscriptions);
+        }, context.subscriptions));
 
-        vscode.workspace.onDidDeleteFiles(async (event) =>
+        disposables.push(vscode.workspace.onDidDeleteFiles(async (event) =>
         {
             event.files.forEach(async file =>
             {
@@ -220,9 +218,9 @@ class ExtjsLanguageManager
                     await this.validateExtjsDocument(activeTextDocument);
                 }
             });
-        }, context.subscriptions);
+        }, context.subscriptions));
 
-        vscode.window.onDidChangeActiveTextEditor(async (e: vscode.TextEditor | undefined) =>
+        disposables.push(vscode.window.onDidChangeActiveTextEditor(async (e: vscode.TextEditor | undefined) =>
         {
             const textDocument = e?.document;
             if (textDocument) {
@@ -230,14 +228,16 @@ class ExtjsLanguageManager
                     await this.validateExtjsDocument(textDocument);
                 }
             }
-        }, context.subscriptions);
+        }, context.subscriptions));
 
-        vscode.workspace.onDidOpenTextDocument(async (textDocument: vscode.TextDocument) =>
+        disposables.push(vscode.workspace.onDidOpenTextDocument(async (textDocument: vscode.TextDocument) =>
         {
             if (textDocument.languageId === "javascript") {
                 await this.validateExtjsDocument(textDocument);
             }
-        }, context.subscriptions);
+        }, context.subscriptions));
+
+        return disposables;
     }
 }
 
