@@ -123,6 +123,21 @@ function getCmpClass(property: string, txt: string)
 }
 
 
+enum MarkdownChars
+{
+    NewLine = "  \n",
+    LongDash = "&#8212;",
+    Black = "\\u001b[30m",
+    Red = "\\u001b[31",
+    Green = "\\u001b[32m",
+    Yellow = "\\u001b[33m",
+    Blue = "\\u001b[34m",
+    Magenta = "\\u001b[35",
+    Cyan = "\\u001b[36m",
+    White = "\\u001b[37m"
+}
+
+
 enum MarkdownStringMode
 {
     Code,
@@ -141,19 +156,7 @@ enum MarkdownStringMode
 
 function commentToMarkdown(property: string, comment: string): MarkdownString
 {
-    const markdown = new MarkdownString(),
-          newLine = "  \n",
-          longDash = "&#8212;",
-          black = "\\u001b[30m",
-          red = "\\u001b[31",
-          Green = "\\u001b[32m",
-          yellow = "\\u001b[33m",
-          blue = "\\u001b[34m",
-          magenta = "\\u001b[35",
-          cyan = "\\u001b[36m",
-          white = "\\u001b[37m";
-    let mode = MarkdownStringMode.Normal,
-        indented = "", hdrMode = true;
+    const markdown = new MarkdownString();
 
     //
     // JSDoc comments in the following form:
@@ -202,6 +205,11 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
         // .trim();
 
     const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/);
+    let mode: MarkdownStringMode | undefined,
+        indented = "",
+        previousMode: MarkdownStringMode | undefined,
+        trailers: string[] = [];
+
     docLines.forEach((line) =>
     {
         if (!line.trim()) {
@@ -209,7 +217,7 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
         }
 
         if (markdown.value.length > 0 && mode !== MarkdownStringMode.Code) {
-            markdown.appendMarkdown(newLine);
+            markdown.appendMarkdown(MarkdownChars.NewLine);
         }
 
         line = line
@@ -231,60 +239,13 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
         // });
         // .trim();
 
-        util.log("   process line:", 4);
-        util.log("      " + line, 4);
+        util.logValue("   process line", line, 4);
 
         if (!line.trim()) {
             return; // continue forEach()
         }
 
-        hdrMode = line.startsWith("@");
-        if (hdrMode)
-        {
-            const tag = line.substring(0, line.indexOf(" "));
-            switch (tag)
-            {
-                case "@cfg":
-                    mode = MarkdownStringMode.Config;
-                    break;
-                case "@property":
-                    mode = MarkdownStringMode.Property;
-                    break;
-                case "@param":
-                    mode = MarkdownStringMode.Param;
-                    break;
-                case "@returns":
-                    mode = MarkdownStringMode.Returns;
-                    break;
-                case "@method":
-                    mode = MarkdownStringMode.Method;
-                    break;
-                case "@since":
-                    mode = MarkdownStringMode.Since;
-                    break;
-                case "@deprecated":
-                    mode = MarkdownStringMode.Deprecated;
-                    break;
-                case "@private":
-                    mode = MarkdownStringMode.Private;
-                    break;
-                case "@singleton":
-                    mode = MarkdownStringMode.Singleton;
-                    break;
-                default:
-                    mode = MarkdownStringMode.Normal;
-                    break;
-            }
-            util.logValue("      found @ tag", tag, 4);
-            util.logValue("      set mode", mode.toString(), 4);
-        }
-        else if (line.length > 3 && (line.substring(0, 3) === "   " || line[0] === "\t"))
-        {
-            mode = MarkdownStringMode.Code;
-        }
-        else {
-            mode = MarkdownStringMode.Normal;
-        }
+        mode = getMode(line);
 
         if (indented && mode !== MarkdownStringMode.Code)
         {
@@ -292,115 +253,233 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
             indented = "";
         }
 
+        //
+        // If 'mode' defined, and strings exist in the 'trailers' array, then then we are done
+        // processing previous tag block.  e.g.:
+        //
+        //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
+        //     User can select whetheror not to submit a ticket.
+        //     [ TRAILERS GO HERE ]
+        //     @param {Boolean} [ask=true]  Prompt for input   ( <--- processing this line)
+        //
+        if (mode !== undefined && mode !== MarkdownStringMode.Code && trailers.length)
+        {
+            trailers.forEach((t) => {
+                markdown.appendMarkdown(t);
+            });
+            trailers = [];
+        }
+
+        mode = mode !== undefined ? mode : previousMode;
+
+        previousMode = mode;
+
         if (mode === MarkdownStringMode.Config || mode === MarkdownStringMode.Property || mode === MarkdownStringMode.Method)
         {
-            let cfgLine = "";
-            if (hdrMode) {
-                const lineParts = line.split(property);
-                cfgLine = lineParts[0] + "_**" + property + "**_ " + lineParts[1];
-            }
-            else {
-                cfgLine = line.trim();
-            }
-            util.logValue("      add line", cfgLine.trim(), 4);
-            markdown.appendMarkdown(cfgLine);
+            handleObjectLine(line, property, markdown);
         }
         else if (mode === MarkdownStringMode.Param)
         {
-            let lineProperty = "", lineType = "",
-                lineValue = "", lineTrail = "";
-            const lineParts = line.split(" ");
-            //
-            // Examples:
-            //
-            //     @param {Object} msg The specific error message.
-            //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
-            //
-            if (lineParts.length > 1)
-            {
-                if (!lineParts[1].match(/\{[A-Z]+\}/i))
-                {
-                    lineType = "";
-                    lineProperty = lineParts[1];
-                    if (lineParts.length > 2)
-                    {
-                        lineParts.shift();
-                        lineParts.shift();
-                        lineTrail = lineParts.join(" ");
-                    }
-                    else {
-                        lineParts.shift();
-                        lineTrail = "";
-                    }
-                }
-                else if (lineParts.length > 2)
-                {
-                    lineType = lineParts[1];
-                    lineProperty = lineParts[2];
-                    if (lineParts.length > 3)
-                    {
-                        lineParts.shift();
-                        lineParts.shift();
-                        lineParts.shift();
-                        lineTrail = lineParts.join(" ");
-                    }
-                }
-            }
-
-            if (!lineProperty) {
-                return; // continue forEach()
-            }
-
-            util.logValue("          name", lineProperty, 4);
-            util.logValue("          type", lineType, 4);
-
-            if (lineType)
-            {
-                lineType = lineType.replace(/[\{\}]/g, "");
-            }
-
-            if (lineProperty.match(/\[[A-Z0-9]+=[A-Z0-9"']+\]/i))
-            {
-                lineProperty = lineProperty.replace(/[\[\]]/g, "");
-                const paramParts = lineProperty.split("=");
-                lineProperty = paramParts[0];
-                lineValue = paramParts[1];
-            }
-
-            let paramLine = "*@param* _**" + lineProperty + "**_ *[" + lineType + "]*";
-            if (lineTrail) {
-                paramLine += " " + longDash + lineTrail;
-            }
-            util.logValue("      param line", paramLine, 4);
-            markdown.appendMarkdown(paramLine);
-
-            if (lineValue)
-            {
-                markdown.appendMarkdown(newLine + "- *Defaults to:* " + lineValue + newLine);
-            }
+            handleParamLine(line, trailers, markdown);
         }
         else if (mode === MarkdownStringMode.Code)
         {
             util.logValue("      indented line", line, 4);
-            indented += newLine + line.trim();
+            indented += MarkdownChars.NewLine + line.trim();
         }
         else if (mode === MarkdownStringMode.Returns)
         {
-            const rtnLineParts = line.trim().split(" ");
-            rtnLineParts.shift();
-            const rtnLine = "*" + rtnLineParts[0] + "* " + rtnLineParts.join(" ");
-            util.logValue("      returns line", rtnLine, 4);
-            markdown.appendMarkdown(newLine + rtnLine);
+            handleReturnsLine(line, markdown);
         }
         else
         {
-            const textLine = line.trim();
-            util.logValue("      text line", textLine, 4);
-            markdown.appendMarkdown(textLine);
+            handleTextLine(line, markdown);
         }
     });
 
     return markdown;
+}
+
+
+function getMode(line: string): MarkdownStringMode | undefined
+{
+    let mode;
+    if (line.startsWith("@"))
+    {
+        const tag = line.substring(0, line.indexOf(" "));
+        switch (tag)
+        {
+            case "@cfg":
+                mode = MarkdownStringMode.Config;
+                break;
+            case "@property":
+                mode = MarkdownStringMode.Property;
+                break;
+            case "@param":
+                mode = MarkdownStringMode.Param;
+                break;
+            case "@returns":
+                mode = MarkdownStringMode.Returns;
+                break;
+            case "@method":
+                mode = MarkdownStringMode.Method;
+                break;
+            case "@since":
+                mode = MarkdownStringMode.Since;
+                break;
+            case "@deprecated":
+                mode = MarkdownStringMode.Deprecated;
+                break;
+            case "@private":
+                mode = MarkdownStringMode.Private;
+                break;
+            case "@singleton":
+                mode = MarkdownStringMode.Singleton;
+                break;
+            default:
+                break;
+        }
+        util.logValue("      found @ tag", tag, 4);
+        util.logValue("      set mode", mode?.toString(), 4);
+    }
+    else if (line.length > 3 && (line.substring(0, 3) === "   " || line[0] === "\t"))
+    {
+        mode = MarkdownStringMode.Code;
+    }
+    return mode;
+}
+
+
+function handleObjectLine(line: string, property: string, markdown: MarkdownString)
+{
+    let cfgLine = "";
+    if (line.startsWith("@")) {
+        const lineParts = line.split(property);
+        cfgLine = lineParts[0] + "_**" + property + "**_ " + lineParts[1];
+    }
+    else {
+        cfgLine = line.trim();
+    }
+    util.logValue("      insert object line", cfgLine, 4);
+    markdown.appendMarkdown(cfgLine);
+}
+
+
+function handleParamLine(line: string, trailers: string[], markdown: MarkdownString)
+{
+    if (!line.startsWith("@"))
+    {
+        util.logValue("      insert param text line", line, 4);
+        markdown.appendMarkdown(line);
+        return;
+    }
+
+    let lineProperty = "", lineType = "",
+        lineValue = "", lineTrail = "";
+    const lineParts = line.split(" ");
+    //
+    // Examples:
+    //
+    //     @param {Object} msg The specific error message.
+    //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
+    //
+    if (lineParts.length > 1)
+    {
+        if (!lineParts[1].match(/\{[A-Z]+\}/i))
+        {
+            lineType = "";
+            lineProperty = lineParts[1];
+            if (lineParts.length > 2)
+            {
+                lineParts.shift();
+                lineParts.shift();
+                lineTrail = lineParts.join(" ");
+            }
+            else {
+                lineParts.shift();
+                lineTrail = "";
+            }
+        }
+        else if (lineParts.length > 2)
+        {
+            lineType = lineParts[1];
+            lineProperty = lineParts[2];
+            if (lineParts.length > 3)
+            {
+                lineParts.shift();
+                lineParts.shift();
+                lineParts.shift();
+                lineTrail = lineParts.join(" ");
+            }
+        }
+    }
+
+    if (!lineProperty) {
+        return; // continue forEach()
+    }
+
+    util.logValue("          name", lineProperty, 4);
+    util.logValue("          type", lineType, 4);
+
+    if (lineType)
+    {
+        lineType = lineType.replace(/[\{\}]/g, "");
+    }
+
+    if (lineProperty.match(/\[[A-Z0-9]+=[A-Z0-9"'`]+\]/i))
+    {
+        lineProperty = lineProperty.replace(/[\[\]]/g, "");
+        const paramParts = lineProperty.split("=");
+        lineProperty = paramParts[0];
+        lineValue = paramParts[1];
+    }
+
+    let paramLine = "*@param* _**" + lineProperty + "**_ *[" + lineType + "]*";
+    if (lineTrail) {
+        paramLine += " " + MarkdownChars.LongDash + lineTrail;
+    }
+    util.logValue("      param line", paramLine, 4);
+    if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
+        markdown.appendMarkdown(MarkdownChars.NewLine);
+    }
+    markdown.appendMarkdown(paramLine);
+
+    if (lineValue)
+    {
+        trailers.push(MarkdownChars.NewLine + "- *Defaults to:* `" +
+                      lineValue.replace(/`/g, "") + "`" +  MarkdownChars.NewLine +  MarkdownChars.NewLine);
+    }
+    else {
+        markdown.appendMarkdown(MarkdownChars.NewLine);
+    }
+}
+
+
+function handleReturnsLine(line: string, markdown: MarkdownString)
+{
+    const rtnLineParts = line.trim().split(" ");
+    let rtnLine = "*" + rtnLineParts[0] + "* ";
+    rtnLineParts.shift();
+    rtnLine += rtnLineParts.join(" ");
+    util.logValue("      insert returns line", rtnLine, 4);
+    markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
+}
+
+
+function handleTextLine(line: string, markdown: MarkdownString)
+{
+    let textLine = line.trim();
+    util.logValue("      insert text line", textLine, 4);
+    if (textLine.match(/@[\w]+ /))
+    {
+        const lineParts = line.trim().split(" ");
+        textLine = "*" + textLine + "* ";
+        if (lineParts.length > 1) {
+            lineParts.shift();
+            textLine += lineParts.join(" ");
+        }
+    }
+    markdown.appendMarkdown(textLine);
 }
 
 
