@@ -36,6 +36,7 @@ const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | un
 class ExtjsLanguageManager
 {
     private serverRequest: ServerRequest;
+    private reIndexTaskId: NodeJS.Timeout | undefined;
 
 
     constructor(serverRequest: ServerRequest)
@@ -204,16 +205,22 @@ class ExtjsLanguageManager
         // Open dcument text change
         //
         disposables.push(vscode.workspace.onDidChangeTextDocument(async (event) =>
-        {   //
-            // TODO - debounce
-            //
+        {
             const textDocument = event.document;
             if (textDocument.languageId === "javascript")
-            {
-                const fsPath = textDocument.uri.fsPath;
-                handleDeleFile(fsPath);
-                await this.indexing(textDocument.uri.fsPath, textDocument.getText());
-                await this.validateDocument(textDocument);
+            {   //
+                // Debounce!!
+                //
+                if (this.reIndexTaskId) {
+                    clearTimeout(this.reIndexTaskId);
+                }
+                this.reIndexTaskId = setTimeout(async () => {
+                    this.reIndexTaskId = undefined;
+                    const fsPath = textDocument.uri.fsPath;
+                    handleDeleFile(fsPath);
+                    await this.indexing(textDocument.uri.fsPath, textDocument.getText());
+                    await this.validateDocument(textDocument);
+                }, 1000);
             }
         }, context.subscriptions));
 

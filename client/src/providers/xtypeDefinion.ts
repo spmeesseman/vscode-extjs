@@ -1,7 +1,8 @@
 
-import { CancellationToken, DefinitionProvider, ExtensionContext, languages, Location, LocationLink, Position, ProviderResult, Range, TextDocument, Uri } from "vscode";
+import { CancellationToken, DefinitionProvider, ExtensionContext, languages, Location, LocationLink, Position, ProviderResult, Range, TextDocument, Uri, workspace } from "vscode";
 import { getComponentClass, getFilePath } from "../languageManager";
-
+import * as util from "../common/utils";
+import * as path from "path";
 
 class XtypeDefinitionProvider implements DefinitionProvider
 {
@@ -19,17 +20,28 @@ class XtypeDefinitionProvider implements DefinitionProvider
         if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
         {
             const componentClass = getComponentClass(xtype);
+
             if (componentClass)
             {
-                const fsPath = getFilePath(componentClass),
-					  uri = Uri.parse(`file://${fsPath}`),
-					  start = new Position(0, 0),
-					  end = new Position(0, 0),
-					  range = new Range(start, end);
-                return {
-                    uri,
-                    range
-                };
+                const fsPath = getFilePath(componentClass)?.replace(/\\/g, "/");
+                if (fsPath)
+                {
+                    const uri = Uri.parse(`file://${fsPath}`),
+                          start = new Position(0, 0),
+                          end = new Position(0, 0),
+                          range = new Range(start, end);
+                    //
+                    // TODO - save property positions in server and jump to position of property
+                    //
+
+                    util.log("open definition file", 1);
+                    util.logValue("   component class", componentClass, 2);
+                    util.logValue("   fsPath", uri.fsPath, 2);
+                    return {
+                        uri,
+                        range
+                    };
+                }
             }
         }
     }
