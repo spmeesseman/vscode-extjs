@@ -20,20 +20,16 @@ class XtypeDefinitionProvider implements DefinitionProvider
         if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
         {
             const componentClass = getComponentClass(xtype);
-
             if (componentClass)
             {
-                const fsPath = getFilePath(componentClass)?.replace(/\\/g, "/");
+                const fsPath = getFilePath(componentClass);
                 if (fsPath)
                 {
-                    const uri = Uri.parse(`file://${fsPath}`),
+                    const uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
+                          uri = Uri.parse(`file://${uriPath}`),
                           start = new Position(0, 0),
                           end = new Position(0, 0),
                           range = new Range(start, end);
-                    //
-                    // TODO - save property positions in server and jump to position of property
-                    //
-
                     util.log("open definition file", 1);
                     util.logValue("   component class", componentClass, 2);
                     util.logValue("   fsPath", uri.fsPath, 2);
