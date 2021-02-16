@@ -111,7 +111,7 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexingAll()
+    private async indexingAll(progress?: vscode.Progress<any>)
     {
         let dirs: string[] = [],
             numFiles = 0,
@@ -127,70 +127,83 @@ class ExtjsLanguageManager
             dirs = conf.extjsDir;
         }
 
+        //
+        // Status bar
+        //
+        // const statusBarSpace = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, -10000);
+        // statusBarSpace.tooltip = "ExtJs Language Server is building the syntax tree";
+        // statusBarSpace.text = getStatusString(0);
+        // statusBarSpace.show();
+
+        for (const dir of dirs)
+        {
+            const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
+            numFiles += uris.length;
+        }
+
+        const increment = Math.round(1 / numFiles * 100);
+
+        util.logValue("   # of files to index", numFiles, 1);
+
+        for (const dir of dirs)
+        {
+            const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
+            for (const uri of uris)
+            {
+                util.logValue("      Indexing file", uri.fsPath, 1);
+                const text = (await vscode.workspace.fs.readFile(uri)).toString();
+                await this.indexing(uri.fsPath, text);
+                const pct = Math.round(++currentFileIdx / numFiles * 100);
+                progress?.report({
+                    increment,
+                    message: pct + "%"
+                });
+                // statusBarSpace.text = getStatusString(pct);
+            }
+        }
+    }
+
+
+    private async indexingAllWithProgress()
+    {
         await vscode.window.withProgress(
         {
-            location: vscode.ProgressLocation.Notification,
+            location: vscode.ProgressLocation.Window,
             cancellable: false,
             title: "Indexing ExtJs Files"
         },
         async (progress) =>
         {
-            // if (token.isCancellationRequested)
-            // {
-            //     progress.report({
-            //         increment: 100,
-            //         message: "100%"
-            //     });
-            //     return;
-            // }
-
-            for (const dir of dirs)
-            {
-                const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
-                numFiles += uris.length;
-            }
-            const increment = Math.round(1 / numFiles * 100);
-
-            util.logValue("   # of files to index", numFiles, 1);
-
-            for (const dir of dirs)
-            {
-                const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
-                for (const uri of uris)
-                {
-                    util.logValue("      Indexing file", uri.fsPath, 1);
-                    const text = (await vscode.workspace.fs.readFile(uri)).toString();
-                    await this.indexing(uri.fsPath, text);
-                    const pct = Math.round(++currentFileIdx / numFiles * 100);
-                    progress.report({
-                        increment,
-                        message: pct + "%"
-                    });
-                }
-            };
+            await this.indexingAll(progress);
         });
     }
 
 
-    async setup(context: vscode.ExtensionContext)
+    async setup(context: vscode.ExtensionContext): Promise<vscode.Disposable[]>
     {
         await initConfig();
-        await this.indexingAll();
+        await this.indexingAllWithProgress();
         const activeTextDocument = vscode.window.activeTextEditor?.document;
         if (activeTextDocument && activeTextDocument.languageId === "javascript") {
             await this.validateExtjsDocument(activeTextDocument);
         }
-        this.registerFileWatchers(context);
+        return this.registerFileWatchers(context);
     }
 
 
     registerFileWatchers(context: vscode.ExtensionContext): vscode.Disposable[]
     {
+        //
+        // rc file
+        //
         const disposables: vscode.Disposable[] = [];
         const confWatcher = vscode.workspace.createFileSystemWatcher(".extjsrc{.json,}");
         context.subscriptions.push(confWatcher);
         confWatcher.onDidChange(initConfig);
 
+        //
+        // Open dcument text change
+        //
         disposables.push(vscode.workspace.onDidChangeTextDocument(async (event) =>
         {   //
             // TODO - debounce
@@ -205,14 +218,14 @@ class ExtjsLanguageManager
             }
         }, context.subscriptions));
 
+        //
+        // Deletions
+        //
         disposables.push(vscode.workspace.onDidDeleteFiles(async (event) =>
         {
             event.files.forEach(async file =>
             {
                 handleDeleFile(file.fsPath);
-                //
-                // TODO - activeDocument Validating
-                //
                 const activeTextDocument = vscode.window.activeTextEditor?.document;
                 if (activeTextDocument && activeTextDocument.languageId === "javascript") {
                     await this.validateExtjsDocument(activeTextDocument);
@@ -220,6 +233,9 @@ class ExtjsLanguageManager
             });
         }, context.subscriptions));
 
+        //
+        // Active editor changed
+        //
         disposables.push(vscode.window.onDidChangeActiveTextEditor(async (e: vscode.TextEditor | undefined) =>
         {
             const textDocument = e?.document;
@@ -230,6 +246,9 @@ class ExtjsLanguageManager
             }
         }, context.subscriptions));
 
+        //
+        // Open text document
+        //
         disposables.push(vscode.workspace.onDidOpenTextDocument(async (textDocument: vscode.TextDocument) =>
         {
             if (textDocument.languageId === "javascript") {
@@ -239,6 +258,12 @@ class ExtjsLanguageManager
 
         return disposables;
     }
+}
+
+
+function getStatusString(pct: number)
+{
+    return "$(loading~spin) Indexing ExtJs Files " + (pct ?? "0") + "%";
 }
 
 
@@ -276,15 +301,16 @@ export function fsPathToCmpClass(fsPath: string)
 function handleDeleFile(fsPath: string)
 {
     const componentClass = fsPathToCmpClass(fsPath);
-
-    getXtypes(componentClass)?.forEach(xtype => {
-        delete widgetToComponentClassMapping[xtype];
-    });
-
-    delete componentClassToWidgetsMapping[componentClass];
-    delete componentClassToFsPathMapping[componentClass];
-    delete componentClassToRequiresMapping[componentClass];
-    delete componentClassToConfigsMapping[componentClass];
+    if (componentClass)
+    {
+        getXtypes(componentClass)?.forEach(xtype => {
+            delete widgetToComponentClassMapping[xtype];
+        });
+        delete componentClassToWidgetsMapping[componentClass];
+        delete componentClassToFsPathMapping[componentClass];
+        delete componentClassToRequiresMapping[componentClass];
+        delete componentClassToConfigsMapping[componentClass];
+    }
 }
 
 
@@ -305,25 +331,25 @@ function getRequiredXtypes(cmp: string)
 }
 
 
-export function getExtjsFilePath(componentClass: string)
+export function getFilePath(componentClass: string)
 {
     return componentClassToFsPathMapping[componentClass];
 }
 
 
-export function getExtjsComponentClass(widget: string)
+export function getComponentClass(widget: string)
 {
     return widgetToComponentClassMapping[widget];
 }
 
 
-export function getExtjsComponentByConfig(property: string)
+export function getComponentByConfig(property: string)
 {
     return configToComponentClassMapping[property];
 }
 
 
-export function getExtjsConfigByComponent(cmp: string, property: string): IConfig | undefined
+export function getConfigByComponent(cmp: string, property: string): IConfig | undefined
 {
     const configs = componentClassToConfigsMapping[cmp];
     if (configs) {
@@ -337,7 +363,7 @@ export function getExtjsConfigByComponent(cmp: string, property: string): IConfi
 }
 
 
-export function getExtjsConfigByMethod(cmp: string, property: string): IConfig | undefined
+export function getConfigByMethod(cmp: string, property: string): IConfig | undefined
 {
     const methods = componentClassToMethodsMapping[cmp];
     if (methods) {

@@ -9,6 +9,7 @@ import ExtjsLanguageManager from "./common/ExtjsLanguageManager";
 import ServerRequest from "./common/ServerRequest";
 
 let client: LanguageClient;
+let disposables: vscode.Disposable[];
 const clients: Map<string, LanguageClient> = new Map();
 
 
@@ -23,9 +24,10 @@ export async function activate(context: vscode.ExtensionContext)
 
     const serverRequest = new ServerRequest(client);
     const extjsLanguageManager = new ExtjsLanguageManager(serverRequest);
-    extjsLanguageManager.setup(context);
 
     registerEnsureRequireCommand(context, serverRequest);
+
+    disposables = await extjsLanguageManager.setup(context);
 }
 
 
@@ -178,6 +180,11 @@ async function run(context: vscode.ExtensionContext)
 export function deactivate(): Thenable<void>
 {
     const promises: Thenable<void>[] = [];
+    if (disposables) {
+        for (const disposable of disposables) {
+            disposable.dispose();
+        }
+    }
     if (client) {
         promises.push(client.stop());
     }

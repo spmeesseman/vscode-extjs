@@ -3,7 +3,7 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { getExtjsComponentClass, getExtjsConfigByComponent, getExtjsConfigByMethod } from "../common/ExtjsLanguageManager";
+import { getComponentClass, getConfigByComponent, getConfigByMethod } from "../common/ExtjsLanguageManager";
 import * as util from "../common/Utils";
 
 enum MarkdownChars
@@ -61,9 +61,9 @@ class DocHoverProvider implements HoverProvider
                     const gsProperty = property.substring(3).replace(/(?:^\w|[A-Za-z]|\b\w)/g, (letter, index) => {
                         return index !== 0 ? letter : letter.toLowerCase();
                     });
-                    let config = getExtjsConfigByComponent(cmpClass, gsProperty);
+                    let config = getConfigByComponent(cmpClass, gsProperty);
                     if (!config) {
-                        config = getExtjsConfigByComponent(cmpClass, property);
+                        config = getConfigByComponent(cmpClass, property);
                     }
                     if (config && config.doc) {
                         return new Hover(commentToMarkdown(gsProperty, config.doc));
@@ -71,7 +71,7 @@ class DocHoverProvider implements HoverProvider
                 }
                 else
                 {
-                    const method = getExtjsConfigByMethod(cmpClass, property);
+                    const method = getConfigByMethod(cmpClass, property);
                     if (method && method.doc) {
                         return new Hover(commentToMarkdown(property, method.doc));
                     }
@@ -86,7 +86,7 @@ class DocHoverProvider implements HoverProvider
         {
             const cmpClass = getCmpClass(property, lineText);
             if (cmpClass) {
-                const config = getExtjsConfigByComponent(cmpClass, property);
+                const config = getConfigByComponent(cmpClass, property);
                 if (config && config.doc) {
                     util.logValue("Provide property/config hover info", property, 1);
                     return new Hover(commentToMarkdown(property, config.doc));
@@ -102,7 +102,7 @@ class DocHoverProvider implements HoverProvider
 
 function getCmpClass(property: string, txt: string)
 {
-    let cmpClass = "this", // getExtjsComponentByConfig(property);
+    let cmpClass = "this", // getComponentByConfig(property);
         cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
     //
     // Get class name prependature to hovered property
@@ -132,7 +132,6 @@ function getCmpClass(property: string, txt: string)
             if (cmpClass[i] < "0" || cmpClass > "9") {
                 if (cmpClass[i] !== ".") {
                     cutAt = i;
-                    console.log(i);
                     break;
                 }
             }
@@ -150,7 +149,7 @@ function getCmpClass(property: string, txt: string)
     // Check aliases/alternate class names
     //
     let aliasClass: string | undefined;
-    if (aliasClass = getExtjsComponentClass(cmpClass))
+    if (aliasClass = getComponentClass(cmpClass))
     {
         cmpClass = aliasClass;
     }

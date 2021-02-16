@@ -125,7 +125,7 @@
                     "items": {
                         "type": "string"
                     },
-                    "default": [ "app" ],
+                    "default": [ "app", "extjs", "node_modules/@sencha/ext" ],
                     "title": "Include",
                     "description": "Directories to search when indexing ExtJs files"
                 }
