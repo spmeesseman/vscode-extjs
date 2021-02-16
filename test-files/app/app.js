@@ -9,11 +9,18 @@ Ext.define('VSCodeExtJS',
 		'VSCodeExtJS.common.UserDropdown'
 	],
 
+	/**
+	 * @property test3
+	 * Test variable #3 property
+	 */
+	test3: true,
+	test4: false,
+
 	config:
 	{
 		/**
 		 * @cfg test
-		 * Test variable #1
+		 * Test variable #1 config
 		 */
 		test: true,
 		test2: false
@@ -58,6 +65,7 @@ Ext.define('VSCodeExtJS',
 		console.log(this.getTest());
 		this.setTest(1);
 		VSCodeExtJS.AppUtilities.alertError("This is a test");
+		AppUtils.alertError("This is a test");
 	} 
 
 });

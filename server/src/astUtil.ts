@@ -116,12 +116,14 @@ export async function parseExtJsFile(text: string)
                         }
 
                         if (isObjectProperty(propertyAlias)) {
-                            componentInfo.widgets.push(...parseXtype(propertyAlias));
+                            const widgets = parseXtype(propertyAlias);
+                            componentInfo.widgets.push(...widgets[0]);
+                            componentInfo.widgets.push(...widgets[1]);
                         }
 
                         if (isObjectProperty(propertyXtype))
                         {
-                            componentInfo.widgets.push(...parseXtype(propertyXtype));
+                            componentInfo.widgets.push(...parseXtype(propertyXtype)[0]);
                         }
 
                         if (isObjectProperty(propertyConfig))
@@ -134,8 +136,20 @@ export async function parseExtJsFile(text: string)
                             componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[]));
                         }
 
-                        util.logValue("   # of requires found", componentInfo.requires?.value?.length, 2);
-                        util.logValue("   # of widgets found", componentInfo.widgets?.length, 2);
+                        if (componentInfo.requires)
+                        {
+                            util.logValue("   # of requires found", componentInfo.requires.value?.length, 2);
+                            componentInfo.requires.value.forEach((r) => {
+                                util.log("      " + r, 3);
+                            });
+                        }
+                        if (componentInfo.widgets)
+                        {
+                            util.logValue("   # of widgets found", componentInfo.widgets.length, 2);
+                            componentInfo.widgets.forEach((w) => {
+                                util.log("      " + w, 3);
+                            });
+                        }
                         if (componentInfo.configs)
                         {
                             util.logValue("   # of configs found", componentInfo.configs.length, 2);
@@ -382,6 +396,7 @@ function parseRequires(propertyRequires: ObjectProperty)
 function parseXtype(propertyNode: ObjectProperty)
 {
     const xtypes: string[] = [];
+    const aliases: string[] = [];
     const aliasNodes: StringLiteral[] = [];
 
     if (isStringLiteral(propertyNode.value)) {
@@ -418,11 +433,14 @@ function parseXtype(propertyNode: ObjectProperty)
                             break;
                     }
                 }
+                else {
+                    aliases.push(propertyValue);
+                }
                 break;
             default:
                 break;
         }
     });
 
-    return xtypes;
+    return [ xtypes, aliases ];
 }

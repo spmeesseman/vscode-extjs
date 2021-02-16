@@ -3,8 +3,37 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { getExtjsComponentByConfig, getExtjsConfigByComponent, getExtjsConfigByMethod } from "../common/ExtjsLanguageManager";
+import { getExtjsComponentClass, getExtjsConfigByComponent, getExtjsConfigByMethod } from "../common/ExtjsLanguageManager";
 import * as util from "../common/Utils";
+
+enum MarkdownChars
+{
+    NewLine = "  \n",
+    LongDash = "&#8212;",
+    Black = "\\u001b[30m",
+    Red = "\\u001b[31",
+    Green = "\\u001b[32m",
+    Yellow = "\\u001b[33m",
+    Blue = "\\u001b[34m",
+    Magenta = "\\u001b[35",
+    Cyan = "\\u001b[36m",
+    White = "\\u001b[37m"
+}
+
+enum MarkdownStringMode
+{
+    Code,
+    Config,
+    Deprecated,
+    Method,
+    Normal,
+    Private,
+    Property,
+    Param,
+    Returns,
+    Since,
+    Singleton
+}
 
 class DocHoverProvider implements HoverProvider
 {
@@ -117,40 +146,18 @@ function getCmpClass(property: string, txt: string)
         cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
     }
 
+    //
+    // Check aliases/alternate class names
+    //
+    let aliasClass: string | undefined;
+    if (aliasClass = getExtjsComponentClass(cmpClass))
+    {
+        cmpClass = aliasClass;
+    }
+
     util.logBlank(1);
     util.logValue("class", cmpClass, 1);
     return cmpClass;
-}
-
-
-enum MarkdownChars
-{
-    NewLine = "  \n",
-    LongDash = "&#8212;",
-    Black = "\\u001b[30m",
-    Red = "\\u001b[31",
-    Green = "\\u001b[32m",
-    Yellow = "\\u001b[33m",
-    Blue = "\\u001b[34m",
-    Magenta = "\\u001b[35",
-    Cyan = "\\u001b[36m",
-    White = "\\u001b[37m"
-}
-
-
-enum MarkdownStringMode
-{
-    Code,
-    Config,
-    Deprecated,
-    Method,
-    Normal,
-    Private,
-    Property,
-    Param,
-    Returns,
-    Since,
-    Singleton
 }
 
 

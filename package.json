@@ -116,7 +116,19 @@
 					],
 					"default": 1,
 					"description": "Set debug verbosity (1 - Low / 5 - High)."
-				}
+				},
+				"etxjsLang.include": {
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [ "app/**/*" ],
+                    "title": "Include",
+                    "description": "Glob patterns to use when indexing ExtJs files"
+                }
 			}
 		}
 	}
