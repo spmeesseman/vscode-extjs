@@ -1,8 +1,8 @@
 
 import json5 from "json5";
 import * as vscode from "vscode";
-import { isNeedRequire } from "../common/Utils";
-import { getExtjsComponentClass } from "../common/ExtjsLanguageManager";
+import { isNeedRequire } from "../common/utils";
+import { getComponentClass } from "../languageManager";
 import ServerRequest, { toVscodeRange } from "../common/ServerRequest";
 
 
@@ -26,7 +26,7 @@ function registerEnsureRequireCommand(context: vscode.ExtensionContext, serverRe
 
 		    xtypes.forEach(x =>
 		    {
-		        const c = getExtjsComponentClass(x.value);
+		        const c = getComponentClass(x.value);
 		        if (c !== undefined && isNeedRequire(c)) {
 		            componentClasses.add(c);
 		        }

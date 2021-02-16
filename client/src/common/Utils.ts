@@ -1,5 +1,5 @@
 
-import { configuration } from "./Configuration";
+import { configuration } from "./configuration";
 import { OutputChannel, ExtensionContext, commands, window } from "vscode";
 
 

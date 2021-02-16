@@ -3,7 +3,7 @@ import {
     CancellationToken, CompletionContext, CompletionItem, CompletionItemProvider, CompletionList,
     ExtensionContext, languages, Position, ProviderResult, TextDocument
 } from "vscode";
-import { widgetToComponentClassMapping } from "../common/ExtjsLanguageManager";
+import { widgetToComponentClassMapping } from "../languageManager";
 
 
 class XtypeCompletionItemProvider implements CompletionItemProvider
@@ -28,10 +28,10 @@ class XtypeCompletionItemProvider implements CompletionItemProvider
 }
 
 
-function registerXtypeCompletionItemProvider(context: ExtensionContext)
+function registerXtypeCompletionProvider(context: ExtensionContext)
 {
     context.subscriptions.push(languages.registerCompletionItemProvider("javascript", new XtypeCompletionItemProvider()));
 }
 
 
-export default registerXtypeCompletionItemProvider;
+export default registerXtypeCompletionProvider;

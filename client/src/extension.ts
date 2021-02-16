@@ -1,11 +1,11 @@
 
 import * as path from "path";
 import * as vscode from "vscode";
-import * as util from "./common/Utils";
+import * as util from "./common/utils";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
-import registerEnsureRequireCommand from "./commands/EnsureRequireCommand";
-import { registerProviders } from "./providers/ProviderManager";
-import ExtjsLanguageManager from "./common/ExtjsLanguageManager";
+import registerEnsureRequireCommand from "./commands/ensureRequire";
+import { registerProviders } from "./providers/manager";
+import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 
 let client: LanguageClient;

@@ -3,7 +3,7 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument
 } from "vscode";
-import { getComponentClass } from "../common/ExtjsLanguageManager";
+import { getComponentClass } from "../languageManager";
 
 
 class XtypeHoverProvider implements HoverProvider

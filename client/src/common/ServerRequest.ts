@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient";
-import { IExtjsComponent, Position } from "../common/interface";
+import { IExtjsComponent, Position } from "./interface";
 
 
 export function toVscodePosition(position: Position)

@@ -3,8 +3,8 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { getComponentClass, getConfigByComponent, getConfigByMethod } from "../common/ExtjsLanguageManager";
-import * as util from "../common/Utils";
+import { getComponentClass, getConfigByComponent, getConfigByMethod } from "../languageManager";
+import * as util from "../common/utils";
 
 enum MarkdownChars
 {

@@ -3,11 +3,11 @@ import * as fs from "fs";
 import json5 from "json5";
 import * as path from "path";
 import * as vscode from "vscode";
-import { isNeedRequire } from "./Utils";
-import ServerRequest, { toVscodeRange } from "./ServerRequest";
-import { IConfig, IExtjsComponent, IMethod } from "./interface";
-import { configuration } from "./Configuration";
-import * as util from "./Utils";
+import { isNeedRequire } from "./common/utils";
+import ServerRequest, { toVscodeRange } from "./common/ServerRequest";
+import { IConfig, IExtjsComponent, IMethod } from "./common/interface";
+import { configuration } from "./common/configuration";
+import * as util from "./common/utils";
 
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection("extjs-lint");
