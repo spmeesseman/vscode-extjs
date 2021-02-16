@@ -6,6 +6,8 @@ import * as vscode from "vscode";
 import { isNeedRequire } from "./Utils";
 import ServerRequest, { toVscodeRange } from "./ServerRequest";
 import { IConfig, IMethod } from "./interface";
+import { configuration } from "./Configuration";
+import * as util from "./Utils";
 
 
 const diagnosticCollection = vscode.languages.createDiagnosticCollection("extjs-lint");
@@ -16,7 +18,7 @@ const conf: IConf = {
 };
 
 interface IConf {
-    extjsDir: string;
+    extjsDir: string | string[];
     extjsBase: string;
     workspaceRoot: string;
 }
@@ -111,14 +113,69 @@ class ExtjsLanguageManager
 
     private async indexingAll()
     {
-        const uris = await vscode.workspace.findFiles(`${conf.extjsDir}/**/*.js`);
-        //
-        // TODO - put message in status bar - indexing , 0-100% progress
-        //
-        for (const uri of uris) {
-            const text = (await vscode.workspace.fs.readFile(uri)).toString();
-            await this.indexing(uri.fsPath, text);
+        let dirs: string[] = [];
+
+        util.log("start indexing", 1);
+
+        if (typeof conf.extjsDir === "string")
+        {
+            dirs = [ conf.extjsDir ];
         }
+        else {
+            dirs = conf.extjsDir;
+        }
+
+        //
+        // Status bar
+        //
+        let numFiles = 0;
+        let currentFileIdx = 0;
+        const statusBarSpace = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, -10000);
+        statusBarSpace.tooltip = "Task Explorer is building the task cache";
+        statusBarSpace.show();
+
+        for (const dir of dirs)
+        {
+            const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
+            numFiles += uris.length;
+        }
+
+        util.logValue("   # of files to index", numFiles, 1);
+
+        for (const dir of dirs)
+        {
+            const uris = await vscode.workspace.findFiles(`${dir}/**/*.js`);
+            for (const uri of uris)
+            {
+                util.logValue("   Indexing file", uri.fsPath, 1);
+                statusBarSpace.text = this.getStatusString(++currentFileIdx, numFiles);
+                const text = (await vscode.workspace.fs.readFile(uri)).toString();
+                await this.indexing(uri.fsPath, text);
+            }
+        }
+
+        //
+        // Release status bar reserved space
+        //
+        this.disposeStatusBarSpace(statusBarSpace);
+    }
+
+
+    private disposeStatusBarSpace(statusBarSpace: vscode.StatusBarItem)
+    {
+        statusBarSpace?.hide();
+        statusBarSpace?.dispose();
+    }
+
+
+    private getStatusString(current: number, all: number)
+    {
+        if (all > 0)
+        {
+            const pct = Math.round(current / all * 100);util.log("" + pct);
+            return "$(loading~spin) Indexing ExtJs Files " + pct + "%";
+        }
+        return "";
     }
 
 
@@ -187,12 +244,16 @@ class ExtjsLanguageManager
 
 async function initConfig()
 {
+    const settingsUris = configuration.get<string[]>("include");
     const confUris = await vscode.workspace.findFiles(".extjsrc{.json,}");
-    for (const uri of confUris) {
-        const fileSystemPath = uri.fsPath || uri.path;
-        const confJson = fs.readFileSync(fileSystemPath, "utf8");
-        const _conf = json5.parse(confJson);
-        Object.assign(conf, _conf);
+    if (confUris)
+    {
+        for (const uri of confUris) {
+            const fileSystemPath = uri.fsPath || uri.path;
+            const confJson = fs.readFileSync(fileSystemPath, "utf8");
+            const _conf = json5.parse(confJson);
+            Object.assign(conf, _conf);
+        }
     }
 }
 
