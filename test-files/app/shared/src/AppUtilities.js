@@ -40,25 +40,28 @@ Ext.define('VSCodeExtJS.AppUtilities',
      *
      *     AppUtils.alertError('Scott wasnt tired today', 127);
      * 
-     * @param {Object} msg The specific error message.
+     * @param {String} msg The specific error message.
      *     
-     * @param {Boolean} [code=128] The error code, can be one of the following:
+     * @param {Number} [code=128] The error code, can be one of the following:
      * 
      *     127 - Client Error
      *     128 - Client General
      * 
      * @param {Boolean} [show=true]  Show the button to open a help desk ticket
      * 
-     * @param {Boolean} [type=1] Type of help request, can be one of the following:
+     * @param {Number} [type=1] Type of help request, can be one of the following:
      *     1 - Bug Report
      *     2 - Feature Request
      *     3 - Quality Issue
      *     4 - Tech Support
      * 
      * @param {Function} fn Callback function
+     * 
+     * @returns {Boolean} `true` if user selected ok button, `false` otherwise
     */
     alertError: function(msg, code, showHelpDeskBtn, helpType, fn)
     {
+        return true;
     }
 
 });

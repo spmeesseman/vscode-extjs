@@ -127,11 +127,15 @@ enum MarkdownStringMode
 {
     Code,
     Config,
+    Deprecated,
     Method,
     Normal,
+    Private,
     Property,
     Param,
-    Returns
+    Returns,
+    Since,
+    Singleton
 }
 
 
@@ -149,7 +153,7 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
           cyan = "\\u001b[36m",
           white = "\\u001b[37m";
     let mode = MarkdownStringMode.Normal,
-        indented = "", lineProperty = "", lineType = "", lineTrail = "", hdrMode = true;
+        indented = "", hdrMode = true;
 
     //
     // JSDoc comments in the following form:
@@ -200,9 +204,6 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
     const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/);
     docLines.forEach((line) =>
     {
-        util.log("   process unformatted line:", 4);
-        util.log("      " + line, 4);
-
         if (!line.trim()) {
             return; // continue forEach()
         }
@@ -230,7 +231,7 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
         // });
         // .trim();
 
-        util.log("   formatted line:", 4);
+        util.log("   process line:", 4);
         util.log("      " + line, 4);
 
         if (!line.trim()) {
@@ -258,6 +259,18 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
                 case "@method":
                     mode = MarkdownStringMode.Method;
                     break;
+                case "@since":
+                    mode = MarkdownStringMode.Since;
+                    break;
+                case "@deprecated":
+                    mode = MarkdownStringMode.Deprecated;
+                    break;
+                case "@private":
+                    mode = MarkdownStringMode.Private;
+                    break;
+                case "@singleton":
+                    mode = MarkdownStringMode.Singleton;
+                    break;
                 default:
                     mode = MarkdownStringMode.Normal;
                     break;
@@ -276,15 +289,7 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
         if (indented && mode !== MarkdownStringMode.Code)
         {
             markdown.appendCodeblock(indented.trim());
-            mode = MarkdownStringMode.Normal;
             indented = "";
-        }
-
-        if (mode !== MarkdownStringMode.Param)
-        {
-            lineType = "";
-            lineProperty = "";
-            lineTrail = "";
         }
 
         if (mode === MarkdownStringMode.Config || mode === MarkdownStringMode.Property || mode === MarkdownStringMode.Method)
@@ -300,80 +305,98 @@ function commentToMarkdown(property: string, comment: string): MarkdownString
             util.logValue("      add line", cfgLine.trim(), 4);
             markdown.appendMarkdown(cfgLine);
         }
-        else if (false) // (mode === MarkdownStringMode.Param)
+        else if (mode === MarkdownStringMode.Param)
         {
-            const textLine = line;
-            if (textLine.length > 3 && textLine.substring(0, 3) === "   " || textLine[0] === "\t")
+            let lineProperty = "", lineType = "",
+                lineValue = "", lineTrail = "";
+            const lineParts = line.split(" ");
+            //
+            // Examples:
+            //
+            //     @param {Object} msg The specific error message.
+            //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
+            //
+            if (lineParts.length > 1)
             {
-                util.logValue("      indented line", textLine, 4);
-                if (!indented) {
-                    indented += newLine;
+                if (!lineParts[1].match(/\{[A-Z]+\}/i))
+                {
+                    lineType = "";
+                    lineProperty = lineParts[1];
+                    if (lineParts.length > 2)
+                    {
+                        lineParts.shift();
+                        lineParts.shift();
+                        lineTrail = lineParts.join(" ");
+                    }
+                    else {
+                        lineParts.shift();
+                        lineTrail = "";
+                    }
                 }
-                indented += textLine.trim();
-                mode = MarkdownStringMode.Code;
-            }
-            else
-            {
-                util.logValue("      text line", textLine, 4);
-                markdown.appendText(textLine);
-                mode = MarkdownStringMode.Normal;
+                else if (lineParts.length > 2)
+                {
+                    lineType = lineParts[1];
+                    lineProperty = lineParts[2];
+                    if (lineParts.length > 3)
+                    {
+                        lineParts.shift();
+                        lineParts.shift();
+                        lineParts.shift();
+                        lineTrail = lineParts.join(" ");
+                    }
+                }
             }
 
-            let type;
-            const lineParts = line.split(property);
-            let propLine = line.trim();
-            const partTwo = lineParts[1].trim(),
-                      partTwoParts = partTwo.split(" ");
-            if (partTwoParts[0].search(/\{[A-Z]\}/i) === -1)
-            {
-                lineType = "";
-                lineProperty = partTwoParts[0];
-                if (partTwoParts.length > 1)
-                {
-                    lineTrail = partTwoParts.join(" ");
-                }
-                else {
-                    lineTrail = "";
-                }
+            if (!lineProperty) {
+                return; // continue forEach()
             }
-            else {
-                lineType = partTwoParts[0];
-                lineProperty = partTwoParts[1];
-                if (partTwoParts.length > 1)
-                {
-                    lineTrail = partTwoParts.join(" ");
-                }
-            }
+
             util.logValue("          name", lineProperty, 4);
             util.logValue("          type", lineType, 4);
 
-            propLine = propLine.replace(/\{[A-Z]\}/, "");
-            util.logValue("      param line", propLine.trim(), 4);
-            markdown.appendMarkdown(propLine);
+            if (lineType)
+            {
+                lineType = lineType.replace(/[\{\}]/g, "");
+            }
+
+            if (lineProperty.match(/\[[A-Z0-9]+=[A-Z0-9"']+\]/i))
+            {
+                lineProperty = lineProperty.replace(/[\[\]]/g, "");
+                const paramParts = lineProperty.split("=");
+                lineProperty = paramParts[0];
+                lineValue = paramParts[1];
+            }
+
+            let paramLine = "*@param* _**" + lineProperty + "**_ *[" + lineType + "]*";
+            if (lineTrail) {
+                paramLine += " " + longDash + lineTrail;
+            }
+            util.logValue("      param line", paramLine, 4);
+            markdown.appendMarkdown(paramLine);
+
+            if (lineValue)
+            {
+                markdown.appendMarkdown(newLine + "- *Defaults to:* " + lineValue + newLine);
+            }
         }
         else if (mode === MarkdownStringMode.Code)
         {
             util.logValue("      indented line", line, 4);
             indented += newLine + line.trim();
         }
+        else if (mode === MarkdownStringMode.Returns)
+        {
+            const rtnLineParts = line.trim().split(" ");
+            rtnLineParts.shift();
+            const rtnLine = "*" + rtnLineParts[0] + "* " + rtnLineParts.join(" ");
+            util.logValue("      returns line", rtnLine, 4);
+            markdown.appendMarkdown(newLine + rtnLine);
+        }
         else
         {
-            const textLine = line;
-            if (textLine.length > 3 && textLine.substring(0, 3) === "   " || textLine[0] === "\t")
-            {
-                util.logValue("      indented line", textLine, 4);
-                if (!indented) {
-                    indented += newLine;
-                }
-                indented += textLine.trim();
-                mode = MarkdownStringMode.Code;
-            }
-            else
-            {
-                util.logValue("      text line", textLine, 4);
-                markdown.appendText(textLine);
-                mode = MarkdownStringMode.Normal;
-            }
+            const textLine = line.trim();
+            util.logValue("      text line", textLine, 4);
+            markdown.appendMarkdown(textLine);
         }
     });
 
