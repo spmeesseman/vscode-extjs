@@ -182,11 +182,17 @@ class ExtjsLanguageManager
     async setup(context: vscode.ExtensionContext): Promise<vscode.Disposable[]>
     {
         await initConfig();
-        await this.indexingAllWithProgress();
-        const activeTextDocument = vscode.window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument);
-        }
+        setTimeout(async () =>
+        {
+            await this.indexingAllWithProgress();
+            //
+            // Validate active js document if there is one
+            //
+            const activeTextDocument = vscode.window.activeTextEditor?.document;
+            if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+                await this.validateDocument(activeTextDocument);
+            }
+        }, 100);
         return this.registerFileWatchers(context);
     }
 
