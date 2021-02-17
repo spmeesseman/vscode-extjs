@@ -54,6 +54,12 @@ function initLog(settingGrpName: string, dispName: string, context?: ExtensionCo
 }
 
 
+function isGetterSetter(method: string): boolean
+{
+    return method.startsWith("get") || method.startsWith("set") && method[3] >= "A" && method[3] <= "Z";
+}
+
+
 function isNeedRequire(componentClass: string)
 {
     if (componentClass.startsWith("Ext.")) {
@@ -160,5 +166,5 @@ function timeout(ms: number)
 
 export {
     initLog, isLoggingEnabled, isNeedRequire, log, logError, logValue, lowerCaseFirstChar,
-    logBlank, setWriteToConsole, timeout, forEachMapAsync, forEachAsync
+    logBlank, setWriteToConsole, timeout, forEachMapAsync, forEachAsync, isGetterSetter
 };

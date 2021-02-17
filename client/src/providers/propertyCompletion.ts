@@ -138,9 +138,25 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
     private getMethodCmp(property: string, cmpClass: string): IMethod | IConfig | undefined
     {
         let cmp: IMethod | IConfig | undefined = getMethod(cmpClass, property);
-        if (!cmp) {
-            if (property.startsWith("get") || property.startsWith("set") && property[3] >= "A" && property[3] <= "Z")
-            {
+        if (!cmp)
+        {   //
+            // A config property:
+            //
+            //     user: null
+            //
+            // Will have the folloiwng getter/setter created by the framework if not defined
+            // on the object:
+            //
+            //     getUser()
+            //     setUser(value)
+            //
+            // Check for these config methods, see if they exist for this property
+            //
+            if (util.isGetterSetter(property))
+            {   //
+                // Extract the property name from the getter/setter.  Note the actual config
+                // property will be a lower-case-first-leter version of the extracted property
+                //
                 const gsProperty = util.lowerCaseFirstChar(property.substring(3));
                 cmp = getConfig(cmpClass, gsProperty);
                 if (!cmp) {

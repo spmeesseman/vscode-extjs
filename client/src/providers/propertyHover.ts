@@ -31,9 +31,24 @@ class DocHoverProvider implements HoverProvider
                 util.logValue("Provide function hover info", property, 1);
                 let method: IMethod | IConfig | undefined = getMethod(cmpClass, property);
                 if (!method)
-                {
-                    if (property.startsWith("get") || property.startsWith("set") && property[3] >= "A" && property[3] <= "Z")
-                    {
+                {   //
+                    // A config property:
+                    //
+                    //     user: null
+                    //
+                    // Will have the folloiwng getter/setter created by the framework if not defined
+                    // on the object:
+                    //
+                    //     getUser()
+                    //     setUser(value)
+                    //
+                    // Check for these config methods, see if they exist for this property
+                    //
+                    if (util.isGetterSetter(property))
+                    {   //
+                        // Extract the property name from the getter/setter.  Note the actual config
+                        // property will be a lower-case-first-leter version of the extracted property
+                        //
                         const gsProperty = util.lowerCaseFirstChar(property.substring(3));
                         method = getConfig(cmpClass, gsProperty);
                         if (!method) {
