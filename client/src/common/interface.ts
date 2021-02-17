@@ -6,19 +6,27 @@ export interface Position
 }
 
 
-export interface IXtype
-{
-    value: string;
-    start: Position;
-    end: Position;
-}
-
-
 export interface IConf
 {
     extjsDir: string | string[];
     extjsBase: string;
     workspaceRoot: string;
+}
+
+
+export interface ISettings
+{
+    debug: boolean;
+    debugLevel: number;
+    include: string[] | string;
+}
+
+
+export interface IXtype
+{
+    value: string;
+    start: Position;
+    end: Position;
 }
 
 
@@ -31,6 +39,7 @@ export interface IConfig
     end: Position;
 }
 
+
 export interface IMethod
 {
     value: string;
@@ -41,7 +50,16 @@ export interface IMethod
 }
 
 
-export interface IRequestProperty
+export interface IProperty
+{
+    name: string;
+    doc?: string;
+    value: string;
+    start: Position;
+    end: Position;
+}
+
+export interface IRequires
 {
     value: string[];
     start: Position;
@@ -49,12 +67,14 @@ export interface IRequestProperty
 }
 
 
-export interface IExtjsComponent
+export interface IComponent
 {
+    baseNamespace: string;
     componentClass: string;
-    requires?: IRequestProperty;
+    requires?: IRequires;
     widgets: string[];
     xtypes: IXtype[];
+    properties: IProperty[];
     configs: IConfig[];
     methods: IMethod[];
 }

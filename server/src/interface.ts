@@ -22,21 +22,15 @@ export interface IXtype
 }
 
 
-export interface IJSDoc
-{
-
-}
-
-
 export interface IConfig
 {
     name: string;
     doc?: string;
-    jsDoc?: IJSDoc;
     value: string;
     start: Position;
     end: Position;
 }
+
 
 export interface IMethod
 {
@@ -48,7 +42,16 @@ export interface IMethod
 }
 
 
-export interface IRequestProperty
+export interface IProperty
+{
+    name: string;
+    doc?: string;
+    value: string;
+    start: Position;
+    end: Position;
+}
+
+export interface IRequires
 {
     value: string[];
     start: Position;
@@ -56,12 +59,14 @@ export interface IRequestProperty
 }
 
 
-export interface IExtjsComponent
+export interface IComponent
 {
+    baseNamespace: string;
     componentClass: string;
-    requires?: IRequestProperty;
+    requires?: IRequires;
     widgets: string[];
     xtypes: IXtype[];
+    properties: IProperty[];
     configs: IConfig[];
     methods: IMethod[];
 }
