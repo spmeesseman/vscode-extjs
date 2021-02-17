@@ -52,6 +52,7 @@ enum MarkdownChars
 
 enum MarkdownStringMode
 {
+    Class,
     Code,
     Config,
     Deprecated,
@@ -781,6 +782,10 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
         {
             handleObjectLine(line, property, markdown);
         }
+        else if (mode === MarkdownStringMode.Class)
+        {
+            handleClassLine(line, markdown);
+        }
         else if (mode === MarkdownStringMode.Param)
         {
             handleParamLine(line, trailers, markdown);
@@ -793,6 +798,10 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
         else if (mode === MarkdownStringMode.Returns)
         {
             handleReturnsLine(line, markdown);
+        }
+        else if (mode === MarkdownStringMode.Singleton || mode === MarkdownStringMode.Deprecated)
+        {
+            handleTagLine(line, markdown);
         }
         else
         {
@@ -809,12 +818,15 @@ function getMode(line: string): MarkdownStringMode | undefined
     let mode;
     if (line.startsWith("@"))
     {
-        const tag = line.substring(0, line.indexOf(" "));
+        const tag = line.trim().substring(0, line.indexOf(" ") !== -1 ? line.indexOf(" ") : line.length);
         switch (tag)
         {
             case "@cfg":
             case "@config":
                 mode = MarkdownStringMode.Config;
+                break;
+            case "@class":
+                mode = MarkdownStringMode.Class;
                 break;
             case "@property":
                 mode = MarkdownStringMode.Property;
@@ -852,6 +864,29 @@ function getMode(line: string): MarkdownStringMode | undefined
         mode = MarkdownStringMode.Code;
     }
     return mode;
+}
+
+
+function handleClassLine(line: string, markdown: MarkdownString)
+{
+    let classLine = line.trim();
+    if (classLine.match(/@[\w]+ /))
+    {
+        const lineParts = line.trim().split(" ");
+        classLine = "*" + lineParts[0] + "* ";
+        if (lineParts.length > 1)
+        {
+            lineParts.shift();
+            classLine += " **" + lineParts[0] + "** ";
+            if (lineParts.length > 1)
+            {
+                lineParts.shift();
+                classLine += MarkdownChars.NewLine + lineParts.join(" ");
+            }
+        }
+    }
+    util.logValue("      insert class line", classLine, 4);
+    markdown.appendMarkdown(classLine);
 }
 
 
@@ -1004,16 +1039,24 @@ function handleReturnsLine(line: string, markdown: MarkdownString)
 function handleTextLine(line: string, markdown: MarkdownString)
 {
     let textLine = line.trim();
-    util.logValue("      insert text line", textLine, 4);
     if (textLine.match(/@[\w]+ /))
     {
         const lineParts = line.trim().split(" ");
-        textLine = "*" + textLine + "* ";
+        textLine = "*" + lineParts[0] + "* ";
         if (lineParts.length > 1) {
             lineParts.shift();
             textLine += lineParts.join(" ");
         }
     }
+    util.logValue("      insert text line", textLine, 4);
+    markdown.appendMarkdown(textLine);
+}
+
+function handleTagLine(line: string, markdown: MarkdownString)
+{
+    let textLine = line.trim();
+    textLine = "*" + textLine + "* ";
+    util.logValue("      insert tag line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 
