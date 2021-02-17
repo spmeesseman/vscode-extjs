@@ -39,6 +39,10 @@ enum MarkdownChars
     NewLine = "  \n",
     TypeWrapBegin = "[",
     TypeWrapEnd = "]",
+    Bold = "**",
+    Italic = "*",
+    BoldItalicStart = "_**",
+    BoldItalicEnd = "**_",
     LongDash = "&#8212;",
     Black = "\\u001b[30m",
     Red = "\\u001b[31",
@@ -56,6 +60,7 @@ enum MarkdownStringMode
     Code,
     Config,
     Deprecated,
+    Link,
     Method,
     Normal,
     Private,
@@ -351,6 +356,20 @@ class ExtjsLanguageManager
         return disposables;
     }
 
+}
+
+
+function boldItalic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
+{
+    return (leadingSpace ? " " : "") + MarkdownChars.BoldItalicStart + text +
+           MarkdownChars.BoldItalicEnd + (trailingSpace ? " " : "");
+}
+
+
+function bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
+{
+    return (leadingSpace ? " " : "") + MarkdownChars.Bold + text + MarkdownChars.Bold +
+           (trailingSpace ? " " : "");
 }
 
 
@@ -799,7 +818,11 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
         {
             handleReturnsLine(line, markdown);
         }
-        else if (mode === MarkdownStringMode.Singleton || mode === MarkdownStringMode.Deprecated)
+        else if (mode === MarkdownStringMode.Deprecated)
+        {
+            handleDeprecatedLine(line, markdown);
+        }
+        else if (mode === MarkdownStringMode.Singleton)
         {
             handleTagLine(line, markdown);
         }
@@ -828,6 +851,9 @@ function getMode(line: string): MarkdownStringMode | undefined
             case "@class":
                 mode = MarkdownStringMode.Class;
                 break;
+            // case "{@link":
+            //     mode = MarkdownStringMode.Link;
+            //     break;
             case "@property":
                 mode = MarkdownStringMode.Property;
                 break;
@@ -853,6 +879,7 @@ function getMode(line: string): MarkdownStringMode | undefined
             case "@singleton":
                 mode = MarkdownStringMode.Singleton;
                 break;
+            case "@inheritdoc":
             default:
                 break;
         }
@@ -873,11 +900,11 @@ function handleClassLine(line: string, markdown: MarkdownString)
     if (classLine.match(/@[\w]+ /))
     {
         const lineParts = line.trim().split(" ");
-        classLine = "*" + lineParts[0] + "* ";
+        classLine = italic(lineParts[0], false, true);
         if (lineParts.length > 1)
         {
             lineParts.shift();
-            classLine += " **" + lineParts[0] + "** ";
+            classLine += bold(lineParts[0], true, true);
             if (lineParts.length > 1)
             {
                 lineParts.shift();
@@ -890,12 +917,21 @@ function handleClassLine(line: string, markdown: MarkdownString)
 }
 
 
+function handleDeprecatedLine(line: string, markdown: MarkdownString)
+{
+    let textLine = line.trim();
+    textLine = italic(textLine, false, true);
+    util.logValue("      insert deprecated line", textLine, 4);
+    markdown.appendMarkdown(textLine);
+}
+
+
 function handleObjectLine(line: string, property: string, markdown: MarkdownString)
 {
     let cfgLine = "";
     if (line.startsWith("@")) {
         const lineParts = line.split(property);
-        cfgLine = lineParts[0] + "_**" + property + "**_ " + lineParts[1];
+        cfgLine = lineParts[0] + boldItalic(property) + " " + lineParts[1];
     }
     else {
         cfgLine = line.trim();
@@ -997,8 +1033,8 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
         lineValue = paramParts[1];
     }
 
-    let paramLine = "*@param* _**" + lineProperty + "**_ *" + MarkdownChars.TypeWrapBegin +
-                    lineType + MarkdownChars.TypeWrapEnd + "*";
+    let paramLine = italic("@param", false, true) + boldItalic(lineProperty, false, true) +
+                    italic(MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd);
     if (lineTrail) {
         paramLine += " " + MarkdownChars.LongDash + lineTrail;
     }
@@ -1010,7 +1046,7 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
 
     if (lineValue)
     {
-        trailers.push(MarkdownChars.NewLine + "- *Defaults to:* `" +
+        trailers.push(MarkdownChars.NewLine + "- " + italic("Defaults to:") + " `" +
                       lineValue.replace(/`/g, "") + "`" +  MarkdownChars.NewLine +  MarkdownChars.NewLine);
     }
     else {
@@ -1022,17 +1058,26 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
 function handleReturnsLine(line: string, markdown: MarkdownString)
 {
     const rtnLineParts = line.trim().split(" ");
-    let rtnLine = "*" + rtnLineParts[0] + "* ";
+    let rtnLine = MarkdownChars.Italic + rtnLineParts[0] + MarkdownChars.Italic + " ";
     rtnLineParts.shift();
     rtnLine += rtnLineParts.join(" ");
     rtnLine = rtnLine.replace(/\*@return[s]{0,1}\* \{[A-Za-z]+\}/, (matched) => {
          return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
-             return "*" + matched2.replace("{", MarkdownChars.TypeWrapBegin)
-                                  .replace("}", MarkdownChars.TypeWrapEnd) + "*";
+             return italic(matched2.replace("{", MarkdownChars.TypeWrapBegin)
+                                   .replace("}", MarkdownChars.TypeWrapEnd));
          }); // "<span style=\"color:blue\">" + matched + "</style>";
     });
     util.logValue("      insert returns line", rtnLine, 4);
     markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
+}
+
+
+function handleTagLine(line: string, markdown: MarkdownString)
+{
+    let textLine = line.trim();
+    textLine = italic(textLine, false, true);
+    util.logValue("      insert tag line", textLine, 4);
+    markdown.appendMarkdown(textLine);
 }
 
 
@@ -1042,22 +1087,27 @@ function handleTextLine(line: string, markdown: MarkdownString)
     if (textLine.match(/@[\w]+ /))
     {
         const lineParts = line.trim().split(" ");
-        textLine = "*" + lineParts[0] + "* ";
+        textLine = italic(lineParts[0], false, true);
         if (lineParts.length > 1) {
             lineParts.shift();
             textLine += lineParts.join(" ");
         }
     }
+    if (textLine.match(/\{\s*@link [\w]+\s*\}/))
+    {
+        textLine = textLine.replace(/\{\s*@link [\w]+\s*\}/, (matched) => {
+            return boldItalic(matched);
+       });
+    }
     util.logValue("      insert text line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 
-function handleTagLine(line: string, markdown: MarkdownString)
+
+function italic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
 {
-    let textLine = line.trim();
-    textLine = "*" + textLine + "* ";
-    util.logValue("      insert tag line", textLine, 4);
-    markdown.appendMarkdown(textLine);
+    return (leadingSpace ? " " : "") + MarkdownChars.Italic + text +
+           MarkdownChars.Italic + (trailingSpace ? " " : "");
 }
 
 
