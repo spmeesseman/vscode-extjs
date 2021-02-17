@@ -67,10 +67,10 @@ enum MarkdownStringMode
 export enum ComponentType
 {
     None,
-    Config,
-    Method,
-    Property,
-    Widget
+    Config = 1 << 0,
+    Method = 1 << 1,
+    Property = 1 << 2,
+    Widget = 1 << 3
 }
 
 class ExtjsLanguageManager

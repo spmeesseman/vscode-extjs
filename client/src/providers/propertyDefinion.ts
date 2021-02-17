@@ -1,8 +1,12 @@
 
-import { CancellationToken, DefinitionProvider, ExtensionContext, languages, Location, LocationLink, Position, ProviderResult, Range, TextDocument, Uri, workspace } from "vscode";
-import { getComponentClass, getFilePath, ComponentType, getConfig, getProperty, getMethod } from "../languageManager";
+import {
+    CancellationToken, DefinitionProvider, ExtensionContext, languages, Location,
+    LocationLink, Position, ProviderResult, Range, TextDocument, Uri,
+} from "vscode";
+import {
+    getComponentClass, getFilePath, ComponentType, getConfig, getProperty, getMethod
+} from "../languageManager";
 import * as util from "../common/utils";
-import { IMethod, IProperty, IConfig } from "../common/interface";
 
 
 class PropertyDefinitionProvider implements DefinitionProvider
@@ -36,16 +40,25 @@ class PropertyDefinitionProvider implements DefinitionProvider
             util.logValue("   component type", cmpType, 2);
 
             let cmpClass = getComponentClass(property, cmpType);
-            if (!cmpClass && cmpType === ComponentType.Method)
+            if (!cmpClass)
             {   //
                 // If this is a method, check for getter/setter for a config property...
                 //
-                if (property.startsWith("get") || property.startsWith("set"))
+                if (cmpType === ComponentType.Method && property.startsWith("get") || property.startsWith("set"))
                 {
                     util.log("   method not found, look for getter/setter config", 2);
                     property = util.lowerCaseFirstChar(property.substring(3));
                     cmpType = ComponentType.Config;
                     util.logValue("      config name", property, 2);
+                    cmpClass = getComponentClass(property, cmpType, lineText);
+                }
+                //
+                // If this is a property, check for a config property...
+                //
+                else if (cmpType === ComponentType.Property)
+                {
+                    util.log("   preperty not found, look for config", 2);
+                    cmpType = ComponentType.Config;
                     cmpClass = getComponentClass(property, cmpType, lineText);
                 }
             }
