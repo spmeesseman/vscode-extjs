@@ -9,7 +9,7 @@ let writeToConsoleLevel = 2;
 let logOutputChannel: OutputChannel | undefined;
 
 
-export async function forEachAsync(array: any, callback: any)
+async function forEachAsync(array: any, callback: any)
 {
     for (let index = 0; index < array.length; index++) {
         const result = await callback(array[index], index, array);
@@ -20,7 +20,7 @@ export async function forEachAsync(array: any, callback: any)
 }
 
 
-export async function forEachMapAsync(map: any, callback: any)
+async function forEachMapAsync(map: any, callback: any)
 {
     for (const entry of map.entries()) {
         const result = await callback(entry[1], entry[0], map);
@@ -152,5 +152,5 @@ function timeout(ms: number)
 
 export {
     initLog, isLoggingEnabled, isNeedRequire, log, logError, logValue,
-    logBlank, setWriteToConsole, timeout
+    logBlank, setWriteToConsole, timeout, forEachMapAsync, forEachAsync
 };

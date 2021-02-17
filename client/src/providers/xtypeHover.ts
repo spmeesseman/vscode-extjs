@@ -3,7 +3,7 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument
 } from "vscode";
-import { getComponentClass } from "../languageManager";
+import { getComponent } from "../languageManager";
 
 
 class XtypeHoverProvider implements HoverProvider
@@ -21,7 +21,7 @@ class XtypeHoverProvider implements HoverProvider
 
         if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
         {
-            const cmpClass = getComponentClass(xtype);
+            const cmpClass = getComponent(xtype);
             if (cmpClass) {
                 return new Hover(`* **class**: ${cmpClass} \n* **xtype**: ${xtype}`);
             }

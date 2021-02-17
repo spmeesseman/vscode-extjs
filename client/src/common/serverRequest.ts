@@ -1,15 +1,15 @@
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient";
-import { IComponent, Position } from "./interface";
+import { IComponent, IPosition } from "./interface";
 
 
-export function toVscodePosition(position: Position)
+export function toVscodePosition(position: IPosition)
 {
     const { line, column } = position;
     return new vscode.Position(line - 1, column);
 }
 
-export function toVscodeRange(start: Position, end: Position)
+export function toVscodeRange(start: IPosition, end: IPosition)
 {
     return new vscode.Range(toVscodePosition(start), toVscodePosition(end));
 }

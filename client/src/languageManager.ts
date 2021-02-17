@@ -367,25 +367,73 @@ export function getFilePath(componentClass: string)
 }
 
 
-export function getComponentClass(widget: string)
+
+export function getComponent(property: string, txt?: string)
 {
-    const cmpClass = widgetToComponentClassMapping[widget];
-    util.log("get component class by widget", 1);
-    util.logValue("   path", widget, 2);
+    let cmpClass = "this", // getComponentByConfig(property);
+        cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
+
+    if (!txt)
+    {
+        return widgetToComponentClassMapping[property];
+    }
+    //
+    // Get class name prependature to hovered property
+    //
+    // classPre could be something like:
+    //
+    //     Ext.csi.view.common.
+    //     Ext.csi.store.
+    //     Ext.form.field.
+    //     MyApp.view.myview.
+    //
+    cmpClassPre = txt.substring(0, txt.indexOf(property));
+    cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
+    //
+    // Remove the trailing '.' for the component name
+    //
+    cmpClass = cmpClassPre.substr(0, cmpClassPre.length - 1);
+    if (cmpClassPreIdx > 0)
+    {
+        cmpClassPre = cmpClassPre.substring(cmpClassPreIdx);
+    }
+
+    for (let i = cmpClass.length - 1; i >= 0 ; i--)
+    {
+        if (cmpClass[i] < "A" || cmpClass > "z")
+        {
+            if (cmpClass[i] < "0" || cmpClass > "9") {
+                if (cmpClass[i] !== ".") {
+                    cutAt = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
+
+    if (!cmpClass || cmpClass === "this")
+    {
+        cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
+    }
+
+    //
+    // Check aliases/alternate class names
+    //
+    let aliasClass: string | undefined;
+    if (aliasClass = widgetToComponentClassMapping[cmpClass])
+    {
+        cmpClass = aliasClass;
+    }
+
+    util.logBlank(1);
+    util.logValue("class", cmpClass, 1);
     return cmpClass;
 }
 
 
-export function getComponentByConfig(property: string)
-{
-    const cmpClass = configToComponentClassMapping[property];
-    util.log("get component class by config", 1);
-    util.logValue("   path", property, 2);
-    return cmpClass;
-}
-
-
-export function getConfigByComponent(cmp: string, property: string): IConfig | undefined
+export function getConfig(cmp: string, property: string): IConfig | undefined
 {
     const configs = componentClassToConfigsMapping[cmp];
     util.log("get config by component class", 1);
@@ -406,7 +454,7 @@ export function getConfigByComponent(cmp: string, property: string): IConfig | u
 }
 
 
-export function getPropertyByComponent(cmp: string, property: string): IProperty | undefined
+export function getProperty(cmp: string, property: string): IProperty | undefined
 {
     const properties = componentClassToPropertiesMapping[cmp];
     util.log("get property by component class", 1);
@@ -427,7 +475,7 @@ export function getPropertyByComponent(cmp: string, property: string): IProperty
 }
 
 
-export function getMethodByComponent(cmp: string, property: string): IConfig | undefined
+export function getMethod(cmp: string, property: string): IConfig | undefined
 {
     const methods = componentClassToMethodsMapping[cmp];
     util.log("get config by method", 1);

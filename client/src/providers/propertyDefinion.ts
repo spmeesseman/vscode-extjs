@@ -4,7 +4,7 @@ import { getComponent, getFilePath } from "../languageManager";
 import * as util from "../common/utils";
 
 
-class XtypeDefinitionProvider implements DefinitionProvider
+class PropertyDefinitionProvider implements DefinitionProvider
 {
     provideDefinition(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Location | Location[] | LocationLink[]>
     {
@@ -14,12 +14,12 @@ class XtypeDefinitionProvider implements DefinitionProvider
         }
 
         const line = position.line,
-			  xtype = document.getText(range),
+              property = document.getText(range),
 			  text = document.getText(new Range(new Position(line, 0), new Position(line, range.end.character + 1)));
 
-        if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
+        if (new RegExp(`${property}\\([\\W\\w]*\\)\\s*;\\s*$`).test(text) || new RegExp(`.${property}\\s*[;\\)]+\\s*$`).test(text))
         {
-            const componentClass = getComponent(xtype);
+            const componentClass = getComponent(property);
             if (componentClass)
             {
                 const fsPath = getFilePath(componentClass);
@@ -44,7 +44,7 @@ class XtypeDefinitionProvider implements DefinitionProvider
 }
 
 
-export default function registerXtypeDefinitionProvider(context: ExtensionContext)
+export default function registerPropertyDefinitionProvider(context: ExtensionContext)
 {
-    context.subscriptions.push(languages.registerDefinitionProvider("javascript", new XtypeDefinitionProvider()));
+    context.subscriptions.push(languages.registerDefinitionProvider("javascript", new PropertyDefinitionProvider()));
 }

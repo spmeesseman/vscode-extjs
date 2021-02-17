@@ -3,12 +3,14 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { getComponentClass, getConfigByComponent, getMethodByComponent, getPropertyByComponent } from "../languageManager";
+import { getComponent, getConfig, getMethod, getProperty } from "../languageManager";
 import * as util from "../common/utils";
 
 enum MarkdownChars
 {
     NewLine = "  \n",
+    TypeWrapBegin = "[",
+    TypeWrapEnd = "]",
     LongDash = "&#8212;",
     Black = "\\u001b[30m",
     Red = "\\u001b[31",
@@ -53,7 +55,7 @@ class DocHoverProvider implements HoverProvider
         //
         if (lineText.match(new RegExp(`${property}\\([\\W\\w]*\\)\\s*;\\s*$`)))
         {
-            const cmpClass = getCmpClass(property, lineText);
+            const cmpClass = getComponent(property, lineText);
             if (cmpClass) {
                 util.logValue("Provide function hover info", property, 1);
                 if (property.startsWith("get") || property.startsWith("set") && property[3] >= "A" && property[3] <= "Z")
@@ -61,9 +63,9 @@ class DocHoverProvider implements HoverProvider
                     const gsProperty = property.substring(3).replace(/(?:^\w|[A-Za-z]|\b\w)/g, (letter, index) => {
                         return index !== 0 ? letter : letter.toLowerCase();
                     });
-                    let config = getConfigByComponent(cmpClass, gsProperty);
+                    let config = getConfig(cmpClass, gsProperty);
                     if (!config) {
-                        config = getConfigByComponent(cmpClass, property);
+                        config = getConfig(cmpClass, property);
                     }
                     if (config && config.doc) {
                         return new Hover(commentToMarkdown(gsProperty, config.doc));
@@ -71,7 +73,7 @@ class DocHoverProvider implements HoverProvider
                 }
                 else
                 {
-                    const method = getMethodByComponent(cmpClass, property);
+                    const method = getMethod(cmpClass, property);
                     if (method && method.doc) {
                         return new Hover(commentToMarkdown(property, method.doc));
                     }
@@ -84,15 +86,15 @@ class DocHoverProvider implements HoverProvider
         //
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
         {
-            const cmpClass = getCmpClass(property, lineText);
+            const cmpClass = getComponent(property, lineText);
             if (cmpClass) {
-                const config = getConfigByComponent(cmpClass, property);
+                const config = getConfig(cmpClass, property);
                 if (config && config.doc) {
                     util.logValue("Provide config hover info", property, 1);
                     return new Hover(commentToMarkdown(property, config.doc));
                 }
                 else {
-                    const prop = getPropertyByComponent(cmpClass, property);
+                    const prop = getProperty(cmpClass, property);
                     if (prop && prop.doc) {
                         util.logValue("Provide property hover info", property, 1);
                         return new Hover(commentToMarkdown(property, prop.doc));
@@ -104,66 +106,6 @@ class DocHoverProvider implements HoverProvider
         return undefined;
     }
 
-}
-
-
-function getCmpClass(property: string, txt: string)
-{
-    let cmpClass = "this", // getComponentByConfig(property);
-        cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
-    //
-    // Get class name prependature to hovered property
-    //
-    // classPre could be something like:
-    //
-    //     Ext.csi.view.common.
-    //     Ext.csi.store.
-    //     Ext.form.field.
-    //     MyApp.view.myview.
-    //
-    cmpClassPre = txt.substring(0, txt.indexOf(property));
-    cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
-    //
-    // Remove the trailing '.' for the component name
-    //
-    cmpClass = cmpClassPre.substr(0, cmpClassPre.length - 1);
-    if (cmpClassPreIdx > 0)
-    {
-        cmpClassPre = cmpClassPre.substring(cmpClassPreIdx);
-    }
-
-    for (let i = cmpClass.length - 1; i >= 0 ; i--)
-    {
-        if (cmpClass[i] < "A" || cmpClass > "z")
-        {
-            if (cmpClass[i] < "0" || cmpClass > "9") {
-                if (cmpClass[i] !== ".") {
-                    cutAt = i;
-                    break;
-                }
-            }
-        }
-    }
-
-    cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
-
-    if (!cmpClass || cmpClass === "this")
-    {
-        cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
-    }
-
-    //
-    // Check aliases/alternate class names
-    //
-    let aliasClass: string | undefined;
-    if (aliasClass = getComponentClass(cmpClass))
-    {
-        cmpClass = aliasClass;
-    }
-
-    util.logBlank(1);
-    util.logValue("class", cmpClass, 1);
-    return cmpClass;
 }
 
 
@@ -395,11 +337,20 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
     //
     // Examples:
     //
-    //     @param {Object} msg The specific error message.
+    //     @param {Object} opt Delivery options.
+    //     @param {String} msg The specific error message.
+    //     Some more descriptive text about the above property.
     //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
+    //     Some more descriptive text about the above property.
+    //
+    // Trailing line text i.e. 'Some more descriptive text about the above property' gets
+    // stored into 'lineTrail'.  THis is placed "before" the default value extracted from a
+    // first line i.e. [show=true].
     //
     if (lineParts.length > 1)
-    {
+    {   //
+        // Check for no type i.e. @param propName the description here
+        //
         if (!lineParts[1].match(/\{[A-Z]+\}/i))
         {
             lineType = "";
@@ -415,6 +366,9 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
                 lineTrail = "";
             }
         }
+        //
+        // Has type i.e. @param {String} propName the description here
+        //
         else if (lineParts.length > 2)
         {
             lineType = lineParts[1];
@@ -429,8 +383,11 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
         }
     }
 
+    //
+    // If no property name was found, then there's nothing to add to the markdown, exit
+    //
     if (!lineProperty) {
-        return; // continue forEach()
+        return;
     }
 
     util.logValue("          name", lineProperty, 4);
@@ -441,6 +398,14 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
         lineType = lineType.replace(/[\{\}]/g, "");
     }
 
+    //
+    // Check for a default value, for example:
+    //
+    //     @param {Boolean} [debug=true] Set to `true` to...
+    //
+    // If a default value is found, set 'lineValue' and this is added to the 'trailers'
+    // array to be placed at the end of the params documentation body
+    //
     if (lineProperty.match(/\[[A-Z0-9]+=[A-Z0-9"'`]+\]/i))
     {
         lineProperty = lineProperty.replace(/[\[\]]/g, "");
@@ -449,7 +414,8 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
         lineValue = paramParts[1];
     }
 
-    let paramLine = "*@param* _**" + lineProperty + "**_ *[" + lineType + "]*";
+    let paramLine = "*@param* _**" + lineProperty + "**_ *" + MarkdownChars.TypeWrapBegin +
+                    lineType + MarkdownChars.TypeWrapEnd + "*";
     if (lineTrail) {
         paramLine += " " + MarkdownChars.LongDash + lineTrail;
     }
@@ -478,7 +444,8 @@ function handleReturnsLine(line: string, markdown: MarkdownString)
     rtnLine += rtnLineParts.join(" ");
     rtnLine = rtnLine.replace(/\*@return[s]{0,1}\* \{[A-Za-z]+\}/, (matched) => {
          return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
-             return "*" + matched2.replace("{", "[").replace("}", "]") + "*";
+             return "*" + matched2.replace("{", MarkdownChars.TypeWrapBegin)
+                                  .replace("}", MarkdownChars.TypeWrapEnd) + "*";
          }); // "<span style=\"color:blue\">" + matched + "</style>";
     });
     util.logValue("      insert returns line", rtnLine, 4);
@@ -503,7 +470,7 @@ function handleTextLine(line: string, markdown: MarkdownString)
 }
 
 
-export default function registerDocHoverProvider(context: ExtensionContext)
+export default function registerPropertyHoverProvider(context: ExtensionContext)
 {
     context.subscriptions.push(languages.registerHoverProvider("javascript", new DocHoverProvider()));
 }
