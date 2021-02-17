@@ -15,7 +15,7 @@ const clients: Map<string, LanguageClient> = new Map();
 
 export async function activate(context: vscode.ExtensionContext)
 {
-    util.initLog("etxjsLang", "ExtJs Language Client", context);
+    util.initLog("extjsLangSvr", "ExtJs Language Client", context);
 
     util.log("The ExtJs Language Server is now active!");
 

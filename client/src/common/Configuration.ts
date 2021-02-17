@@ -5,7 +5,7 @@ import {
     WorkspaceConfiguration, ConfigurationTarget, Uri
 } from "vscode";
 
-const extensionName = "etxjsLang";
+const extensionName = "extjsLangSvr";
 
 class Configuration
 {

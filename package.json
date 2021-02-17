@@ -96,16 +96,16 @@
 			}
 		],
 		"configuration": {
-			"id": "etxjsLang",
+			"id": "extjsLangSvr",
 			"type": "object",
 			"title": "ExtJs Language Server",
 			"properties": {
-				"etxjsLang.debug": {
+				"extjsLangSvr.debug": {
 					"type": "boolean",
 					"default": false,
 					"description": "Turn on logging."
 				},
-				"etxjsLang.debugLevel": {
+				"extjsLangSvr.debugLevel": {
 					"type": "number",
 					"enum": [
 						1,
@@ -117,7 +117,7 @@
 					"default": 1,
 					"description": "Set debug verbosity (1 - Low / 5 - High)."
 				},
-				"etxjsLang.include": {
+				"extjsLangSvr.include": {
                     "type": [
                         "string",
                         "array"

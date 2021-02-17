@@ -14,6 +14,14 @@ export interface IXtype
 }
 
 
+export interface IConf
+{
+    extjsDir: string | string[];
+    extjsBase: string;
+    workspaceRoot: string;
+}
+
+
 export interface IConfig
 {
     name: string;

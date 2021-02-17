@@ -32,6 +32,11 @@ class ServerRequest
     {
         return this.client.sendRequest<string | null>("getExtJsComponent", text);
     }
+
+    async onSettingsChange()
+    {
+        return this.client.sendRequest<string | null>("onSettingsChange");
+    }
 }
 
 export default ServerRequest;

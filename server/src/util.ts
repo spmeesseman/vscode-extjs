@@ -1,17 +1,20 @@
 
 import { connection } from "./server";
 
-
 const logValueWhiteSpace = 40;
+let loggingEnabled: boolean | undefined;
+let logLevel: number | undefined;
 
 
-function isLoggingEnabled()
+export async function initLog()
 {
-    return true; // configuration.get("debug") === true;
-}
-
-function getLogLevel() {
-    return 5; // configuration.get("debug") === true;
+    try {
+        const config = await connection.workspace.getConfiguration("extjsLangSvr");
+        loggingEnabled = config?.debug;
+        logLevel = config?.debugLevel;
+    } catch (e) {
+        console.log(e.toString());
+    }
 }
 
 
@@ -21,10 +24,10 @@ export function log(msg: string, level?: number)
         return;
     }
 
-    if (isLoggingEnabled() === true)
+    if (loggingEnabled === true)
     {
         const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + msg;
-        if (!level || level <= getLogLevel()) {
+        if (!level || (logLevel !== undefined && level <= logLevel)) {
             connection.console.log(tsMsg);
         }
     }

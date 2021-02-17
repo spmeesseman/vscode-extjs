@@ -4,7 +4,7 @@ import json5 from "json5";
 import * as path from "path";
 import * as vscode from "vscode";
 import ServerRequest, { toVscodeRange } from "./common/ServerRequest";
-import { IConfig, IExtjsComponent, IMethod } from "./common/interface";
+import { IConfig, IExtjsComponent, IMethod, IConf } from "./common/interface";
 import { configuration } from "./common/configuration";
 import * as util from "./common/utils";
 
@@ -15,12 +15,6 @@ const conf: IConf = {
     extjsBase: "",
     workspaceRoot: "",
 };
-
-interface IConf {
-    extjsDir: string | string[];
-    extjsBase: string;
-    workspaceRoot: string;
-}
 
 export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
 export const configToComponentClassMapping: { [property: string]: string | undefined } = {};
@@ -181,6 +175,7 @@ class ExtjsLanguageManager
 
     async setup(context: vscode.ExtensionContext): Promise<vscode.Disposable[]>
     {
+        //await this.serverRequest.onSettingsChange();
         await initConfig();
         setTimeout(async () =>
         {
@@ -193,14 +188,14 @@ class ExtjsLanguageManager
                 await this.validateDocument(activeTextDocument);
             }
         }, 100);
-        return this.registerFileWatchers(context);
+        return this.registerWatchers(context);
     }
 
 
-    registerFileWatchers(context: vscode.ExtensionContext): vscode.Disposable[]
+    registerWatchers(context: vscode.ExtensionContext): vscode.Disposable[]
     {
         //
-        // rc file
+        // rc/conf file
         //
         const disposables: vscode.Disposable[] = [];
         const confWatcher = vscode.workspace.createFileSystemWatcher(".extjsrc{.json,}");
@@ -268,8 +263,22 @@ class ExtjsLanguageManager
             }
         }, context.subscriptions));
 
+        //
+        // Register configurations/settings change watcher
+        //
+        disposables.push(vscode.workspace.onDidChangeConfiguration(async e => {
+            if (e.affectsConfiguration("extjsLangSvr.include")) {
+                //
+                // TODO
+                //
+                util.log("Process settings change 'include'", 1);
+                // await this.serverRequest.onSettingsChange();
+            }
+        }, context.subscriptions));
+
         return disposables;
     }
+
 }
 
 
