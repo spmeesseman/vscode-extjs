@@ -24,6 +24,7 @@ export const widgetToComponentClassMapping: { [widget: string]: string | undefin
 export const configToComponentClassMapping: { [property: string]: string | undefined } = {};
 export const methodToComponentClassMapping: { [method: string]: string | undefined } = {};
 export const propertyToComponentClassMapping: { [method: string]: string | undefined } = {};
+export const xtypeToComponentClassMapping: { [method: string]: string | undefined } = {};
 
 const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
@@ -48,7 +49,7 @@ enum MarkdownChars
     Red = "\\u001b[31",
     Green = "\\u001b[32m",
     Yellow = "\\u001b[33m",
-    Blue = "\\u001b[34m",
+    Blue = "\\u001b[34m", // "<span style=\"color:blue\">"  "</style>"
     Magenta = "\\u001b[35",
     Cyan = "\\u001b[36m",
     White = "\\u001b[37m"
@@ -102,44 +103,84 @@ class ExtjsLanguageManager
                 componentClass, requires, widgets, xtypes, methods, configs, properties
             } = cmp;
 
+            //
+            // The components documentation.  Defined at the very top of the class file, e.g.:
+            //
+            //     /**
+            //      * @class MyApp.Utilities
+            //      *
+            //      * Description for MyApp utilities class
+            //      *
+            //      * @singleton
+            //      * @since 2.0.0
+            //      */
+            //     Ext.define("MyApp.Utilities", {
+            //         ...
+            //     });
+            //
             if (cmp?.doc) {
                 cmp.markdown = commentToMarkdown(componentClass, cmp.doc);
             }
 
+            //
+            // Map the component class to the various component types found
+            //
             componentClassToFsPathMapping[componentClass] = fsPath;
             componentClassToWidgetsMapping[componentClass] = widgets;
             componentClassToMethodsMapping[componentClass] = methods;
             componentClassToConfigsMapping[componentClass] = configs;
             componentClassToPropertiesMapping[componentClass] = properties;
             componentClassToXTypesMapping[componentClass] = xtypes;
+
+            //
+            // Map the component class to it's component (it's own definition)
+            //
             componentClassToComponentsMapping[componentClass] = cmp;
 
+            //
+            // Map the component class to any requires strings found
+            //
+            if (requires) {
+                componentClassToRequiresMapping[componentClass] = requires.value;
+            }
+
+            //
+            // Map widget/alias/xtype types found to the component class
+            //
             widgets.forEach(xtype => {
                 widgetToComponentClassMapping[xtype] = componentClass;
             });
 
+            //
+            // Map methods found to the component class
+            //
             methods.forEach(method => {
                 method.markdown = commentToMarkdown(method.name, method.doc);
                 methodToComponentClassMapping[method.name] = componentClass;
             });
 
+            //
+            // Map config properties found to the component class
+            //
             configs.forEach(config => {
                 config.markdown = commentToMarkdown(config.name, config.doc);
                 configToComponentClassMapping[config.name] = componentClass;
             });
 
+            //
+            // Map properties found to the component class
+            //
             properties.forEach(property => {
                 property.markdown = commentToMarkdown(property.name, property.doc);
                 propertyToComponentClassMapping[property.name] = componentClass;
             });
 
+            //
+            // Map xtypes found to the component class
+            //
             xtypes.forEach(xtype => {
-                propertyToComponentClassMapping[xtype.name] = componentClass;
+                xtypeToComponentClassMapping[xtype.name] = componentClass;
             });
-
-            if (requires) {
-                componentClassToRequiresMapping[componentClass] = requires.value;
-            }
         });
     }
 
@@ -1065,7 +1106,7 @@ function handleReturnsLine(line: string, markdown: MarkdownString)
          return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
              return italic(matched2.replace("{", MarkdownChars.TypeWrapBegin)
                                    .replace("}", MarkdownChars.TypeWrapEnd));
-         }); // "<span style=\"color:blue\">" + matched + "</style>";
+         });
     });
     util.logValue("      insert returns line", rtnLine, 4);
     markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
