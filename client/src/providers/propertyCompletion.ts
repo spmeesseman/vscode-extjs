@@ -21,7 +21,7 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
         const line = position.line,
               text = document.getText(range),
 			  lineText = document.getText(new Range(new Position(line, 0), new Position(line, position.character)))?.trim(),
-              completionItems: ProviderResult<CompletionItem[] | CompletionList> = [],
+              completionItems: CompletionItem[] = [],
               addedItems: string[] = [];
         let completionBase = lineText.replace(text, "");
         if (completionBase && completionBase[completionBase.length - 1] === ".") {
@@ -37,11 +37,11 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
             return;
         }
 
-        function _pci(map: { [s: string]: string | undefined } | ArrayLike<string>, kind: CompletionItemKind, base: string, cItems: CompletionItem[], aItems: string[])
+        function _pci(map: { [s: string]: string | undefined } | ArrayLike<string>, kind: CompletionItemKind)
         {
             Object.entries(map).forEach(([p, cls]) =>
             {
-                if (cls && (!base || cls.indexOf(base) === 0))
+                if (cls && (!completionBase || cls.indexOf(completionBase) === 0))
                 {
                     //
                     // Example:
@@ -55,29 +55,43 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
                     // Return the property name prefixed by 'base'
                     //
                     const fullPath = cls + "." + p,
-                          cText = base ? fullPath.replace(base, "").substring(1) : p,
-                          thisProp = cText.indexOf(".") !== -1 ? cText.substring(0, cText.indexOf(".")) : cText,
-                          isEndProp = thisProp === p;
-                    if (aItems.indexOf(thisProp) === -1)
+                          cText = completionBase ? fullPath.replace(completionBase, "").substring(1) : p;
+                    let thisProp = cText.indexOf(".") !== -1 ? cText.substring(0, cText.indexOf(".")) : cText;
+                    const isEndProp = thisProp === p && (cText.indexOf(".") !== -1 || cls === completionBase);
+                    if (!isEndProp)
+                    {
+                        if (completionBase)
+                        {
+                            const cPart = cls.replace(completionBase, ""),
+                                  nextDotIdx = cPart.indexOf(".", 1);
+                            thisProp = cPart.substring(1, nextDotIdx !== -1 ? nextDotIdx : cPart.length);
+                        }
+                        else {
+                            thisProp = cls.substring(0, cls.indexOf("."));
+                        }
+                    }
+                    if (addedItems.indexOf(thisProp) === -1)
                     {
                         const iKind = !isEndProp ? CompletionItemKind.Class : kind,
                               propCompletion = new CompletionItem(thisProp, iKind);
-                        util.logValue("      item", p, 3);
-                        util.logValue("      kind", iKind, 4);
-                        util.logValue("      full path", fullPath, 4);
-                        cItems.push(propCompletion);
-                        aItems.push(cText);
+                        util.log("      add completion item", 3);
+                        util.logValue("         item", p, 3);
+                        util.logValue("         kind", iKind, 4);
+                        util.logValue("         end prop", isEndProp, 4);
+                        util.logValue("         full path", fullPath, 4);
+                        completionItems.push(propCompletion);
+                        addedItems.push(thisProp);
                     }
                 }
             });
         }
 
         util.log("   methods", 1);
-        _pci(methodToComponentClassMapping, CompletionItemKind.Method, completionBase, completionItems, addedItems);
+        _pci(methodToComponentClassMapping, CompletionItemKind.Method);
         util.log("   properties", 1);
-        _pci(propertyToComponentClassMapping, CompletionItemKind.Property, completionBase, completionItems, addedItems);
+        _pci(propertyToComponentClassMapping, CompletionItemKind.Property);
         util.log("   configs", 1);
-        _pci(configToComponentClassMapping, CompletionItemKind.Property, completionBase, completionItems, addedItems);
+        _pci(configToComponentClassMapping, CompletionItemKind.Property);
 
         return completionItems;
     }
