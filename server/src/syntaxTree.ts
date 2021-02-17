@@ -1,14 +1,12 @@
 
 import { parse } from "@babel/parser";
-import traverse, { NodePath } from "@babel/traverse";
+import traverse from "@babel/traverse";
 import * as util from "./util";
-import { IExtjsComponent, Position, IXtype, IConfig, IMethod, IRequestProperty } from "./interface";
+import { IExtjsComponent, IConfig, IMethod, IXtype } from "./interface";
 import {
-    isArrayExpression, isCallExpression, isIdentifier, isMemberExpression, isObjectExpression,
-    isObjectMember, ObjectMethod, Comment, isObjectProperty, isStringLiteral, ObjectExpression,
-    ObjectProperty, StringLiteral, MemberExpression, isObjectMethod, isFunctionExpression
+    isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty,
+    isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression
 } from "@babel/types";
-import { connection } from "./server";
 
 
 export async function getExtJsComponent(text: string)
@@ -28,7 +26,7 @@ export async function getExtJsComponent(text: string)
 
             if (callee.type === "MemberExpression")
             {   //
-                // Check to see if the callee is 'Ext.define'
+                // Check to see if the callee is 'Ext.define', these are our ExtJs classes...
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
@@ -116,14 +114,14 @@ export async function parseExtJsFile(text: string)
                         }
 
                         if (isObjectProperty(propertyAlias)) {
-                            const widgets = parseXtype(propertyAlias);
+                            const widgets = parseClassDefProperties(propertyAlias);
                             componentInfo.widgets.push(...widgets[0]);
                             componentInfo.widgets.push(...widgets[1]);
                         }
 
                         if (isObjectProperty(propertyXtype))
                         {
-                            componentInfo.widgets.push(...parseXtype(propertyXtype)[0]);
+                            componentInfo.widgets.push(...parseClassDefProperties(propertyXtype)[0]);
                         }
 
                         if (isObjectProperty(propertyConfig))
@@ -134,6 +132,11 @@ export async function parseExtJsFile(text: string)
                         if (propertyMethod && propertyMethod.length)
                         {
                             componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[]));
+                        }
+
+                        if (componentInfo.xtypes)
+                        {
+                            componentInfo.xtypes.push(...parseXTypes(args[1], text));
                         }
 
                         if (componentInfo.requires)
@@ -148,6 +151,13 @@ export async function parseExtJsFile(text: string)
                             util.logValue("   # of widgets found", componentInfo.widgets.length, 2);
                             componentInfo.widgets.forEach((w) => {
                                 util.log("      " + w, 3);
+                            });
+                        }
+                        if (componentInfo.xtypes)
+                        {
+                            util.logValue("   # of xtypes found", componentInfo.xtypes.length, 2);
+                            componentInfo.xtypes.forEach((x) => {
+                                util.log("      " + x.value, 3);
                             });
                         }
                         if (componentInfo.configs)
@@ -170,50 +180,6 @@ export async function parseExtJsFile(text: string)
                                 }
                             });
                         }
-
-                        // createXType(args[1], text)
-                        // .then((x) => {
-                        //     componentInfo.xtypes.push(x);
-                        // });
-
-                        //
-                        const line = args[1].loc!.start.line - 1;
-                        const column = args[1].loc!.start.column;
-                        const subText = "a(" + text.substring(args[1].start!, args[1].end!) + ")";
-
-                        const _ast = parse(subText);
-                        traverse(_ast, {
-                            ObjectProperty(_path) {
-                                const _node = _path.node;
-                                const valueNode = _node.value;
-                                if (!isIdentifier(_node.key)) {
-                                    return;
-                                }
-                                if (_node.key.name !== "xtype") {
-                                    return;
-                                }
-                                if (!isStringLiteral(valueNode)) {
-                                    return;
-                                }
-
-                                const start = valueNode.loc!.start;
-                                const end = valueNode.loc!.end;
-                                if (start.line === 1) {
-                                    start.column += + column - 2;
-                                }
-                                if (end.line === 1) {
-                                    end.column += + column - 2;
-                                }
-                                start.line += line;
-                                end.line += line;
-
-                                componentInfo.xtypes.push({
-                                    value: valueNode.value,
-                                    start,
-                                    end
-                                });
-                            }
-                        });
                     }
                 }
             }
@@ -222,51 +188,6 @@ export async function parseExtJsFile(text: string)
     return components;
 }
 
-/*
-function createXType(objEx: ObjectExpression, text: string): Promise<IXtype>
-{
-    return new Promise ((resolve, reject) => {
-        const line = objEx.loc!.start.line - 1;
-        const column = objEx.loc!.start.column;
-        const subText = "a(" + text.substring(objEx.start!, objEx.end!) + ")";
-
-        const _ast = parse(subText);
-        traverse(_ast,
-        {
-            ObjectProperty(_path) {
-                const _node = _path.node;
-                const valueNode = _node.value;
-                if (!isIdentifier(_node.key)) {
-                    return;
-                }
-                if (_node.key.name !== "xtype") {
-                    return;
-                }
-                if (!isStringLiteral(valueNode)) {
-                    return;
-                }
-
-                const start = valueNode.loc!.start;
-                const end = valueNode.loc!.end;
-                if (start.line === 1) {
-                    start.column += + column - 2;
-                }
-                if (end.line === 1) {
-                    end.column += + column - 2;
-                }
-                start.line += line;
-                end.line += line;
-
-                resolve({
-                    value: valueNode.value,
-                    start,
-                    end
-                });
-            }
-        });
-    });
-}
-*/
 
 function getComments(comments: readonly Comment[] | null)
 {
@@ -393,7 +314,7 @@ function parseRequires(propertyRequires: ObjectProperty)
 }
 
 
-function parseXtype(propertyNode: ObjectProperty)
+function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 {
     const xtypes: string[] = [];
     const aliases: string[] = [];
@@ -443,4 +364,66 @@ function parseXtype(propertyNode: ObjectProperty)
     });
 
     return [ xtypes, aliases ];
+}
+
+
+function parseXTypes(objEx: ObjectExpression, text: string): IXtype[]
+{
+    const xType: IXtype[] = [];
+    const line = objEx.loc!.start.line - 1;
+    const column = objEx.loc!.start.column;
+
+    //
+    // Pick a substring from the doc text, just the jso w/o the Ext.define() wrap so we can
+    // get a Babel ObjectProperty
+    //
+    // For example, we want an object in the form to pass to parse():
+    //
+    //    {
+    //        alias: "myalias",
+    //        requires: [
+    //            "MyApp.view.users.User"
+    //        ],
+    //        ....
+    //    }
+    //
+    const subText = "a(" + text.substring(objEx.start!, objEx.end!) + ")";
+
+    const _ast = parse(subText);
+    traverse(_ast,
+    {
+        ObjectProperty(_path) {
+            const _node = _path.node;
+            const valueNode = _node.value;
+            if (!isIdentifier(_node.key)) {
+                return;
+            }
+            if (_node.key.name !== "xtype") {
+                return;
+            }
+            if (!isStringLiteral(valueNode)) {
+                return;
+            }
+
+            const start = valueNode.loc!.start;
+            const end = valueNode.loc!.end;
+
+            if (start.line === 1) {
+                start.column += + column - 2;
+            }
+            if (end.line === 1) {
+                end.column += + column - 2;
+            }
+            start.line += line;
+            end.line += line;
+
+            xType.push({
+                value: valueNode.value,
+                start,
+                end
+            });
+        }
+    });
+
+    return xType;
 }
