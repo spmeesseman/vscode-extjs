@@ -4,6 +4,7 @@ import {
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
 import { ComponentType, getComponentClass, getConfig, getMethod, getProperty } from "../languageManager";
+import { IMethod, IConfig } from "../common/interface";
 import * as util from "../common/utils";
 
 
@@ -28,23 +29,20 @@ class DocHoverProvider implements HoverProvider
             const cmpClass = getComponentClass(property, ComponentType.Method, lineText);
             if (cmpClass) {
                 util.logValue("Provide function hover info", property, 1);
-                if (property.startsWith("get") || property.startsWith("set") && property[3] >= "A" && property[3] <= "Z")
+                let method: IMethod | IConfig | undefined = getMethod(cmpClass, property);
+                if (!method)
                 {
-                    const gsProperty = util.lowerCaseFirstChar(property.substring(3));
-                    let config = getConfig(cmpClass, gsProperty);
-                    if (!config) {
-                        config = getConfig(cmpClass, property);
-                    }
-                    if (config && config.markdown) {
-                        return new Hover(config.markdown);
+                    if (property.startsWith("get") || property.startsWith("set") && property[3] >= "A" && property[3] <= "Z")
+                    {
+                        const gsProperty = util.lowerCaseFirstChar(property.substring(3));
+                        method = getConfig(cmpClass, gsProperty);
+                        if (!method) {
+                            method = getConfig(cmpClass, property);
+                        }
                     }
                 }
-                else
-                {
-                    const method = getMethod(cmpClass, property);
-                    if (method && method.markdown) {
-                        return new Hover(method.markdown);
-                    }
+                if (method && method.markdown) {
+                    return new Hover(method.markdown);
                 }
             }
         }

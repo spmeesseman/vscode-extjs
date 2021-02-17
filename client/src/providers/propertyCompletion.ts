@@ -5,9 +5,10 @@ import {
 } from "vscode";
 import {
     methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping,
-    getComponentClass, ComponentType, getConfig
+    getComponentClass, ComponentType, getConfig, getMethod, getProperty
 } from "../languageManager";
 import * as util from "../common/utils";
+import { IConfig, IMethod, IProperty } from "../common/interface";
 
 
 class PropertyCompletionItemProvider implements CompletionItemProvider
@@ -58,6 +59,7 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
                           cText = completionBase ? fullPath.replace(completionBase, "").substring(1) : p;
                     let thisProp = cText.indexOf(".") !== -1 ? cText.substring(0, cText.indexOf(".")) : cText;
                     const isEndProp = thisProp === p && (cText.indexOf(".") !== -1 || cls === completionBase);
+                    let wasProp = thisProp;
                     if (!isEndProp)
                     {
                         if (completionBase)
@@ -74,11 +76,42 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
                     {
                         const iKind = !isEndProp ? CompletionItemKind.Class : kind,
                               propCompletion = new CompletionItem(thisProp, iKind);
+                        let cmp: IMethod | IProperty | IConfig | undefined;
+                        switch (iKind)
+                        {
+                            case CompletionItemKind.Method:
+                                cmp = getMethod(cls, wasProp);
+                                if (!cmp) {
+                                    if (wasProp.startsWith("get") || wasProp.startsWith("set") && wasProp[3] >= "A" && wasProp[3] <= "Z")
+                                    {
+                                        const gsProperty = util.lowerCaseFirstChar(wasProp.substring(3));
+                                        cmp = getConfig(cls, gsProperty);
+                                        if (!cmp) {
+                                            cmp = getConfig(cls, wasProp);
+                                        }
+                                    }
+                                }
+                                break;
+                            case CompletionItemKind.Property:
+                                cmp = getConfig(cls, wasProp);
+                                if (!cmp) {
+                                    cmp = getProperty(cls, wasProp);
+                                }
+                                break;
+                            case CompletionItemKind.Class:
+                                // TODO - pick comments in server for classes
+                                break;
+                            default:
+                                break;
+                        }
+
                         util.log("      add completion item", 3);
                         util.logValue("         item", p, 3);
                         util.logValue("         kind", iKind, 4);
                         util.logValue("         end prop", isEndProp, 4);
                         util.logValue("         full path", fullPath, 4);
+
+                        propCompletion.documentation = cmp?.markdown;
                         completionItems.push(propCompletion);
                         addedItems.push(thisProp);
                     }
