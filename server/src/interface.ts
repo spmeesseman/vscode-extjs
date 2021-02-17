@@ -68,6 +68,7 @@ export interface IRequires
 
 export interface IComponent
 {
+    aliases: string[];
     baseNamespace: string;
     componentClass: string;
     requires?: IRequires;

@@ -27,6 +27,7 @@ export const propertyToComponentClassMapping: { [method: string]: string | undef
 export const xtypeToComponentClassMapping: { [method: string]: string | undefined } = {};
 
 const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
+const componentClassToAliasesMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
 const componentClassToXTypesMapping: { [componentClass: string]: IXtype[] | undefined } = {};
@@ -100,7 +101,7 @@ class ExtjsLanguageManager
         await util.forEachAsync(components, (cmp: IComponent) =>
         {
             const {
-                componentClass, requires, widgets, xtypes, methods, configs, properties
+                componentClass, requires, widgets, xtypes, methods, configs, properties, aliases
             } = cmp;
 
             //
@@ -131,6 +132,7 @@ class ExtjsLanguageManager
             componentClassToConfigsMapping[componentClass] = configs;
             componentClassToPropertiesMapping[componentClass] = properties;
             componentClassToXTypesMapping[componentClass] = xtypes;
+            componentClassToAliasesMapping[componentClass] = aliases;
 
             //
             // Map the component class to it's component (it's own definition)
@@ -704,6 +706,7 @@ function handleDeleFile(fsPath: string)
         // TODO - remove *ToComponentClassMapping mappings
         //
         delete componentClassToWidgetsMapping[componentClass];
+        delete componentClassToAliasesMapping[componentClass];
         delete componentClassToFsPathMapping[componentClass];
         delete componentClassToRequiresMapping[componentClass];
         delete componentClassToConfigsMapping[componentClass];

@@ -92,6 +92,7 @@ export async function parseExtJsFile(text: string)
                             baseNamespace: dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value,
                             componentClass: args[0].value,
                             xtypes: [],
+                            aliases: [],
                             widgets: [],
                             methods: [],
                             properties: [],
@@ -110,7 +111,7 @@ export async function parseExtJsFile(text: string)
                         util.logValue("   Component", args[0].value, 1);
 
                         const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
-                        const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
+                        const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "alias" || p.key.name === "alternateClassName"));
                         const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
                         const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
                         const propertyStatics = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "statics");
@@ -118,7 +119,8 @@ export async function parseExtJsFile(text: string)
                         const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
 
-                        if (isObjectProperty(propertyRequires)) {
+                        if (isObjectProperty(propertyRequires))
+                        {
                             componentInfo.requires = {
                                 value: parseRequires(propertyRequires),
                                 start: propertyRequires.loc!.start,
@@ -126,10 +128,12 @@ export async function parseExtJsFile(text: string)
                             };
                         }
 
-                        if (isObjectProperty(propertyAlias)) {
+                        if (isObjectProperty(propertyAlias))
+                        {
                             const widgets = parseClassDefProperties(propertyAlias);
-                            componentInfo.widgets.push(...widgets[0]);
-                            componentInfo.widgets.push(...widgets[1]);
+                            componentInfo.widgets.push(...widgets[0]); // xtype array
+                            componentInfo.widgets.push(...widgets[1]); // alias array
+                            componentInfo.aliases.push(...widgets[1]); // alias array
                         }
 
                         if (isObjectProperty(propertyXtype))
@@ -386,6 +390,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
                 xtypes.push(propertyValue);
                 break;
             case "alias":
+            case "alternateClassName":
                 const m = propertyValue.match(/(.+)\.(.+)/);
                 if (m) {
                     const [_, namespace, name] = m;
