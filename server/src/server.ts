@@ -136,9 +136,7 @@ connection.onRequest("getExtJsComponent", async (text: string) =>
 connection.onRequest("onSettingsChange", async () =>
 {
     try {
-        connection.console.log("HERE!!");
-        //await initLog();
-        connection.console.log("HERE22!!");
+        await initLog();
     }
     catch (error)
     {

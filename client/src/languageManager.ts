@@ -175,7 +175,6 @@ class ExtjsLanguageManager
 
     async setup(context: vscode.ExtensionContext): Promise<vscode.Disposable[]>
     {
-        //await this.serverRequest.onSettingsChange();
         await initConfig();
         setTimeout(async () =>
         {
@@ -267,12 +266,12 @@ class ExtjsLanguageManager
         // Register configurations/settings change watcher
         //
         disposables.push(vscode.workspace.onDidChangeConfiguration(async e => {
-            if (e.affectsConfiguration("extjsLangSvr.include")) {
+            if (e.affectsConfiguration("extjsLangSvr.debug") || e.affectsConfiguration("extjsLangSvr.debugLevel")) {
                 //
                 // TODO
                 //
                 util.log("Process settings change 'include'", 1);
-                // await this.serverRequest.onSettingsChange();
+                await this.serverRequest.onSettingsChange();
             }
         }, context.subscriptions));
 
