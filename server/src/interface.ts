@@ -1,4 +1,13 @@
 
+
+export interface IExtJsBase
+{
+    name: string;
+    start: IPosition;
+    end: IPosition;
+}
+
+
 export interface IPosition
 {
     line: number;
@@ -22,45 +31,31 @@ export interface ISettings
 }
 
 
-export interface IXtype
+export interface IXtype extends IExtJsBase
 {
-    value: string;
-    start: IPosition;
-    end: IPosition;
+
 }
 
 
-export interface IConfig
+export interface IConfig extends IProperty
 {
-    name: string;
-    doc?: string;
-    markdown?:string;
-    value: string;
-    start: IPosition;
-    end: IPosition;
+    setter: string | undefined;
+    getter: string | undefined;
 }
 
 
-export interface IMethod
+export interface IMethod extends IProperty
 {
-    value: string;
-    doc?: string;
-    markdown?: string;
-    name: string;
-    start: IPosition;
-    end: IPosition;
+    params: string | undefined;
 }
 
 
-export interface IProperty
+export interface IProperty extends IExtJsBase
 {
-    name: string;
     doc?: string;
     markdown?: string;
-    value: string;
-    start: IPosition;
-    end: IPosition;
 }
+
 
 export interface IRequires
 {

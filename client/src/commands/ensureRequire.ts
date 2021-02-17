@@ -26,7 +26,7 @@ function registerEnsureRequireCommand(context: vscode.ExtensionContext, serverRe
 
 		    xtypes.forEach(x =>
 		    {
-		        const c = getComponentClass(x.value);
+		        const c = getComponentClass(x.name);
 		        if (c !== undefined && isNeedRequire(c)) {
 		            componentClasses.add(c);
 		        }

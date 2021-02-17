@@ -1,6 +1,15 @@
 
 import { MarkdownString } from "vscode";
 
+
+export interface IExtJsBase
+{
+    name: string;
+    start: IPosition;
+    end: IPosition;
+}
+
+
 export interface IPosition
 {
     line: number;
@@ -24,45 +33,32 @@ export interface ISettings
 }
 
 
-export interface IXtype
+export interface IXtype extends IExtJsBase
 {
-    value: string;
-    start: IPosition;
-    end: IPosition;
+
 }
 
 
-export interface IConfig
+export interface IConfig extends IProperty
 {
-    name: string;
+    setter: string | undefined;
+    getter: string | undefined;
+}
+
+
+
+export interface IMethod extends IProperty
+{
+    params: string | undefined;
+}
+
+
+export interface IProperty extends IExtJsBase
+{
     doc?: string;
     markdown?: MarkdownString;
-    value: string;
-    start: IPosition;
-    end: IPosition;
 }
 
-
-export interface IMethod
-{
-    value: string;
-    doc?: string;
-    markdown?: MarkdownString;
-    name: string;
-    start: IPosition;
-    end: IPosition;
-}
-
-
-export interface IProperty
-{
-    name: string;
-    doc?: string;
-    markdown?: MarkdownString;
-    value: string;
-    start: IPosition;
-    end: IPosition;
-}
 
 export interface IRequires
 {

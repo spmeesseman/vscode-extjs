@@ -119,7 +119,7 @@ class ExtjsLanguageManager
             });
 
             xtypes.forEach(xtype => {
-                propertyToComponentClassMapping[xtype.value] = componentClass;
+                propertyToComponentClassMapping[xtype.name] = componentClass;
             });
 
             if (requires) {
@@ -161,7 +161,7 @@ class ExtjsLanguageManager
             }
 
             for (const xtype of xtypes) {
-                validateXtype(xtype.value, toVscodeRange(xtype.start, xtype.end));
+                validateXtype(xtype.name, toVscodeRange(xtype.start, xtype.end));
             }
         });
 
@@ -561,7 +561,7 @@ export function getProperty(cmp: string, property: string): IProperty | undefine
 }
 
 
-export function getMethod(cmp: string, property: string): IConfig | undefined
+export function getMethod(cmp: string, property: string): IMethod| undefined
 {
     const methods = componentClassToMethodsMapping[cmp];
     util.log("get config by method", 1);
@@ -592,9 +592,9 @@ export function getXType(cmp: string, xtype: string): IXtype | undefined
     util.logValue("   xtype", xtype, 2);
     if (xtypes) {
         for (let c = 0; c < xtypes.length; c++) {
-            if (xtypes[c].value === xtype) {
+            if (xtypes[c].name === xtype) {
                 util.log("   found config", 3);
-                util.logValue("      name", xtypes[c].value, 4);
+                util.logValue("      name", xtypes[c].name, 4);
                 util.logValue("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
                 util.logValue("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
                 return xtypes[c];

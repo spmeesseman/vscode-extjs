@@ -166,7 +166,7 @@ export async function parseExtJsFile(text: string)
                         {
                             util.logValue("   # of xtypes found", componentInfo.xtypes.length, 2);
                             componentInfo.xtypes.forEach((x) => {
-                                util.log("      " + x.value, 3);
+                                util.log("      " + x.name, 3);
                             });
                         }
                         if (componentInfo.properties)
@@ -277,10 +277,10 @@ function parseMethods(propertyMethods: ObjectProperty[]): IMethod[]
             {
                 methods.push({
                     name: propertyName,
-                    value: "",
                     doc: getComments(m.leadingComments),
                     start: m.loc!.start,
-                    end: m.loc!.end
+                    end: m.loc!.end,
+                    params: undefined
                 });
             }
         }
@@ -301,7 +301,6 @@ function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
             {
                 properties.push({
                     name: propertyName,
-                    value: "",
                     doc: getComments(m.leadingComments),
                     start: m.loc!.start,
                     end: m.loc!.end
@@ -326,10 +325,11 @@ function parseConfig(propertyConfig: ObjectProperty)
                 {
                     p.push({
                         name: propertyName,
-                        value: "",
                         doc: getComments(it.leadingComments),
                         start: it.loc!.start,
-                        end: it.loc!.end
+                        end: it.loc!.end,
+                        getter: undefined,
+                        setter: undefined
                     });
                 }
             }
@@ -461,7 +461,7 @@ function parseXTypes(objEx: ObjectExpression, text: string): IXtype[]
             end.line += line;
 
             xType.push({
-                value: valueNode.value,
+                name: valueNode.value,
                 start,
                 end
             });
