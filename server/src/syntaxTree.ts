@@ -2,7 +2,7 @@
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as util from "./util";
-import { IExtjsComponent, IConfig, IMethod, IXtype } from "./interface";
+import { IComponent, IConfig, IMethod, IXtype, IProperty } from "./interface";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression
@@ -54,7 +54,7 @@ export async function getExtJsComponent(text: string)
 export async function parseExtJsFile(text: string)
 {
     const ast = parse(text);
-    const components: IExtjsComponent[] = [];
+    const components: IComponent[] = [];
 
     //
     // Construct our syntax tree to be able to serve the goods
@@ -83,11 +83,14 @@ export async function parseExtJsFile(text: string)
                     //
                     if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
                     {
-                        const componentInfo: IExtjsComponent = {
+                        const dotIdx = args[0].value.indexOf(".");
+                        const componentInfo: IComponent = {
+                            baseNamespace: dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value,
                             componentClass: args[0].value,
                             xtypes: [],
                             widgets: [],
                             methods: [],
+                            properties: [],
                             configs: []
                         };
                         components.push(componentInfo);
@@ -100,9 +103,6 @@ export async function parseExtJsFile(text: string)
                         const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
                         const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
                         const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
-                        //
-                        // TODO properties on object hasOwnProperty()
-                        //
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
 
                         if (isObjectProperty(propertyRequires)) {
@@ -127,6 +127,11 @@ export async function parseExtJsFile(text: string)
                         if (isObjectProperty(propertyConfig))
                         {
                             componentInfo.configs.push(...parseConfig(propertyConfig));
+                        }
+
+                        if (propertyProperty && propertyProperty.length)
+                        {
+                            componentInfo.configs.push(...parseProperties(propertyProperty as ObjectProperty[]));
                         }
 
                         if (propertyMethod && propertyMethod.length)
@@ -267,6 +272,30 @@ function parseMethods(propertyMethods: ObjectProperty[]): IMethod[]
         }
     });
     return methods;
+}
+
+
+function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
+{
+    const properties: IProperty[] = [];
+    propertyProperties.forEach((m) =>
+    {
+        if (!isFunctionExpression(m.value))
+        {
+            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
+            if (propertyName)
+            {
+                properties.push({
+                    name: propertyName,
+                    value: "",
+                    doc: getComments(m.leadingComments),
+                    start: m.loc!.start,
+                    end: m.loc!.end
+                });
+            }
+        }
+    });
+    return properties;
 }
 
 

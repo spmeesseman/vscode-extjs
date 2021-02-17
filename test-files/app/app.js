@@ -64,6 +64,7 @@ Ext.define('VSCodeExtJS',
 	{
 		testFn(1, 2);
 		console.log(this.test);
+		console.log(this.test3);
 		console.log(this.getTest());
 		this.setTest(1);
 		VSCodeExtJS.AppUtilities.alertError("This is a test");

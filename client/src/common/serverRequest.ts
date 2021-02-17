@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient";
-import { IExtjsComponent, Position } from "./interface";
+import { IComponent, Position } from "./interface";
 
 
 export function toVscodePosition(position: Position)
@@ -25,7 +25,7 @@ class ServerRequest
 
     async parseExtJsFile(text: string)
     {
-        return this.client.sendRequest<IExtjsComponent[] | null>("parseExtJsFile", text);
+        return this.client.sendRequest<IComponent[] | null>("parseExtJsFile", text);
     }
 
     async getExtJsComponent(text: string)

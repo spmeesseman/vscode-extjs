@@ -4,7 +4,7 @@ import json5 from "json5";
 import * as path from "path";
 import * as vscode from "vscode";
 import ServerRequest, { toVscodeRange } from "./common/ServerRequest";
-import { IConfig, IExtjsComponent, IMethod, IConf } from "./common/interface";
+import { IConfig, IComponent, IMethod, IConf } from "./common/interface";
 import { configuration } from "./common/configuration";
 import * as util from "./common/utils";
 
@@ -43,7 +43,7 @@ class ExtjsLanguageManager
     {
         const components = await this.serverRequest.parseExtJsFile(text);
 
-        await util.forEachAsync(components, (cmp: IExtjsComponent) =>
+        await util.forEachAsync(components, (cmp: IComponent) =>
         {
             const { componentClass, requires, widgets, methods, configs } = cmp;
             componentClassToFsPathMapping[componentClass] = fsPath;
