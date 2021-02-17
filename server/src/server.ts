@@ -21,7 +21,8 @@ let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
 const defaultSettings: ISettings = {
-    debug: false,
+    debugClient: false,
+    debugServer: false,
     debugLevel: 1,
     include: [ "app", "extjs", "node_modules/@sencha/ext" ]
 };

@@ -27,7 +27,8 @@ export interface IConf
 
 export interface ISettings
 {
-    debug: boolean;
+    debugClient: boolean;
+    debugServer: boolean;
     debugLevel: number;
     include: string[] | string;
 }

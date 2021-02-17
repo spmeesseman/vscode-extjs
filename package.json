@@ -100,10 +100,15 @@
 			"type": "object",
 			"title": "ExtJs Language Server",
 			"properties": {
-				"extjsLangSvr.debug": {
+				"extjsLangSvr.debugClient": {
 					"type": "boolean",
 					"default": false,
-					"description": "Turn on logging."
+					"description": "Turn on client logging."
+				},
+				"extjsLangSvr.debugServer": {
+					"type": "boolean",
+					"default": false,
+					"description": "Turn on server logging."
 				},
 				"extjsLangSvr.debugLevel": {
 					"type": "number",

@@ -10,7 +10,7 @@ export function log(msg: string, level?: number)
         return;
     }
 
-    if (globalSettings.debug === true)
+    if (globalSettings.debugServer === true)
     {
         const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + msg;
         if (!level || (globalSettings.debugLevel !== undefined && level <= globalSettings.debugLevel)) {
