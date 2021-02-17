@@ -165,57 +165,13 @@ export async function parseExtJsFile(text: string)
                             componentInfo.xtypes.push(...parseXTypes(args[1], text));
                         }
 
-                        if (componentInfo.requires)
-                        {
-                            util.logValue("   # of requires found", componentInfo.requires.value?.length, 2);
-                            componentInfo.requires.value.forEach((r) => {
-                                util.log("      " + r, 3);
-                            });
-                        }
-                        if (componentInfo.widgets)
-                        {
-                            util.logValue("   # of widgets found", componentInfo.widgets.length, 2);
-                            componentInfo.widgets.forEach((w) => {
-                                util.log("      " + w, 3);
-                            });
-                        }
-                        if (componentInfo.xtypes)
-                        {
-                            util.logValue("   # of xtypes found", componentInfo.xtypes.length, 2);
-                            componentInfo.xtypes.forEach((x) => {
-                                util.log("      " + x.name, 3);
-                            });
-                        }
-                        if (componentInfo.properties)
-                        {
-                            util.logValue("   # of properties found", componentInfo.properties.length, 2);
-                            componentInfo.properties.forEach((p) => {
-                                util.log("      " + p.name, 3);
-                                if (p.doc) {
-                                    util.log(p.doc, 5);
-                                }
-                            });
-                        }
-                        if (componentInfo.configs)
-                        {
-                            util.logValue("   # of configs found", componentInfo.configs.length, 2);
-                            componentInfo.configs.forEach((c) => {
-                                util.log("      " + c.name, 3);
-                                if (c.doc) {
-                                    util.log(c.doc, 5);
-                                }
-                            });
-                        }
-                        if (componentInfo.methods)
-                        {
-                            util.logValue("   # of methods found", componentInfo.methods.length, 2);
-                            componentInfo.methods.forEach((m) => {
-                                util.log("      " + m.name, 3);
-                                if (m.doc) {
-                                    util.log(m.doc, 5);
-                                }
-                            });
-                        }
+                        logProperties("requires", componentInfo.requires?.value);
+                        logProperties("widgets", componentInfo.widgets);
+                        logProperties("xtypes", componentInfo.xtypes);
+                        logProperties("configs", componentInfo.configs);
+                        logProperties("methods", componentInfo.methods);
+                        logProperties("privates", componentInfo.privates);
+                        logProperties("statics", componentInfo.statics);
                     }
                 }
             }
@@ -280,6 +236,33 @@ function getComments(comments: readonly Comment[] | null)
     return commentsStr;
 }
 
+
+function isDocObject(object: any): object is (IMethod | IProperty | IConfig) {
+    return "doc" in object;
+}
+
+
+function logProperties(property: string, properties: (IMethod | IProperty | IConfig | IXtype | string)[] | undefined)
+{
+    if (properties)
+    {
+        util.logValue("   # of " + property + " found", properties.length, 2);
+        properties.forEach((p) =>
+        {
+            if (typeof p === "string")
+            {
+                util.log("      " + p, 3);
+            }
+            else if (p !== undefined)
+            {
+                util.log("      " + p.name, 3);
+                if (isDocObject(p) && p.doc) {
+                    util.log(p.doc, 5);
+                }
+            }
+        });
+    }
+}
 
 
 function parseMethods(propertyMethods: ObjectProperty[]): IMethod[]
