@@ -32,6 +32,7 @@ const componentClassToXTypesMapping: { [componentClass: string]: IXtype[] | unde
 const componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | undefined } = {};
 const componentClassToPropertiesMapping: { [componentClass: string]: IProperty[] | undefined } = {};
 const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
+const componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
 
 enum MarkdownChars
 {
@@ -91,13 +92,21 @@ class ExtjsLanguageManager
 
         await util.forEachAsync(components, (cmp: IComponent) =>
         {
-            const { baseNamespace, componentClass, requires, widgets, xtypes, methods, configs, properties } = cmp;
+            const {
+                componentClass, requires, widgets, xtypes, methods, configs, properties
+            } = cmp;
+
+            if (cmp?.doc) {
+                cmp.markdown = commentToMarkdown(componentClass, cmp.doc);
+            }
+
             componentClassToFsPathMapping[componentClass] = fsPath;
             componentClassToWidgetsMapping[componentClass] = widgets;
             componentClassToMethodsMapping[componentClass] = methods;
             componentClassToConfigsMapping[componentClass] = configs;
             componentClassToPropertiesMapping[componentClass] = properties;
             componentClassToXTypesMapping[componentClass] = xtypes;
+            componentClassToComponentsMapping[componentClass] = cmp;
 
             widgets.forEach(xtype => {
                 widgetToComponentClassMapping[xtype] = componentClass;
@@ -519,6 +528,20 @@ export function getComponentClass(property: string, cmpType?: ComponentType, txt
 }
 
 
+export function getComponent(cmp: string): IComponent | undefined
+{
+    const component = componentClassToComponentsMapping[cmp];
+    util.log("get component by class", 1);
+    util.logValue("   component class", cmp, 2);
+    if (component) {
+        util.log("   found component", 3);
+        util.logValue("      base namespace", component.baseNamespace, 4);
+        return component;
+    }
+    return undefined;
+}
+
+
 export function getConfig(cmp: string, property: string): IConfig | undefined
 {
     const configs = componentClassToConfigsMapping[cmp];
@@ -616,11 +639,16 @@ function handleDeleFile(fsPath: string)
         getXtypes(componentClass)?.forEach(xtype => {
             delete widgetToComponentClassMapping[xtype];
         });
+        //
+        // TODO - remove *ToComponentClassMapping mappings
+        //
         delete componentClassToWidgetsMapping[componentClass];
         delete componentClassToFsPathMapping[componentClass];
         delete componentClassToRequiresMapping[componentClass];
         delete componentClassToConfigsMapping[componentClass];
         delete componentClassToPropertiesMapping[componentClass];
+        delete componentClassToMethodsMapping[componentClass];
+        delete componentClassToComponentsMapping[componentClass];
     }
 }
 

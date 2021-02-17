@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as util from "./util";
 import { IComponent, IConfig, IMethod, IXtype, IProperty } from "./interface";
 import {
-    isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty,
+    isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression
 } from "@babel/types";
 
@@ -97,6 +97,11 @@ export async function parseExtJsFile(text: string)
                             properties: [],
                             configs: []
                         };
+
+                        if (isExpressionStatement(path.container)) {
+                            componentInfo.doc = getComments(path.container.leadingComments);
+                        }
+
                         components.push(componentInfo);
 
                         util.log(" ", 1);

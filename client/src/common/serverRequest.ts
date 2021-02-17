@@ -25,12 +25,12 @@ class ServerRequest
 
     async parseExtJsFile(text: string)
     {
-        return this.client.sendRequest<IComponent[] | null>("parseExtJsFile", text);
+        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", text);
     }
 
     async getExtJsComponent(text: string)
     {
-        return this.client.sendRequest<string | null>("getExtJsComponent", text);
+        return this.client.sendRequest<string | undefined>("getExtJsComponent", text);
     }
 }
 

@@ -79,5 +79,6 @@ export interface IComponent
     properties: IProperty[];
     configs: IConfig[];
     methods: IMethod[];
+    doc?: string;
     markdown?: MarkdownString;
 }

@@ -5,10 +5,10 @@ import {
 } from "vscode";
 import {
     methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping,
-    getComponentClass, ComponentType, getConfig, getMethod, getProperty
+    getComponentClass, getComponent, getConfig, getMethod, getProperty
 } from "../languageManager";
 import * as util from "../common/utils";
-import { IConfig, IMethod, IProperty } from "../common/interface";
+import { IComponent, IConfig, IMethod, IProperty } from "../common/interface";
 
 
 class PropertyCompletionItemProvider implements CompletionItemProvider
@@ -114,7 +114,7 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
     {
         const propCompletion = new CompletionItem(thisProp, kind);
 
-        let cmp: IMethod | IProperty | IConfig | undefined;
+        let cmp: IComponent | IMethod | IProperty | IConfig | undefined;
         switch (kind)
         {
             case CompletionItemKind.Method:
@@ -124,7 +124,7 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
                 cmp = this.getPropertyCmp(wasProp, cmpClass);
                 break;
             case CompletionItemKind.Class:
-                // TODO - pick comments in server for classes
+                cmp = getComponent(cmpClass);
                 break;
             default:
                 break;
