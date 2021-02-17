@@ -6,6 +6,14 @@ export interface Position
 }
 
 
+export interface ISettings
+{
+    debug: boolean;
+    debugLevel: number;
+    include: string[] | string;
+}
+
+
 export interface IXtype
 {
     value: string;

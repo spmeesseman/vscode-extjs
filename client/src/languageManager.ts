@@ -271,7 +271,6 @@ class ExtjsLanguageManager
                 // TODO
                 //
                 util.log("Process settings change 'include'", 1);
-                await this.serverRequest.onSettingsChange();
             }
         }, context.subscriptions));
 
