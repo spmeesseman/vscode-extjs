@@ -3,7 +3,7 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { getComponentClass, getConfigByComponent, getMethodByComponent } from "../languageManager";
+import { getComponentClass, getConfigByComponent, getMethodByComponent, getPropertyByComponent } from "../languageManager";
 import * as util from "../common/utils";
 
 enum MarkdownChars
@@ -88,8 +88,15 @@ class DocHoverProvider implements HoverProvider
             if (cmpClass) {
                 const config = getConfigByComponent(cmpClass, property);
                 if (config && config.doc) {
-                    util.logValue("Provide property/config hover info", property, 1);
+                    util.logValue("Provide config hover info", property, 1);
                     return new Hover(commentToMarkdown(property, config.doc));
+                }
+                else {
+                    const prop = getPropertyByComponent(cmpClass, property);
+                    if (prop && prop.doc) {
+                        util.logValue("Provide property hover info", property, 1);
+                        return new Hover(commentToMarkdown(property, prop.doc));
+                    }
                 }
             }
         }
@@ -316,6 +323,7 @@ function getMode(line: string): MarkdownStringMode | undefined
         switch (tag)
         {
             case "@cfg":
+            case "@config":
                 mode = MarkdownStringMode.Config;
                 break;
             case "@property":
@@ -325,6 +333,7 @@ function getMode(line: string): MarkdownStringMode | undefined
                 mode = MarkdownStringMode.Param;
                 break;
             case "@returns":
+            case "@return":
                 mode = MarkdownStringMode.Returns;
                 break;
             case "@method":
@@ -467,6 +476,11 @@ function handleReturnsLine(line: string, markdown: MarkdownString)
     let rtnLine = "*" + rtnLineParts[0] + "* ";
     rtnLineParts.shift();
     rtnLine += rtnLineParts.join(" ");
+    rtnLine = rtnLine.replace(/\*@return[s]{0,1}\* \{[A-Za-z]+\}/, (matched) => {
+         return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
+             return "*" + matched2.replace("{", "[").replace("}", "]") + "*";
+         }); // "<span style=\"color:blue\">" + matched + "</style>";
+    });
     util.logValue("      insert returns line", rtnLine, 4);
     markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
 }

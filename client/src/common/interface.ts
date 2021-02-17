@@ -1,5 +1,5 @@
 
-export interface Position
+export interface IPosition
 {
     line: number;
     column: number;
@@ -25,8 +25,8 @@ export interface ISettings
 export interface IXtype
 {
     value: string;
-    start: Position;
-    end: Position;
+    start: IPosition;
+    end: IPosition;
 }
 
 
@@ -35,8 +35,8 @@ export interface IConfig
     name: string;
     doc?: string;
     value: string;
-    start: Position;
-    end: Position;
+    start: IPosition;
+    end: IPosition;
 }
 
 
@@ -45,8 +45,8 @@ export interface IMethod
     value: string;
     doc?: string;
     name: string;
-    start: Position;
-    end: Position;
+    start: IPosition;
+    end: IPosition;
 }
 
 
@@ -55,15 +55,15 @@ export interface IProperty
     name: string;
     doc?: string;
     value: string;
-    start: Position;
-    end: Position;
+    start: IPosition;
+    end: IPosition;
 }
 
 export interface IRequires
 {
     value: string[];
-    start: Position;
-    end: Position;
+    start: IPosition;
+    end: IPosition;
 }
 
 

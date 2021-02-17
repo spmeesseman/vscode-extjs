@@ -9,6 +9,10 @@ import {
 } from "@babel/types";
 
 
+const ignoreProperties = [
+    "config", "items", "listeners", "requires"
+];
+
 export async function getExtJsComponent(text: string)
 {
     const ast = parse(text);
@@ -131,7 +135,7 @@ export async function parseExtJsFile(text: string)
 
                         if (propertyProperty && propertyProperty.length)
                         {
-                            componentInfo.configs.push(...parseProperties(propertyProperty as ObjectProperty[]));
+                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[]));
                         }
 
                         if (propertyMethod && propertyMethod.length)
@@ -165,13 +169,23 @@ export async function parseExtJsFile(text: string)
                                 util.log("      " + x.value, 3);
                             });
                         }
+                        if (componentInfo.properties)
+                        {
+                            util.logValue("   # of properties found", componentInfo.properties.length, 2);
+                            componentInfo.properties.forEach((p) => {
+                                util.log("      " + p.name, 3);
+                                if (p.doc) {
+                                    util.log(p.doc, 5);
+                                }
+                            });
+                        }
                         if (componentInfo.configs)
                         {
                             util.logValue("   # of configs found", componentInfo.configs.length, 2);
                             componentInfo.configs.forEach((c) => {
                                 util.log("      " + c.name, 3);
                                 if (c.doc) {
-                                    util.log(c.doc, 4);
+                                    util.log(c.doc, 5);
                                 }
                             });
                         }
@@ -181,7 +195,7 @@ export async function parseExtJsFile(text: string)
                             componentInfo.methods.forEach((m) => {
                                 util.log("      " + m.name, 3);
                                 if (m.doc) {
-                                    util.log(m.doc, 4);
+                                    util.log(m.doc, 5);
                                 }
                             });
                         }
@@ -283,7 +297,7 @@ function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
         if (!isFunctionExpression(m.value))
         {
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName)
+            if (propertyName && ignoreProperties.indexOf(propertyName) === -1)
             {
                 properties.push({
                     name: propertyName,

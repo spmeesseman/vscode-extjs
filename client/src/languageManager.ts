@@ -4,7 +4,7 @@ import json5 from "json5";
 import * as path from "path";
 import * as vscode from "vscode";
 import ServerRequest, { toVscodeRange } from "./common/ServerRequest";
-import { IConfig, IComponent, IMethod, IConf } from "./common/interface";
+import { IConfig, IComponent, IMethod, IConf, IProperty } from "./common/interface";
 import { configuration } from "./common/configuration";
 import * as util from "./common/utils";
 
@@ -24,6 +24,7 @@ const componentClassToWidgetsMapping: { [componentClass: string]: string[] | und
 const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
 const componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | undefined } = {};
+const componentClassToPropertiesMapping: { [componentClass: string]: IProperty[] | undefined } = {};
 const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
 
 
@@ -45,11 +46,12 @@ class ExtjsLanguageManager
 
         await util.forEachAsync(components, (cmp: IComponent) =>
         {
-            const { componentClass, requires, widgets, methods, configs } = cmp;
+            const { baseNamespace, componentClass, requires, widgets, methods, configs, properties } = cmp;
             componentClassToFsPathMapping[componentClass] = fsPath;
             componentClassToWidgetsMapping[componentClass] = widgets;
             componentClassToMethodsMapping[componentClass] = methods;
             componentClassToConfigsMapping[componentClass] = configs;
+            componentClassToPropertiesMapping[componentClass] = properties;
 
             widgets.forEach(xtype => {
                 widgetToComponentClassMapping[xtype] = componentClass;
@@ -388,15 +390,36 @@ export function getConfigByComponent(cmp: string, property: string): IConfig | u
     const configs = componentClassToConfigsMapping[cmp];
     util.log("get config by component class", 1);
     util.logValue("   component class", cmp, 2);
-    util.logValue("   property", property, 2);
+    util.logValue("   config", property, 2);
     if (configs) {
         for (let c = 0; c < configs.length; c++) {
             if (configs[c].name === property) {
                 util.log("   found config", 3);
                 util.logValue("      name", configs[c].name, 4);
-                util.logValue("      start", configs[c].start, 4);
-                util.logValue("      end", configs[c].end, 4);
+                util.logValue("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
+                util.logValue("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
                 return configs[c];
+            }
+        }
+    }
+    return undefined;
+}
+
+
+export function getPropertyByComponent(cmp: string, property: string): IProperty | undefined
+{
+    const properties = componentClassToPropertiesMapping[cmp];
+    util.log("get property by component class", 1);
+    util.logValue("   component class", cmp, 2);
+    util.logValue("   property", property, 2);
+    if (properties) {
+        for (let c = 0; c < properties.length; c++) {
+            if (properties[c].name === property) {
+                util.log("   found property", 3);
+                util.logValue("      name", properties[c].name, 4);
+                util.logValue("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
+                util.logValue("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
+                return properties[c];
             }
         }
     }
@@ -417,8 +440,8 @@ export function getMethodByComponent(cmp: string, property: string): IConfig | u
             if (methods[c].name === property) {
                 util.log("   found method", 3);
                 util.logValue("      name", methods[c].name, 4);
-                util.logValue("      start", methods[c].start, 4);
-                util.logValue("      end", methods[c].end, 4);
+                util.logValue("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
+                util.logValue("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
                 return methods[c];
             }
         }
@@ -442,6 +465,7 @@ function handleDeleFile(fsPath: string)
         delete componentClassToFsPathMapping[componentClass];
         delete componentClassToRequiresMapping[componentClass];
         delete componentClassToConfigsMapping[componentClass];
+        delete componentClassToPropertiesMapping[componentClass];
     }
 }
 
