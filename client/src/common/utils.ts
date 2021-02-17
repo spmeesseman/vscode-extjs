@@ -137,6 +137,14 @@ function logValue(msg: string, value: any, level?: number)
 }
 
 
+function lowerCaseFirstChar(text: string)
+{
+    return text.replace(/(?:^\w|[A-Za-z]|\b\w)/g, (letter, index) => {
+        return index !== 0 ? letter : letter.toLowerCase();
+    });
+}
+
+
 function setWriteToConsole(set: boolean, level = 2)
 {
     writeToConsole = set;
@@ -151,6 +159,6 @@ function timeout(ms: number)
 
 
 export {
-    initLog, isLoggingEnabled, isNeedRequire, log, logError, logValue,
+    initLog, isLoggingEnabled, isNeedRequire, log, logError, logValue, lowerCaseFirstChar,
     logBlank, setWriteToConsole, timeout, forEachMapAsync, forEachAsync
 };

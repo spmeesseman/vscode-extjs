@@ -1,6 +1,6 @@
 
 import { CancellationToken, DefinitionProvider, ExtensionContext, languages, Location, LocationLink, Position, ProviderResult, Range, TextDocument, Uri, workspace } from "vscode";
-import { getComponent, getFilePath } from "../languageManager";
+import { getComponentClass, getFilePath, getXType } from "../languageManager";
 import * as util from "../common/utils";
 
 
@@ -19,16 +19,21 @@ class XtypeDefinitionProvider implements DefinitionProvider
 
         if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
         {
-            const componentClass = getComponent(xtype);
+            const componentClass = getComponentClass(xtype);
             if (componentClass)
             {
                 const fsPath = getFilePath(componentClass);
                 if (fsPath)
                 {
+                    let start = new Position(0, 0),
+                        end = new Position(0, 0);
+                    const pObject = getXType(componentClass, xtype);
+                    if (pObject) {
+                        start = new Position(pObject.start?.line, pObject.start?.column);
+                        end = new Position(pObject.end?.line, pObject.end?.column);
+                    }
                     const uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
                           uri = Uri.parse(`file://${uriPath}`),
-                          start = new Position(0, 0),
-                          end = new Position(0, 0),
                           range = new Range(start, end);
                     util.log("open definition file", 1);
                     util.logValue("   component class", componentClass, 2);

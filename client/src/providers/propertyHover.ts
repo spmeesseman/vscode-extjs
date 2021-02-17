@@ -3,7 +3,7 @@ import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { getComponent, getConfig, getMethod, getProperty } from "../languageManager";
+import { ComponentType, getComponentClass, getConfig, getMethod, getProperty } from "../languageManager";
 import * as util from "../common/utils";
 
 enum MarkdownChars
@@ -55,14 +55,12 @@ class DocHoverProvider implements HoverProvider
         //
         if (lineText.match(new RegExp(`${property}\\([\\W\\w]*\\)\\s*;\\s*$`)))
         {
-            const cmpClass = getComponent(property, lineText);
+            const cmpClass = getComponentClass(property, ComponentType.Method, lineText);
             if (cmpClass) {
                 util.logValue("Provide function hover info", property, 1);
                 if (property.startsWith("get") || property.startsWith("set") && property[3] >= "A" && property[3] <= "Z")
                 {
-                    const gsProperty = property.substring(3).replace(/(?:^\w|[A-Za-z]|\b\w)/g, (letter, index) => {
-                        return index !== 0 ? letter : letter.toLowerCase();
-                    });
+                    const gsProperty = util.lowerCaseFirstChar(property.substring(3));
                     let config = getConfig(cmpClass, gsProperty);
                     if (!config) {
                         config = getConfig(cmpClass, property);
@@ -86,7 +84,7 @@ class DocHoverProvider implements HoverProvider
         //
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
         {
-            const cmpClass = getComponent(property, lineText);
+            const cmpClass = getComponentClass(property, ComponentType.Config | ComponentType.Property, lineText);
             if (cmpClass) {
                 const config = getConfig(cmpClass, property);
                 if (config && config.doc) {
