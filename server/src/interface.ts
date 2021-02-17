@@ -34,6 +34,7 @@ export interface IConfig
 {
     name: string;
     doc?: string;
+    markdown?:string;
     value: string;
     start: IPosition;
     end: IPosition;
@@ -44,6 +45,7 @@ export interface IMethod
 {
     value: string;
     doc?: string;
+    markdown?: string;
     name: string;
     start: IPosition;
     end: IPosition;
@@ -54,6 +56,7 @@ export interface IProperty
 {
     name: string;
     doc?: string;
+    markdown?: string;
     value: string;
     start: IPosition;
     end: IPosition;
@@ -77,5 +80,5 @@ export interface IComponent
     properties: IProperty[];
     configs: IConfig[];
     methods: IMethod[];
+    markdown?: string;
 }
-

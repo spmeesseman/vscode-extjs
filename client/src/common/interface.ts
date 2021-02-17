@@ -1,4 +1,6 @@
 
+import { MarkdownString } from "vscode";
+
 export interface IPosition
 {
     line: number;
@@ -34,6 +36,7 @@ export interface IConfig
 {
     name: string;
     doc?: string;
+    markdown?: MarkdownString;
     value: string;
     start: IPosition;
     end: IPosition;
@@ -44,6 +47,7 @@ export interface IMethod
 {
     value: string;
     doc?: string;
+    markdown?: MarkdownString;
     name: string;
     start: IPosition;
     end: IPosition;
@@ -54,6 +58,7 @@ export interface IProperty
 {
     name: string;
     doc?: string;
+    markdown?: MarkdownString;
     value: string;
     start: IPosition;
     end: IPosition;
@@ -77,5 +82,5 @@ export interface IComponent
     properties: IProperty[];
     configs: IConfig[];
     methods: IMethod[];
+    markdown?: MarkdownString;
 }
-
