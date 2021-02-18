@@ -1,0 +1,45 @@
+
+☐ Function parameter completion
+
+☐ Doc/Markdown Links
+	@link replaced with links to online docs
+
+☐ Hover Header
+	Find out how to get rid of hover header and provide a different one ("any" is all header hovers)
+	Screenshot in Pictures/Screenshots, post question to VSCode forum
+
+☐ Instance Intellisense
+	Differentiate between static/singleton methods/props vs. instance
+	Will need to parse Ext.create()s, new, and static.create()
+
+☐ Instance Hover
+	Differentiate between static/singleton methods/props vs. instance
+	Will need to parse Ext.create()s, new, and static.create()
+
+☐ Class Validation
+	Match class parts, check for invalid parts
+	Example:
+		Ext.csi.stor.Base
+	"stor" should receive error invalidation, since it should be "store"
+
+☐ Deprecation Validation
+	Should receive warning invalidation
+	Example:
+		Ext.csi.store.Base.timeout
+	If "timeout" is tagged with @deprectaed in the comments, then warning underling
+	Add formatted hover markdown for all methods/properties when deprecated
+
+☐ Dot Key Selection Intellisense
+	Same as how keying 'enter' behaves on an Intellisense selection
+
+☐ Go To Type Definition
+	Same as Go To Definition?  Except for instance components?
+
+☐ Go To Implementation
+	?
+
+☐ Go To Reference
+	?
+
+☐ Peek References
+	?
