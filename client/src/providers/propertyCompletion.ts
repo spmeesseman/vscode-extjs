@@ -5,47 +5,16 @@ import {
 } from "vscode";
 import {
     methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping,
-    getComponentClass, getComponent, getConfig, getMethod, getProperty
+    getComponentClass, getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping
 } from "../languageManager";
 import * as util from "../common/utils";
 import { IComponent, IConfig, IMethod, IProperty } from "../common/interface";
 
 
-class PropertyCompletionItemProvider implements CompletionItemProvider
+class PropertyCompletionItemProvider
 {
-    provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): ProviderResult<CompletionItem[] | CompletionList>
-    {
-        const range = document.getWordRangeAtPosition(position);
-        if (range === undefined) {
-            return;
-        }
-        const addedItems: string[] = [],
-              line = position.line,
-              text = document.getText(range),
-              lineText = document.getText(new Range(new Position(line, 0), new Position(line, position.character)))?.trim(),
-              completionItems: CompletionItem[] = [];
 
-        util.log("provide property completion items", 1);
-
-        if (!text || !lineText) {
-            util.log("   invalid input parameters, exit", 1);
-            return completionItems;
-        }
-
-        util.log("   methods", 1);
-        completionItems.push(...this.getCompletionItems(text, lineText, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
-
-        util.log("   properties", 1);
-        completionItems.push(...this.getCompletionItems(text, lineText, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
-
-        util.log("   configs", 1);
-        completionItems.push(...this.getCompletionItems(text, lineText, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
-
-        return completionItems;
-    }
-
-
-    private getCompletionItems(text: string, lineText: string, map: { [s: string]: string | undefined } | ArrayLike<string>, kind: CompletionItemKind, addedItems: string[]): CompletionItem[]
+    getCmpCompletionItems(text: string, lineText: string, map: { [s: string]: string | undefined } | ArrayLike<string>, kind: CompletionItemKind, addedItems: string[], tag: string): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [];
         let base = lineText.replace(text, "");
@@ -93,10 +62,11 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
                 if (addedItems.indexOf(thisProp) === -1)
                 {
                     const iKind = !isEndProp ? CompletionItemKind.Class : kind;
-                    completionItems.push(this.createCompletionItem(thisProp, wasProp, cls, iKind));
+                    completionItems.push(this.createCompletionItem(thisProp, wasProp, cls, iKind, tag));
                     addedItems.push(thisProp);
 
-                    util.log("      added completion item", 3);
+                    util.logBlank(1);
+                    util.log("      added inline completion item", 3);
                     util.logValue("         item", thisProp, 3);
                     util.logValue("         was item", wasProp, 3);
                     util.logValue("         kind", kind, 4);
@@ -109,8 +79,7 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
         return completionItems;
     }
 
-
-    private createCompletionItem(thisProp: string, wasProp: string, cmpClass: string, kind: CompletionItemKind): CompletionItem
+    createCompletionItem(thisProp: string, wasProp: string, cmpClass: string, kind: CompletionItemKind, tag: string): CompletionItem
     {
         const propCompletion = new CompletionItem(thisProp, kind);
 
@@ -129,13 +98,13 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
             default:
                 break;
         }
-
+        // propCompletion.filterText = tag;
         propCompletion.documentation = cmp?.markdown;
         return propCompletion;
     }
 
 
-    private getMethodCmp(property: string, cmpClass: string): IMethod | IConfig | undefined
+    getMethodCmp(property: string, cmpClass: string): IMethod | IConfig | undefined
     {
         let cmp: IMethod | IConfig | undefined = getMethod(cmpClass, property);
         if (!cmp)
@@ -168,7 +137,7 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getPropertyCmp(property: string, cmpClass: string): IProperty | IConfig | undefined
+    getPropertyCmp(property: string, cmpClass: string): IProperty | IConfig | undefined
     {
         let cmp: IProperty | IConfig | undefined = getConfig(cmpClass, property);
         if (!cmp) {
@@ -179,9 +148,152 @@ class PropertyCompletionItemProvider implements CompletionItemProvider
 }
 
 
+class InlineCompletionItemProvider extends PropertyCompletionItemProvider implements CompletionItemProvider
+{
+
+    provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): ProviderResult<CompletionItem[] | CompletionList>
+    {
+        const range = document.getWordRangeAtPosition(position);
+        if (range === undefined) {
+            return;
+        }
+        const addedItems: string[] = [],
+              text = document.getText(range),
+              lineText = document.lineAt(position).text.substr(0, position.character),
+              completionItems: CompletionItem[] = [];
+
+        util.logBlank(1);
+        util.log("provide inline completion items", 1);
+
+        if (!text || !lineText) {
+            util.log("   invalid input parameters, exit", 1);
+            return completionItems;
+        }
+
+        util.log("   methods", 1);
+        completionItems.push(...this.getCmpCompletionItems(text, lineText, methodToComponentClassMapping, CompletionItemKind.Method, addedItems, "inline"));
+
+        util.log("   properties", 1);
+        completionItems.push(...this.getCmpCompletionItems(text, lineText, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems, "inline"));
+
+        util.log("   configs", 1);
+        completionItems.push(...this.getCmpCompletionItems(text, lineText, configToComponentClassMapping, CompletionItemKind.Property, addedItems, "inline"));
+
+        return completionItems.length > 0 ? completionItems : undefined;
+    }
+
+}
+
+
+class DotCompletionItemProvider extends PropertyCompletionItemProvider implements CompletionItemProvider
+{
+
+    provideCompletionItems(document: TextDocument, position: Position)
+    {
+        const addedItems: string[] = [],
+              lineText = document.lineAt(position).text.substr(0, position.character),
+              completionItems: CompletionItem[] = [];
+
+        util.logBlank(1);
+        util.log("provide dot completion items", 1);
+
+        if (!lineText) {
+            util.log("   invalid input parameters, exit", 1);
+            return undefined;
+        }
+
+        util.logValue("   line text", lineText, 3);
+        completionItems.push(...this.getCompletionItems(lineText, addedItems));
+
+        return completionItems.length > 0 ? completionItems : undefined;
+    }
+
+
+    getCompletionItems(lineText: string, addedItems: string[]): CompletionItem[]
+    {
+        const map = componentClassToComponentsMapping;
+        const completionItems: CompletionItem[] = [],
+              lineCls = lineText?.substring(0, lineText.length - 1).trim();
+
+        if (!lineText.endsWith(".")) {
+            return completionItems;
+        }
+
+        Object.keys(map).forEach((cls) =>
+        {
+            if (cls)
+            {
+                if (cls === lineCls)
+                {
+                    util.log("   methods", 1);
+                    completionItems.push(...this.getCmpCompletionItems("", lineText, methodToComponentClassMapping, CompletionItemKind.Method, addedItems, "dot"));
+
+                    util.log("   properties", 1);
+                    completionItems.push(...this.getCmpCompletionItems("", lineText, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems, "dot"));
+
+                    util.log("   configs", 1);
+                    completionItems.push(...this.getCmpCompletionItems("", lineText, configToComponentClassMapping, CompletionItemKind.Property, addedItems, "dot"));
+                }
+                else
+                {
+                    const clsParts = cls.split(".");
+                    let cCls = "",
+                        rtnNextPart = false;
+
+                    for (const clsPart of clsParts)
+                    {
+                        if (cCls) {
+                            cCls += ".";
+                        }
+                        cCls += clsPart;
+
+                        util.logValue("      cls part", cCls, 5);
+
+                        if (!rtnNextPart)
+                        {
+                            if (!lineText.endsWith(cCls + ".")) {
+                                continue;
+                            }
+                            else {
+                                rtnNextPart = true;
+                                continue;
+                            }
+                        }
+
+                        if (addedItems.indexOf(cCls) === -1)
+                        {
+                            const preFullProp = cls.indexOf(".") !== -1 ? cls.substring(0, cCls.indexOf(".")) : cls,
+                                lastProp = cCls.indexOf(".") !== -1 ? cCls.substring(cCls.indexOf(".") + 1) : cCls,
+                                isEndProp = !!lineText.endsWith(preFullProp + ".");
+                            let kind = CompletionItemKind.Class;
+                            if (isEndProp) {
+                                kind = CompletionItemKind.Method;
+                            }
+                            completionItems.push(this.createCompletionItem(lastProp, lastProp, cls, kind, "dot"));
+                            addedItems.push(cCls);
+
+                            util.logBlank(1);
+                            util.log("      added dot completion item", 3);
+                            util.logValue("         item", cCls, 3);
+                            util.logValue("         kind", kind, 4);
+                            util.logValue("         end prop", isEndProp, 4);
+                        }
+                        break;
+                    }
+                }
+            }
+        });
+
+        return completionItems;
+    }
+
+}
+
+
 function registerPropertyCompletionProvider(context: ExtensionContext)
 {
-    context.subscriptions.push(languages.registerCompletionItemProvider("javascript", new PropertyCompletionItemProvider()));
+    context.subscriptions.push(languages.registerCompletionItemProvider("javascript", new InlineCompletionItemProvider()),
+                               languages.registerCompletionItemProvider("javascript", new DotCompletionItemProvider(), "."));
 }
 
 

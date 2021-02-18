@@ -62,19 +62,33 @@ Ext.define('VSCodeExtJS',
 	 */
 	testFn2: function(a, b)
 	{
-		
 		testFn(1, 2);
+
 		console.log(this.test);
 		console.log(this.test3);
 		console.log(this.getTest());
 		this.setTest(1);
+
 		VSCodeExtJS.AppUtilities.alertError("This is a test");
 		AppUtils.alertError("This is a test");
+
 		const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown", {
 			hidden: false,
 			disabled: true
 		});
 		phys.delete();
+
+		const phys2 = new VSCodeExtJS.common.PhysicianDropdown({
+			hidden: false,
+			disabled: true
+		});
+		phys2.save();
+
+		const phys3 = VSCodeExtJS.common.PhysicianDropdown.create({
+			hidden: false,
+			disabled: true
+		});
+		phys3.load();
 	} 
 
 });

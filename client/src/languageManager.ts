@@ -34,7 +34,7 @@ const componentClassToXTypesMapping: { [componentClass: string]: IXtype[] | unde
 const componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | undefined } = {};
 const componentClassToPropertiesMapping: { [componentClass: string]: IProperty[] | undefined } = {};
 const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
-const componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
+export const componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
 
 enum MarkdownChars
 {
