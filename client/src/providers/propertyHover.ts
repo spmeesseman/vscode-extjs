@@ -1,11 +1,16 @@
 
+import { IMethod, IConfig } from "../common/interface";
+import * as util from "../common/utils";
+
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument, MarkdownString
 } from "vscode";
-import { ComponentType, getComponentClass, getConfig, getMethod, getProperty } from "../languageManager";
-import { IMethod, IConfig } from "../common/interface";
-import * as util from "../common/utils";
+
+import {
+    ComponentType, getComponent, getComponentClass, getConfig, getMethod,
+    getProperty, getComponentByAlias
+} from "../languageManager";
 
 
 class DocHoverProvider implements HoverProvider
@@ -18,8 +23,8 @@ class DocHoverProvider implements HoverProvider
         }
         const line = position.line,
               nextLine = document.lineAt(line + 1),
-			  property = document.getText(range),
-			  lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start));
+              property = document.getText(range),
+              lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start));
 
         //
         // Methods
@@ -27,7 +32,8 @@ class DocHoverProvider implements HoverProvider
         if (lineText.match(new RegExp(`${property}\\([\\W\\w]*\\)\\s*;\\s*$`)))
         {
             const cmpClass = getComponentClass(property, ComponentType.Method, lineText);
-            if (cmpClass) {
+            if (cmpClass)
+            {
                 util.logValue("Provide function hover info", property, 1);
                 let method: IMethod | IConfig | undefined = getMethod(cmpClass, property);
                 if (!method)
@@ -81,6 +87,19 @@ class DocHoverProvider implements HoverProvider
                         return new Hover(prop.markdown);
                     }
                 }
+            }
+        }
+
+        //
+        // Classes
+        //
+        else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
+        {
+            const lineCls = lineText?.substring(0, lineText.indexOf(property) + property.length).trim();
+            const cmp = getComponent(lineCls) || getComponentByAlias(lineCls);
+            if (cmp && cmp.markdown) {
+                util.logValue("Provide class hover info", property, 1);
+                return new Hover(cmp.markdown);
             }
         }
 

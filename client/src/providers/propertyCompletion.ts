@@ -1,11 +1,11 @@
 
 import {
-    CancellationToken, CompletionContext, CompletionItem, CompletionItemProvider, CompletionList,
-    ExtensionContext, languages, Position, ProviderResult, TextDocument, CompletionItemKind, Range
+    CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
+    TextDocument, CompletionItemKind
 } from "vscode";
 import {
     methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping,
-    getComponentClass, getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping
+    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping
 } from "../languageManager";
 import * as util from "../common/utils";
 import { IComponent, IConfig, IMethod, IProperty } from "../common/interface";
@@ -39,7 +39,7 @@ class PropertyCompletionItemProvider
     }
 
 
-    getMethodCmp(property: string, cmpClass: string): IMethod | IConfig | undefined
+    private getMethodCmp(property: string, cmpClass: string): IMethod | IConfig | undefined
     {
         let cmp: IMethod | IConfig | undefined = getMethod(cmpClass, property);
         if (!cmp)
@@ -72,7 +72,7 @@ class PropertyCompletionItemProvider
     }
 
 
-    getPropertyCmp(property: string, cmpClass: string): IProperty | IConfig | undefined
+    private getPropertyCmp(property: string, cmpClass: string): IProperty | IConfig | undefined
     {
         let cmp: IProperty | IConfig | undefined = getConfig(cmpClass, property);
         if (!cmp) {
@@ -86,38 +86,7 @@ class PropertyCompletionItemProvider
 
 class InlineCompletionItemProvider extends PropertyCompletionItemProvider implements CompletionItemProvider
 {
-/*
-    provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken, context: CompletionContext): ProviderResult<CompletionItem[] | CompletionList>
-    {
-        const range = document.getWordRangeAtPosition(position);
-        if (range === undefined) {
-            return;
-        }
-        const addedItems: string[] = [],
-              text = document.getText(range),
-              lineText = document.lineAt(position).text.substr(0, position.character),
-              completionItems: CompletionItem[] = [];
 
-        util.logBlank(1);
-        util.log("provide inline completion items", 1);
-
-        if (!text || !lineText) {
-            util.log("   invalid input parameters, exit", 1);
-            return completionItems;
-        }
-
-        util.log("   methods", 1);
-        completionItems.push(...this.getCmpCompletionItems(text, lineText, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
-
-        util.log("   properties", 1);
-        completionItems.push(...this.getCmpCompletionItems(text, lineText, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
-
-        util.log("   configs", 1);
-        completionItems.push(...this.getCmpCompletionItems(text, lineText, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
-
-        return completionItems.length > 0 ? completionItems : undefined;
-    }
-*/
     provideCompletionItems(document: TextDocument, position: Position)
     {
         const addedItems: string[] = [],
@@ -163,6 +132,7 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
 
         return completionItems;
     }
+
 }
 
 
@@ -190,7 +160,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
     }
 
 
-    getCompletionItems(lineText: string, addedItems: string[]): CompletionItem[]
+    private getCompletionItems(lineText: string, addedItems: string[]): CompletionItem[]
     {
         const map = componentClassToComponentsMapping;
         const completionItems: CompletionItem[] = [],
@@ -227,7 +197,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
     }
 
 
-    getClsCompletionItems(lineText: string, cls: string, addedItems: string[]): CompletionItem[]
+    private getClsCompletionItems(lineText: string, cls: string, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [],
               clsParts = cls.split(".");
@@ -268,7 +238,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
     }
 
 
-    getCmpCompletionItems(lineCls: string, map: { [s: string]: string | undefined } | ArrayLike<string>, kind: CompletionItemKind, addedItems: string[]): CompletionItem[]
+    private getCmpCompletionItems(lineCls: string, map: { [s: string]: string | undefined } | ArrayLike<string>, kind: CompletionItemKind, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [];
 
@@ -297,8 +267,10 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
 function registerPropertyCompletionProvider(context: ExtensionContext)
 {
-    context.subscriptions.push(languages.registerCompletionItemProvider("javascript", new InlineCompletionItemProvider()),
-                               languages.registerCompletionItemProvider("javascript", new DotCompletionItemProvider(), "."));
+    context.subscriptions.push(
+        languages.registerCompletionItemProvider("javascript", new InlineCompletionItemProvider()),
+        languages.registerCompletionItemProvider("javascript", new DotCompletionItemProvider(), ".")
+    );
 }
 
 

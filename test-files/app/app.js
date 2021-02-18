@@ -1,4 +1,8 @@
-
+/**
+ * @class VSCodeExtJS
+ * 
+ * The VSCodeExtJS app root namespace.
+ */
 Ext.define('VSCodeExtJS',
 {
 

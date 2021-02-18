@@ -605,6 +605,23 @@ export function getComponent(cmp: string): IComponent | undefined
 }
 
 
+export function getComponentByAlias(alias: string): IComponent | undefined
+{
+    const cls = widgetToComponentClassMapping[alias];
+    util.log("get component by alias", 1);
+    util.logValue("   component alias", alias, 2);
+    if (cls) {
+        const component = getComponent(cls);
+        if (component) {
+            util.log("   found component", 3);
+            util.logValue("      base namespace", component.baseNamespace, 4);
+            return component;
+        }
+    }
+    return undefined;
+}
+
+
 export function getConfig(cmp: string, property: string): IConfig | undefined
 {
     const configs = componentClassToConfigsMapping[cmp];
