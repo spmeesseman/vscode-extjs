@@ -133,13 +133,13 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
         }
 
         util.logValue("   line text", lineText, 3);
-        completionItems.push(...this.getCompletionItems(lineText, addedItems));
+        completionItems.push(...this.getCompletionItems(addedItems));
 
         return completionItems.length > 0 ? completionItems : undefined;
     }
 
 
-    getCompletionItems(lineText: string, addedItems: string[]): CompletionItem[]
+    getCompletionItems(addedItems: string[]): CompletionItem[]
     {
         const map = componentClassToComponentsMapping;
         const completionItems: CompletionItem[] = [];
@@ -217,55 +217,52 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                     util.log("   configs", 1);
                     completionItems.push(...this.getCmpCompletionItems(lineCls, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
                 }
-                else
-                {
-                    const clsParts = cls.split(".");
-                    let cCls = "",
-                        rtnNextPart = false;
-
-                    for (const clsPart of clsParts)
-                    {
-                        if (cCls) {
-                            cCls += ".";
-                        }
-                        cCls += clsPart;
-
-                        util.logValue("      cls part", cCls, 5);
-
-                        if (!rtnNextPart)
-                        {
-                            if (!lineText.endsWith(cCls + ".")) {
-                                continue;
-                            }
-                            else {
-                                rtnNextPart = true;
-                                continue;
-                            }
-                        }
-
-                        if (addedItems.indexOf(cCls) === -1)
-                        {
-                            const preFullProp = cls.indexOf(".") !== -1 ? cls.substring(0, cCls.indexOf(".")) : cls,
-                                lastProp = cCls.indexOf(".") !== -1 ? cCls.substring(cCls.indexOf(".") + 1) : cCls,
-                                isEndProp = !!lineText.endsWith(preFullProp + ".");
-                            let kind = CompletionItemKind.Class;
-                            if (isEndProp) {
-                                kind = CompletionItemKind.Method;
-                            }
-                            completionItems.push(this.createCompletionItem(lastProp, cls, kind));
-                            addedItems.push(cCls);
-
-                            util.logBlank(1);
-                            util.log("      added dot completion item", 3);
-                            util.logValue("         item", cCls, 3);
-                            util.logValue("         kind", kind, 4);
-                            util.logValue("         end prop", isEndProp, 4);
-                        }
-                        break;
-                    }
+                else {
+                    completionItems.push(...this.getClsCompletionItems(lineText, cls, addedItems));
                 }
             }
         });
+
+        return completionItems;
+    }
+
+
+    getClsCompletionItems(lineText: string, cls: string, addedItems: string[]): CompletionItem[]
+    {
+        const completionItems: CompletionItem[] = [],
+              clsParts = cls.split(".");
+        let cCls = "",
+            rtnNextPart = false;
+
+        for (const clsPart of clsParts)
+        {
+            if (cCls) {
+                cCls += ".";
+            }
+            cCls += clsPart;
+
+            if (!rtnNextPart)
+            {
+                if (!lineText.endsWith(cCls + ".")) {
+                    continue;
+                }
+                else {
+                    rtnNextPart = true;
+                    continue;
+                }
+            }
+
+            if (addedItems.indexOf(cCls) === -1)
+            {
+                const lastProp = cCls.indexOf(".") !== -1 ? cCls.substring(cCls.indexOf(".") + 1) : cCls;
+                completionItems.push(this.createCompletionItem(lastProp, cls, CompletionItemKind.Class));
+                addedItems.push(cCls);
+                util.logBlank(1);
+                util.log("      added dot completion class item", 3);
+                util.logValue("         item", cCls, 3);
+            }
+            break;
+        }
 
         return completionItems;
     }
