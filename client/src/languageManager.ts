@@ -878,7 +878,7 @@ function getRequiredXtypes(cmp: string)
     util.logValue("   component class", cmp, 2);
     requires.push(...(componentClassToRequiresMapping[cmp] || []));
     const reqXTypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
-        previousValue.push(...(getXtypes(currentCmpClass, false) || []));
+        previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
         return previousValue;
     }, []);
     util.logValue("   # of required xtypes", reqXTypes.length, 2);
@@ -917,18 +917,6 @@ export function getXType(cmp: string, xtype: string): IXtype | undefined
 }
 
 
-function getXtypes(cmp: string, log = true, logPad = "")
-{
-    const xTypes = componentClassToWidgetsMapping[cmp];
-    if (log) {
-        util.log(logPad + "get xtypes by component class", 1);
-        util.logValue(logPad + "   component class", cmp, 2);
-        util.logValue(logPad + "   # of xtypes", xTypes?.length, 2);
-    }
-    return xTypes;
-}
-
-
 function handleDeleFile(fsPath: string)
 {
     const componentClass = getClassFromPath(fsPath);
@@ -937,12 +925,39 @@ function handleDeleFile(fsPath: string)
         util.log("handle file depetion", 1);
         util.logValue("   path", fsPath, 2);
         util.logValue("   component class", componentClass, 2);
-        getXtypes(componentClass)?.forEach(xtype => {
-            delete widgetToComponentClassMapping[xtype];
-        });
-        //
-        // TODO - remove *ToComponentClassMapping mappings
-        //
+
+        const component = getComponent(componentClass);
+        if (component)
+        {
+            // component.aliases.forEach((alias) => {
+            //     delete aliasToComponentClassMapping[alias];
+            // });
+
+            component.configs.forEach((config) => {
+                delete configToComponentClassMapping[config.name];
+            });
+
+            component.methods.forEach((method) => {
+                delete methodToComponentClassMapping[method.name];
+            });
+
+            // component.privates.forEach((private) => {
+            //     delete privateToComponentClassMapping[private.name];
+            // });
+
+            component.properties.forEach((property) => {
+                delete propertyToComponentClassMapping[property.name];
+            });
+
+            // component.statics.forEach((static) => {
+            //     delete configToComponentClassMapping[static.name];
+            // });
+
+            component.widgets.forEach((widget) => {
+                delete widgetToComponentClassMapping[widget];
+            });
+        }
+
         delete componentClassToWidgetsMapping[componentClass];
         delete componentClassToAliasesMapping[componentClass];
         delete componentClassToFsPathMapping[componentClass];
