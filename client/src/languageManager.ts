@@ -416,324 +416,6 @@ function bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
 }
 
 
-function getStatusString(pct: number)
-{
-    return "$(loading~spin) Indexing ExtJs Files " + (pct ?? "0") + "%";
-}
-
-
-async function initConfig()
-{
-    const settingsUris = configuration.get<string[]>("include");
-    const confUris = await workspace.findFiles(".extjsrc{.json,}");
-    if (confUris)
-    {
-        for (const uri of confUris) {
-            const fileSystemPath = uri.fsPath || uri.path;
-            const confJson = fs.readFileSync(fileSystemPath, "utf8");
-            const _conf = json5.parse(confJson);
-            Object.assign(conf, _conf);
-        }
-    }
-}
-
-
-export function getCmpClassFromPath(fsPath: string)
-{
-    const wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
-
-    util.log("get component by fs path", 1);
-    util.logValue("   path", fsPath, 2);
-
-    if (wsf) {
-        if (conf.workspaceRoot === "") {
-            conf.workspaceRoot = wsf.uri.fsPath;
-        }
-        fsPath = fsPath.replace(wsf.uri.fsPath, "");
-    }
-
-    fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.extjsDir}${path.sep}*`), "");
-    fsPath = fsPath.replace(/\..+$/, "");
-    const cmpClass = conf.extjsBase + "." + fsPath.split(path.sep).join(".");
-
-    util.logValue("   component class", cmpClass, 2);
-    return cmpClass;
-}
-
-
-function getXtypes(cmp: string, log = true, logPad = "")
-{
-    const xTypes = componentClassToWidgetsMapping[cmp];
-    if (log) {
-        util.log(logPad + "get xtypes by component class", 1);
-        util.logValue(logPad + "   component class", cmp, 2);
-        util.logValue(logPad + "   # of xtypes", xTypes?.length, 2);
-    }
-    return xTypes;
-}
-
-
-function getRequiredXtypes(cmp: string)
-{
-    const requires = []; // Object.keys(componentClassToWidgetsMapping).filter(it => util.isNeedRequire(it));
-    util.log("get required xtypes by component class", 1);
-    util.logValue("   component class", cmp, 2);
-    requires.push(...(componentClassToRequiresMapping[cmp] || []));
-    const reqXTypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
-        previousValue.push(...(getXtypes(currentCmpClass, false) || []));
-        return previousValue;
-    }, []);
-    util.logValue("   # of required xtypes", reqXTypes.length, 2);
-    reqXTypes.forEach((x) => {
-        util.log("      " + x);
-    });
-    util.log("completed get required xtypes by component class", 1);
-    return reqXTypes;
-}
-
-
-export function getFilePath(componentClass: string)
-{
-    const fsPath = componentClassToFsPathMapping[componentClass];
-    util.log("get fs path by component", 1);
-    util.logValue("   path", fsPath, 2);
-    return fsPath;
-}
-
-
-/**
- * Get component class name
- *
- * @param {String} property Property name
- * @param {String} txt The complete line of text the property is found in
- */
-export function getComponentClass(property: string, cmpType?: ComponentType, txt?: string)
-{
-    let cmpClass = "this", // getComponentByConfig(property);
-        cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
-
-    if (!txt)
-    {
-        if (!cmpType || cmpType === ComponentType.Widget) {
-            return widgetToComponentClassMapping[property];
-        }
-        else if (cmpType === ComponentType.Method) {
-            return methodToComponentClassMapping[property];
-        }
-        else if (cmpType === ComponentType.Property) {
-            return propertyToComponentClassMapping[property];
-        }
-        else if (cmpType === (ComponentType.Property | ComponentType.Config)) {
-            if (propertyToComponentClassMapping[property]) {
-                return propertyToComponentClassMapping[property];
-            }
-            return configToComponentClassMapping[property];
-        }
-        else {
-            return undefined;
-        }
-    }
-
-    //
-    // Get class name prependature to hovered property
-    //
-    // classPre could be something like:
-    //
-    //     Ext.csi.view.common.
-    //     Ext.csi.store.
-    //     Ext.form.field.
-    //     MyApp.view.myview.
-    //
-    cmpClassPre = txt.substring(0, txt.indexOf(property));
-    cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
-
-    //
-    // Remove the trailing '.' for the component name
-    //
-    cmpClass = cmpClassPre.substr(0, cmpClassPre.length - 1);
-    if (cmpClassPreIdx > 0)
-    {
-        cmpClassPre = cmpClassPre.substring(cmpClassPreIdx);
-    }
-
-    for (let i = cmpClass.length - 1; i >= 0 ; i--)
-    {
-        if (cmpClass[i] < "A" || cmpClass > "z")
-        {
-            if (cmpClass[i] < "0" || cmpClass > "9") {
-                if (cmpClass[i] !== ".") {
-                    cutAt = i;
-                    break;
-                }
-            }
-        }
-    }
-
-    cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
-
-    if (!cmpClass || cmpClass === "this")
-    {
-        cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
-    }
-
-    //
-    // Check aliases/alternate class names
-    //
-    let aliasClass: string | undefined;
-    if (aliasClass = widgetToComponentClassMapping[cmpClass])
-    {
-        cmpClass = aliasClass;
-    }
-
-    util.logBlank(1);
-    util.logValue("class", cmpClass, 1);
-    return cmpClass;
-}
-
-
-export function getComponent(cmp: string): IComponent | undefined
-{
-    const component = componentClassToComponentsMapping[cmp];
-    util.log("get component by class", 1);
-    util.logValue("   component class", cmp, 2);
-    if (component) {
-        util.log("   found component", 3);
-        util.logValue("      base namespace", component.baseNamespace, 4);
-        return component;
-    }
-    return undefined;
-}
-
-
-export function getComponentByAlias(alias: string): IComponent | undefined
-{
-    const cls = widgetToComponentClassMapping[alias];
-    util.log("get component by alias", 1);
-    util.logValue("   component alias", alias, 2);
-    if (cls) {
-        const component = getComponent(cls);
-        if (component) {
-            util.log("   found component", 3);
-            util.logValue("      base namespace", component.baseNamespace, 4);
-            return component;
-        }
-    }
-    return undefined;
-}
-
-
-export function getConfig(cmp: string, property: string): IConfig | undefined
-{
-    const configs = componentClassToConfigsMapping[cmp];
-    util.log("get config by component class", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   config", property, 2);
-    if (configs) {
-        for (let c = 0; c < configs.length; c++) {
-            if (configs[c].name === property) {
-                util.log("   found config", 3);
-                util.logValue("      name", configs[c].name, 4);
-                util.logValue("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
-                util.logValue("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
-                return configs[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-export function getProperty(cmp: string, property: string): IProperty | undefined
-{
-    const properties = componentClassToPropertiesMapping[cmp];
-    util.log("get property by component class", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   property", property, 2);
-    if (properties) {
-        for (let c = 0; c < properties.length; c++) {
-            if (properties[c].name === property) {
-                util.log("   found property", 3);
-                util.logValue("      name", properties[c].name, 4);
-                util.logValue("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
-                util.logValue("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
-                return properties[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-export function getMethod(cmp: string, property: string): IMethod| undefined
-{
-    const methods = componentClassToMethodsMapping[cmp];
-    util.log("get config by method", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   property", property, 2);
-    if (methods)
-    {
-        for (let c = 0; c < methods.length; c++)
-        {
-            if (methods[c].name === property) {
-                util.log("   found method", 3);
-                util.logValue("      name", methods[c].name, 4);
-                util.logValue("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
-                util.logValue("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
-                return methods[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-export function getXType(cmp: string, xtype: string): IXtype | undefined
-{
-    const xtypes = componentClassToXTypesMapping[cmp];
-    util.log("get config by component class", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   xtype", xtype, 2);
-    if (xtypes) {
-        for (let c = 0; c < xtypes.length; c++) {
-            if (xtypes[c].name === xtype) {
-                util.log("   found config", 3);
-                util.logValue("      name", xtypes[c].name, 4);
-                util.logValue("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
-                util.logValue("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
-                return xtypes[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-function handleDeleFile(fsPath: string)
-{
-    const componentClass = getCmpClassFromPath(fsPath);
-    if (componentClass)
-    {
-        util.log("handle file depetion", 1);
-        util.logValue("   path", fsPath, 2);
-        util.logValue("   component class", componentClass, 2);
-        getXtypes(componentClass)?.forEach(xtype => {
-            delete widgetToComponentClassMapping[xtype];
-        });
-        //
-        // TODO - remove *ToComponentClassMapping mappings
-        //
-        delete componentClassToWidgetsMapping[componentClass];
-        delete componentClassToAliasesMapping[componentClass];
-        delete componentClassToFsPathMapping[componentClass];
-        delete componentClassToRequiresMapping[componentClass];
-        delete componentClassToConfigsMapping[componentClass];
-        delete componentClassToPropertiesMapping[componentClass];
-        delete componentClassToMethodsMapping[componentClass];
-        delete componentClassToComponentsMapping[componentClass];
-    }
-}
-
-
 function commentToMarkdown(property: string, comment: string | undefined): MarkdownString | undefined
 {
     if (!comment || !property) {
@@ -897,6 +579,240 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
 }
 
 
+async function initConfig()
+{
+    const settingsUris = configuration.get<string[]>("include");
+    const confUris = await workspace.findFiles(".extjsrc{.json,}");
+    if (confUris)
+    {
+        for (const uri of confUris) {
+            const fileSystemPath = uri.fsPath || uri.path;
+            const confJson = fs.readFileSync(fileSystemPath, "utf8");
+            const _conf = json5.parse(confJson);
+            Object.assign(conf, _conf);
+        }
+    }
+}
+
+
+export function getClassFromPath(fsPath: string)
+{
+    const wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
+
+    util.log("get component by fs path", 1);
+    util.logValue("   path", fsPath, 2);
+
+    if (wsf) {
+        if (conf.workspaceRoot === "") {
+            conf.workspaceRoot = wsf.uri.fsPath;
+        }
+        fsPath = fsPath.replace(wsf.uri.fsPath, "");
+    }
+
+    fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.extjsDir}${path.sep}*`), "");
+    fsPath = fsPath.replace(/\..+$/, "");
+    const cmpClass = conf.extjsBase + "." + fsPath.split(path.sep).join(".");
+
+    util.logValue("   component class", cmpClass, 2);
+    return cmpClass;
+}
+
+
+export function getComponent(cmp: string): IComponent | undefined
+{
+    const component = componentClassToComponentsMapping[cmp];
+    util.log("get component by class", 1);
+    util.logValue("   component class", cmp, 2);
+    if (component) {
+        util.log("   found component", 3);
+        util.logValue("      base namespace", component.baseNamespace, 4);
+        return component;
+    }
+    return undefined;
+}
+
+
+export function getComponentByAlias(alias: string): IComponent | undefined
+{
+    const cls = widgetToComponentClassMapping[alias];
+    util.log("get component by alias", 1);
+    util.logValue("   component alias", alias, 2);
+    if (cls) {
+        const component = getComponent(cls);
+        if (component) {
+            util.log("   found component", 3);
+            util.logValue("      base namespace", component.baseNamespace, 4);
+            return component;
+        }
+    }
+    return undefined;
+}
+
+
+/**
+ * Get component class name
+ *
+ * @param {String} property Property name
+ * @param {String} txt The complete line of text the property is found in
+ */
+export function getComponentClass(property: string, cmpType?: ComponentType, txt?: string)
+{
+    let cmpClass = "this", // getComponentByConfig(property);
+        cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
+
+    if (!txt)
+    {
+        if (!cmpType || cmpType === ComponentType.Widget) {
+            return widgetToComponentClassMapping[property];
+        }
+        else if (cmpType === ComponentType.Method) {
+            return methodToComponentClassMapping[property];
+        }
+        else if (cmpType === ComponentType.Property) {
+            return propertyToComponentClassMapping[property];
+        }
+        else if (cmpType === (ComponentType.Property | ComponentType.Config)) {
+            if (propertyToComponentClassMapping[property]) {
+                return propertyToComponentClassMapping[property];
+            }
+            return configToComponentClassMapping[property];
+        }
+        else {
+            return undefined;
+        }
+    }
+
+    //
+    // Get class name prependature to hovered property
+    //
+    // classPre could be something like:
+    //
+    //     Ext.csi.view.common.
+    //     Ext.csi.store.
+    //     Ext.form.field.
+    //     MyApp.view.myview.
+    //
+    cmpClassPre = txt.substring(0, txt.indexOf(property));
+    cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
+
+    //
+    // Remove the trailing '.' for the component name
+    //
+    cmpClass = cmpClassPre.substr(0, cmpClassPre.length - 1);
+    if (cmpClassPreIdx > 0)
+    {
+        cmpClassPre = cmpClassPre.substring(cmpClassPreIdx);
+    }
+
+    for (let i = cmpClass.length - 1; i >= 0 ; i--)
+    {
+        if (cmpClass[i] < "A" || cmpClass > "z")
+        {
+            if (cmpClass[i] < "0" || cmpClass > "9") {
+                if (cmpClass[i] !== ".") {
+                    cutAt = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
+
+    if (!cmpClass || cmpClass === "this")
+    {
+        cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
+    }
+
+    //
+    // Check aliases/alternate class names
+    //
+    let aliasClass: string | undefined;
+    if (aliasClass = widgetToComponentClassMapping[cmpClass])
+    {
+        cmpClass = aliasClass;
+    }
+
+    util.logBlank(1);
+    util.logValue("class", cmpClass, 1);
+    return cmpClass;
+}
+
+
+export function getConfig(cmp: string, property: string): IConfig | undefined
+{
+    const configs = componentClassToConfigsMapping[cmp];
+    util.log("get config by component class", 1);
+    util.logValue("   component class", cmp, 2);
+    util.logValue("   config", property, 2);
+    if (configs) {
+        for (let c = 0; c < configs.length; c++) {
+            if (configs[c].name === property) {
+                util.log("   found config", 3);
+                util.logValue("      name", configs[c].name, 4);
+                util.logValue("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
+                util.logValue("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
+                return configs[c];
+            }
+        }
+    }
+    return undefined;
+}
+
+
+export function getFilePath(componentClass: string)
+{
+    const fsPath = componentClassToFsPathMapping[componentClass];
+    util.log("get fs path by component", 1);
+    util.logValue("   path", fsPath, 2);
+    return fsPath;
+}
+
+
+export function getProperty(cmp: string, property: string): IProperty | undefined
+{
+    const properties = componentClassToPropertiesMapping[cmp];
+    util.log("get property by component class", 1);
+    util.logValue("   component class", cmp, 2);
+    util.logValue("   property", property, 2);
+    if (properties) {
+        for (let c = 0; c < properties.length; c++) {
+            if (properties[c].name === property) {
+                util.log("   found property", 3);
+                util.logValue("      name", properties[c].name, 4);
+                util.logValue("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
+                util.logValue("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
+                return properties[c];
+            }
+        }
+    }
+    return undefined;
+}
+
+
+export function getMethod(cmp: string, property: string): IMethod| undefined
+{
+    const methods = componentClassToMethodsMapping[cmp];
+    util.log("get config by method", 1);
+    util.logValue("   component class", cmp, 2);
+    util.logValue("   property", property, 2);
+    if (methods)
+    {
+        for (let c = 0; c < methods.length; c++)
+        {
+            if (methods[c].name === property) {
+                util.log("   found method", 3);
+                util.logValue("      name", methods[c].name, 4);
+                util.logValue("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
+                util.logValue("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
+                return methods[c];
+            }
+        }
+    }
+    return undefined;
+}
+
+
 function getMode(line: string): MarkdownStringMode | undefined
 {
     let mode;
@@ -952,6 +868,90 @@ function getMode(line: string): MarkdownStringMode | undefined
         mode = MarkdownStringMode.Code;
     }
     return mode;
+}
+
+
+function getRequiredXtypes(cmp: string)
+{
+    const requires = []; // Object.keys(componentClassToWidgetsMapping).filter(it => util.isNeedRequire(it));
+    util.log("get required xtypes by component class", 1);
+    util.logValue("   component class", cmp, 2);
+    requires.push(...(componentClassToRequiresMapping[cmp] || []));
+    const reqXTypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
+        previousValue.push(...(getXtypes(currentCmpClass, false) || []));
+        return previousValue;
+    }, []);
+    util.logValue("   # of required xtypes", reqXTypes.length, 2);
+    reqXTypes.forEach((x) => {
+        util.log("      " + x);
+    });
+    util.log("completed get required xtypes by component class", 1);
+    return reqXTypes;
+}
+
+
+function getStatusString(pct: number)
+{
+    return "$(loading~spin) Indexing ExtJs Files " + (pct ?? "0") + "%";
+}
+
+
+export function getXType(cmp: string, xtype: string): IXtype | undefined
+{
+    const xtypes = componentClassToXTypesMapping[cmp];
+    util.log("get config by component class", 1);
+    util.logValue("   component class", cmp, 2);
+    util.logValue("   xtype", xtype, 2);
+    if (xtypes) {
+        for (let c = 0; c < xtypes.length; c++) {
+            if (xtypes[c].name === xtype) {
+                util.log("   found config", 3);
+                util.logValue("      name", xtypes[c].name, 4);
+                util.logValue("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
+                util.logValue("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
+                return xtypes[c];
+            }
+        }
+    }
+    return undefined;
+}
+
+
+function getXtypes(cmp: string, log = true, logPad = "")
+{
+    const xTypes = componentClassToWidgetsMapping[cmp];
+    if (log) {
+        util.log(logPad + "get xtypes by component class", 1);
+        util.logValue(logPad + "   component class", cmp, 2);
+        util.logValue(logPad + "   # of xtypes", xTypes?.length, 2);
+    }
+    return xTypes;
+}
+
+
+function handleDeleFile(fsPath: string)
+{
+    const componentClass = getClassFromPath(fsPath);
+    if (componentClass)
+    {
+        util.log("handle file depetion", 1);
+        util.logValue("   path", fsPath, 2);
+        util.logValue("   component class", componentClass, 2);
+        getXtypes(componentClass)?.forEach(xtype => {
+            delete widgetToComponentClassMapping[xtype];
+        });
+        //
+        // TODO - remove *ToComponentClassMapping mappings
+        //
+        delete componentClassToWidgetsMapping[componentClass];
+        delete componentClassToAliasesMapping[componentClass];
+        delete componentClassToFsPathMapping[componentClass];
+        delete componentClassToRequiresMapping[componentClass];
+        delete componentClassToConfigsMapping[componentClass];
+        delete componentClassToPropertiesMapping[componentClass];
+        delete componentClassToMethodsMapping[componentClass];
+        delete componentClassToComponentsMapping[componentClass];
+    }
 }
 
 
