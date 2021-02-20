@@ -23,9 +23,9 @@ class ServerRequest
         this.client = client;
     }
 
-    async parseExtJsFile(path: string, text: string)
+    async parseExtJsFile(text: string)
     {
-        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", { path, text });
+        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", text);
     }
 
     async getExtJsComponent(text: string)

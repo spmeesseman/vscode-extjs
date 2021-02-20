@@ -95,10 +95,10 @@ connection.onDidChangeConfiguration(change =>
     );
 });
 
-connection.onRequest("parseExtJsFile", async (param: any) =>
+connection.onRequest("parseExtJsFile", async (text: string) =>
 {
     try {
-        return await parseExtJsFile(param?.path, param?.text, param?.isFramework);
+        return await parseExtJsFile(text);
     }
     catch (error)
     {
