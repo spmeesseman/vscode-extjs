@@ -20,12 +20,12 @@ module.exports = {
     parser: "@typescript-eslint/parser",
     parserOptions: {
         project: [
-            "tsconfig.json", "client/tsconfig.json", "server/tsconfig.json"
+            "tsconfig.json", "client/tsconfig.json", "server/tsconfig.json", "common/tsconfig.json"
         ],
         sourceType: "module",
         "ecmaVersion": 6
     },
-    ignorePatterns: ["test-files"],
+    ignorePatterns: ["test-files", "lib"],
     settings: {
     },
     plugins: [

@@ -7,9 +7,9 @@ import {
     ProgressLocation, Range, TextDocument, TextEditor, window, workspace, Uri
 } from "vscode";
 import ServerRequest, { toVscodeRange } from "./common/ServerRequest";
-import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype } from "./common/interface";
+import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils } from  "../../common";
 import { configuration } from "./common/configuration";
-import * as util from "./common/utils";
+import * as log from "./common/log";
 
 
 const diagnosticCollection = languages.createDiagnosticCollection("extjs-lint");
@@ -101,7 +101,7 @@ class ExtjsLanguageManager
             return;
         }
 
-        await util.forEachAsync(components, (cmp: IComponent) =>
+        await utils.forEachAsync(components, (cmp: IComponent) =>
         {
             const {
                 componentClass, requires, widgets, xtypes, methods, configs, properties, aliases
@@ -236,7 +236,7 @@ class ExtjsLanguageManager
             numFiles = 0,
             currentFileIdx = 0;
 
-        util.log("start indexing", 1);
+        log.log("start indexing", 1);
 
         if (typeof conf.extjsDir === "string")
         {
@@ -262,14 +262,14 @@ class ExtjsLanguageManager
 
         const increment = Math.round(1 / numFiles * 100);
 
-        util.logValue("   # of files to index", numFiles, 1);
+        log.logValue("   # of files to index", numFiles, 1);
 
         for (const dir of dirs)
         {
             const uris = await workspace.findFiles(`${dir}/**/*.js`);
             for (const uri of uris)
             {
-                util.logValue("      Indexing file", uri.fsPath, 1);
+                log.logValue("      Indexing file", uri.fsPath, 1);
                 const text = (await workspace.fs.readFile(uri)).toString();
                 await this.indexing(uri.fsPath, text);
                 const pct = Math.round(++currentFileIdx / numFiles * 100);
@@ -395,7 +395,7 @@ class ExtjsLanguageManager
                 //
                 // TODO
                 //
-                util.log("Process settings change 'include'", 1);
+                log.log("Process settings change 'include'", 1);
             }
         }, context.subscriptions));
 
@@ -449,8 +449,8 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
     //     https://clojure.org/community/editing
     //
 
-    util.log("   build markdown string from comment", 1);
-    util.logValue("      ", comment, 3);
+    log.log("   build markdown string from comment", 1);
+    log.logValue("      ", comment, 3);
 
     const commentFmt = comment?.trim()
         //
@@ -508,7 +508,7 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
         // });
         // .trim();
 
-        util.logValue("   process line", line, 4);
+        log.logValue("   process line", line, 4);
 
         if (!line.trim()) {
             return; // continue forEach()
@@ -557,7 +557,7 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
         }
         else if (mode === MarkdownStringMode.Code)
         {
-            util.logValue("      indented line", line, 4);
+            log.logValue("      indented line", line, 4);
             indented += MarkdownChars.NewLine + line.trim();
         }
         else if (mode === MarkdownStringMode.Returns)
@@ -602,8 +602,8 @@ export function getClassFromPath(fsPath: string)
 {
     const wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
 
-    util.log("get component by fs path", 1);
-    util.logValue("   path", fsPath, 2);
+    log.log("get component by fs path", 1);
+    log.logValue("   path", fsPath, 2);
 
     if (wsf) {
         if (conf.workspaceRoot === "") {
@@ -616,7 +616,7 @@ export function getClassFromPath(fsPath: string)
     fsPath = fsPath.replace(/\..+$/, "");
     const cmpClass = conf.extjsBase + "." + fsPath.split(path.sep).join(".");
 
-    util.logValue("   component class", cmpClass, 2);
+    log.logValue("   component class", cmpClass, 2);
     return cmpClass;
 }
 
@@ -624,11 +624,11 @@ export function getClassFromPath(fsPath: string)
 export function getComponent(cmp: string): IComponent | undefined
 {
     const component = componentClassToComponentsMapping[cmp];
-    util.log("get component by class", 1);
-    util.logValue("   component class", cmp, 2);
+    log.log("get component by class", 1);
+    log.logValue("   component class", cmp, 2);
     if (component) {
-        util.log("   found component", 3);
-        util.logValue("      base namespace", component.baseNamespace, 4);
+        log.log("   found component", 3);
+        log.logValue("      base namespace", component.baseNamespace, 4);
         return component;
     }
     return undefined;
@@ -638,13 +638,13 @@ export function getComponent(cmp: string): IComponent | undefined
 export function getComponentByAlias(alias: string): IComponent | undefined
 {
     const cls = widgetToComponentClassMapping[alias];
-    util.log("get component by alias", 1);
-    util.logValue("   component alias", alias, 2);
+    log.log("get component by alias", 1);
+    log.logValue("   component alias", alias, 2);
     if (cls) {
         const component = getComponent(cls);
         if (component) {
-            util.log("   found component", 3);
-            util.logValue("      base namespace", component.baseNamespace, 4);
+            log.log("   found component", 3);
+            log.logValue("      base namespace", component.baseNamespace, 4);
             return component;
         }
     }
@@ -736,8 +736,8 @@ export function getComponentClass(property: string, cmpType?: ComponentType, txt
         cmpClass = aliasClass;
     }
 
-    util.logBlank(1);
-    util.logValue("class", cmpClass, 1);
+    log.logBlank(1);
+    log.logValue("class", cmpClass, 1);
     return cmpClass;
 }
 
@@ -745,16 +745,16 @@ export function getComponentClass(property: string, cmpType?: ComponentType, txt
 export function getConfig(cmp: string, property: string): IConfig | undefined
 {
     const configs = componentClassToConfigsMapping[cmp];
-    util.log("get config by component class", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   config", property, 2);
+    log.log("get config by component class", 1);
+    log.logValue("   component class", cmp, 2);
+    log.logValue("   config", property, 2);
     if (configs) {
         for (let c = 0; c < configs.length; c++) {
             if (configs[c].name === property) {
-                util.log("   found config", 3);
-                util.logValue("      name", configs[c].name, 4);
-                util.logValue("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
-                util.logValue("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
+                log.log("   found config", 3);
+                log.logValue("      name", configs[c].name, 4);
+                log.logValue("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
+                log.logValue("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
                 return configs[c];
             }
         }
@@ -766,8 +766,8 @@ export function getConfig(cmp: string, property: string): IConfig | undefined
 export function getFilePath(componentClass: string)
 {
     const fsPath = componentClassToFsPathMapping[componentClass];
-    util.log("get fs path by component", 1);
-    util.logValue("   path", fsPath, 2);
+    log.log("get fs path by component", 1);
+    log.logValue("   path", fsPath, 2);
     return fsPath;
 }
 
@@ -775,16 +775,16 @@ export function getFilePath(componentClass: string)
 export function getProperty(cmp: string, property: string): IProperty | undefined
 {
     const properties = componentClassToPropertiesMapping[cmp];
-    util.log("get property by component class", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   property", property, 2);
+    log.log("get property by component class", 1);
+    log.logValue("   component class", cmp, 2);
+    log.logValue("   property", property, 2);
     if (properties) {
         for (let c = 0; c < properties.length; c++) {
             if (properties[c].name === property) {
-                util.log("   found property", 3);
-                util.logValue("      name", properties[c].name, 4);
-                util.logValue("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
-                util.logValue("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
+                log.log("   found property", 3);
+                log.logValue("      name", properties[c].name, 4);
+                log.logValue("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
+                log.logValue("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
                 return properties[c];
             }
         }
@@ -796,18 +796,18 @@ export function getProperty(cmp: string, property: string): IProperty | undefine
 export function getMethod(cmp: string, property: string): IMethod| undefined
 {
     const methods = componentClassToMethodsMapping[cmp];
-    util.log("get config by method", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   property", property, 2);
+    log.log("get config by method", 1);
+    log.logValue("   component class", cmp, 2);
+    log.logValue("   property", property, 2);
     if (methods)
     {
         for (let c = 0; c < methods.length; c++)
         {
             if (methods[c].name === property) {
-                util.log("   found method", 3);
-                util.logValue("      name", methods[c].name, 4);
-                util.logValue("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
-                util.logValue("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
+                log.log("   found method", 3);
+                log.logValue("      name", methods[c].name, 4);
+                log.logValue("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
+                log.logValue("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
                 return methods[c];
             }
         }
@@ -863,8 +863,8 @@ function getMode(line: string): MarkdownStringMode | undefined
             default:
                 break;
         }
-        util.logValue("      found @ tag", tag, 4);
-        util.logValue("      set mode", mode?.toString(), 4);
+        log.logValue("      found @ tag", tag, 4);
+        log.logValue("      set mode", mode?.toString(), 4);
     }
     else if (line.length > 3 && (line.substring(0, 3) === "   " || line[0] === "\t"))
     {
@@ -877,18 +877,18 @@ function getMode(line: string): MarkdownStringMode | undefined
 function getRequiredXtypes(cmp: string)
 {
     const requires = []; // Object.keys(componentClassToWidgetsMapping).filter(it => util.isNeedRequire(it));
-    util.log("get required xtypes by component class", 1);
-    util.logValue("   component class", cmp, 2);
+    log.log("get required xtypes by component class", 1);
+    log.logValue("   component class", cmp, 2);
     requires.push(...(componentClassToRequiresMapping[cmp] || []));
     const reqXTypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
         previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
         return previousValue;
     }, []);
-    util.logValue("   # of required xtypes", reqXTypes.length, 2);
+    log.logValue("   # of required xtypes", reqXTypes.length, 2);
     reqXTypes.forEach((x) => {
-        util.log("      " + x);
+        log.log("      " + x);
     });
-    util.log("completed get required xtypes by component class", 1);
+    log.log("completed get required xtypes by component class", 1);
     return reqXTypes;
 }
 
@@ -902,16 +902,16 @@ function getStatusString(pct: number)
 export function getXType(cmp: string, xtype: string): IXtype | undefined
 {
     const xtypes = componentClassToXTypesMapping[cmp];
-    util.log("get config by component class", 1);
-    util.logValue("   component class", cmp, 2);
-    util.logValue("   xtype", xtype, 2);
+    log.log("get config by component class", 1);
+    log.logValue("   component class", cmp, 2);
+    log.logValue("   xtype", xtype, 2);
     if (xtypes) {
         for (let c = 0; c < xtypes.length; c++) {
             if (xtypes[c].name === xtype) {
-                util.log("   found config", 3);
-                util.logValue("      name", xtypes[c].name, 4);
-                util.logValue("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
-                util.logValue("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
+                log.log("   found config", 3);
+                log.logValue("      name", xtypes[c].name, 4);
+                log.logValue("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
+                log.logValue("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
                 return xtypes[c];
             }
         }
@@ -925,9 +925,9 @@ function handleDeleFile(fsPath: string)
     const componentClass = getClassFromPath(fsPath);
     if (componentClass)
     {
-        util.log("handle file depetion", 1);
-        util.logValue("   path", fsPath, 2);
-        util.logValue("   component class", componentClass, 2);
+        log.log("handle file depetion", 1);
+        log.logValue("   path", fsPath, 2);
+        log.logValue("   component class", componentClass, 2);
 
         const component = getComponent(componentClass);
         if (component)
@@ -991,7 +991,7 @@ function handleClassLine(line: string, markdown: MarkdownString)
             }
         }
     }
-    util.logValue("      insert class line", classLine, 4);
+    log.logValue("      insert class line", classLine, 4);
     markdown.appendMarkdown(classLine);
 }
 
@@ -1000,7 +1000,7 @@ function handleDeprecatedLine(line: string, markdown: MarkdownString)
 {
     let textLine = line.trim();
     textLine = italic(textLine, false, true);
-    util.logValue("      insert deprecated line", textLine, 4);
+    log.logValue("      insert deprecated line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 
@@ -1015,7 +1015,7 @@ function handleObjectLine(line: string, property: string, markdown: MarkdownStri
     else {
         cfgLine = line.trim();
     }
-    util.logValue("      insert object line", cfgLine, 4);
+    log.logValue("      insert object line", cfgLine, 4);
     markdown.appendMarkdown(cfgLine);
 }
 
@@ -1024,7 +1024,7 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
 {
     if (!line.startsWith("@"))
     {
-        util.logValue("      insert param text line", line, 4);
+        log.logValue("      insert param text line", line, 4);
         markdown.appendMarkdown(line);
         return;
     }
@@ -1088,8 +1088,8 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
         return;
     }
 
-    util.logValue("          name", lineProperty, 4);
-    util.logValue("          type", lineType, 4);
+    log.logValue("          name", lineProperty, 4);
+    log.logValue("          type", lineType, 4);
 
     if (lineType)
     {
@@ -1117,7 +1117,7 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
     if (lineTrail) {
         paramLine += " " + MarkdownChars.LongDash + lineTrail;
     }
-    util.logValue("      param line", paramLine, 4);
+    log.logValue("      param line", paramLine, 4);
     if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
         markdown.appendMarkdown(MarkdownChars.NewLine);
     }
@@ -1146,7 +1146,7 @@ function handleReturnsLine(line: string, markdown: MarkdownString)
                                    .replace("}", MarkdownChars.TypeWrapEnd));
          });
     });
-    util.logValue("      insert returns line", rtnLine, 4);
+    log.logValue("      insert returns line", rtnLine, 4);
     markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
 }
 
@@ -1155,7 +1155,7 @@ function handleTagLine(line: string, markdown: MarkdownString)
 {
     let textLine = line.trim();
     textLine = italic(textLine, false, true);
-    util.logValue("      insert tag line", textLine, 4);
+    log.logValue("      insert tag line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 
@@ -1178,7 +1178,7 @@ function handleTextLine(line: string, markdown: MarkdownString)
             return boldItalic(matched);
        });
     }
-    util.logValue("      insert text line", textLine, 4);
+    log.logValue("      insert text line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 

@@ -1,7 +1,7 @@
 
 import json5 from "json5";
 import * as vscode from "vscode";
-import { isNeedRequire } from "../common/utils";
+import { utils } from "../../../common";
 import { getComponentClass } from "../languageManager";
 import ServerRequest, { toVscodeRange } from "../common/ServerRequest";
 
@@ -28,7 +28,7 @@ function registerEnsureRequireCommand(context: vscode.ExtensionContext, serverRe
 		    xtypes.forEach(x =>
 		    {
 		        const c = getComponentClass(x.name);
-		        if (c !== undefined && isNeedRequire(c)) {
+		        if (c !== undefined && utils.isNeedRequire(c)) {
 		            componentClasses.add(c);
 		        }
 		    });
@@ -38,7 +38,7 @@ function registerEnsureRequireCommand(context: vscode.ExtensionContext, serverRe
 		        if (requires)
 		        {
 		            const _requires = requires.value
-		                .filter(it => isNeedRequire(it))
+		                .filter(it => utils.isNeedRequire(it))
 		                .concat(Array.from(componentClasses))
 		                .sort();
 		            const range = toVscodeRange(requires.start, requires.end);

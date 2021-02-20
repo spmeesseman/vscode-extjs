@@ -1,8 +1,8 @@
 
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
-import * as util from "./util";
-import { IComponent, IConfig, IMethod, IXtype, IProperty, IVariable, VariableType } from "./interface";
+import * as log from "./log";
+import { IComponent, IConfig, IMethod, IXtype, IProperty, IVariable, VariableType, utils } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, BlockStatement,
@@ -35,7 +35,7 @@ export async function getExtJsComponent(text: string)
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
-                    util.log("Parse ExtJs file", 1);
+                    log.log("Parse ExtJs file", 1);
                     //
                     // Ext.define should be in the form:
                     //
@@ -77,7 +77,7 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
-                    util.log("Parse ExtJs file", 1);
+                    log.log("Parse ExtJs file", 1);
 
                     //
                     // Ext.define should be in the form:
@@ -88,6 +88,11 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                     //
                     if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
                     {
+                        if (isFramework === undefined)
+                        {
+                            isFramework = args[0].value.startsWith("Ext.") && !args[0].value.startsWith("Ext.csi.");
+                        }
+
                         const dotIdx = args[0].value.indexOf(".");
                         const componentInfo: IComponent = {
                             baseNamespace: dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value,
@@ -100,7 +105,8 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                             configs: [],
                             statics: [],
                             privates: [],
-                            fsPath
+                            fsPath,
+                            isFramework
                         };
 
                         if (isExpressionStatement(path.container)) {
@@ -109,13 +115,8 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
 
                         components.push(componentInfo);
 
-                        util.log(" ", 1);
-                        util.logValue("   Component", args[0].value, 1);
-
-                        if (isFramework === undefined)
-                        {
-                            isFramework = args[0].value.startsWith("Ext.") && !args[0].value.startsWith("Ext.csi.");
-                        }
+                        log.log(" ", 1);
+                        log.logValue("   Component", args[0].value, 1);
 
                         const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
                         const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "alias" || p.key.name === "alternateClassName"));
@@ -257,18 +258,18 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 {
     if (properties)
     {
-        util.logValue("   # of " + property + " found", properties.length, 2);
+        log.logValue("   # of " + property + " found", properties.length, 2);
         properties.forEach((p) =>
         {
             if (typeof p === "string")
             {
-                util.log("      " + p, 3);
+                log.log("      " + p, 3);
             }
             else if (p !== undefined)
             {
-                util.log("      " + p.name, 3);
+                log.log("      " + p.name, 3);
                 if (isDocObject(p) && p.doc) {
-                    util.log(p.doc, 5);
+                    log.log(p.doc, 5);
                 }
             }
         });
@@ -286,15 +287,14 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
             if (propertyName)
             {
-                const method: IMethod = {
+                methods.push({
                     name: propertyName,
                     doc: getComments(m.leadingComments),
                     start: m.loc!.start,
                     end: m.loc!.end,
-                    params: undefined
-                };
-                method.variables = parseVariables(m, method, text ?? "");
-                methods.push(method);
+                    params: parseParams(m, propertyName, text ?? ""),
+                    variables: parseVariables(m, propertyName, text ?? "")
+                });
             }
         }
     });
@@ -341,8 +341,8 @@ function parseConfig(propertyConfig: ObjectProperty)
                         doc: getComments(it.leadingComments),
                         start: it.loc!.start,
                         end: it.loc!.end,
-                        getter: "get" + util.properCase(propertyName),
-                        setter: "set" + util.properCase(propertyName)
+                        getter: "get" + utils.properCase(propertyName),
+                        setter: "set" + utils.properCase(propertyName)
                     });
                 }
             }
@@ -424,7 +424,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 }
 
 
-function parseVariables(objEx: ObjectProperty, method: IMethod, text: string): IVariable[]
+function parseParams(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
 {
     const variables: IVariable[] = [];
 
@@ -455,119 +455,127 @@ function parseVariables(objEx: ObjectProperty, method: IMethod, text: string): I
         {
             const node = path.node;
 
-            if (isVariableDeclaration(node))
-            {
-                if (node.declarations && node.declarations.length > 0)
-                {
-                    const dec = node.declarations[0];
-                    if (isVariableDeclarator(dec) && isIdentifier(dec.id) && isCallExpression(dec.init))
-                    {
-                        const varName = dec.id.name;
-                        const callee = dec.init.callee;
-                        const args = dec.init.arguments;
+            if (!isVariableDeclaration(node) || !node.declarations || node.declarations.length === 0) {
+                return;
+            }
 
-                        if (isMemberExpression(callee))
-                        {
-                            if (isIdentifier(callee.object) && isIdentifier(callee.property) && isStringLiteral(args[0]))
-                            {
-                                if (callee.object.name === "Ext" && callee.property.name === "create")
-                                {
-                                    variables.push({
-                                        name: varName,
-                                        type: VariableType[node.kind],
-                                        start: node.declarations[0].loc!.start,
-                                        end: node.declarations[0].loc!.end,
-                                        instanceClass: args[0].value,
-                                        componentClass: args[0].value,
-                                        method
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
+            const dec = node.declarations[0];
+
+            if (!isVariableDeclarator(dec) || !isIdentifier(dec.id) || !isCallExpression(dec.init)) {
+                return;
+            }
+
+            const varName = dec.id.name;
+            const callee = dec.init.callee;
+            const args = dec.init.arguments;
+
+            if (!isMemberExpression(callee) || !isIdentifier(callee.object) || !isIdentifier(callee.property) ||
+                !isStringLiteral(args[0]) || callee.property.name !== "create")
+            {
+                return;
+            }
+
+            let inc = false;
+            if (callee.object.name === "Ext")
+            {
+                inc = true;
+            }
+            if (inc)
+            {
+                // console.log(44, varName, methodName);
+                log.logValue("added variable", varName, 5);
+                log.logValue("   method", methodName, 5);
+                log.logValue("   instance cls", args[0].value, 5);
+
+                variables.push({
+                    name: varName,
+                    type: VariableType[node.kind],
+                    start: node.declarations[0].loc!.start,
+                    end: node.declarations[0].loc!.end,
+                    componentClass: args[0].value,
+                    methodName
+                });
             }
         }
-        /*
-        CallExpression(path)
+    });
+
+    return variables;
+}
+
+
+function parseVariables(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
+{
+    const variables: IVariable[] = [];
+
+    if (!text) {
+        return variables;
+    }
+
+    let subText = text.substring(objEx.start!, objEx.end!);
+    const propertyName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
+
+    if (!propertyName || !subText) {
+        return variables;
+    }
+
+    //
+    // Convert json style function definition to javascript function prototype for babel parse
+    //
+    //     testFn: function(a, b, c) { ... }
+    //         to:
+    //     function testFn(a, b, c) { ... }
+    //
+    subText = subText.replace(new RegExp(`${propertyName}\\s*:\\s*function\\s*\\(`), `function ${propertyName} (`);
+
+    const _ast = parse(subText);
+    traverse(_ast,
+    {
+        VariableDeclaration(path)
         {
-            const callee = path.node.callee,
-                args = path.node.arguments;
-            console.log(path.node);
-            console.log(callee);
+            const node = path.node;
 
-            if (callee.type === "MemberExpression")
-            {
-                console.log("callee.object.name: " + (isIdentifier(callee.object) ? callee.object.name : "n/a"));
-                console.log("callee.object.property: " + (isIdentifier(callee.property) ? callee.property.name : "n/a"));
-                //
-                // Check to see if the callee is 'Ext.create'
-                //
-                // TODO - roll that callee name to see if we form any of our class names, indicating possibly a ststic create call
-                //
-                if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "create")
-                {
-                    console.log("3");
-
-                    //
-                    // Ext.create should be in the form:
-                    //
-                    //     Ext.create('MyApp.view.users.User');
-                    //     Ext.create('MyApp.view.users.User', { ... });
-                    //
-                    if (isStringLiteral(args[0]))
-                    {
-                        console.log("4: " + callee.property.name);
-                        console.log(args[0].value);
-                        variables.push({
-                            name: callee.property.name,
-                            start: callee.property.loc!.start,
-                            end: callee.property.loc!.end,
-                            componentClass: args[0].value
-                        });
-                    }
-                }
+            if (!isVariableDeclaration(node) || !node.declarations || node.declarations.length === 0) {
+                return;
             }
-        }*/
-        /*
-        CallExpression(path)
-        {
-            const callee = path.node.callee,
-                args = path.node.arguments;
 
-            console.log("1: " + callee.type);
-            console.log(callee);
+            const dec = node.declarations[0];
 
-            if (callee.type === "MemberExpression")
-            {
-                console.log("callee.object.name: " + (isIdentifier(callee.object) ? callee.object.name : "n/a"));
-                console.log("callee.object.property: " + (isIdentifier(callee.property) ? callee.property.name : "n/a"));
-                //
-                // Check to see if the callee is 'Ext.create'
-                //
-                if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "create")
-                {
-                    console.log("3");
-                    util.log("Parse ExtJs file", 1);
-
-                    //
-                    // Ext.create should be in the form:
-                    //
-                    //     Ext.create('MyApp.view.users.User');
-                    //     Ext.create('MyApp.view.users.User', { ... });
-                    //
-                    if (isStringLiteral(args[0]))
-                    {
-                        variables.push({
-                            name: callee.property.name,
-                            start: callee.property.loc!.start,
-                            end: callee.property.loc!.end,
-                            componentClass: args[0].value
-                        });
-                    }
-                }
+            if (!isVariableDeclarator(dec) || !isIdentifier(dec.id) || !isCallExpression(dec.init)) {
+                return;
             }
-        }*/
+
+            const varName = dec.id.name;
+            const callee = dec.init.callee;
+            const args = dec.init.arguments;
+
+            if (!isMemberExpression(callee) || !isIdentifier(callee.object) || !isIdentifier(callee.property) ||
+                !isStringLiteral(args[0]) || callee.property.name !== "create")
+            {
+                return;
+            }
+
+            let inc = false;
+            if (callee.object.name === "Ext")
+            {
+                inc = true;
+            }
+            if (inc)
+            {
+                // console.log(44, varName, methodName);
+                log.logValue("added variable", varName, 5);
+                log.logValue("   method", methodName, 5);
+                log.logValue("   instance cls", args[0].value, 5);
+
+                variables.push({
+                    name: varName,
+                    type: VariableType[node.kind],
+                    start: node.declarations[0].loc!.start,
+                    end: node.declarations[0].loc!.end,
+                    componentClass: args[0].value,
+                    methodName
+                });
+            }
+        }
     });
 
     return variables;

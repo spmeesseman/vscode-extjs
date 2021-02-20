@@ -13,9 +13,10 @@
 	"exclude": [
 		"node_modules",
 		".vscode-test",
-		"test-files"
+		"test-files", "lib"
 	],
 	"references": [
+		{ "path": "./common" },
 		{ "path": "./client" },
 		{ "path": "./server" }
 	]

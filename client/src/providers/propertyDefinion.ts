@@ -6,7 +6,8 @@ import {
 import {
     getComponentClass, getFilePath, ComponentType, getConfig, getProperty, getMethod
 } from "../languageManager";
-import * as util from "../common/utils";
+import * as log from "../common/log";
+import { utils } from "../../../common";
 
 
 class PropertyDefinitionProvider implements DefinitionProvider
@@ -35,9 +36,9 @@ class PropertyDefinitionProvider implements DefinitionProvider
 
         if (cmpType !== ComponentType.None)
         {
-            util.log("provide definition", 1);
-            util.logValue("   property", property, 2);
-            util.logValue("   component type", cmpType, 2);
+            log.log("provide definition", 1);
+            log.logValue("   property", property, 2);
+            log.logValue("   component type", cmpType, 2);
 
             let cmpClass = getComponentClass(property, cmpType);
             if (!cmpClass)
@@ -46,10 +47,10 @@ class PropertyDefinitionProvider implements DefinitionProvider
                 //
                 if (cmpType === ComponentType.Method && property.startsWith("get") || property.startsWith("set"))
                 {
-                    util.log("   method not found, look for getter/setter config", 2);
-                    property = util.lowerCaseFirstChar(property.substring(3));
+                    log.log("   method not found, look for getter/setter config", 2);
+                    property = utils.lowerCaseFirstChar(property.substring(3));
                     cmpType = ComponentType.Config;
-                    util.logValue("      config name", property, 2);
+                    log.logValue("      config name", property, 2);
                     cmpClass = getComponentClass(property, cmpType, lineText);
                 }
                 //
@@ -57,14 +58,14 @@ class PropertyDefinitionProvider implements DefinitionProvider
                 //
                 else if (cmpType === ComponentType.Property)
                 {
-                    util.log("   property not found, look for config", 2);
+                    log.log("   property not found, look for config", 2);
                     cmpType = ComponentType.Config;
                     cmpClass = getComponentClass(property, cmpType, lineText);
                 }
             }
             if (cmpClass)
             {
-                util.logValue("   component class", cmpClass, 2);
+                log.logValue("   component class", cmpClass, 2);
                 const fsPath = getFilePath(cmpClass);
                 if (fsPath)
                 {
@@ -75,29 +76,29 @@ class PropertyDefinitionProvider implements DefinitionProvider
                                                                                        getProperty(cmpClass, property));
                     if (pObject)
                     {
-                        util.log("   setting position", 2);
-                        util.logValue("      start line", pObject.start?.line, 3);
-                        util.logValue("      end line", pObject.end?.line, 3);
+                        log.log("   setting position", 2);
+                        log.logValue("      start line", pObject.start?.line, 3);
+                        log.logValue("      end line", pObject.end?.line, 3);
                         start = new Position(pObject.start?.line, pObject.start?.column);
                         end = new Position(pObject.end?.line, pObject.end?.column);
                     }
                     const uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
                           uri = Uri.parse(`file://${uriPath}`),
                           range = new Range(start, end);
-                    util.logValue("   fsPath", uri.fsPath, 2);
-                    util.log("   open definition file", 1);
-                    util.log("provide definition complete", 1);
+                    log.logValue("   fsPath", uri.fsPath, 2);
+                    log.log("   open definition file", 1);
+                    log.log("provide definition complete", 1);
                     return {
                         uri,
                         range
                     };
                 }
                 else {
-                    util.log("   fs path not found", 1);
+                    log.log("   fs path not found", 1);
                 }
             }
 
-            util.log("provide definition complete", 1);
+            log.log("provide definition complete", 1);
         }
     }
 }

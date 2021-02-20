@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { LanguageClient } from "vscode-languageclient";
-import { IComponent, IPosition } from "./interface";
+import { IComponent, IPosition } from "../../../common";
 
 
 export function toVscodePosition(position: IPosition)
@@ -23,9 +23,9 @@ class ServerRequest
         this.client = client;
     }
 
-    async parseExtJsFile(path: string, text: string)
+    async parseExtJsFile(fsPath: string, text: string)
     {
-        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", JSON.stringify({ path, text }));
+        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", JSON.stringify({ fsPath, text }));
     }
 
     async getExtJsComponent(text: string)

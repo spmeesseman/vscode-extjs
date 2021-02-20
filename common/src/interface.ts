@@ -23,8 +23,9 @@ export interface IComponent
     statics: (IProperty | IMethod)[];
     privates: (IProperty | IMethod)[];
     doc?: string;
-    markdown?: string;
-    fsPath?: string;
+    markdown?: any;
+    fsPath: string;
+    isFramework: boolean;
 }
 
 
@@ -46,7 +47,7 @@ export interface IConfig extends IProperty
 
 export interface IMethod extends IProperty
 {
-    params?: string;
+    params?: IVariable[];
     variables?: IVariable[];
 }
 
@@ -61,7 +62,7 @@ export interface IPosition
 export interface IProperty extends IExtJsBase
 {
     doc?: string;
-    markdown?: string;
+    markdown?: any;
     private?: boolean;
     deprecated?: boolean;
     since?: string;
@@ -92,13 +93,18 @@ export enum VariableType
     var
 }
 
-
+export interface TestTest2
+{
+    debugClient: boolean;
+    debugServer: boolean;
+    debugLevel: number;
+    include: string[] | string;
+}
 export interface IVariable extends IExtJsBase
 {
+    methodName: string;
     componentClass: string;
-    instanceClass: string;
-    method: IMethod;
-    type: VariableType; // i.e. "const", "let", "var"
+    type: VariableType;
 }
 
 

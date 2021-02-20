@@ -9,27 +9,6 @@ let writeToConsoleLevel = 2;
 let logOutputChannel: OutputChannel | undefined;
 
 
-async function forEachAsync(array: any, callback: any)
-{
-    for (let index = 0; index < array.length; index++) {
-        const result = await callback(array[index], index, array);
-        if (result === false) {
-            break;
-        }
-    }
-}
-
-
-async function forEachMapAsync(map: any, callback: any)
-{
-    for (const entry of map.entries()) {
-        const result = await callback(entry[1], entry[0], map);
-        if (result === false) {
-            break;
-        }
-    }
-}
-
 
 function initLog(settingGrpName: string, dispName: string, context?: ExtensionContext, showLog?: boolean)
 {
@@ -51,21 +30,6 @@ function initLog(settingGrpName: string, dispName: string, context?: ExtensionCo
         );
     }
     showLogOutput(showLog);
-}
-
-
-function isGetterSetter(method: string): boolean
-{
-    return method.startsWith("get") || method.startsWith("set") && method[3] >= "A" && method[3] <= "Z";
-}
-
-
-function isNeedRequire(componentClass: string)
-{
-    if (componentClass.startsWith("Ext.")) {
-        return false;
-    }
-    return true;
 }
 
 
@@ -143,28 +107,6 @@ function logValue(msg: string, value: any, level?: number)
 }
 
 
-function lowerCaseFirstChar(text: string)
-{
-    return text.replace(/(?:^\w|[A-Za-z]|\b\w)/g, (letter, index) => {
-        return index !== 0 ? letter : letter.toLowerCase();
-    });
-}
-
-
-function setWriteToConsole(set: boolean, level = 2)
-{
-    writeToConsole = set;
-    writeToConsoleLevel = level;
-}
-
-
-function timeout(ms: number)
-{
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-
 export {
-    initLog, isLoggingEnabled, isNeedRequire, log, logError, logValue, lowerCaseFirstChar,
-    logBlank, setWriteToConsole, timeout, forEachMapAsync, forEachAsync, isGetterSetter
+    initLog, isLoggingEnabled, log, logError, logValue, logBlank
 };

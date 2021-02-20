@@ -8,7 +8,7 @@ import {
     DidChangeConfigurationNotification, TextDocumentSyncKind
 } from "vscode-languageserver";
 import { parseExtJsFile, getExtJsComponent } from "./syntaxTree";
-import { ISettings } from "./interface";
+import { ISettings } from  "../../common";
 
 //
 // Create a connection for the server. The connection uses Node's IPC as a transport.

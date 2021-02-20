@@ -1,6 +1,7 @@
 {
 	"dependencies": {
 		"vscode-languageserver": "^6.1.1",
-		"vscode-languageserver-textdocument": "^1.0.1"
+		"vscode-languageserver-textdocument": "^1.0.1",
+		"@spmeesseman/extjscommon": "^1.0.0"
 	}
 }

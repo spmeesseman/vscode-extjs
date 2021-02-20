@@ -1,6 +1,6 @@
 
-import { IMethod, IConfig } from "../common/interface";
-import * as util from "../common/utils";
+import { IMethod, IConfig, utils } from "../../../common";
+import * as log from "../common/log";
 
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
@@ -34,7 +34,7 @@ class DocHoverProvider implements HoverProvider
             const cmpClass = getComponentClass(property, ComponentType.Method, lineText);
             if (cmpClass)
             {
-                util.logValue("provide function hover info", property, 1);
+                log.logValue("provide function hover info", property, 1);
                 let method: IMethod | IConfig | undefined = getMethod(cmpClass, property);
                 if (!method)
                 {   //
@@ -50,12 +50,12 @@ class DocHoverProvider implements HoverProvider
                     //
                     // Check for these config methods, see if they exist for this property
                     //
-                    if (util.isGetterSetter(property))
+                    if (utils.isGetterSetter(property))
                     {   //
                         // Extract the property name from the getter/setter.  Note the actual config
                         // property will be a lower-case-first-leter version of the extracted property
                         //
-                        const gsProperty = util.lowerCaseFirstChar(property.substring(3));
+                        const gsProperty = utils.lowerCaseFirstChar(property.substring(3));
                         method = getConfig(cmpClass, gsProperty);
                         if (!method) {
                             method = getConfig(cmpClass, property);
@@ -77,13 +77,13 @@ class DocHoverProvider implements HoverProvider
             if (cmpClass) {
                 const config = getConfig(cmpClass, property);
                 if (config && config.markdown) {
-                    util.logValue("provide config hover info", property, 1);
+                    log.logValue("provide config hover info", property, 1);
                     return new Hover(config.markdown);
                 }
                 else {
                     const prop = getProperty(cmpClass, property);
                     if (prop && prop.markdown) {
-                        util.logValue("provide property hover info", property, 1);
+                        log.logValue("provide property hover info", property, 1);
                         return new Hover(prop.markdown);
                     }
                 }
@@ -98,7 +98,7 @@ class DocHoverProvider implements HoverProvider
             const lineCls = lineText?.substring(0, lineText.indexOf(property) + property.length).trim();
             const cmp = getComponent(lineCls) || getComponentByAlias(lineCls);
             if (cmp && cmp.markdown) {
-                util.logValue("provide class hover info", property, 1);
+                log.logValue("provide class hover info", property, 1);
                 return new Hover(cmp.markdown);
             }
         }

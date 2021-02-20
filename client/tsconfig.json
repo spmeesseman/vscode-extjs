@@ -8,6 +8,9 @@
 		"sourceMap": true,
 		"allowSyntheticDefaultImports":true
 	},
+	"references": [
+	  	{ "path": "../common" }
+	],
 	"include": ["src/**/*"],
 	"exclude": ["node_modules", ".vscode-test"]
 }
