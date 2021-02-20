@@ -27,7 +27,7 @@
 		"multi-root ready"
 	],
 	"activationEvents": [
-		"workspaceContains:.extjsrc.json"
+		"*"
 	],
 	"main": "./dist/extension.js",
 	"galleryBanner": {
