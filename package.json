@@ -4,7 +4,7 @@
 	"displayName": "ExtJs Language Server",
 	"author": "Scott Meesseman",
 	"description": "Language Server for ExtJS since they cant write one on their own that works",
-	"icon": "res/gears-r-colors.png",
+	"icon": "res/icon.png",
 	"engines": {
 		"vscode": "^1.44.0"
 	},
