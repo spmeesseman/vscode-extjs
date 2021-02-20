@@ -94,6 +94,8 @@ export enum VariableType
 export interface IVariable extends IExtJsBase
 {
     componentClass: string;
+    instanceClass: string;
+    method: IMethod;
     type: VariableType; // i.e. "const", "let", "var"
 }
 

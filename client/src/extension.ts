@@ -60,7 +60,7 @@ async function run(context: vscode.ExtensionContext)
     //
     // Runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
     //
-    const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
+    const debugOptions = { execArgv: [ "--nolazy", "--inspect=6009" ] };
 
     //
     // If the extension is launched in debug mode then the debug server options are used

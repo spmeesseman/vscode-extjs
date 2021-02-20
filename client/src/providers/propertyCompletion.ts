@@ -153,8 +153,10 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             return undefined;
         }
 
-        util.logValue("   line text", lineText, 3);
         completionItems.push(...this.getCompletionItems(lineText, addedItems));
+
+        util.logValue("   line text", lineText, 3);
+        util.logValue("   # of added items", completionItems.length, 3);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }

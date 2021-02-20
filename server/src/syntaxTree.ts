@@ -280,20 +280,20 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
     const methods: IMethod[] = [];
     propertyMethods.forEach((m) =>
     {
-        const variables: IVariable[] = [];
         if (isFunctionExpression(m.value))
         {
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
             if (propertyName)
             {
-                methods.push({
+                const method: IMethod = {
                     name: propertyName,
                     doc: getComments(m.leadingComments),
                     start: m.loc!.start,
                     end: m.loc!.end,
-                    params: undefined,
-                    variables: parseVariables(m, text ?? "")
-                });
+                    params: undefined
+                };
+                method.variables = parseVariables(m, method, text ?? "");
+                methods.push(method);
             }
         }
     });
@@ -423,7 +423,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 }
 
 
-function parseVariables(objEx: ObjectProperty, text: string): IVariable[]
+function parseVariables(objEx: ObjectProperty, method: IMethod, text: string): IVariable[]
 {
     const variables: IVariable[] = [];
 
@@ -476,7 +476,9 @@ function parseVariables(objEx: ObjectProperty, text: string): IVariable[]
                                         type: VariableType[node.kind],
                                         start: node.declarations[0].loc!.start,
                                         end: node.declarations[0].loc!.end,
-                                        componentClass: args[0].value
+                                        instanceClass: args[0].value,
+                                        componentClass: args[0].value,
+                                        method
                                     });
                                 }
                             }

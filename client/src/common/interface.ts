@@ -43,7 +43,6 @@ export interface IConfig extends IProperty
 }
 
 
-
 export interface IMethod extends IProperty
 {
     params: string | undefined;
@@ -82,9 +81,20 @@ export interface ISettings
 }
 
 
+export enum VariableType
+{
+    const,
+    let,
+    var
+}
+
+
 export interface IVariable extends IExtJsBase
 {
     componentClass: string;
+    instanceClass: string;
+    methodName: string;
+    type: VariableType; // i.e. "const", "let", "var"
 }
 
 

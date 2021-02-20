@@ -57,7 +57,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                 //
                 else if (cmpType === ComponentType.Property)
                 {
-                    util.log("   preperty not found, look for config", 2);
+                    util.log("   property not found, look for config", 2);
                     cmpType = ComponentType.Config;
                     cmpClass = getComponentClass(property, cmpType, lineText);
                 }
