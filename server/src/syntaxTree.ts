@@ -56,7 +56,7 @@ export async function getExtJsComponent(text: string)
 }
 
 
-export async function parseExtJsFile(text: string, isFramework?: boolean)
+export async function parseExtJsFile(fsPath: string, text: string, isFramework?: boolean)
 {
     const ast = parse(text);
     const components: IComponent[] = [];
@@ -99,7 +99,8 @@ export async function parseExtJsFile(text: string, isFramework?: boolean)
                             properties: [],
                             configs: [],
                             statics: [],
-                            privates: []
+                            privates: [],
+                            fsPath
                         };
 
                         if (isExpressionStatement(path.container)) {

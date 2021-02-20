@@ -7,7 +7,7 @@ export interface IExtJsBase
     name: string;
     start: IPosition;
     end: IPosition;
-    path?: string;
+    fsPath?: string;
 }
 
 
@@ -26,7 +26,7 @@ export interface IComponent
     privates: (IProperty | IMethod)[];
     doc?: string;
     markdown?: MarkdownString;
-    path?: string;
+    fsPath?: string;
 }
 
 
