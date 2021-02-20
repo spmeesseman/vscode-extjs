@@ -4,7 +4,7 @@ import * as log from "../common/log";
 
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
-    ProviderResult, Range, TextDocument, MarkdownString
+    ProviderResult, Range, TextDocument
 } from "vscode";
 
 import {
