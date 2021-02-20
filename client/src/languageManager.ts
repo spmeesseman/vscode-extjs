@@ -96,7 +96,7 @@ class ExtjsLanguageManager
 
     async indexing(fsPath: string, text: string)
     {
-        const components = await this.serverRequest.parseExtJsFile(text);
+        const components = await this.serverRequest.parseExtJsFile(fsPath, text);
         if (!components || components.length === 0) {
             return;
         }
@@ -194,7 +194,7 @@ class ExtjsLanguageManager
     {
         const diagnostics: Diagnostic[] = [];
         const text = textDocument.getText();
-        const components = await this.serverRequest.parseExtJsFile(text);
+        const components = await this.serverRequest.parseExtJsFile(textDocument.uri.fsPath, text);
 
         components?.forEach(cmp =>
         {

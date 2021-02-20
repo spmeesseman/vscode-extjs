@@ -56,7 +56,7 @@ export async function getExtJsComponent(text: string)
 }
 
 
-export async function parseExtJsFile(text: string, isFramework?: boolean)
+export async function parseExtJsFile(fsPath: string, text: string, isFramework?: boolean)
 {
     const ast = parse(text);
     const components: IComponent[] = [];
@@ -92,6 +92,7 @@ export async function parseExtJsFile(text: string, isFramework?: boolean)
                         const componentInfo: IComponent = {
                             baseNamespace: dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value,
                             componentClass: args[0].value,
+                            path: fsPath,
                             xtypes: [],
                             aliases: [],
                             widgets: [],
