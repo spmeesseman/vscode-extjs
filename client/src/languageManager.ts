@@ -97,6 +97,9 @@ class ExtjsLanguageManager
     async indexing(fsPath: string, text: string)
     {
         const components = await this.serverRequest.parseExtJsFile(text);
+        if (!components || components.length === 0) {
+            return;
+        }
 
         await util.forEachAsync(components, (cmp: IComponent) =>
         {

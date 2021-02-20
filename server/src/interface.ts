@@ -8,64 +8,6 @@ export interface IExtJsBase
 }
 
 
-export interface IPosition
-{
-    line: number;
-    column: number;
-}
-
-
-export interface IConf
-{
-    extjsDir: string | string[];
-    extjsBase: string;
-    workspaceRoot: string;
-}
-
-
-export interface ISettings
-{
-    debugClient: boolean;
-    debugServer: boolean;
-    debugLevel: number;
-    include: string[] | string;
-}
-
-
-export interface IXtype extends IExtJsBase
-{
-
-}
-
-
-export interface IConfig extends IProperty
-{
-    setter: string | undefined;
-    getter: string | undefined;
-}
-
-
-export interface IMethod extends IProperty
-{
-    params: string | undefined;
-}
-
-
-export interface IProperty extends IExtJsBase
-{
-    doc?: string;
-    markdown?: string;
-}
-
-
-export interface IRequires
-{
-    value: string[];
-    start: IPosition;
-    end: IPosition;
-}
-
-
 export interface IComponent
 {
     aliases: string[];
@@ -82,3 +24,78 @@ export interface IComponent
     doc?: string;
     markdown?: string;
 }
+
+
+
+export interface IConf
+{
+    extjsDir: string | string[];
+    extjsBase: string;
+    workspaceRoot: string;
+}
+
+
+export interface IConfig extends IProperty
+{
+    setter: string;
+    getter: string;
+}
+
+
+export interface IMethod extends IProperty
+{
+    params?: string;
+    variables?: IVariable[];
+}
+
+export interface IPosition
+{
+    line: number;
+    column: number;
+}
+
+
+
+export interface IProperty extends IExtJsBase
+{
+    doc?: string;
+    markdown?: string;
+    private?: boolean;
+    deprecated?: boolean;
+    since?: string;
+}
+
+
+export interface IRequires
+{
+    value: string[];
+    start: IPosition;
+    end: IPosition;
+}
+
+
+export interface ISettings
+{
+    debugClient: boolean;
+    debugServer: boolean;
+    debugLevel: number;
+    include: string[] | string;
+}
+
+
+export enum VariableType
+{
+    const,
+    let,
+    var
+}
+
+
+export interface IVariable extends IExtJsBase
+{
+    componentClass: string;
+    type: VariableType; // i.e. "const", "let", "var"
+}
+
+
+export interface IXtype extends IExtJsBase {}

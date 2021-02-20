@@ -10,10 +10,21 @@ export interface IExtJsBase
 }
 
 
-export interface IPosition
+export interface IComponent
 {
-    line: number;
-    column: number;
+    aliases: string[];
+    baseNamespace: string;
+    componentClass: string;
+    requires?: IRequires;
+    widgets: string[];
+    xtypes: IXtype[];
+    properties: IProperty[];
+    configs: IConfig[];
+    methods: IMethod[];
+    statics: (IProperty | IMethod)[];
+    privates: (IProperty | IMethod)[];
+    doc?: string;
+    markdown?: MarkdownString;
 }
 
 
@@ -22,21 +33,6 @@ export interface IConf
     extjsDir: string | string[];
     extjsBase: string;
     workspaceRoot: string;
-}
-
-
-export interface ISettings
-{
-    debugClient: boolean;
-    debugServer: boolean;
-    debugLevel: number;
-    include: string[] | string;
-}
-
-
-export interface IXtype extends IExtJsBase
-{
-
 }
 
 
@@ -51,6 +47,14 @@ export interface IConfig extends IProperty
 export interface IMethod extends IProperty
 {
     params: string | undefined;
+    variables?: IVariable[];
+}
+
+
+export interface IPosition
+{
+    line: number;
+    column: number;
 }
 
 
@@ -69,19 +73,19 @@ export interface IRequires
 }
 
 
-export interface IComponent
+export interface ISettings
 {
-    aliases: string[];
-    baseNamespace: string;
-    componentClass: string;
-    requires?: IRequires;
-    widgets: string[];
-    xtypes: IXtype[];
-    properties: IProperty[];
-    configs: IConfig[];
-    methods: IMethod[];
-    statics: (IProperty | IMethod)[];
-    privates: (IProperty | IMethod)[];
-    doc?: string;
-    markdown?: MarkdownString;
+    debugClient: boolean;
+    debugServer: boolean;
+    debugLevel: number;
+    include: string[] | string;
 }
+
+
+export interface IVariable extends IExtJsBase
+{
+    componentClass: string;
+}
+
+
+export interface IXtype extends IExtJsBase { }

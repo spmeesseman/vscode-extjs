@@ -66,3 +66,16 @@ export function logValue(msg: string, value: any, level?: number)
     log(logMsg, level);
 }
 
+
+export function properCase(name: string)
+{
+    if (!name) {
+      return name;
+    }
+
+    return name
+        .replace(/(?:^\w|[A-Z]|\b\w)/g, (letter, index) => {
+            return index !== 0 ? letter.toLowerCase() : letter.toUpperCase();
+        })
+        .replace(/[\s]+/g, "");
+}
