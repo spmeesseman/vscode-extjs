@@ -42,11 +42,12 @@ connection.onInitialize((params: InitializeParams) =>
         capabilities.workspace && !!capabilities.workspace.workspaceFolders
     );
 
-    hasDiagnosticRelatedInformationCapability = !!(
-        capabilities.textDocument &&
-        capabilities.textDocument.publishDiagnostics &&
-        capabilities.textDocument.publishDiagnostics.relatedInformation
-    );
+    // client handling dignostics, is that wrong?
+    // hasDiagnosticRelatedInformationCapability = !!(
+    //     capabilities.textDocument &&
+    //     capabilities.textDocument.publishDiagnostics &&
+    //     capabilities.textDocument.publishDiagnostics.relatedInformation
+    // );
 
     const result: InitializeResult = {
         capabilities: {
@@ -80,12 +81,14 @@ connection.onInitialized(async () =>
         //
         await connection.client.register(DidChangeConfigurationNotification.type, { section: "extjsLangSvr" });
     }
-    if (hasWorkspaceFolderCapability)
-    {
-        // connection.workspace.onDidChangeWorkspaceFolders(_event => {
-        //     // connection.console.log("Workspace folder change event received.");
-        // });
-    }
+    // if (hasWorkspaceFolderCapability)
+    // {
+    //     connection.workspace.onDidChangeWorkspaceFolders(_event => {
+    //         connection.console.log("Workspace folder change event received.");
+    //         console.log("Workspace folder change event received.");
+    //         console.log(_event);
+    //     });
+    // }
 });
 
 connection.onDidChangeConfiguration(change =>
@@ -99,6 +102,7 @@ connection.onRequest("parseExtJsFile", async (param: any) =>
 {
     try {
         const jso = JSON.parse(param);
+        console.log("parseExtJsFile");
         return await parseExtJsFile(jso?.fsPath, jso?.text, jso?.isFramework);
     }
     catch (error)
