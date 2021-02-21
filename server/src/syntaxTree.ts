@@ -544,7 +544,7 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string): I
 }
 
 
-function getAst(objEx: ObjectProperty, methodName: string, text: string | undefined)
+function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | undefined)
 {
     if (!text) {
         return undefined;
@@ -582,7 +582,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string)
         return variables;
     }
 
-    const ast = getAst(objEx, methodName, text);
+    const ast = getMethodAst(objEx, methodName, text);
     traverse(ast,
     {
         VariableDeclaration(path)
