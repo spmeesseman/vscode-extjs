@@ -14,9 +14,11 @@ import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common"
 class PropertyCompletionItemProvider
 {
 
-    createCompletionItem(property: string, cmpClass: string, kind: CompletionItemKind): CompletionItem
+    createCompletionItem(property: string, cmpClass: string, kind: CompletionItemKind): CompletionItem[]
     {
-        const propCompletion = new CompletionItem(property, kind);
+        const propCompletion: CompletionItem[] = [];
+
+        propCompletion.push(new CompletionItem(property, kind));
 
         let cmp: IComponent | IMethod | IProperty | IConfig | undefined;
         switch (kind)
@@ -34,7 +36,19 @@ class PropertyCompletionItemProvider
                 break;
         }
 
-        propCompletion.documentation = cmp?.markdown;
+        propCompletion[0].documentation = cmp?.markdown;
+
+        //
+        // If this is a config property (i.e. IConfig), then add getter/setter
+        //
+        if (cmp && "getter" in cmp)
+        {
+            propCompletion.push(new CompletionItem(cmp.getter, CompletionItemKind.Method));
+            propCompletion.push(new CompletionItem(cmp.setter, CompletionItemKind.Method));
+            propCompletion[1].documentation = cmp?.markdown;
+            propCompletion[2].documentation = cmp?.markdown;
+        }
+
         return propCompletion;
     }
 
@@ -120,7 +134,7 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
                 const cCls = cls.split(".")[0];
                 if (addedItems.indexOf(cCls) === -1)
                 {
-                    completionItems.push(this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
+                    completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
                     addedItems.push(cCls);
 
                     log.logBlank(1);
@@ -168,6 +182,19 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         const completionItems: CompletionItem[] = [];
         let lineCls = lineText?.substring(0, lineText.length - 1).trim();
 
+        const _pushItems = ((cls: string) =>
+        {
+            log.log("   methods", 1);
+            completionItems.push(...this.getCmpCompletionItems(cls, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
+            log.log("   properties", 1);
+            completionItems.push(...this.getCmpCompletionItems(cls, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
+            log.log("   configs", 1);
+            completionItems.push(...this.getCmpCompletionItems(cls, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
+            //
+            // TODO - property completion - static and private sctions
+            //
+        });
+
         if (!lineText.endsWith(".")) {
             return completionItems;
         }
@@ -178,14 +205,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         {
             const thisCls = getClassFromFile(fsPath);
             if (thisCls) {
-                log.log("   methods", 1);
-                    completionItems.push(...this.getCmpCompletionItems(thisCls, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
-
-                    log.log("   properties", 1);
-                    completionItems.push(...this.getCmpCompletionItems(thisCls, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
-
-                    log.log("   configs", 1);
-                    completionItems.push(...this.getCmpCompletionItems(thisCls, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
+                _pushItems(thisCls);
             }
             return completionItems;
         }
@@ -207,18 +227,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
                 if (cls === lineCls)
                 {
-                    log.log("   methods", 1);
-                    completionItems.push(...this.getCmpCompletionItems(lineCls, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
-
-                    log.log("   properties", 1);
-                    completionItems.push(...this.getCmpCompletionItems(lineCls, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
-
-                    log.log("   configs", 1);
-                    completionItems.push(...this.getCmpCompletionItems(lineCls, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
-
-                    //
-                    // TODO - property completion - static and private sctions
-                    //
+                    _pushItems(lineCls);
                 }
                 else {
                     completionItems.push(...this.getClsCompletionItems(lineText, cls, addedItems));
@@ -258,7 +267,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             if (addedItems.indexOf(cCls) === -1)
             {
                 const lastProp = cCls.indexOf(".") !== -1 ? cCls.substring(cCls.indexOf(".") + 1) : cCls;
-                completionItems.push(this.createCompletionItem(lastProp, cls, CompletionItemKind.Class));
+                completionItems.push(...this.createCompletionItem(lastProp, cls, CompletionItemKind.Class));
                 addedItems.push(cCls);
                 log.logBlank(1);
                 log.log("      added dot completion class item", 3);
@@ -281,7 +290,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             {
                 if (addedItems.indexOf(p) === -1)
                 {
-                    completionItems.push(this.createCompletionItem(p, cls, kind));
+                    completionItems.push(...this.createCompletionItem(p, cls, kind));
                     addedItems.push(p);
 
                     log.logBlank(1);

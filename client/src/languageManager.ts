@@ -310,17 +310,14 @@ class ExtjsLanguageManager
     async setup(context: ExtensionContext): Promise<Disposable[]>
     {
         await initConfig();
-        //setTimeout(async () =>
-        //{
-            await this.indexingAllWithProgress();
-            //
-            // Validate active js document if there is one
-            //
-            const activeTextDocument = window.activeTextEditor?.document;
-            if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-                await this.validateDocument(activeTextDocument);
-            }
-        //}, 100);
+        await this.indexingAllWithProgress();
+        //
+        // Validate active js document if there is one
+        //
+        const activeTextDocument = window.activeTextEditor?.document;
+        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+            await this.validateDocument(activeTextDocument);
+        }
         return this.registerWatchers(context);
     }
 

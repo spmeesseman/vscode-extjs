@@ -26,6 +26,11 @@ class PropertyDefinitionProvider implements DefinitionProvider
                                  .trim().replace(/[\s\w]+=[\s]*(new)*\s*/, "");
         let property = document.getText(range);
 
+        if (property === "this")
+        {
+
+        }
+
         if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
         {
             cmpType = ComponentType.Method;
