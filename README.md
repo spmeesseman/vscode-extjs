@@ -20,6 +20,7 @@
   - [NOT YET RELEASED!!  DO NOT INSTALL](#not-yet-released--do-not-install)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
+  - [Getting Started](#getting-started)
   - [Thank You](#thank-you)
   - [Feedback & Contributing](#feedback--contributing)
     - [Rate It - Leave Some Stars](#rate-it---leave-some-stars)
@@ -30,9 +31,47 @@
 
 ExtJs Intellisense and Language Server, additional functionality that the Sencha extnsion doesn't provide:
 
-- XType validation (credits to original author **qzsiniong**)
-- Method hover jsdoc
+- Hover Tips JSDpc/Doc
+- Code Completion (Intellisense) with Inline JSDoc
 - Function inline parameter highlighting
+- XType validation (credits to original author **qzsiniong**)
+- Method and class variable validation
+
+## Getting Started
+
+This language server looks at your entire workspace, whether single or multi root, and locates ExtJS files in one of three ways, or any combination thereof:
+
+1. app.json
+2. .extjsrc.json
+3. settings.json / VSCode Settings
+
+The **app.json** file is a part of all Sencha Cmd and Sencha ext-gen generated Open Tooling projects.  If an app.json file is located, the namespaces and classpaths are extracted and added to indexing.
+
+The **.extjsrc.json** / **.extjsrc** file is a custom file that can be placed into any directory.  If an .extjsrc file is located, the namespace and classpaths are extracted and added to indexing.
+
+The **include** path can be set to a string or an array of strings of additional paths to index.  These strings must be in the form:
+
+    NAME|RELATIVE_DIRECTORY
+
+The *NAME* part represents the **name** filed described below.  The *RELATIVE_DIRECTORY* is a directory that is *relative* to the workspace folder it resides in.
+
+The app.json/.extjsrc file can contain any of the defined properties of a Sencha ExtJS project, but must in the least contain the following two properties:
+
+1. name
+2. classpath
+
+The **name** is the project name, or main project namespace.  FOr example, if your ExtJS files are defined like:
+
+    VSCodeExtJs.view.common.Users
+    VSCodeExtJs.view.common.Admins
+
+Then the default namespace / project name, in most cases, would be "VSCodeExtJS".  This field corresponds to the **name** property of an **app.json** file.
+
+The **classpath** is a string, or an array of strings, of where the ExtJS JavaScript files can be located.  This field corresponds to the **classpath** property of an **app.json** file.
+
+Note that classpaths defined in toolkit blocks in app.json will be merged into the main object classpath for indexing.
+
+That's it, ExtJS Languge Server should start indexing your files once a valid configuration file has been found.
 
 ## Thank You
 
