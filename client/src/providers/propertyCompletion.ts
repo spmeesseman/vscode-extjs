@@ -5,7 +5,7 @@ import {
 } from "vscode";
 import {
     methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping,
-    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping
+    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias
 } from "../languageManager";
 import * as log from "../common/log";
 import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common";
@@ -153,7 +153,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             return undefined;
         }
 
-        completionItems.push(...this.getCompletionItems(lineText, addedItems));
+        completionItems.push(...this.getCompletionItems(lineText, document.uri.fsPath, addedItems));
 
         log.logValue("   line text", lineText, 3);
         log.logValue("   # of added items", completionItems.length, 3);
@@ -162,11 +162,11 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
     }
 
 
-    private getCompletionItems(lineText: string, addedItems: string[]): CompletionItem[]
+    private getCompletionItems(lineText: string, fsPath: string, addedItems: string[]): CompletionItem[]
     {
         const map = componentClassToComponentsMapping;
-        const completionItems: CompletionItem[] = [],
-              lineCls = lineText?.substring(0, lineText.length - 1).trim();
+        const completionItems: CompletionItem[] = [];
+        let lineCls = lineText?.substring(0, lineText.length - 1).trim();
 
         if (!lineText.endsWith(".")) {
             return completionItems;
@@ -178,6 +178,15 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         {
             if (cls)
             {
+                if (cls !== lineCls)
+                {   //
+                    // Check instance classes in file
+                    //
+                    const thisCls = getClassFromFile(fsPath);
+                    if (thisCls) {
+                        lineCls = thisCls;
+                    }
+                }
                 if (cls === lineCls)
                 {
                     log.log("   methods", 1);

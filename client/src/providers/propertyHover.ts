@@ -124,12 +124,12 @@ class DocHoverProvider implements HoverProvider
 
             for (const variable of cmp.privates)
             {
-
+                // TODO - property hover - check private sec
             }
 
             for (const variable of cmp.statics)
             {
-
+                // TODO - property hover - check static sec
             }
 
             for (const method of cmp.methods)
