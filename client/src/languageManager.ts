@@ -14,11 +14,7 @@ import * as log from "./common/log";
 
 const diagnosticCollection = languages.createDiagnosticCollection("extjs-lint");
 
-const conf: IConf = {
-    extjsDir: "",
-    extjsBase: "",
-    workspaceRoot: "",
-};
+let config: IConf[] = [];
 
 export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
 export const configToComponentClassMapping: { [property: string]: string | undefined } = {};
@@ -241,52 +237,63 @@ class ExtjsLanguageManager
 
     private async indexingAll(progress?: Progress<any>)
     {
+        const processedDirs: string[] = [];
         let dirs: string[] = [],
             numFiles = 0,
             currentFileIdx = 0;
 
         log.log("start indexing", 1);
 
-        if (typeof conf.extjsDir === "string")
+        for (const conf of config)
         {
-            dirs = [ conf.extjsDir ];
-        }
-        else {
-            dirs = conf.extjsDir;
-        }
-
-        //
-        // Status bar
-        //
-        // const statusBarSpace = window.createStatusBarItem(StatusBarAlignment.Left, -10000);
-        // statusBarSpace.tooltip = "ExtJs Language Server is building the syntax tree";
-        // statusBarSpace.text = getStatusString(0);
-        // statusBarSpace.show();
-
-        for (const dir of dirs)
-        {
-            const uris = await workspace.findFiles(`${dir}/**/*.js`);
-            numFiles += uris.length;
-        }
-
-        const increment = Math.round(1 / numFiles * 100);
-
-        log.logValue("   # of files to index", numFiles, 1);
-
-        for (const dir of dirs)
-        {
-            const uris = await workspace.findFiles(`${dir}/**/*.js`);
-            for (const uri of uris)
+            if (typeof conf.classpath === "string")
             {
-                log.logValue("      Indexing file", uri.fsPath, 1);
-                const text = (await workspace.fs.readFile(uri)).toString();
-                await this.indexing(uri.fsPath, text);
-                const pct = Math.round(++currentFileIdx / numFiles * 100);
-                progress?.report({
-                    increment,
-                    message: pct + "%"
-                });
-                // statusBarSpace.text = getStatusString(pct);
+                dirs = [ conf.classpath ];
+            }
+            else {
+                dirs = conf.classpath;
+            }
+
+            //
+            // Status bar
+            //
+            // const statusBarSpace = window.createStatusBarItem(StatusBarAlignment.Left, -10000);
+            // statusBarSpace.tooltip = "ExtJs Language Server is building the syntax tree";
+            // statusBarSpace.text = getStatusString(0);
+            // statusBarSpace.show();
+
+            for (const dir of dirs)
+            {
+                if (!processedDirs.includes(dir))
+                {
+                    const uris = await workspace.findFiles(`${dir}/**/*.js`);
+                    numFiles += uris.length;
+                }
+            }
+
+            const increment = Math.round(1 / numFiles * 100);
+
+            log.logValue("   # of files to index", numFiles, 1);
+
+            for (const dir of dirs)
+            {
+                if (!processedDirs.includes(dir))
+                {
+                    const uris = await workspace.findFiles(`${dir}/**/*.js`);
+                    for (const uri of uris)
+                    {
+                        log.logValue("      Indexing file", uri.fsPath, 1);
+                        const text = (await workspace.fs.readFile(uri)).toString();
+                        await this.indexing(uri.fsPath, text);
+                        const pct = Math.round(++currentFileIdx / numFiles * 100);
+                        progress?.report({
+                            increment,
+                            message: pct + "%"
+                        });
+                        // statusBarSpace.text = getStatusString(pct);
+                    }
+                    processedDirs.push(dir);
+                }
             }
         }
     }
@@ -309,7 +316,12 @@ class ExtjsLanguageManager
 
     async setup(context: ExtensionContext): Promise<Disposable[]>
     {
-        await initConfig();
+        const success = await initConfig();
+        if (!success) {
+            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
+            return [];
+        }
+
         await this.indexingAllWithProgress();
         //
         // Validate active js document if there is one
@@ -325,10 +337,12 @@ class ExtjsLanguageManager
     registerWatchers(context: ExtensionContext): Disposable[]
     {
         //
-        // rc/conf file
+        // rc/conf file / app.json
         //
-        const disposables: Disposable[] = [];
-        const confWatcher = workspace.createFileSystemWatcher(".extjsrc{.json,}");
+        const debounceMs = 1500,
+              disposables: Disposable[] = [],
+              confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
+
         context.subscriptions.push(confWatcher);
         confWatcher.onDidChange(initConfig);
 
@@ -351,7 +365,7 @@ class ExtjsLanguageManager
                     handleDeleFile(fsPath);
                     await this.indexing(textDocument.uri.fsPath, textDocument.getText());
                     await this.validateDocument(textDocument);
-                }, 1000);
+                }, debounceMs);
             }
         }, context.subscriptions));
 
@@ -588,19 +602,91 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
 }
 
 
-async function initConfig()
+async function initConfig(): Promise<boolean>
 {
-    const settingsUris = configuration.get<string[]>("include");
-    const confUris = await workspace.findFiles(".extjsrc{.json,}");
+    const settingsPaths = configuration.get<string[]>("include"),
+          confUris = await workspace.findFiles(".extjsrc{.json,}"),
+          appDotJsonUris = await workspace.findFiles("app.json");
+    //
+    // Clear
+    //
+    config = [];
+
+    // if (settingsPaths)
+    // {
+    //     for (const path of settingsPaths)
+    //     {
+    //         config.push({
+    //             classpath: path,
+    //             name: AppNamespace
+    //         });
+    //     }
+    // }
+
     if (confUris)
     {
-        for (const uri of confUris) {
+        for (const uri of confUris)
+        {
             const fileSystemPath = uri.fsPath || uri.path;
             const confJson = fs.readFileSync(fileSystemPath, "utf8");
-            const _conf = json5.parse(confJson);
-            Object.assign(conf, _conf);
+            const conf: IConf = json5.parse(confJson);
+            if (conf.classpath && conf.name) {
+                config.push(conf);
+            }
         }
     }
+
+    if (appDotJsonUris)
+    {
+        for (const uri of appDotJsonUris)
+        {
+            const fileSystemPath = uri.fsPath || uri.path,
+                  confJson = fs.readFileSync(fileSystemPath, "utf8"),
+                  conf: IConf = json5.parse(confJson);
+            //
+            // Merge classpath to root
+            //
+            const classic = conf.classic ? Object.assign([], conf.classic) : {},
+                  modern = conf.modern ? Object.assign([], conf.modern) : {};
+
+            if (!conf.classpath)
+            {
+                conf.classpath = [];
+            }
+            else if (typeof conf.classpath === "string")
+            {
+                conf.classpath = [ conf.classpath ];
+            }
+
+            const _addXPaths = ((p: string[] | string) =>
+            {
+                if (!conf.classpath) {
+                    conf.classpath = p;
+                }
+                else {
+                    if (typeof p === "string")
+                    {
+                        p = [ p ];
+                    }
+                    conf.classpath = (conf.classpath as string[]).concat(p);
+                }
+            });
+
+            if (classic?.classpath)
+            {
+                _addXPaths(classic.classpath);
+            }
+            if (modern?.classpath) {
+                _addXPaths(modern.classpath);
+            }
+
+            if (conf.classpath && conf.name) {
+                config.push(conf);
+            }
+        }
+    }
+
+    return (config.length > 0);
 }
 
 
@@ -609,7 +695,7 @@ export function getClassFromPath(fsPath: string)
     //
     // TODO - check / test file delete
     //
-
+    let cmpClass: string | undefined;
     const // uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
           // wsf = workspace.getWorkspaceFolder(Uri.parse(`file://${uriPath}`));
           wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
@@ -617,16 +703,20 @@ export function getClassFromPath(fsPath: string)
     log.log("get component by fs path", 1);
     log.logValue("   path", fsPath, 2);
 
-    if (wsf) {
-        if (conf.workspaceRoot === "") {
-            conf.workspaceRoot = wsf.uri.fsPath;
-        }
-        fsPath = fsPath.replace(wsf.uri.fsPath, "");
-    }
+    for (const conf of config)
+    {
+        if (conf.classpath.includes(fsPath))
+        {
+            if (wsf) {
+                fsPath = fsPath.replace(wsf.uri.fsPath, "");
+            }
 
-    fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.extjsDir}${path.sep}*`), "");
-    fsPath = fsPath.replace(/\..+$/, "");
-    const cmpClass = conf.extjsBase + "." + fsPath.split(path.sep).join(".");
+            fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.classpath}${path.sep}*`), "");
+            fsPath = fsPath.replace(/\..+$/, "");
+            cmpClass = conf.name + "." + fsPath.split(path.sep).join(".");
+            break;
+        }
+    }
 
     log.logValue("   component class", cmpClass, 2);
     return cmpClass;

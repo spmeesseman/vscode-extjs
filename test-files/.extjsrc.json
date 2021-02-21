@@ -1,4 +1,4 @@
 {
-    "extjsDir":"app",
-    "extjsBase":"VSCodeExtJS"
+    "classpath":"app",
+    "name":"VSCodeExtJS"
 }

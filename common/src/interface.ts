@@ -29,12 +29,32 @@ export interface IComponent
 }
 
 
-
 export interface IConf
 {
-    extjsDir: string | string[];
-    extjsBase: string;
-    workspaceRoot: string;
+    archivePath?: string;
+    bootstrap?: any;
+    builds?: any;
+    cache?: any;
+    classic?: any;
+    classpath: string | string[];
+    css?: any;
+    development?: any;
+    fashion?: any;
+    framework?: string;
+    id?: string;
+    ignore?: string[];
+    indexHtmlPath?: string;
+    language?: any;
+    loader?: any;
+    modern?: any;
+    name: string;
+    output?: any;
+    production?: any;
+    resource?: any;
+    resources?: any;
+    requires?: string[];
+    url?: string;
+    version?: string;
 }
 
 
