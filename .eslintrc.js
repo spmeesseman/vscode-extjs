@@ -25,7 +25,7 @@ module.exports = {
         sourceType: "module",
         "ecmaVersion": 6
     },
-    ignorePatterns: ["test-files", "lib"],
+    ignorePatterns: ["test-files", "lib", "*.js" ],
     settings: {
     },
     plugins: [
