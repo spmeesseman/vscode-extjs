@@ -12,7 +12,7 @@ export function log(msg: string, level?: number, logPad = "")
 
     if (globalSettings.debugServer === true)
     {
-        const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + msg;
+        const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + logPad + msg;
         if (!level || (globalSettings.debugLevel !== undefined && level <= globalSettings.debugLevel)) {
             connection.console.log(tsMsg);
         }

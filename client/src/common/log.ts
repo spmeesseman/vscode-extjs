@@ -10,7 +10,7 @@ let logOutputChannel: OutputChannel | undefined;
 
 
 
-function initLog(settingGrpName: string, dispName: string, context?: ExtensionContext, showLog?: boolean)
+export function initLog(settingGrpName: string, dispName: string, context?: ExtensionContext, showLog?: boolean)
 {
     function showLogOutput(show?: boolean)
     {
@@ -39,7 +39,7 @@ function isLoggingEnabled()
 }
 
 
-function log(msg: string, level?: number)
+export function log(msg: string, level?: number, logPad = "")
 {
     if (msg === null || msg === undefined) {
         return;
@@ -47,7 +47,7 @@ function log(msg: string, level?: number)
 
     if (isLoggingEnabled())
     {
-        const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + msg;
+        const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + logPad + msg;
         if (logOutputChannel && (!level || level <= configuration.get<number>("debugLevel"))) {
             logOutputChannel.appendLine(tsMsg);
         }
@@ -60,13 +60,13 @@ function log(msg: string, level?: number)
 }
 
 
-function logBlank(level?: number)
+export function logBlank(level?: number)
 {
     log("", level);
 }
 
 
-function logError(msg: string | string[])
+export function logError(msg: string | string[])
 {
     if (!msg === null || msg === undefined) {
         return;
@@ -84,7 +84,45 @@ function logError(msg: string | string[])
 }
 
 
-function logValue(msg: string, value: any, level?: number)
+export function logMethodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: [string, any][])
+{
+    if (msg === null || msg === undefined) {
+        return;
+    }
+
+    if (isLoggingEnabled())
+    {
+        const lLevel = level || 1;
+        if (doLogBlank === true) {
+            logBlank(lLevel);
+        }
+        log(logPad + "*start* " + msg, lLevel);
+        if (params) {
+            for (const [ n, v] of params) {
+                logValue(logPad + "   " + n, v, lLevel + 1);
+            }
+        }
+    }
+}
+
+
+export function logMethodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean)
+{
+    if (msg === null || msg === undefined) {
+        return;
+    }
+
+    if (isLoggingEnabled())
+    {
+        if (doLogBlank === true) {
+            logBlank(level || 1);
+        }
+        log("*done* " + msg, level || 1, logPad);
+    }
+}
+
+
+export function logValue(msg: string, value: any, level?: number, logPad = "")
 {
     let logMsg = msg;
     const spaces = msg && msg.length ? msg.length : (value === undefined ? 9 : 4);
@@ -103,10 +141,5 @@ function logValue(msg: string, value: any, level?: number)
         logMsg += ": null";
     }
 
-    log(logMsg, level);
+    log(logMsg, level, logPad);
 }
-
-
-export {
-    initLog, isLoggingEnabled, log, logError, logValue, logBlank
-};

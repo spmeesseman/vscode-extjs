@@ -93,12 +93,14 @@ class ExtjsLanguageManager
     }
 
 
-    async indexing(fsPath: string, text: string)
+    async indexing(fsPath: string, text: string, logPad = "")
     {
         const components = await this.serverRequest.parseExtJsFile(fsPath, text);
         if (!components || components.length === 0) {
             return;
         }
+
+        log.logMethodStart("indexing " + fsPath, 2, logPad, true);
 
         await utils.forEachAsync(components, (cmp: IComponent) =>
         {
@@ -122,8 +124,10 @@ class ExtjsLanguageManager
             //     });
             //
             if (cmp?.doc) {
-                cmp.markdown = commentToMarkdown(componentClass, cmp.doc);
+                cmp.markdown = commentToMarkdown(componentClass, cmp.doc, logPad + "   ");
             }
+
+            log.log("   map classes to components", 2, logPad);
 
             //
             // Map the component class to the various component types found
@@ -153,6 +157,8 @@ class ExtjsLanguageManager
             if (requires) {
                 componentClassToRequiresMapping[componentClass] = requires.value;
             }
+
+            log.log("   map components to classes", 2, logPad);
 
             //
             // Map widget/alias/xtype types found to the component class
@@ -192,6 +198,8 @@ class ExtjsLanguageManager
                 xtypeToComponentClassMapping[xtype.name] = componentClass;
             });
         });
+
+        log.logMethodDone("indexing " + fsPath, 2, logPad, true);
     }
 
 
@@ -245,7 +253,11 @@ class ExtjsLanguageManager
         const _isIndexed = ((dir: string) =>
         {
             for (const d of processedDirs)
-            {
+            {   //
+                // Dont process dirs already processed.  If dirs in a user's config overlap eachother
+                // then something might get missed so it's on the user to make sure their paths are
+                // set correctly, in app.json and/or .extjsrc files.
+                //
                 if (d === dir || d.indexOf(dir) !== -1 || dir.indexOf(d) !== -1) {
                     return true;
                 }
@@ -253,7 +265,7 @@ class ExtjsLanguageManager
             return false;
         });
 
-        log.log("start indexing", 1);
+        log.logMethodStart("indexing all", 1, "", true);
 
         for (const conf of config)
         {
@@ -284,6 +296,7 @@ class ExtjsLanguageManager
 
             const increment = Math.round(1 / numFiles * 100);
 
+            log.logBlank();
             log.logValue("   # of files to index", numFiles, 1);
 
             for (const dir of dirs)
@@ -293,9 +306,10 @@ class ExtjsLanguageManager
                     const uris = await workspace.findFiles(`${dir}/**/*.js`);
                     for (const uri of uris)
                     {
-                        log.logValue("      Indexing file", uri.fsPath, 1);
+                        log.logBlank();
+                        log.logValue("   Indexing file", uri.fsPath, 1);
                         const text = (await workspace.fs.readFile(uri)).toString();
-                        await this.indexing(uri.fsPath, text);
+                        await this.indexing(uri.fsPath, text, "   ");
                         const pct = Math.round(++currentFileIdx / numFiles * 100);
                         progress?.report({
                             increment,
@@ -307,6 +321,8 @@ class ExtjsLanguageManager
                 }
             }
         }
+
+        log.logMethodDone("indexing all", 1, "", true);
     }
 
 
@@ -450,7 +466,7 @@ function bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
 }
 
 
-function commentToMarkdown(property: string, comment: string | undefined): MarkdownString | undefined
+function commentToMarkdown(property: string, comment: string | undefined, logPad = ""): MarkdownString | undefined
 {
     if (!comment || !property) {
         return;
@@ -480,8 +496,7 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
     //     https://clojure.org/community/editing
     //
 
-    log.log("   build markdown string from comment", 1);
-    log.logValue("      ", comment, 3);
+    log.logMethodStart("build markdown string from comment", 2, logPad, false, [["comment", comment]]);
 
     const commentFmt = comment?.trim()
         //
@@ -609,6 +624,7 @@ function commentToMarkdown(property: string, comment: string | undefined): Markd
         }
     });
 
+    log.logMethodDone("build markdown string from comment", 2);
     return markdown;
 }
 
