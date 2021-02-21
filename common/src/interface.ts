@@ -1,4 +1,21 @@
 
+export enum DeclarationType
+{
+    const,
+    let,
+    var
+}
+
+
+export enum VariableType
+{
+    _any,
+    _arr,
+    _boolean,
+    _number,
+    _object,
+    _string
+}
 
 export interface IExtJsBase
 {
@@ -67,16 +84,25 @@ export interface IConfig extends IProperty
 
 export interface IMethod extends IProperty
 {
-    params?: IVariable[];
+    params?: IParameter[];
     variables?: IVariable[];
 }
+
+
+export interface IParameter extends IExtJsBase
+{
+    doc?: string;
+    methodName: string;
+    declaration?: DeclarationType;
+    type?: VariableType;
+}
+
 
 export interface IPosition
 {
     line: number;
     column: number;
 }
-
 
 
 export interface IProperty extends IExtJsBase
@@ -106,25 +132,12 @@ export interface ISettings
 }
 
 
-export enum VariableType
-{
-    const,
-    let,
-    var
-}
-
-export interface TestTest2
-{
-    debugClient: boolean;
-    debugServer: boolean;
-    debugLevel: number;
-    include: string[] | string;
-}
 export interface IVariable extends IExtJsBase
 {
-    methodName: string;
     componentClass: string;
-    type: VariableType;
+    methodName: string;
+    declaration?: DeclarationType;
+    type?: VariableType;
 }
 
 

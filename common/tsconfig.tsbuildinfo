@@ -157,13 +157,18 @@
         "affectsGlobalScope": true
       },
       "./src/interface.ts": {
-        "version": "1eb8977e56c1ea9c2d3940342430938b3ea4cbfdb238af1570b06a43ac55d2a9",
-        "signature": "c30e43d42b629184553a102efba284e8cc0d74c1ff7bf62c8cfa9e2d643b3660",
+        "version": "94764226e75e675220054b340d1c84951a733ee52ec32aa85b24ee4dd050ce17",
+        "signature": "78bd092a8fc2e65994aa877e0a06f4df8276d047180d16ba9faa299f85f16655",
+        "affectsGlobalScope": false
+      },
+      "./src/utils.ts": {
+        "version": "2d077c329b2119f9dbc68b093f0d805f9894bee6334cff87fd477ce2c34a3c74",
+        "signature": "7c17883ebb701f5df3339c8646615d8d4bd81dd843e6492ef96077104d8098f1",
         "affectsGlobalScope": false
       },
       "./src/index.ts": {
-        "version": "3cd58f26e428e910c0db603870f8dc2b2b3a694021d7b5b86d8cab88c5d9da6e",
-        "signature": "9277627d8a1c6791c5b3468952f47e6ab1abd9e6342ca9f1eb89e00654acff07",
+        "version": "ba02ef2fdd704b231f2b507b416d75bbb3ec44b3366e2cc0739ae172ac9ea7d7",
+        "signature": "d2f2c3b3e0aa8d4ec667159d7276b25f32e6c0ba5148e2c0a88d33e0bc32b06e",
         "affectsGlobalScope": false
       },
       "../node_modules/@babel/types/lib/index.d.ts": {
@@ -458,10 +463,9 @@
       }
     },
     "options": {
-      "sourceMap": true,
       "target": 1,
       "module": 1,
-      "moduleResolution": 2,
+      "sourceMap": true,
       "strict": true,
       "outDir": "./lib",
       "rootDir": "./src",
@@ -473,7 +477,8 @@
     },
     "referencedMap": {
       "./src/index.ts": [
-        "./src/interface.ts"
+        "./src/interface.ts",
+        "./src/utils.ts"
       ],
       "../node_modules/@types/babel__traverse/index.d.ts": [
         "../node_modules/@babel/types/lib/index.d.ts"
@@ -647,7 +652,8 @@
     },
     "exportedModulesMap": {
       "./src/index.ts": [
-        "./src/interface.ts"
+        "./src/interface.ts",
+        "./src/utils.ts"
       ],
       "../node_modules/@types/babel__traverse/index.d.ts": [
         "../node_modules/@babel/types/lib/index.d.ts"
@@ -822,6 +828,7 @@
     "semanticDiagnosticsPerFile": [
       "./src/index.ts",
       "./src/interface.ts",
+      "./src/utils.ts",
       "../node_modules/@babel/types/lib/index.d.ts",
       "../node_modules/@types/babel__traverse/index.d.ts",
       "../node_modules/@types/eslint-visitor-keys/index.d.ts",

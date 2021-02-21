@@ -2,11 +2,14 @@
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as log from "./log";
-import { IComponent, IConfig, IMethod, IXtype, IProperty, IVariable, VariableType, utils } from "../../common";
+import {
+    IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
+    DeclarationType, IParameter, utils, VariableType
+} from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
-    isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, BlockStatement,
-    isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression
+    isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression,
+    isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration
 } from "@babel/types";
 
 
@@ -271,99 +274,6 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 }
 
 
-function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined): IMethod[]
-{
-    const methods: IMethod[] = [];
-    for (const m of propertyMethods)
-    {
-        if (isFunctionExpression(m.value))
-        {
-            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName)
-            {
-                methods.push({
-                    name: propertyName,
-                    doc: getComments(m.leadingComments),
-                    start: m.loc!.start,
-                    end: m.loc!.end,
-                    params: undefined, // parseParams(m, propertyName, text ?? ""),
-                    variables: parseVariables(m, propertyName, text ?? "")
-                });
-            }
-        }
-    }
-    return methods;
-}
-
-
-function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
-{
-    const properties: IProperty[] = [];
-    propertyProperties.forEach((m) =>
-    {
-        if (!isFunctionExpression(m.value))
-        {
-            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName && ignoreProperties.indexOf(propertyName) === -1)
-            {
-                properties.push({
-                    name: propertyName,
-                    doc: getComments(m.leadingComments),
-                    start: m.loc!.start,
-                    end: m.loc!.end
-                });
-            }
-        }
-    });
-    return properties;
-}
-
-
-function parseConfig(propertyConfig: ObjectProperty)
-{
-    const requires: IConfig[] = [];
-    if (isObjectExpression(propertyConfig.value))
-    {
-        propertyConfig.value.properties.reduce<IConfig[]>((p, it) =>
-        {
-            if (it?.type === "ObjectProperty") {
-                const propertyName = isIdentifier(it.key) ? it.key.name : undefined;
-                if (propertyName)
-                {
-                    p.push({
-                        name: propertyName,
-                        doc: getComments(it.leadingComments),
-                        start: it.loc!.start,
-                        end: it.loc!.end,
-                        getter: "get" + utils.properCase(propertyName),
-                        setter: "set" + utils.properCase(propertyName)
-                    });
-                }
-            }
-            return p;
-        }, requires);
-    }
-    return requires;
-}
-
-
-function parseRequires(propertyRequires: ObjectProperty)
-{
-    const requires: string[] = [];
-    if (isArrayExpression(propertyRequires.value))
-    {
-        propertyRequires.value.elements
-            .reduce<string[]>((p, it) => {
-            if (it?.type === "StringLiteral") {
-                p.push(it.value);
-            }
-            return p;
-        }, requires);
-    }
-    return requires;
-}
-
-
 function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 {
     const xtypes: string[] = [];
@@ -418,69 +328,169 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 }
 
 
-function parseParams(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
+function parseConfig(propertyConfig: ObjectProperty)
 {
-    const variables: IVariable[] = [];
-    if (!text || !methodName) {
-        return variables;
-    }
-
-    const ast = getMethodAst(objEx, methodName, text);
-    traverse(ast,
+    const requires: IConfig[] = [];
+    if (isObjectExpression(propertyConfig.value))
     {
-        VariableDeclaration(path)
+        propertyConfig.value.properties.reduce<IConfig[]>((p, it) =>
         {
-            const node = path.node;
-
-            if (!isVariableDeclaration(node) || !node.declarations || node.declarations.length === 0) {
-                return;
+            if (it?.type === "ObjectProperty") {
+                const propertyName = isIdentifier(it.key) ? it.key.name : undefined;
+                if (propertyName)
+                {
+                    p.push({
+                        name: propertyName,
+                        doc: getComments(it.leadingComments),
+                        start: it.loc!.start,
+                        end: it.loc!.end,
+                        getter: "get" + utils.properCase(propertyName),
+                        setter: "set" + utils.properCase(propertyName)
+                    });
+                }
             }
+            return p;
+        }, requires);
+    }
+    return requires;
+}
 
-            const dec = node.declarations[0];
 
-            if (!isVariableDeclarator(dec) || !isIdentifier(dec.id) || !isCallExpression(dec.init)) {
-                return;
-            }
-
-            const varName = dec.id.name;
-            const callee = dec.init.callee;
-            const args = dec.init.arguments;
-
-            if (!isMemberExpression(callee) || !isIdentifier(callee.object) || !isIdentifier(callee.property) ||
-                !isStringLiteral(args[0]) || callee.property.name !== "create")
+function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined): IMethod[]
+{
+    const methods: IMethod[] = [];
+    for (const m of propertyMethods)
+    {
+        if (isFunctionExpression(m.value))
+        {
+            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
+            if (propertyName)
             {
-                return;
+                const doc = getComments(m.leadingComments),
+                      params = parseParams(m, propertyName, text);
+                if (doc && params.length)
+                {
+                    for (const p of params)
+                    {
+                        const paramDoc = doc.match(new RegExp(`@param\\s*(\\{\\w+\\})*\\s*${p.name}[^\\r\\n]*`));
+                        if (paramDoc)
+                        {
+                            p.doc = paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
+                            if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
+                            {
+                                const type = paramDoc[1].replace(/[\{\}]/g, "").toLowerCase();
+                                switch (type)
+                                {
+                                    case "bool":
+                                    case "boolean":
+                                        p.type = VariableType._boolean;
+                                        break;
+                                    case "int":
+                                    case "number":
+                                        p.type = VariableType._number;
+                                        break;
+                                    case "object":
+                                        p.type = VariableType._object;
+                                        break;
+                                    case "string":
+                                        p.type = VariableType._string;
+                                        break;
+                                    default:
+                                        p.type = VariableType._any;
+                                        break;
+                                }
+                            }
+                        }
+                    }
+                }
+                methods.push({
+                    name: propertyName,
+                    start: m.loc!.start,
+                    end: m.loc!.end,
+                    variables: parseVariables(m, propertyName, text),
+                    doc,
+                    params
+                });
             }
+        }
+    }
+    return methods;
+}
 
-            let inc = false;
-            if (callee.object.name === "Ext")
-            {
-                inc = true;
-            }
-            if (inc)
-            {
-                // console.log(44, varName, methodName);
-                log.logValue("added variable", varName, 5);
-                log.logValue("   method", methodName, 5);
-                log.logValue("   instance cls", args[0].value, 5);
 
-                variables.push({
-                    name: varName,
-                    type: VariableType[node.kind],
-                    start: node.declarations[0].loc!.start,
-                    end: node.declarations[0].loc!.end,
-                    componentClass: args[0].value,
-                    methodName
+function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
+{
+    const properties: IProperty[] = [];
+    propertyProperties.forEach((m) =>
+    {
+        if (!isFunctionExpression(m.value))
+        {
+            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
+            if (propertyName && ignoreProperties.indexOf(propertyName) === -1)
+            {
+                properties.push({
+                    name: propertyName,
+                    doc: getComments(m.leadingComments),
+                    start: m.loc!.start,
+                    end: m.loc!.end
                 });
             }
         }
     });
-
-    return variables;
+    return properties;
 }
 
 
-function parseVariables(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
+function parseRequires(propertyRequires: ObjectProperty)
+{
+    const requires: string[] = [];
+    if (isArrayExpression(propertyRequires.value))
+    {
+        propertyRequires.value.elements
+            .reduce<string[]>((p, it) => {
+            if (it?.type === "StringLiteral") {
+                p.push(it.value);
+            }
+            return p;
+        }, requires);
+    }
+    return requires;
+}
+
+
+function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined): IParameter[]
+{
+    const params: IParameter[] = [];
+    if (!text || !methodName) {
+        return params;
+    }
+
+    const ast = getMethodAst(objEx, methodName, text),
+          node = ast?.program.body[0];
+
+    if (isFunctionDeclaration(node))
+    {
+        const fnParams = node.params;
+        for (const p of fnParams)
+        {
+            if (isIdentifier(p))
+            {
+                params.push({
+                    name: p.name,
+                    declaration: DeclarationType.var,
+                    start: p.loc!.start,
+                    end: p.loc!.end,
+                    methodName
+                });
+            }
+        }
+    }
+
+    return params;
+}
+
+
+function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined): IVariable[]
 {
     const variables: IVariable[] = [];
     if (!text || !methodName) {
@@ -559,7 +569,9 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string)
 
             if (!isMemberExpression(callee) || !isIdentifier(callee.property) || callee.property.name !== "create" || !callerCls)
             {
-                return;
+                // if (!isStringLiteral(args[0]) || args[0].value !== "this") {
+                    return;
+                // }
             }
 
             let value = "";
@@ -589,7 +601,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string)
 
                 variables.push({
                     name: varName,
-                    type: VariableType[node.kind],
+                    declaration: DeclarationType[node.kind],
                     start: node.declarations[0].loc!.start,
                     end: node.declarations[0].loc!.end,
                     componentClass: value,
