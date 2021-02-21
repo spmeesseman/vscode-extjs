@@ -184,9 +184,32 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                     //
                     const thisCls = getClassFromFile(fsPath);
                     if (thisCls) {
-                        lineCls = thisCls;
+                        const thisCmp = getComponent(thisCls) || getComponentByAlias(thisCls);
+                        if (thisCmp)
+                        {
+                            for (const method of thisCmp.methods)
+                            {
+                                if (method.variables)
+                                {
+                                    for (const variable of method.variables)
+                                    {
+                                        if (variable.name === lineCls)
+                                        {
+                                            const instanceCmp = getComponent(variable.componentClass) || getComponentByAlias(variable.componentClass);
+                                            if (instanceCmp && instanceCmp.markdown)
+                                            {
+                                                lineCls = variable.componentClass;
+                                                log.logValue("   set instabce class", lineCls, 1);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
                 if (cls === lineCls)
                 {
                     log.log("   methods", 1);
