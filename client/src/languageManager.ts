@@ -81,7 +81,8 @@ export enum ComponentType
     Config = 1 << 0,
     Method = 1 << 1,
     Property = 1 << 2,
-    Widget = 1 << 3
+    Widget = 1 << 3,
+    Class = 1 << 4
 }
 
 class ExtjsLanguageManager
@@ -608,7 +609,13 @@ async function initConfig()
 
 export function getClassFromPath(fsPath: string)
 {
-    const wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
+    //
+    // TODO - check / test file delete
+    //
+
+    const // uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
+          // wsf = workspace.getWorkspaceFolder(Uri.parse(`file://${uriPath}`));
+          wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
 
     log.log("get component by fs path", 1);
     log.logValue("   path", fsPath, 2);

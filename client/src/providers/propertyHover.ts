@@ -9,7 +9,7 @@ import {
 
 import {
     ComponentType, getComponent, getComponentClass, getConfig, getMethod,
-    getProperty, getComponentByAlias, getClassFromPath, getComponentInstance
+    getProperty, getComponentByAlias, getComponentInstance
 } from "../languageManager";
 
 
@@ -114,20 +114,6 @@ class DocHoverProvider implements HoverProvider
                 log.logValue("provide class instance hover info", property, 1);
                 return new Hover(cmp.markdown);
             }
-        }
-
-        //
-        // Local instance classes
-        //
-        else
-        {
-            const fsPath = document.uri.fsPath,
-                  thisCls = getClassFromPath(fsPath),
-                  pIdx = lineText.indexOf(property),
-                  lineCls = lineText?.substring(0, pIdx + property.length).trim()
-                                     .replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
-                  cmp = getComponent(thisCls) || getComponentByAlias(thisCls);
-
         }
 
         return undefined;
