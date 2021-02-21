@@ -1,5 +1,9 @@
 
-
+/**
+ * @class VSCodeExtJS.common.PhysicianDropdown
+ * 
+ * The Physician Dropdown.
+ */
 Ext.define('VSCodeExtJS.common.PhysicianDropdown', 
 {
 	/**

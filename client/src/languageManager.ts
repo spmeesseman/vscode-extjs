@@ -25,6 +25,7 @@ export const configToComponentClassMapping: { [property: string]: string | undef
 export const methodToComponentClassMapping: { [method: string]: string | undefined } = {};
 export const propertyToComponentClassMapping: { [method: string]: string | undefined } = {};
 export const xtypeToComponentClassMapping: { [method: string]: string | undefined } = {};
+export const fileToComponentClassMapping: { [fsPath: string]: string | undefined } = {};
 
 const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToAliasesMapping: { [componentClass: string]: string[] | undefined } = {};
@@ -35,6 +36,7 @@ const componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | un
 const componentClassToPropertiesMapping: { [componentClass: string]: IProperty[] | undefined } = {};
 const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
 export const componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
+export const componentClassToFilesMapping: { [componentClass: string]: string | undefined } = {};
 
 enum MarkdownChars
 {
@@ -136,6 +138,12 @@ class ExtjsLanguageManager
             componentClassToPropertiesMapping[componentClass] = properties;
             componentClassToXTypesMapping[componentClass] = xtypes;
             componentClassToAliasesMapping[componentClass] = aliases;
+
+            //
+            // Map the filesystem path <-> component class
+            //
+            fileToComponentClassMapping[fsPath] = componentClass;
+            componentClassToFilesMapping[componentClass] = fsPath;
 
             //
             // Map the component class to it's component (it's own definition)
@@ -618,6 +626,19 @@ export function getClassFromPath(fsPath: string)
 
     log.logValue("   component class", cmpClass, 2);
     return cmpClass;
+}
+
+
+export function getClassFromFile(fsPath: string): string | undefined
+{
+    const cls = fileToComponentClassMapping[fsPath];
+    log.log("get component class by file", 1);
+    log.logValue("   file", fsPath, 2);
+    if (cls) {
+        log.log("   found component class", 3);
+        return cls;
+    }
+    return undefined;
 }
 
 

@@ -9,7 +9,7 @@ import {
 
 import {
     ComponentType, getComponent, getComponentClass, getConfig, getMethod,
-    getProperty, getComponentByAlias
+    getProperty, getComponentByAlias, getClassFromPath, getClassFromFile
 } from "../languageManager";
 
 
@@ -99,13 +99,71 @@ class DocHoverProvider implements HoverProvider
         {
             const pIdx = lineText.indexOf(property),
                   lineCls = lineText?.substring(0, pIdx + property.length).trim()
-                                     .replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
-                  cmp = getComponent(lineCls) || getComponentByAlias(lineCls);
+                                     .replace(/[\s\w]+=[\s]*(new)*\s*/, "");
+            let cmp = getComponent(lineCls) || getComponentByAlias(lineCls);
+
             if (cmp && cmp.markdown)
             {
                 log.logValue("provide class hover info", property, 1);
                 return new Hover(cmp.markdown);
             }
+
+            //
+            // Check instance properties
+            //
+
+            const thisCls = getClassFromFile(document.uri.fsPath);
+            if (!thisCls) {
+                return;
+            }
+
+            cmp = getComponent(thisCls) || getComponentByAlias(thisCls);
+            if (!cmp) {
+                return;
+            }
+
+            for (const variable of cmp.privates)
+            {
+
+            }
+
+            for (const variable of cmp.statics)
+            {
+
+            }
+
+            for (const method of cmp.methods)
+            {
+                if (method.variables)
+                {
+                    for (const variable of method.variables)
+                    {
+                        if (variable.name === property)
+                        {
+                            const instanceCmp = getComponent(variable.componentClass) || getComponentByAlias(variable.componentClass);
+                            if (instanceCmp && instanceCmp.markdown)
+                            {
+                                log.logValue("provide instance class hover info", property, 1);
+                                return new Hover(instanceCmp.markdown);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //
+        // Local instance classes
+        //
+        else
+        {
+            const fsPath = document.uri.fsPath,
+                  thisCls = getClassFromPath(fsPath),
+                  pIdx = lineText.indexOf(property),
+                  lineCls = lineText?.substring(0, pIdx + property.length).trim()
+                                     .replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
+                  cmp = getComponent(thisCls) || getComponentByAlias(thisCls);
+
         }
 
         return undefined;
