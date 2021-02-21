@@ -5,7 +5,7 @@ import {
 } from "vscode";
 import {
     methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance,
-    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias
+    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias, getComponentClass
 } from "../languageManager";
 import * as log from "../common/log";
 import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common";
@@ -174,6 +174,22 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
         log.logValue("   line cls", lineCls, 3);
 
+        if (lineText === "this.")
+        {
+            const thisCls = getClassFromFile(fsPath);
+            if (thisCls) {
+                log.log("   methods", 1);
+                    completionItems.push(...this.getCmpCompletionItems(thisCls, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
+
+                    log.log("   properties", 1);
+                    completionItems.push(...this.getCmpCompletionItems(thisCls, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
+
+                    log.log("   configs", 1);
+                    completionItems.push(...this.getCmpCompletionItems(thisCls, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
+            }
+            return completionItems;
+        }
+
         Object.keys(map).forEach((cls) =>
         {
             if (cls)
@@ -185,7 +201,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                     const thisCmp = getComponentInstance(lineCls, fsPath);
                     if (thisCmp) {
                         lineCls = thisCmp.componentClass;
-                        log.logValue("   set instabce class", lineCls, 1);
+                        log.logValue("   set instance class", lineCls, 1);
                     }
                 }
 
