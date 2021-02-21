@@ -22,10 +22,11 @@ class PropertyDefinitionProvider implements DefinitionProvider
 
         const line = position.line,
               nextLine = document.lineAt(line + 1),
-              lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start));
+              lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start))
+                                 .trim().replace(/[\s\w]+=[\s]*(new)*\s*/, "");
         let property = document.getText(range);
 
-        if (lineText.match(new RegExp(`${property}\\([\\W\\w]*\\)\\s*;\\s*$`)))
+        if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
         {
             cmpType = ComponentType.Method;
         }
@@ -33,36 +34,50 @@ class PropertyDefinitionProvider implements DefinitionProvider
         {
             cmpType = ComponentType.Property;
         }
+        else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
+        {
+            cmpType = ComponentType.Class;
+        }
 
         if (cmpType !== ComponentType.None)
         {
+            let cmpClass: string | undefined;
+
             log.log("provide definition", 1);
             log.logValue("   property", property, 2);
             log.logValue("   component type", cmpType, 2);
 
-            let cmpClass = getComponentClass(property, cmpType);
-            if (!cmpClass)
-            {   //
-                // If this is a method, check for getter/setter for a config property...
-                //
-                if (cmpType === ComponentType.Method && property.startsWith("get") || property.startsWith("set"))
-                {
-                    log.log("   method not found, look for getter/setter config", 2);
-                    property = utils.lowerCaseFirstChar(property.substring(3));
-                    cmpType = ComponentType.Config;
-                    log.logValue("      config name", property, 2);
-                    cmpClass = getComponentClass(property, cmpType, lineText);
-                }
-                //
-                // If this is a property, check for a config property...
-                //
-                else if (cmpType === ComponentType.Property)
-                {
-                    log.log("   property not found, look for config", 2);
-                    cmpType = ComponentType.Config;
-                    cmpClass = getComponentClass(property, cmpType, lineText);
+            if (cmpType === ComponentType.Class)
+            {
+                cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
+            }
+            else
+            {
+                cmpClass = getComponentClass(property, cmpType);
+                if (!cmpClass)
+                {   //
+                    // If this is a method, check for getter/setter for a config property...
+                    //
+                    if (cmpType === ComponentType.Method && property.startsWith("get") || property.startsWith("set"))
+                    {
+                        log.log("   method not found, look for getter/setter config", 2);
+                        property = utils.lowerCaseFirstChar(property.substring(3));
+                        cmpType = ComponentType.Config;
+                        log.logValue("      config name", property, 2);
+                        cmpClass = getComponentClass(property, cmpType, lineText);
+                    }
+                    //
+                    // If this is a property, check for a config property...
+                    //
+                    else if (cmpType === ComponentType.Property)
+                    {
+                        log.log("   property not found, look for config", 2);
+                        cmpType = ComponentType.Config;
+                        cmpClass = getComponentClass(property, cmpType, lineText);
+                    }
                 }
             }
+
             if (cmpClass)
             {
                 log.logValue("   component class", cmpClass, 2);
