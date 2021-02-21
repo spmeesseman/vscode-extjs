@@ -4,7 +4,7 @@ import {
     TextDocument, CompletionItemKind
 } from "vscode";
 import {
-    methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping,
+    methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance,
     getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias
 } from "../languageManager";
 import * as log from "../common/log";
@@ -182,31 +182,10 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                 {   //
                     // Check instance classes in file
                     //
-                    const thisCls = getClassFromFile(fsPath);
-                    if (thisCls) {
-                        const thisCmp = getComponent(thisCls) || getComponentByAlias(thisCls);
-                        if (thisCmp)
-                        {
-                            for (const method of thisCmp.methods)
-                            {
-                                if (method.variables)
-                                {
-                                    for (const variable of method.variables)
-                                    {
-                                        if (variable.name === lineCls)
-                                        {
-                                            const instanceCmp = getComponent(variable.componentClass) || getComponentByAlias(variable.componentClass);
-                                            if (instanceCmp && instanceCmp.markdown)
-                                            {
-                                                lineCls = variable.componentClass;
-                                                log.logValue("   set instabce class", lineCls, 1);
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                    const thisCmp = getComponentInstance(lineCls, fsPath);
+                    if (thisCmp) {
+                        lineCls = thisCmp.componentClass;
+                        log.logValue("   set instabce class", lineCls, 1);
                     }
                 }
 

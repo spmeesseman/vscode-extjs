@@ -9,7 +9,7 @@ import {
 
 import {
     ComponentType, getComponent, getComponentClass, getConfig, getMethod,
-    getProperty, getComponentByAlias, getClassFromPath, getClassFromFile
+    getProperty, getComponentByAlias, getClassFromPath, getComponentInstance
 } from "../languageManager";
 
 
@@ -108,47 +108,11 @@ class DocHoverProvider implements HoverProvider
                 return new Hover(cmp.markdown);
             }
 
-            //
-            // Check instance properties
-            //
-
-            const thisCls = getClassFromFile(document.uri.fsPath);
-            if (!thisCls) {
-                return;
-            }
-
-            cmp = getComponent(thisCls) || getComponentByAlias(thisCls);
-            if (!cmp) {
-                return;
-            }
-
-            for (const variable of cmp.privates)
+            cmp = getComponentInstance(property, document.uri.fsPath);
+            if (cmp && cmp.markdown)
             {
-                // TODO - property hover - check private sec
-            }
-
-            for (const variable of cmp.statics)
-            {
-                // TODO - property hover - check static sec
-            }
-
-            for (const method of cmp.methods)
-            {
-                if (method.variables)
-                {
-                    for (const variable of method.variables)
-                    {
-                        if (variable.name === property)
-                        {
-                            const instanceCmp = getComponent(variable.componentClass) || getComponentByAlias(variable.componentClass);
-                            if (instanceCmp && instanceCmp.markdown)
-                            {
-                                log.logValue("provide instance class hover info", property, 1);
-                                return new Hover(instanceCmp.markdown);
-                            }
-                        }
-                    }
-                }
+                log.logValue("provide class instance hover info", property, 1);
+                return new Hover(cmp.markdown);
             }
         }
 
