@@ -4,7 +4,7 @@ import { connection, globalSettings } from "./server";
 const logValueWhiteSpace = 40;
 
 
-export function log(msg: string, level?: number)
+export function log(msg: string, level?: number, logPad = "")
 {
     if (msg === null || msg === undefined) {
         return;
@@ -44,7 +44,45 @@ export function logError(msg: string | string[])
 }
 
 
-export function logValue(msg: string, value: any, level?: number)
+export function logMethodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: [string, any][])
+{
+    if (msg === null || msg === undefined) {
+        return;
+    }
+
+    if (globalSettings.debugServer === true)
+    {
+        const lLevel = level || 1;
+        if (doLogBlank === true) {
+            logBlank(lLevel);
+        }
+        log(logPad + "*start* " + msg, lLevel);
+        if (params) {
+            for (const [ n, v] of params) {
+                logValue(logPad + "   " + n, v, lLevel + 1);
+            }
+        }
+    }
+}
+
+
+export function logMethodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean)
+{
+    if (msg === null || msg === undefined) {
+        return;
+    }
+
+    if (globalSettings.debugServer === true)
+    {
+        if (doLogBlank === true) {
+            logBlank(level || 1);
+        }
+        log("*done* " + msg, level || 1, logPad);
+    }
+}
+
+
+export function logValue(msg: string, value: any, level?: number, logPad = "")
 {
     let logMsg = msg;
     const spaces = msg && msg.length ? msg.length : (value === undefined ? 9 : 4);
@@ -63,5 +101,5 @@ export function logValue(msg: string, value: any, level?: number)
         logMsg += ": null";
     }
 
-    log(logMsg, level);
+    log(logMsg, level, logPad);
 }

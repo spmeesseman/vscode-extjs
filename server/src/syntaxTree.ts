@@ -14,7 +14,7 @@ const ignoreProperties = [
     "config", "items", "listeners", "requires", "privates", "statics"
 ];
 
-export async function getExtJsComponent(text: string)
+export function getExtJsComponent(text: string)
 {
     const ast = parse(text);
     let componentName = "";
@@ -35,7 +35,8 @@ export async function getExtJsComponent(text: string)
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
-                    log.log("Parse ExtJs file", 1);
+                    log.logBlank(1);
+                    log.log("get extjs component", 1);
                     //
                     // Ext.define should be in the form:
                     //
@@ -56,7 +57,7 @@ export async function getExtJsComponent(text: string)
 }
 
 
-export async function parseExtJsFile(fsPath: string, text: string, isFramework?: boolean)
+export function parseExtJsFile(fsPath: string, text: string, isFramework?: boolean)
 {
     const ast = parse(text);
     const components: IComponent[] = [];
@@ -77,7 +78,7 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
-                    log.log("Parse ExtJs file", 1);
+                    log.logMethodStart("parse extjs file", 1, "", true, [["file", fsPath]]);
 
                     //
                     // Ext.define should be in the form:
@@ -134,6 +135,7 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                                 start: propertyRequires.loc!.start,
                                 end: propertyRequires.loc!.end,
                             };
+                            logProperties("requires", componentInfo.requires?.value);
                         }
 
                         if (isObjectProperty(propertyAlias))
@@ -149,42 +151,68 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                             componentInfo.widgets.push(...parseClassDefProperties(propertyXtype)[0]);
                         }
 
+                        logProperties("aliases", componentInfo.aliases);
+                        logProperties("widgets", componentInfo.widgets);
+
                         if (isObjectProperty(propertyConfig))
                         {
                             componentInfo.configs.push(...parseConfig(propertyConfig));
                         }
+                        logProperties("configs", componentInfo.configs);
 
-                        if (isObjectProperty(propertyPrivates)) {
+                        if (isObjectProperty(propertyPrivates))
+                        {
                             componentInfo.privates.push(...parseConfig(propertyPrivates));
                         }
+                        logProperties("privates", componentInfo.privates);
 
-                        if (isObjectProperty(propertyStatics)) {
+                        if (isObjectProperty(propertyStatics))
+                        {
                             componentInfo.privates.push(...parseConfig(propertyStatics));
                         }
+                        logProperties("statics", componentInfo.statics);
 
                         if (propertyProperty && propertyProperty.length)
                         {
                             componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[]));
                         }
+                        logProperties("properties", componentInfo.properties);
 
                         if (propertyMethod && propertyMethod.length)
                         {
                             componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], !isFramework ? text : undefined));
+                            // for (const m of propertyMethod)
+                            // {
+                            //     if (isObjectProperty(m) && isFunctionExpression(m.value))
+                            //     {
+                            //         const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
+                            //         if (propertyName)
+                            //         {
+                            //             console.log(111, propertyName);
+                            //             for (const method of componentInfo.methods)
+                            //             {
+                            //                 if (method.name === propertyName)
+                            //                 {
+                            //                     // m.params?.push(...parseParams(propertyMethod as ObjectProperty[], !isFramework ? text : undefined));
+                            //                     //parseVariables(m, propertyName, text ?? "");
+                            //                     console.log(1, method.name);
+                            //                     console.log(method.variables);
+                            //                 }
+                            //             }
+                            //         }
+                            //     }
+                            // }
                         }
+                        logProperties("methods", componentInfo.methods);
 
                         if (componentInfo.xtypes)
                         {
                             componentInfo.xtypes.push(...parseXTypes(args[1], text));
                         }
-
-                        logProperties("requires", componentInfo.requires?.value);
-                        logProperties("widgets", componentInfo.widgets);
                         logProperties("xtypes", componentInfo.xtypes);
-                        logProperties("configs", componentInfo.configs);
-                        logProperties("methods", componentInfo.methods);
-                        logProperties("privates", componentInfo.privates);
-                        logProperties("statics", componentInfo.statics);
                     }
+
+                    log.logMethodDone("parse extjs file", 1, "", true);
                 }
             }
         }
@@ -280,7 +308,7 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined): IMethod[]
 {
     const methods: IMethod[] = [];
-    propertyMethods.forEach((m) =>
+    for (const m of propertyMethods)
     {
         if (isFunctionExpression(m.value))
         {
@@ -292,12 +320,12 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     doc: getComments(m.leadingComments),
                     start: m.loc!.start,
                     end: m.loc!.end,
-                    params: parseParams(m, propertyName, text ?? ""),
-                    variables: parseVariables(m, propertyName, text ?? "")
+                    params: undefined, // parseParams(m, propertyName, text ?? ""),
+                    variables: undefined // parseVariables(m, propertyName, text ?? "")
                 });
             }
         }
-    });
+    }
     return methods;
 }
 
@@ -631,6 +659,8 @@ function parseXTypes(objEx: ObjectExpression, text: string): IXtype[]
             }
             start.line += line;
             end.line += line;
+
+            log.log("   push xtype " + valueNode.value, 3);
 
             xType.push({
                 name: valueNode.value,

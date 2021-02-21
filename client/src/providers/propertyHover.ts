@@ -29,7 +29,7 @@ class DocHoverProvider implements HoverProvider
         //
         // Methods
         //
-        if (lineText.match(new RegExp(`${property}\\([\\W\\w]*\\)\\s*;\\s*$`)))
+        if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
         {
             const cmpClass = getComponentClass(property, ComponentType.Method, lineText);
             if (cmpClass)
@@ -74,9 +74,11 @@ class DocHoverProvider implements HoverProvider
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
         {
             const cmpClass = getComponentClass(property, ComponentType.Config | ComponentType.Property, lineText);
-            if (cmpClass) {
+            if (cmpClass)
+            {
                 const config = getConfig(cmpClass, property);
-                if (config && config.markdown) {
+                if (config && config.markdown)
+                {
                     log.logValue("provide config hover info", property, 1);
                     return new Hover(config.markdown);
                 }
@@ -95,9 +97,12 @@ class DocHoverProvider implements HoverProvider
         //
         else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
         {
-            const lineCls = lineText?.substring(0, lineText.indexOf(property) + property.length).trim();
-            const cmp = getComponent(lineCls) || getComponentByAlias(lineCls);
-            if (cmp && cmp.markdown) {
+            const pIdx = lineText.indexOf(property),
+                  lineCls = lineText?.substring(0, pIdx + property.length).trim()
+                                     .replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
+                  cmp = getComponent(lineCls) || getComponentByAlias(lineCls);
+            if (cmp && cmp.markdown)
+            {
                 log.logValue("provide class hover info", property, 1);
                 return new Hover(cmp.markdown);
             }

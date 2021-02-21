@@ -76,6 +76,9 @@ Ext.define('VSCodeExtJS',
 		VSCodeExtJS.AppUtilities.alertError("This is a test");
 		AppUtils.alertError("This is a test");
 
+		VSCodeExtJS.common.PhysicianDropdown.create();
+		VSCodeExtJS.common.UserDropdown.create();
+
 		const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown", {
 			hidden: false,
 			disabled: true
