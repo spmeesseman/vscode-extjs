@@ -53,7 +53,7 @@
         ],
         "sass":
         {
-            "namespace": "GEMS",
+            "namespace": "VSCodeExtJS",
             "etc": [
                 "app/shared/sass/etc/all.scss",
                 "app/desktop/sass/etc/all.scss"

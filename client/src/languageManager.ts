@@ -242,6 +242,17 @@ class ExtjsLanguageManager
             numFiles = 0,
             currentFileIdx = 0;
 
+        const _isIndexed = ((dir: string) =>
+        {
+            for (const d of processedDirs)
+            {
+                if (d === dir || d.indexOf(dir) !== -1 || dir.indexOf(d) !== -1) {
+                    return true;
+                }
+            }
+            return false;
+        });
+
         log.log("start indexing", 1);
 
         for (const conf of config)
@@ -264,7 +275,7 @@ class ExtjsLanguageManager
 
             for (const dir of dirs)
             {
-                if (!processedDirs.includes(dir))
+                if (!_isIndexed(dir))
                 {
                     const uris = await workspace.findFiles(`${dir}/**/*.js`);
                     numFiles += uris.length;
@@ -277,7 +288,7 @@ class ExtjsLanguageManager
 
             for (const dir of dirs)
             {
-                if (!processedDirs.includes(dir))
+                if (!_isIndexed(dir))
                 {
                     const uris = await workspace.findFiles(`${dir}/**/*.js`);
                     for (const uri of uris)
@@ -638,6 +649,20 @@ async function initConfig(): Promise<boolean>
 
     if (appDotJsonUris)
     {
+        const _addXPaths = ((p: string[], c: string[]) =>
+        {
+            if (!c) {
+                c = p;
+            }
+            else {
+                if (typeof p === "string")
+                {
+                    p = [ p ];
+                }
+                c = c.concat(p);
+            }
+        });
+
         for (const uri of appDotJsonUris)
         {
             const fileSystemPath = uri.fsPath || uri.path,
@@ -658,26 +683,12 @@ async function initConfig(): Promise<boolean>
                 conf.classpath = [ conf.classpath ];
             }
 
-            const _addXPaths = ((p: string[] | string) =>
-            {
-                if (!conf.classpath) {
-                    conf.classpath = p;
-                }
-                else {
-                    if (typeof p === "string")
-                    {
-                        p = [ p ];
-                    }
-                    conf.classpath = (conf.classpath as string[]).concat(p);
-                }
-            });
-
             if (classic?.classpath)
             {
-                _addXPaths(classic.classpath);
+                _addXPaths(classic.classpath, conf.classpath);
             }
             if (modern?.classpath) {
-                _addXPaths(modern.classpath);
+                _addXPaths(modern.classpath, conf.classpath);
             }
 
             if (conf.classpath && conf.name) {
