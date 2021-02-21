@@ -100,7 +100,7 @@ class ExtjsLanguageManager
         if (!components || components.length === 0) {
             return;
         }
-
+log.log("1");
         await utils.forEachAsync(components, (cmp: IComponent) =>
         {
             const {
@@ -187,6 +187,7 @@ class ExtjsLanguageManager
                 xtypeToComponentClassMapping[xtype.name] = componentClass;
             });
         });
+log.log("2");
     }
 
 

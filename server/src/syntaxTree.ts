@@ -57,7 +57,7 @@ export function getExtJsComponent(text: string)
 }
 
 
-export function parseExtJsFile(fsPath: string, text: string, isFramework?: boolean)
+export async function parseExtJsFile(fsPath: string, text: string, isFramework?: boolean)
 {
     const ast = parse(text);
     const components: IComponent[] = [];
@@ -217,6 +217,18 @@ export function parseExtJsFile(fsPath: string, text: string, isFramework?: boole
             }
         }
     });
+
+
+    // for (const c of components)
+    // {
+    //     for (const m of c.methods)
+    //     {
+    //         log.logValue("ast", m.ast);
+    //         // m.params?.push(...parseParams(propertyMethod as ObjectProperty[], !isFramework ? text : undefined));
+    //         m.variables = parseVariables(m.name, m.ast);
+    //     }
+    // }
+
     return components;
 }
 
@@ -313,7 +325,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
         if (isFunctionExpression(m.value))
         {
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName)
+            if (propertyName) 
             {
                 methods.push({
                     name: propertyName,
@@ -321,7 +333,8 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     start: m.loc!.start,
                     end: m.loc!.end,
                     params: undefined, // parseParams(m, propertyName, text ?? ""),
-                    variables: undefined // parseVariables(m, propertyName, text ?? "")
+                    variables: parseVariables(m, propertyName, text ?? ""),
+                    //ast: getAstString(m, text) // Parse the ast at a leter time
                 });
             }
         }
@@ -531,19 +544,17 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string): I
 }
 
 
-function parseVariables(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
+function getAst(objEx: ObjectProperty, methodName: string, text: string | undefined)
 {
-    const variables: IVariable[] = [];
-
     if (!text) {
-        return variables;
+        return undefined;
     }
 
     let subText = text.substring(objEx.start!, objEx.end!);
     const propertyName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
 
     if (!propertyName || !subText) {
-        return variables;
+        return undefined;
     }
 
     //
@@ -555,8 +566,24 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string)
     //
     subText = subText.replace(new RegExp(`${propertyName}\\s*:\\s*function\\s*\\(`), `function ${propertyName} (`);
 
-    const _ast = parse(subText);
-    traverse(_ast,
+    try{
+        return parse(subText);
+    }
+    catch (e) {
+        log.logError(["failed to parse variables for method " + methodName, e.toString()]);
+    }
+}
+
+
+function parseVariables(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
+{
+    const variables: IVariable[] = [];
+    if (!text || !methodName) {
+        return variables;
+    }
+
+    const ast = getAst(objEx, methodName, text);
+    traverse(ast,
     {
         VariableDeclaration(path)
         {
