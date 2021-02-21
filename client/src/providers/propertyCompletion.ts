@@ -197,6 +197,10 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
                     log.log("   configs", 1);
                     completionItems.push(...this.getCmpCompletionItems(lineCls, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
+
+                    //
+                    // TODO - property completion - static and private sctions
+                    //
                 }
                 else {
                     completionItems.push(...this.getClsCompletionItems(lineText, cls, addedItems));

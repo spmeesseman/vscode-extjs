@@ -116,7 +116,7 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
 
                         components.push(componentInfo);
 
-                        log.log(" ", 1);
+                        log.logBlank(1);
                         log.logValue("   Component", args[0].value, 1);
 
                         const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
@@ -181,27 +181,6 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                         if (propertyMethod && propertyMethod.length)
                         {
                             componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], !isFramework ? text : undefined));
-                            // for (const m of propertyMethod)
-                            // {
-                            //     if (isObjectProperty(m) && isFunctionExpression(m.value))
-                            //     {
-                            //         const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-                            //         if (propertyName)
-                            //         {
-                            //             console.log(111, propertyName);
-                            //             for (const method of componentInfo.methods)
-                            //             {
-                            //                 if (method.name === propertyName)
-                            //                 {
-                            //                     // m.params?.push(...parseParams(propertyMethod as ObjectProperty[], !isFramework ? text : undefined));
-                            //                     //parseVariables(m, propertyName, text ?? "");
-                            //                     console.log(1, method.name);
-                            //                     console.log(method.variables);
-                            //                 }
-                            //             }
-                            //         }
-                            //     }
-                            // }
                         }
                         logProperties("methods", componentInfo.methods);
 
@@ -218,17 +197,6 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
         }
     });
 
-
-    // for (const c of components)
-    // {
-    //     for (const m of c.methods)
-    //     {
-    //         log.logValue("ast", m.ast);
-    //         // m.params?.push(...parseParams(propertyMethod as ObjectProperty[], !isFramework ? text : undefined));
-    //         m.variables = parseVariables(m.name, m.ast);
-    //     }
-    // }
-
     return components;
 }
 
@@ -236,60 +204,46 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
 function getComments(comments: readonly Comment[] | null)
 {
     let commentsStr = "";
-
     comments?.forEach((c) => {
         commentsStr += c.value;
     });
-
-    //
-    // JSDoc comments in the following form:
-    //
-    //     /**
-    //     * @property propName
-    //     * The property description
-    //     * @returns {Boolean}
-    //     */
-    //
-    //     /**
-    //     * @method methodName
-    //     * The method description
-    //     * @property prop1 Property 1 description
-    //     * @property prop2 Property 2 description
-    //     * @returns {Boolean}
-    //     */
-    //
-    // VSCode Hover API takes Clojure based markdown text.  See:
-    //
-    //     https://clojure.org/community/editing
-    //
-    // commentsStr = commentsStr?.trim()
-    //     .replace(/^[\* \t\n\r]+/, "")
-    //     //
-    //     // FOrmat line breaks to CLojure standard
-    //     //
-    //     .replace(/\n/, "  \n")
-    //     //
-    //     // Remove leading "* " for each line in the comment
-    //     //
-    //     .replace(/\* /, "")
-    //     //
-    //     // Bold @ tags
-    //     //
-    //     .replace(/@[a-z]+ /, function(match) {
-    //         return "_**" + match.trim() + "**_ ";
-    //     })
-    //     .trim();
-
-    // const docLines = config.doc.split("* ");
-    // docLines.forEach((line) => {
-    //     markdown.appendCodeblock(line);
-    // });
-
     return commentsStr;
 }
 
 
-function isDocObject(object: any): object is (IMethod | IProperty | IConfig) {
+function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | undefined)
+{
+    if (!text) {
+        return undefined;
+    }
+
+    let subText = text.substring(objEx.start!, objEx.end!);
+    const propertyName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
+
+    if (!propertyName || !subText) {
+        return undefined;
+    }
+
+    //
+    // Convert json style function definition to javascript function prototype for babel parse
+    //
+    //     testFn: function(a, b, c) { ... }
+    //         to:
+    //     function testFn(a, b, c) { ... }
+    //
+    subText = subText.replace(new RegExp(`${propertyName}\\s*:\\s*function\\s*\\(`), `function ${propertyName} (`);
+
+    try{
+        return parse(subText);
+    }
+    catch (e) {
+        log.logError(["failed to parse variables for method " + methodName, e.toString()]);
+    }
+}
+
+
+function isDocObject(object: any): object is (IMethod | IProperty | IConfig)
+{
     return "doc" in object;
 }
 
@@ -309,7 +263,7 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
             {
                 log.log("      " + p.name, 3);
                 if (isDocObject(p) && p.doc) {
-                    log.log(p.doc, 5);
+                    log.log(p.doc.replace(/\n/g, "<br>"), 5);
                 }
             }
         });
@@ -325,7 +279,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
         if (isFunctionExpression(m.value))
         {
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName) 
+            if (propertyName)
             {
                 methods.push({
                     name: propertyName,
@@ -333,8 +287,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     start: m.loc!.start,
                     end: m.loc!.end,
                     params: undefined, // parseParams(m, propertyName, text ?? ""),
-                    variables: parseVariables(m, propertyName, text ?? ""),
-                    //ast: getAstString(m, text) // Parse the ast at a leter time
+                    variables: parseVariables(m, propertyName, text ?? "")
                 });
             }
         }
@@ -468,29 +421,12 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 function parseParams(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
 {
     const variables: IVariable[] = [];
-
-    if (!text) {
+    if (!text || !methodName) {
         return variables;
     }
 
-    let subText = text.substring(objEx.start!, objEx.end!);
-    const propertyName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
-
-    if (!propertyName || !subText) {
-        return variables;
-    }
-
-    //
-    // Convert json style function definition to javascript function prototype for babel parse
-    //
-    //     testFn: function(a, b, c) { ... }
-    //         to:
-    //     function testFn(a, b, c) { ... }
-    //
-    subText = subText.replace(new RegExp(`${propertyName}\\s*:\\s*function\\s*\\(`), `function ${propertyName} (`);
-
-    const _ast = parse(subText);
-    traverse(_ast,
+    const ast = getMethodAst(objEx, methodName, text);
+    traverse(ast,
     {
         VariableDeclaration(path)
         {
@@ -544,37 +480,6 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string): I
 }
 
 
-function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | undefined)
-{
-    if (!text) {
-        return undefined;
-    }
-
-    let subText = text.substring(objEx.start!, objEx.end!);
-    const propertyName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
-
-    if (!propertyName || !subText) {
-        return undefined;
-    }
-
-    //
-    // Convert json style function definition to javascript function prototype for babel parse
-    //
-    //     testFn: function(a, b, c) { ... }
-    //         to:
-    //     function testFn(a, b, c) { ... }
-    //
-    subText = subText.replace(new RegExp(`${propertyName}\\s*:\\s*function\\s*\\(`), `function ${propertyName} (`);
-
-    try{
-        return parse(subText);
-    }
-    catch (e) {
-        log.logError(["failed to parse variables for method " + methodName, e.toString()]);
-    }
-}
-
-
 function parseVariables(objEx: ObjectProperty, methodName: string, text: string): IVariable[]
 {
     const variables: IVariable[] = [];
@@ -602,31 +507,92 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string)
             const varName = dec.id.name;
             const callee = dec.init.callee;
             const args = dec.init.arguments;
+            let callerCls = "";
 
-            if (!isMemberExpression(callee) || !isIdentifier(callee.object) || !isIdentifier(callee.property) ||
-                !isStringLiteral(args[0]) || callee.property.name !== "create")
+            if (isMemberExpression(callee))
+            {
+                if (!isIdentifier(callee.object))
+                {   //
+                    // Example:
+                    //
+                    //     VSCodeExtJS.common.PhysicianDropdown.create
+                    //
+                    // The current callee.property is 'create', type 'MemberExpression'.
+                    //
+                    // The current callee.object is 'PhysicianDropdown', type 'MemberExpression'.
+                    //
+                    // Build the fill class name by traversiong down each MemberExpression until the
+                    // Identifier is found, in this example 'VSCodeExtJS'.
+                    //
+                    let object: any = callee.object;
+                    if (isMemberExpression(object) && isIdentifier(object.property))
+                    {
+                        callerCls = object.property.name;
+                        object = object.object;
+                        while (isMemberExpression(object))
+                        {
+                            if (isIdentifier(object.property))
+                            {
+                                callerCls = object.property.name + "." + callerCls;
+                                object = object.object;
+                            }
+                            else {
+                                return;
+                            }
+                        }
+                        //
+                        // Add the base indetifier to caller cls name, e.g. "VSCodeExtJS" in the comments
+                        // example.  We looped until we found it but it has not been added yet.
+                        //
+                        if (isIdentifier(object)) {
+                            callerCls = object.name + "." + callerCls;
+                        }
+                    }
+                    else {
+                        return;
+                    }
+                }
+                else {
+                    callerCls = callee.object.name;
+                }
+            }
+
+            if (!isMemberExpression(callee) || !isIdentifier(callee.property) || callee.property.name !== "create" || !callerCls)
             {
                 return;
             }
 
-            let inc = false;
-            if (callee.object.name === "Ext")
+            let value = "";
+            const isFramework = callerCls === "Ext";
+
+            if (isFramework || callerCls.startsWith("VSCodeExtJS"))
             {
-                inc = true;
+                if (isFramework)
+                {
+                    if (!isStringLiteral(args[0])) {
+                        return;
+                    }
+                    else {
+                        value = args[0].value;
+                    }
+                }
+                else {
+                    value = callerCls;
+                }
             }
-            if (inc)
+
+            if (value)
             {
-                // console.log(44, varName, methodName);
                 log.logValue("added variable", varName, 5);
                 log.logValue("   method", methodName, 5);
-                log.logValue("   instance cls", args[0].value, 5);
+                log.logValue("   instance cls", value, 5);
 
                 variables.push({
                     name: varName,
                     type: VariableType[node.kind],
                     start: node.declarations[0].loc!.start,
                     end: node.declarations[0].loc!.end,
-                    componentClass: args[0].value,
+                    componentClass: value,
                     methodName
                 });
             }
