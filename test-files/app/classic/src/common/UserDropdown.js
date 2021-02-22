@@ -1,3 +1,10 @@
+/**
+ * @class VSCodeExtJS.common.UserDropdown
+ * 
+ * The User Dropdown.
+ * 
+ * @since 1.0.0
+ */
 Ext.define('VSCodeExtJS.common.UserDropdown',
 {
 	alias: 'widget.userdropdown',

@@ -31,19 +31,22 @@ export interface IComponent
     aliases: string[];
     baseNamespace: string;
     componentClass: string;
-    extend?: string;
-    requires?: IRequires;
-    widgets: string[];
-    xtypes: IXtype[];
-    properties: IProperty[];
     configs: IConfig[];
-    methods: IMethod[];
-    statics: (IProperty | IMethod)[];
-    privates: (IProperty | IMethod)[];
+    deprecated?: boolean;
     doc?: string;
-    markdown?: any;
+    extend?: string;
     fsPath: string;
     isFramework: boolean;
+    markdown?: any;
+    methods: IMethod[];
+    private?: boolean;
+    privates: (IProperty | IMethod)[];
+    properties: IProperty[];
+    requires?: IRequires;
+    since?: string;
+    statics: (IProperty | IMethod)[];
+    widgets: string[];
+    xtypes: IXtype[];
 }
 
 
