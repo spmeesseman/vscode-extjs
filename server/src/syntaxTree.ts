@@ -115,6 +115,9 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
 
                         if (isExpressionStatement(path.container)) {
                             componentInfo.doc = getComments(path.container.leadingComments);
+                            componentInfo.since = getSince(componentInfo.doc);
+                            componentInfo.private = componentInfo.doc?.includes("@private");
+                            componentInfo.deprecated = componentInfo.doc?.includes("@deprecated");
                         }
 
                         components.push(componentInfo);
@@ -220,6 +223,21 @@ function getComments(comments: readonly Comment[] | null)
         commentsStr += c.value;
     });
     return commentsStr;
+}
+
+
+function getSince(doc?: string)
+{
+    let since: string | undefined;
+    if (doc?.includes("@since"))
+    {
+        const matches = doc.match(/@since (v*[\d\.]{2,10})/i);
+        if (matches && matches[1])
+        {
+            since = matches[1];
+        }
+    }
+    return since;
 }
 
 
@@ -345,16 +363,19 @@ function parseConfig(propertyConfig: ObjectProperty)
         propertyConfig.value.properties.reduce<IConfig[]>((p, it) =>
         {
             if (it?.type === "ObjectProperty") {
-                const propertyName = isIdentifier(it.key) ? it.key.name : undefined;
-                if (propertyName)
+                const name = isIdentifier(it.key) ? it.key.name : undefined;
+                if (name)
                 {
+                    const doc = getComments(it.leadingComments);
                     p.push({
-                        name: propertyName,
-                        doc: getComments(it.leadingComments),
+                        doc, name,
+                        since: getSince(doc),
+                        private: doc?.includes("@private"),
+                        deprecated: doc?.includes("@deprecated"),
                         start: it.loc!.start,
                         end: it.loc!.end,
-                        getter: "get" + utils.properCase(propertyName),
-                        setter: "set" + utils.properCase(propertyName)
+                        getter: "get" + utils.properCase(name),
+                        setter: "set" + utils.properCase(name)
                     });
                 }
             }
@@ -422,12 +443,14 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     }
                 }
                 methods.push({
+                    doc, params,
                     name: propertyName,
                     start: m.loc!.start,
                     end: m.loc!.end,
                     variables: parseVariables(m, propertyName, text),
-                    doc,
-                    params
+                    since: getSince(doc),
+                    private: doc?.includes("@private"),
+                    deprecated: doc?.includes("@deprecated")
                 });
             }
         }
@@ -443,14 +466,17 @@ function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
     {
         if (!isFunctionExpression(m.value))
         {
-            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName && ignoreProperties.indexOf(propertyName) === -1)
+            const name = isIdentifier(m.key) ? m.key.name : undefined;
+            if (name && ignoreProperties.indexOf(name) === -1)
             {
+                const doc = getComments(m.leadingComments);
                 properties.push({
-                    name: propertyName,
-                    doc: getComments(m.leadingComments),
+                    doc, name,
                     start: m.loc!.start,
-                    end: m.loc!.end
+                    end: m.loc!.end,
+                    since: getSince(doc),
+                    private: doc?.includes("@private"),
+                    deprecated: doc?.includes("@deprecated")
                 });
             }
         }

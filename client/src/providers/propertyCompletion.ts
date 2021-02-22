@@ -19,8 +19,6 @@ class PropertyCompletionItemProvider
         let markdown: string | undefined;
         const propCompletion: CompletionItem[] = [];
 
-        propCompletion.push(new CompletionItem(property, kind));
-
         let cmp: IComponent | IMethod | IProperty | IConfig | undefined;
         switch (kind)
         {
@@ -37,6 +35,13 @@ class PropertyCompletionItemProvider
             default:
                 break;
         }
+
+        if (cmp?.private)
+        {
+            return propCompletion;
+        }
+
+        propCompletion.push(new CompletionItem(property, kind));
 
         //
         // FunctionProvider will call with property empty
@@ -58,8 +63,21 @@ class PropertyCompletionItemProvider
                 cmp = undefined;
             }
         }
-        else {
+        else
+        {
             markdown = cmp?.markdown;
+
+            if (cmp?.deprecated)
+            {
+                propCompletion[0].insertText = property;
+                propCompletion[0].label = property + " (deprecated)";
+            }
+
+            if (cmp?.since)
+            {
+                propCompletion[0].insertText = property;
+                propCompletion[0].label = property + ` (since ${cmp.since})`;
+            }
         }
 
         propCompletion[0].documentation = markdown;
@@ -223,6 +241,9 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
         log.logValue("   line cls", lineCls, 3);
 
+        //
+        // Handle "this"
+        //
         if (lineText === "this.")
         {
             const thisCls = getClassFromFile(fsPath);
@@ -232,10 +253,17 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             return completionItems;
         }
 
+        //
+        // Create the completion items, including items in extended classes
+        //
         let component = getComponent(lineCls, true, fsPath);
         if (component)
         {
             _pushItems(component);
+            //
+            // Traverse up the inheritance tree, checking the 'extend' property and if
+            // it exists, we include public class properties in the Intellisense
+            //
             while (component && component.extend)
             {
                 component = getComponent(component.extend);
