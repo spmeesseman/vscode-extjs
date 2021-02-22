@@ -204,18 +204,18 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
     private getCompletionItems(lineText: string, fsPath: string, addedItems: string[]): CompletionItem[]
     {
-        const map = componentClassToComponentsMapping,
-              completionItems: CompletionItem[] = [];
-        let lineCls = lineText?.substring(0, lineText.length - 1).trim();
+        const completionItems: CompletionItem[] = [],
+              lineCls = lineText?.substring(0, lineText.length - 1).trim();
 
-        const _pushItems = ((cls: string) =>
+        const _pushItems = ((cmp?: IComponent) =>
         {
+            if (!cmp) { return; }
             log.log("   methods", 1);
-            completionItems.push(...this.getCmpCompletionItems(cls, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
+            completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
             log.log("   properties", 1);
-            completionItems.push(...this.getCmpCompletionItems(cls, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
+            completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
             log.log("   configs", 1);
-            completionItems.push(...this.getCmpCompletionItems(cls, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
+            completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
             //
             // TODO - property completion - static and private sctions
             //
@@ -227,42 +227,26 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         {
             const thisCls = getClassFromFile(fsPath);
             if (thisCls) {
-                _pushItems(thisCls);
+                _pushItems(getComponent(thisCls, true, fsPath));
             }
             return completionItems;
         }
 
-        Object.keys(map).forEach((cls) =>
+        let component = getComponent(lineCls, true, fsPath);
+        if (component)
         {
-            if (cls)
+            _pushItems(component);
+            while (component && component.extend)
             {
-                if (cls !== lineCls)
-                {   //
-                    // Check instance classes in file
-                    //
-                    const thisCmp = getComponentInstance(lineCls, fsPath);
-                    if (thisCmp) {
-                        lineCls = thisCmp.componentClass;
-                        log.logValue("   set instance class", lineCls, 1);
-                    }
-                    else {
-                        const aliasCmp = getComponentByAlias(lineCls);
-                        if (aliasCmp) {
-                            lineCls = aliasCmp.componentClass;
-                            log.logValue("   set alias class", lineCls, 1);
-                        }
-                    }
-                }
-
-                if (cls === lineCls)
-                {
-                    _pushItems(lineCls);
-                }
-                else {
-                    completionItems.push(...this.getClsCompletionItems(lineText, cls, addedItems));
+                component = getComponent(component.extend);
+                if (component) {
+                    _pushItems(component);
                 }
             }
-        });
+        }
+        else {
+            completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
+        }
 
         return completionItems;
     }

@@ -772,17 +772,30 @@ export function getClassFromFile(fsPath: string): string | undefined
 }
 
 
-export function getComponent(cmp: string): IComponent | undefined
+export function getComponent(componentClass: string, checkAlias?: boolean, fsPath?: string): IComponent | undefined
 {
-    const component = componentClassToComponentsMapping[cmp];
+    let component = componentClassToComponentsMapping[componentClass];
     log.log("get component by class", 1);
-    log.logValue("   component class", cmp, 2);
+    log.logValue("   component class", componentClass, 2);
     if (component) {
         log.log("   found component", 3);
         log.logValue("      base namespace", component.baseNamespace, 4);
-        return component;
     }
-    return undefined;
+    if (!component && checkAlias === true) {
+        component = getComponentByAlias(componentClass);
+        if (component) {
+            log.log("   found aliased component", 3);
+            log.logValue("      base namespace", component.baseNamespace, 4);
+        }
+    }
+    if (!component && fsPath) {
+        component = getComponentInstance(componentClass, fsPath);
+        if (component) {
+            log.log("   found instanced component", 3);
+            log.logValue("      base namespace", component.baseNamespace, 4);
+        }
+    }
+    return component;
 }
 
 
