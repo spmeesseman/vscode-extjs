@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import { Diagnostic, Range, Position, Uri } from "vscode";
 import { LanguageClient } from "vscode-languageclient";
 import { IComponent, IPosition } from "../../../common";
 
@@ -6,12 +6,12 @@ import { IComponent, IPosition } from "../../../common";
 export function toVscodePosition(position: IPosition)
 {
     const { line, column } = position;
-    return new vscode.Position(line - 1, column);
+    return new Position(line - 1, column);
 }
 
 export function toVscodeRange(start: IPosition, end: IPosition)
 {
-    return new vscode.Range(toVscodePosition(start), toVscodePosition(end));
+    return new Range(toVscodePosition(start), toVscodePosition(end));
 }
 
 class ServerRequest
@@ -31,6 +31,19 @@ class ServerRequest
     async getExtJsComponent(text: string)
     {
         return this.client.sendRequest<string | undefined>("getExtJsComponent", text);
+    }
+
+    async validateExtJsFile(fsPath: string, nameSpace: string, text: string): Promise<Diagnostic[]>
+    {
+        const uriPath = this.fsPathToUriPath(fsPath);
+        return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify({ uriPath, nameSpace, text }));
+    }
+
+
+    private fsPathToUriPath(fsPath: string)
+    {
+        const uri = Uri.parse(fsPath);
+        return "file:///" + (uri.scheme ? uri.scheme + "%3A" : "") + uri.path.replace(/\\/g, "/"); // win32 compat;
     }
 }
 

@@ -17,6 +17,9 @@ const ignoreProperties = [
     "config", "items", "listeners", "requires", "privates", "statics"
 ];
 
+export const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
+
+
 export function getExtJsComponent(text: string)
 {
     const ast = parse(text);
@@ -60,7 +63,7 @@ export function getExtJsComponent(text: string)
 }
 
 
-export async function parseExtJsFile(fsPath: string, text: string, nameSpace: string, isFramework?: boolean)
+export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: string, isFramework?: boolean)
 {
     const ast = parse(text);
     const components: IComponent[] = [];
@@ -214,6 +217,11 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace: st
             }
         }
     });
+
+    for (const c of components)
+    {
+        componentClassToWidgetsMapping[c.componentClass] = c.widgets;
+    }
 
     return components;
 }

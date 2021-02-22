@@ -67,7 +67,7 @@ Ext.define('VSCodeExtJS',
 	testFn2: function(a, b)
 	{
 		testFn(1, 2);
-
+CCC
 		console.log(this.test);
 		console.log(this.test3);
 		console.log(this.getTest());

@@ -11,35 +11,35 @@ import {
 } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, getExtJsComponent } from "./syntaxTree";
 import { ISettings, defaultSettings } from  "../../common";
-import { validateExtJsDocument } from "./validation";
+import { validateExtJsDocument, validateExtJsFile } from "./validation";
 
 
 //
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 //
-const connection = createConnection(ProposedFeatures.all),
+const connection = createConnection(ProposedFeatures.all);
 //
 // Document Management
 //
-      documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 //
 // Capabilities
 //
 let hasConfigurationCapability = false,
     hasWorkspaceFolderCapability = false,
-    hasDiagnosticRelatedInformationCapability = false,
+    hasDiagnosticRelatedInformationCapability = false;
 //
 // Global Settings
 //
-    globalSettings: ISettings = defaultSettings;
+let globalSettings: ISettings = defaultSettings;
 
 
-documents.onDidClose(e => {
-
-});
-
-
+// documents.onDidClose(e => {
+//
+// });
+//
+//
 documents.onDidChangeContent(change => {
 	validateExtJsDocument(change.document, connection, hasDiagnosticRelatedInformationCapability);
 });
@@ -65,7 +65,6 @@ connection.onInitialize((params: InitializeParams) =>
 
     const result: InitializeResult = {
         capabilities: {
-            // textDocumentSync: TextDocumentSyncKind.Incremental,
             // //
             // // Tell the client that this server supports code completion.
             // //
@@ -116,9 +115,9 @@ connection.onDidChangeConfiguration(change =>
     globalSettings = <ISettings>(
         (change.settings?.extjsLangSvr || defaultSettings)
     );
-	documents.all().forEach((textDocument) => {
-        validateExtJsDocument(textDocument, connection, hasDiagnosticRelatedInformationCapability);
-    });
+	// documents.all().forEach((textDocument) => {
+    //     validateExtJsFile(textDocument, connection, hasDiagnosticRelatedInformationCapability);
+    // });
 });
 
 
@@ -127,6 +126,21 @@ connection.onRequest("parseExtJsFile", async (param: any) =>
     try {
         const jso = JSON.parse(param);
         return await parseExtJsFile(jso?.fsPath, jso?.text, jso?.nameSpace, jso?.isFramework);
+    }
+    catch (error)
+    {
+        if (error instanceof SyntaxError) {
+            return null;
+        }
+        throw error;
+    }
+});
+
+
+connection.onRequest("validateExtJsFile", async (param: any) =>
+{
+    try {
+        await validateExtJsFile(JSON.parse(param), connection, hasDiagnosticRelatedInformationCapability);
     }
     catch (error)
     {
@@ -156,7 +170,7 @@ connection.onRequest("getExtJsComponent", async (text: string) =>
 //
 // Listen
 //
-documents.listen(connection);
+// documents.listen(connection);
 connection.listen();
 
 

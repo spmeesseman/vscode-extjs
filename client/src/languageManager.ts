@@ -12,7 +12,7 @@ import { configuration } from "./common/configuration";
 import * as log from "./common/log";
 
 
-const diagnosticCollection = languages.createDiagnosticCollection("extjs-lint");
+const diagnosticCollection = languages.createDiagnosticCollection("vscode-extjs");
 
 let config: IConf[] = [];
 
@@ -213,53 +213,9 @@ class ExtjsLanguageManager
     }
 
 
-    async validateDocument(textDocument: TextDocument, nameSpace: string): Promise<void>
+    private validateDocument(textDocument: TextDocument, nameSpace: string)
     {
-        const diagnostics: Diagnostic[] = [];
-        const text = textDocument.getText();
-        const components = await this.serverRequest.parseExtJsFile(textDocument.uri.fsPath, nameSpace, text);
-
-        components?.forEach(cmp =>
-        {
-            //
-            // TODO - Validation
-            // Properties, config properties, and methods
-            //
-
-            const requiredXtypes = getRequiredXtypes(cmp.componentClass) || [];
-
-            function validateXtype(xtype: string, range: Range)
-            {
-                if (!requiredXtypes.includes(xtype))
-                {
-                    // problems++;
-                    const diagnostic: Diagnostic = {
-                        severity: DiagnosticSeverity.Error,
-                        range,
-                        message: `xtype "${xtype}" not found.`,
-                        source: "vscode-extjs"
-                    };
-                    diagnostics.push(diagnostic);
-                }
-            }
-
-            for (const xtype of cmp.xtypes) {
-                validateXtype(xtype.name, toVscodeRange(xtype.start, xtype.end));
-            }
-
-            for (const method of cmp.methods)
-            {
-                if (method.variables)
-                {
-                    for (const variable of method.variables)
-                    {
-
-                    }
-                }
-            }
-        });
-
-        diagnosticCollection.set(textDocument.uri, diagnostics);
+        this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, textDocument.getText());
     }
 
 
@@ -376,7 +332,7 @@ class ExtjsLanguageManager
         //
         const activeTextDocument = window.activeTextEditor?.document;
         if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+            this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
         }
         return this.registerWatchers(context);
     }
@@ -422,7 +378,7 @@ class ExtjsLanguageManager
                     const ns = this.getNamespace(textDocument);
                     handleDeleFile(fsPath);
                     await this.indexing(textDocument.uri.fsPath, ns, textDocument.getText());
-                    await this.validateDocument(textDocument, ns);
+                    this.validateDocument(textDocument, ns);
                 }, debounceMs);
             }
         }, context.subscriptions));
@@ -430,14 +386,14 @@ class ExtjsLanguageManager
         //
         // Deletions
         //
-        disposables.push(workspace.onDidDeleteFiles(async (event) =>
+        disposables.push(workspace.onDidDeleteFiles((event) =>
         {
             event.files.forEach(async file =>
             {
                 handleDeleFile(file.fsPath);
                 const activeTextDocument = window.activeTextEditor?.document;
                 if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-                    await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+                    this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
                 }
             });
         }, context.subscriptions));
@@ -445,12 +401,12 @@ class ExtjsLanguageManager
         //
         // Active editor changed
         //
-        disposables.push(window.onDidChangeActiveTextEditor(async (e: TextEditor | undefined) =>
+        disposables.push(window.onDidChangeActiveTextEditor((e: TextEditor | undefined) =>
         {
             const textDocument = e?.document;
             if (textDocument) {
                 if (textDocument.languageId === "javascript") {
-                    await this.validateDocument(textDocument, this.getNamespace(textDocument));
+                    this.validateDocument(textDocument, this.getNamespace(textDocument));
                 }
             }
         }, context.subscriptions));
@@ -458,17 +414,17 @@ class ExtjsLanguageManager
         //
         // Open text document
         //
-        disposables.push(workspace.onDidOpenTextDocument(async (textDocument: TextDocument) =>
+        disposables.push(workspace.onDidOpenTextDocument((textDocument: TextDocument) =>
         {
             if (textDocument.languageId === "javascript") {
-                await this.validateDocument(textDocument, this.getNamespace(textDocument));
+               this.validateDocument(textDocument, this.getNamespace(textDocument));
             }
         }, context.subscriptions));
 
         //
         // Register configurations/settings change watcher
         //
-        disposables.push(workspace.onDidChangeConfiguration(async e => {
+        disposables.push(workspace.onDidChangeConfiguration(e => {
             // if (e.affectsConfiguration("extjsLangSvr.debug") || e.affectsConfiguration("extjsLangSvr.debugLevel")) // ||
             //     // e.affectsConfiguration("extjsLangSvr.intellisenseIncludeDeprecated") || e.affectsConfiguration("extjsLangSvr.intellisenseIncludePrivate")) {
             // {   //
