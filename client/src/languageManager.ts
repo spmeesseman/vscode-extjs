@@ -847,6 +847,23 @@ export function getComponentByAlias(alias: string): IComponent | undefined
 }
 
 
+export function getComponentByFile(fsPath: string): IComponent | undefined
+{
+    const cls = getClassFromFile(fsPath);
+    log.log("get component by file", 1);
+    log.logValue("   component file", fsPath, 2);
+    if (cls) {
+        const component = getComponent(cls);
+        if (component) {
+            log.log("   found component", 3);
+            log.logValue("      base namespace", component.baseNamespace, 4);
+            return component;
+        }
+    }
+    return undefined;
+}
+
+
 /**
  * Get component class name
  *

@@ -4,7 +4,7 @@ import {
     TextDocument, CompletionItemKind
 } from "vscode";
 import {
-    methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance,
+    methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance, getComponentByFile,
     getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias, getComponentClass
 } from "../languageManager";
 import * as log from "../common/log";
@@ -193,12 +193,40 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
 class DotCompletionItemProvider extends PropertyCompletionItemProvider implements CompletionItemProvider
 {
 
+    private getFunctionName(document: TextDocument, position: Position)
+    {
+        const text = document.getText();
+        let idx = text.lastIndexOf("function", document.offsetAt(position));
+        if (idx !== -1)
+        {
+            let sidx = idx = text.lastIndexOf(":", idx);
+            if (sidx !== -1)
+            {
+                --sidx;
+                const sidx2 = text.lastIndexOf("\t", sidx),
+                      sidx3 = text.lastIndexOf("\n", sidx);
+                sidx = text.lastIndexOf(" ", sidx);
+                if (sidx2 > sidx) {
+                    sidx = sidx2;
+                }
+                if (sidx3 > sidx) {
+                    sidx = sidx3;
+                }
+                if (sidx !== -1)
+                {
+                    return text.substring(sidx, idx).trim();
+                }
+            }
+        }
+    }
+
     provideCompletionItems(document: TextDocument, position: Position)
     {
         const addedItems: string[] = [],
               lineText = document.lineAt(position).text.substr(0, position.character),
+              fnText = this.getFunctionName(document, position),
               completionItems: CompletionItem[] = [];
-
+console.log(fnText);
         //
         // Check for "." since VSCode 24/7 Intellisense will trigger every character no matter what
         // the trigger char(s) is for this provider.  24/7 Intellisense can be turned off in settings.json:
@@ -211,7 +239,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
         log.logMethodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
 
-        completionItems.push(...this.getCompletionItems(lineText, document.uri.fsPath, addedItems));
+        completionItems.push(...this.getCompletionItems(lineText, fnText, document.uri.fsPath, addedItems));
 
         log.logValue("   # of added items", completionItems.length, 3);
         log.logMethodDone("provide dot completion items", 2, "", true);
@@ -220,7 +248,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
     }
 
 
-    private getCompletionItems(lineText: string, fsPath: string, addedItems: string[]): CompletionItem[]
+    private getCompletionItems(lineText: string, fnText: string | undefined, fsPath: string, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [],
               lineCls = lineText?.substring(0, lineText.length - 1).trim();
@@ -237,6 +265,17 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             //
             // TODO - property completion - static and private sctions
             //
+            //
+            // Traverse up the inheritance tree, checking the 'extend' property and if
+            // it exists, we include public class properties in the Intellisense
+            //
+            while (cmp && cmp.extend)
+            {
+                cmp = getComponent(cmp.extend);
+                if (cmp) {
+                    _pushItems(cmp);
+                }
+            }
         });
 
         log.logValue("   line cls", lineCls, 3);
@@ -256,24 +295,40 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         //
         // Create the completion items, including items in extended classes
         //
-        let component = getComponent(lineCls, true, fsPath);
+        let component = getComponent(lineCls, true);
         if (component)
         {
             _pushItems(component);
+        }
+        else //
+        {   // For local instance vars, only provide completion from the right function
             //
-            // Traverse up the inheritance tree, checking the 'extend' property and if
-            // it exists, we include public class properties in the Intellisense
-            //
-            while (component && component.extend)
+            component = getComponentByFile(fsPath);
+            if (component)
             {
-                component = getComponent(component.extend);
-                if (component) {
-                    _pushItems(component);
+                let lCmp: any;
+                for (const m of component.methods)
+                {
+                    if (m.name === fnText)
+                    {
+                        if (!m.variables) { continue; }
+                        for (const p of m.variables)
+                        {
+                            if (p.name === lineCls) {
+                                lCmp = getComponentInstance(lineCls, fsPath);
+                                _pushItems(lCmp);
+                                break;
+                            }
+                        }
+                        if (lCmp) {
+                            break;
+                        }
+                    }
                 }
             }
-        }
-        else {
-            completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
+            else {
+                completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
+            }
         }
 
         return completionItems;
