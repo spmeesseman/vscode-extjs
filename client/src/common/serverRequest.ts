@@ -3,17 +3,6 @@ import { LanguageClient } from "vscode-languageclient";
 import { IComponent, IPosition } from "../../../common";
 
 
-export function toVscodePosition(position: IPosition)
-{
-    const { line, column } = position;
-    return new Position(line - 1, column);
-}
-
-export function toVscodeRange(start: IPosition, end: IPosition)
-{
-    return new Range(toVscodePosition(start), toVscodePosition(end));
-}
-
 class ServerRequest
 {
     private client: LanguageClient;

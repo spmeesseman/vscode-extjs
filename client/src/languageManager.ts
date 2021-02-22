@@ -3,16 +3,12 @@ import * as fs from "fs";
 import json5 from "json5";
 import * as path from "path";
 import {
-    Diagnostic, DiagnosticSeverity, Disposable, ExtensionContext, languages, MarkdownString , Progress,
-    ProgressLocation, Range, TextDocument, TextEditor, window, workspace, Uri
+    Disposable, ExtensionContext, MarkdownString , Progress,
+    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri
 } from "vscode";
-import ServerRequest, { toVscodeRange } from "./common/ServerRequest";
+import ServerRequest from "./common/ServerRequest";
 import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils } from  "../../common";
-import { configuration } from "./common/configuration";
 import * as log from "./common/log";
-
-
-const diagnosticCollection = languages.createDiagnosticCollection("vscode-extjs");
 
 let config: IConf[] = [];
 
@@ -81,16 +77,20 @@ export enum ComponentType
     Class = 1 << 4
 }
 
+
+export let isIndexing = true;
+
+
 class ExtjsLanguageManager
 {
     private serverRequest: ServerRequest;
     private reIndexTaskId: NodeJS.Timeout | undefined;
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
 
-
     constructor(serverRequest: ServerRequest)
     {
         this.serverRequest = serverRequest;
+        isIndexing = true;
     }
 
 
@@ -313,7 +313,12 @@ class ExtjsLanguageManager
         },
         async (progress) =>
         {
-            await this.indexingAll(progress);
+            isIndexing = true;
+            try {
+                await this.indexingAll(progress);
+            }
+            catch {}
+            isIndexing = false;
         });
     }
 
