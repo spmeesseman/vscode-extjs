@@ -1,0 +1,15 @@
+{
+    "frameworks":
+    {
+        "ext": "node_modules/@sencha/ext"
+    },
+    "build":
+    {
+        "dir": "${workspace.dir}/build"
+    },
+    "packages":
+    {
+        "dir": "${workspace.dir}/packages/local,${workspace.dir}/packages,${workspace.dir}/node_modules/@sencha/ext-${toolkit.name},${workspace.dir}/node_modules/@perryjohnson/extjs-pkg-server",
+        "extract": "${workspace.dir}/packages/remote"
+    }
+}

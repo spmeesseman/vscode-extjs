@@ -640,9 +640,12 @@ function commentToMarkdown(property: string, comment: string | undefined, logPad
 
 async function initConfig(): Promise<boolean>
 {
-    const settingsPaths = configuration.get<string[]>("include"),
+    const // settingsPaths = configuration.get<string[]>("include"),
           confUris = await workspace.findFiles(".extjsrc{.json,}"),
           appDotJsonUris = await workspace.findFiles("app.json");
+
+    log.logMethodStart("initialize config", 1, "", true);
+
     //
     // Clear
     //
@@ -666,7 +669,11 @@ async function initConfig(): Promise<boolean>
             const fileSystemPath = uri.fsPath || uri.path;
             const confJson = fs.readFileSync(fileSystemPath, "utf8");
             const conf: IConf = json5.parse(confJson);
-            if (conf.classpath && conf.name) {
+            if (conf.classpath && conf.name)
+            {
+                log.logValue("   add .extjsrc path", fileSystemPath, 2);
+                log.logValue("      namespace", conf.name, 2);
+                log.logValue("      classpath", conf.classpath, 3);
                 config.push(conf);
             }
         }
@@ -674,25 +681,11 @@ async function initConfig(): Promise<boolean>
 
     if (appDotJsonUris)
     {
-        const _addXPaths = ((p: string[], c: string[]) =>
-        {
-            if (!c) {
-                c = p;
-            }
-            else {
-                if (typeof p === "string")
-                {
-                    p = [ p ];
-                }
-                c = c.concat(p);
-            }
-        });
-
         for (const uri of appDotJsonUris)
         {
-            const fileSystemPath = uri.fsPath || uri.path,
-                  confJson = fs.readFileSync(fileSystemPath, "utf8"),
-                  conf: IConf = json5.parse(confJson);
+            const fileSystemPath = uri.fsPath || uri.path;
+            let confJson = fs.readFileSync(fileSystemPath, "utf8");
+            const conf: IConf = json5.parse(confJson);
             //
             // Merge classpath to root
             //
@@ -710,17 +703,47 @@ async function initConfig(): Promise<boolean>
 
             if (classic?.classpath)
             {
-                _addXPaths(classic.classpath, conf.classpath);
+                conf.classpath = conf.classpath.concat(...classic.classpath);
             }
             if (modern?.classpath) {
-                _addXPaths(modern.classpath, conf.classpath);
+                conf.classpath = conf.classpath.concat(...modern.classpath);
             }
 
-            if (conf.classpath && conf.name) {
+            const wsDotJsonFsPath = path.join(path.dirname(uri.fsPath), "workspace.json");
+            if (fs.existsSync(wsDotJsonFsPath))
+            {
+                confJson = fs.readFileSync(wsDotJsonFsPath, "utf8");
+                const wsConf = json5.parse(confJson);
+                if (wsConf.frameworks && wsConf.frameworks.ext)
+                {
+                    conf.classpath.push(wsConf.frameworks.ext);
+                    log.logValue("   add ws.json framework path", wsConf.frameworks.ext, 2);
+                }
+                if (wsConf.packages && wsConf.packages.dir)
+                {
+                    const dirs = wsConf.packages.dir.split(",");
+                    for (const d of dirs)
+                    {
+                        const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
+                                        .replace(/\$\{toolkit.name\}[/\\]{1}/, "classic");
+                        conf.classpath.push(wsPath);
+                        log.logValue("   add ws.json path", wsPath, 2);
+                    }
+                }
+            }
+
+            if (conf.classpath && conf.name)
+            {
+                log.logValue("   add app.json paths", fileSystemPath, 2);
+                log.logValue("      namespace", conf.name, 2);
+                log.logValue("      classpath", conf.classpath, 3);
                 config.push(conf);
             }
         }
     }
+
+    log.logValue("   # of configs found", config.length, 3);
+    log.logMethodDone("initialize config", 1, "", true);
 
     return (config.length > 0);
 }
@@ -775,26 +798,34 @@ export function getClassFromFile(fsPath: string): string | undefined
 export function getComponent(componentClass: string, checkAlias?: boolean, fsPath?: string): IComponent | undefined
 {
     let component = componentClassToComponentsMapping[componentClass];
+
     log.log("get component by class", 1);
     log.logValue("   component class", componentClass, 2);
-    if (component) {
+
+    if (component)
+    {
         log.log("   found component", 3);
         log.logValue("      base namespace", component.baseNamespace, 4);
     }
-    if (!component && checkAlias === true) {
+
+    if (!component && checkAlias === true)
+    {
         component = getComponentByAlias(componentClass);
         if (component) {
             log.log("   found aliased component", 3);
             log.logValue("      base namespace", component.baseNamespace, 4);
         }
     }
-    if (!component && fsPath) {
+
+    if (!component && fsPath)
+    {
         component = getComponentInstance(componentClass, fsPath);
         if (component) {
             log.log("   found instanced component", 3);
             log.logValue("      base namespace", component.baseNamespace, 4);
         }
     }
+
     return component;
 }
 
