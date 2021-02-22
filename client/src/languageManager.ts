@@ -459,12 +459,13 @@ class ExtjsLanguageManager
         // Register configurations/settings change watcher
         //
         disposables.push(workspace.onDidChangeConfiguration(async e => {
-            if (e.affectsConfiguration("extjsLangSvr.debug") || e.affectsConfiguration("extjsLangSvr.debugLevel")) {
-                //
-                // TODO
-                //
-                log.log("Process settings change 'include'", 1);
-            }
+            // if (e.affectsConfiguration("extjsLangSvr.debug") || e.affectsConfiguration("extjsLangSvr.debugLevel")) // ||
+            //     // e.affectsConfiguration("extjsLangSvr.intellisenseIncludeDeprecated") || e.affectsConfiguration("extjsLangSvr.intellisenseIncludePrivate")) {
+            // {   //
+            //     // TODO - process config changes
+            //     //
+            //     log.log("Process settings change", 1);
+            // }
         }, context.subscriptions));
 
         return disposables;
@@ -883,6 +884,10 @@ export function getComponentByFile(fsPath: string): IComponent | undefined
 
 /**
  * Get component class name
+ *
+ * Old original function from base project, does not support multi-/root/project
+ *
+ * @deprecated Use other helper functions
  *
  * @param {String} property Property name
  * @param {String} txt The complete line of text the property is found in

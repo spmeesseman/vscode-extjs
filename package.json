@@ -139,12 +139,12 @@
 				"extjsLangSvr.intellisenseIncludeDeprecated": {
 					"type": "boolean",
 					"default": true,
-					"description": "Include deprecated methods, properties,and configs in Intellisense.  Note these properties will be tagged"
+					"description": "Include deprecated methods, properties, and configs in Intellisense.  Note these properties will be tagged"
 				},
 				"extjsLangSvr.intellisenseIncludePrivate": {
 					"type": "boolean",
 					"default": false,
-					"description": "Include private methods, properties,and configs in Intellisense"
+					"description": "Include private methods, properties, and configs in Intellisense"
 				}
 			}
 		}
