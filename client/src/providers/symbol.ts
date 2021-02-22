@@ -13,7 +13,6 @@ class SymbolProvider implements DocumentSymbolProvider
 {
     provideDocumentSymbols(document: TextDocument, token: CancellationToken): ProviderResult<SymbolInformation[] | DocumentSymbol[]>
     {
-        let location: Location;
         const symbolInfo: SymbolInformation[] = [],
               text = document.getText();
 
@@ -25,7 +24,15 @@ class SymbolProvider implements DocumentSymbolProvider
         log.methodStart("provide document symbols", 1, "", true);
 
         //
-        // ExtJS class files will call Ext.define()
+        // ExtJS class files will begin with the function expression 'Ext.define' with a
+        // string literal as the 1st argument and an object literal as the 2nd argument
+        //
+        // Example:
+        //
+        //     Ext.define("MyApp.view.users.Users",
+        //     {
+        //         ...
+        //     });
         //
         const matches = text.match(/Ext\.define\s*\(\s*["']{1}([\w\.]+)["']{1}\s*,/);
         if (matches && matches[1])
@@ -53,6 +60,9 @@ class SymbolProvider implements DocumentSymbolProvider
             }
         }
 
+        const location = toVscodeLocation({ line: 75, column: 9 }, { line: 75, column: 20 }, document.uri);
+        symbolInfo.push(new SymbolInformation("VSCodeExtJS", SymbolKind.Class, "testFn2", location));
+
         log.methodDone("provide document symbols", 2, "", true);
 
         return symbolInfo;
@@ -62,9 +72,9 @@ class SymbolProvider implements DocumentSymbolProvider
 
 function registerSymbolProvider(context: ExtensionContext)
 {
-    context.subscriptions.push(
-        languages.registerDocumentSymbolProvider("javascript", new SymbolProvider())
-    );
+    // context.subscriptions.push(
+    //     languages.registerDocumentSymbolProvider("javascript", new SymbolProvider())
+    // );
 }
 
 

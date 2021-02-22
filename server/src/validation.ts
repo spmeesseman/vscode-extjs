@@ -46,13 +46,6 @@ export async function validateExtJsDocument(textDocument: TextDocument, connecti
                     range: { ...diagnostic.range }
                 },
                 message: "Casing matters, don't do it!!"
-            },
-            {
-                location: {
-                    uri: textDocument.uri,
-                    range: { ...diagnostic.range }
-                },
-                message: "Particularly for this example message"
             }];
 		}
 
