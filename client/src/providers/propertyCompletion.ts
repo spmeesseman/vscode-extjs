@@ -32,7 +32,7 @@ class PropertyCompletionItemProvider
                 cmp = this.getPropertyCmp(property, cmpClass);
                 break;
             case CompletionItemKind.Class:
-                cmp = getComponent(cmpClass);
+                cmp = getComponent(cmpClass) || getComponentByAlias(cmpClass);
                 break;
             default:
                 break;
@@ -244,6 +244,13 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                     if (thisCmp) {
                         lineCls = thisCmp.componentClass;
                         log.logValue("   set instance class", lineCls, 1);
+                    }
+                    else {
+                        const aliasCmp = getComponentByAlias(lineCls);
+                        if (aliasCmp) {
+                            lineCls = aliasCmp.componentClass;
+                            log.logValue("   set alias class", lineCls, 1);
+                        }
                     }
                 }
 
