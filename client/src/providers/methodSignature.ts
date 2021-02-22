@@ -4,7 +4,7 @@ import {
     TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation
 } from "vscode";
 import { IMethod } from "../../../common";
-import { componentClassToComponentsMapping } from "../languageManager";
+import { getComponent, getComponentByAlias } from "../languageManager";
 import * as log from "../common/log";
 
 
@@ -27,10 +27,13 @@ class MethodSignatureProvider implements SignatureHelpProvider
 
         log.logMethodStart("provide method signature", 2, "", true, [["line text", lineText]]);
 
+		//
+		// Create signature information
+		//
 		sigHelp.signatures = [ this.getSignatureInfo(lineText) ];
 
 		//
-		// Current params index
+		// Set the current parameter index
 		//
 		let commaIdx = lineText.indexOf(",");
 		sigHelp.activeParameter = 0;
@@ -47,11 +50,13 @@ class MethodSignatureProvider implements SignatureHelpProvider
 
     getSignatureInfo(lineText: string): SignatureInformation
     {
-		let signature = "",
-			method: IMethod;
+		let signature = "";
         const params: ParameterInformation[] = [],
 			  matches = lineText.match(/([\w]+\.)/g);
 
+		//
+		// Create signature parameter information
+		//
         if (matches)
         {
             let cls = "";
@@ -60,7 +65,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 cls += m;
             }
             cls = cls.substring(0, cls.length - 1); // remove trailing .
-            const cmp = componentClassToComponentsMapping[cls];
+            const cmp = getComponent(cls) || getComponentByAlias(cls);
 
             if (cmp)
             {
@@ -69,10 +74,9 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 {
                     if (m.name === methodName && m.params)
                     {
-						method = m;
 						for (const p of m.params)
 						{
-                        	params.push(new ParameterInformation(p.name, p.doc));
+							params.push(new ParameterInformation(p.name, p.markdown || p.doc));
 						}
 						break;
                     }
@@ -80,6 +84,11 @@ class MethodSignatureProvider implements SignatureHelpProvider
             }
         }
 
+		//
+		// Build method signature string in the form:
+		//
+		//     param1, param2, param3, ...
+		//
 		params.forEach((p) => {
 			if (signature) {
 				signature += ", ";

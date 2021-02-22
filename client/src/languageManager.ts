@@ -173,6 +173,15 @@ class ExtjsLanguageManager
             methods.forEach(method => {
                 method.markdown = commentToMarkdown(method.name, method.doc);
                 methodToComponentClassMapping[method.name] = componentClass;
+                if (method.params)
+                {
+                    for (const p of method.params)
+                    {
+                        if (p.doc) {
+                            p.markdown = commentToMarkdown(p.name, p.doc);
+                        }
+                    }
+                }
             });
 
             //

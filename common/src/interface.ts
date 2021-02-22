@@ -92,6 +92,7 @@ export interface IMethod extends IProperty
 export interface IParameter extends IExtJsBase
 {
     doc?: string;
+    markdown?: any;
     methodName: string;
     declaration?: DeclarationType;
     type?: VariableType;
