@@ -29,7 +29,7 @@ export interface IExtJsBase
 export interface IComponent
 {
     aliases: string[];
-    baseNamespace: string;
+    baseNameSpace: string;
     componentClass: string;
     configs: IConfig[];
     deprecated?: boolean;
@@ -39,6 +39,7 @@ export interface IComponent
     isFramework: boolean;
     markdown?: any;
     methods: IMethod[];
+    nameSpace: string;
     private?: boolean;
     privates: (IProperty | IMethod)[];
     properties: IProperty[];

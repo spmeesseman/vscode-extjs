@@ -60,7 +60,7 @@ export function getExtJsComponent(text: string)
 }
 
 
-export async function parseExtJsFile(fsPath: string, text: string, isFramework?: boolean)
+export async function parseExtJsFile(fsPath: string, text: string, nameSpace: string, isFramework?: boolean)
 {
     const ast = parse(text);
     const components: IComponent[] = [];
@@ -97,9 +97,14 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                             isFramework = args[0].value.startsWith("Ext.") && !args[0].value.startsWith("Ext.csi.");
                         }
 
-                        const dotIdx = args[0].value.indexOf(".");
+                        const dotIdx = args[0].value.indexOf("."),
+                              baseNameSpace = dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value;
+                        if (!nameSpace) {
+                            nameSpace = baseNameSpace;
+                        }
+
                         const componentInfo: IComponent = {
-                            baseNamespace: dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value,
+                            baseNameSpace, fsPath, isFramework, nameSpace,
                             componentClass: args[0].value,
                             xtypes: [],
                             aliases: [],
@@ -108,9 +113,7 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                             properties: [],
                             configs: [],
                             statics: [],
-                            privates: [],
-                            fsPath,
-                            isFramework
+                            privates: []
                         };
 
                         if (isExpressionStatement(path.container)) {

@@ -85,6 +85,7 @@ class ExtjsLanguageManager
 {
     private serverRequest: ServerRequest;
     private reIndexTaskId: NodeJS.Timeout | undefined;
+    private dirNamespaceMap: Map<string, string> = new Map<string, string>();
 
 
     constructor(serverRequest: ServerRequest)
@@ -93,9 +94,9 @@ class ExtjsLanguageManager
     }
 
 
-    async indexing(fsPath: string, text: string, logPad = "")
+    async indexing(fsPath: string, nameSpace: string, text: string, logPad = "")
     {
-        const components = await this.serverRequest.parseExtJsFile(fsPath, text);
+        const components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
         if (!components || components.length === 0) {
             return;
         }
@@ -212,11 +213,11 @@ class ExtjsLanguageManager
     }
 
 
-    async validateDocument(textDocument: TextDocument): Promise<void>
+    async validateDocument(textDocument: TextDocument, nameSpace: string): Promise<void>
     {
         const diagnostics: Diagnostic[] = [];
         const text = textDocument.getText();
-        const components = await this.serverRequest.parseExtJsFile(textDocument.uri.fsPath, text);
+        const components = await this.serverRequest.parseExtJsFile(textDocument.uri.fsPath, nameSpace, text);
 
         components?.forEach(cmp =>
         {
@@ -318,7 +319,7 @@ class ExtjsLanguageManager
                         log.logBlank();
                         log.logValue("   Indexing file", uri.fsPath, 1);
                         const text = (await workspace.fs.readFile(uri)).toString();
-                        await this.indexing(uri.fsPath, text, "   ");
+                        await this.indexing(uri.fsPath, conf.name, text, "   ");
                         const pct = Math.round(++currentFileIdx / numFiles * 100);
                         progress?.report({
                             increment,
@@ -327,6 +328,7 @@ class ExtjsLanguageManager
                         // statusBarSpace.text = getStatusString(pct);
                     }
                     processedDirs.push(dir);
+                    this.dirNamespaceMap.set(dir, conf.name);
                 }
             }
         }
@@ -364,9 +366,18 @@ class ExtjsLanguageManager
         //
         const activeTextDocument = window.activeTextEditor?.document;
         if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument);
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
         }
         return this.registerWatchers(context);
+    }
+
+
+    getNamespace(document: TextDocument | undefined)
+    {
+        if (document) {
+            return this.dirNamespaceMap.get(path.dirname(document.uri.fsPath)) || "Ext";
+        }
+        return "Ext";
     }
 
 
@@ -398,9 +409,10 @@ class ExtjsLanguageManager
                 this.reIndexTaskId = setTimeout(async () => {
                     this.reIndexTaskId = undefined;
                     const fsPath = textDocument.uri.fsPath;
+                    const ns = this.getNamespace(textDocument);
                     handleDeleFile(fsPath);
-                    await this.indexing(textDocument.uri.fsPath, textDocument.getText());
-                    await this.validateDocument(textDocument);
+                    await this.indexing(textDocument.uri.fsPath, ns, textDocument.getText());
+                    await this.validateDocument(textDocument, ns);
                 }, debounceMs);
             }
         }, context.subscriptions));
@@ -415,7 +427,7 @@ class ExtjsLanguageManager
                 handleDeleFile(file.fsPath);
                 const activeTextDocument = window.activeTextEditor?.document;
                 if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-                    await this.validateDocument(activeTextDocument);
+                    await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
                 }
             });
         }, context.subscriptions));
@@ -428,7 +440,7 @@ class ExtjsLanguageManager
             const textDocument = e?.document;
             if (textDocument) {
                 if (textDocument.languageId === "javascript") {
-                    await this.validateDocument(textDocument);
+                    await this.validateDocument(textDocument, this.getNamespace(textDocument));
                 }
             }
         }, context.subscriptions));
@@ -439,7 +451,7 @@ class ExtjsLanguageManager
         disposables.push(workspace.onDidOpenTextDocument(async (textDocument: TextDocument) =>
         {
             if (textDocument.languageId === "javascript") {
-                await this.validateDocument(textDocument);
+                await this.validateDocument(textDocument, this.getNamespace(textDocument));
             }
         }, context.subscriptions));
 
@@ -805,7 +817,8 @@ export function getComponent(componentClass: string, checkAlias?: boolean, fsPat
     if (component)
     {
         log.log("   found component", 3);
-        log.logValue("      base namespace", component.baseNamespace, 4);
+        log.logValue("      namespace", component.nameSpace, 4);
+        log.logValue("      base namespace", component.baseNameSpace, 4);
     }
 
     if (!component && checkAlias === true)
@@ -813,7 +826,8 @@ export function getComponent(componentClass: string, checkAlias?: boolean, fsPat
         component = getComponentByAlias(componentClass);
         if (component) {
             log.log("   found aliased component", 3);
-            log.logValue("      base namespace", component.baseNamespace, 4);
+            log.logValue("      namespace", component.nameSpace, 4);
+            log.logValue("      base namespace", component.baseNameSpace, 4);
         }
     }
 
@@ -822,7 +836,8 @@ export function getComponent(componentClass: string, checkAlias?: boolean, fsPat
         component = getComponentInstance(componentClass, fsPath);
         if (component) {
             log.log("   found instanced component", 3);
-            log.logValue("      base namespace", component.baseNamespace, 4);
+            log.logValue("      namespace", component.nameSpace, 4);
+            log.logValue("      base namespace", component.baseNameSpace, 4);
         }
     }
 
@@ -839,7 +854,8 @@ export function getComponentByAlias(alias: string): IComponent | undefined
         const component = getComponent(cls);
         if (component) {
             log.log("   found component", 3);
-            log.logValue("      base namespace", component.baseNamespace, 4);
+            log.logValue("      namespace", component.nameSpace, 4);
+            log.logValue("      base namespace", component.baseNameSpace, 4);
             return component;
         }
     }
@@ -856,7 +872,8 @@ export function getComponentByFile(fsPath: string): IComponent | undefined
         const component = getComponent(cls);
         if (component) {
             log.log("   found component", 3);
-            log.logValue("      base namespace", component.baseNamespace, 4);
+            log.logValue("      namespace", component.nameSpace, 4);
+            log.logValue("      base namespace", component.baseNameSpace, 4);
             return component;
         }
     }

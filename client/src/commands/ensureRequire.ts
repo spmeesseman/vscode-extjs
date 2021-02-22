@@ -17,7 +17,7 @@ function registerEnsureRequireCommand(context: vscode.ExtensionContext, serverRe
 
         const text = document.getText(),
 		      path = document.uri.fsPath,
-			  components = await serverRequest.parseExtJsFile(path, text),
+			  components = await serverRequest.parseExtJsFile(path, "", text),
 			  workspaceEdit = new vscode.WorkspaceEdit();
 
 		components?.forEach(component =>

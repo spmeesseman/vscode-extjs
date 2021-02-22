@@ -102,7 +102,7 @@ connection.onRequest("parseExtJsFile", async (param: any) =>
 {
     try {
         const jso = JSON.parse(param);
-        return await parseExtJsFile(jso?.fsPath, jso?.text, jso?.isFramework);
+        return await parseExtJsFile(jso?.fsPath, jso?.text, jso?.nameSpace, jso?.isFramework);
     }
     catch (error)
     {

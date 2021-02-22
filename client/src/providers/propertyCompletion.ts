@@ -5,7 +5,7 @@ import {
 } from "vscode";
 import {
     methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance, getComponentByFile,
-    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias, getComponentClass
+    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias
 } from "../languageManager";
 import * as log from "../common/log";
 import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common";
@@ -30,7 +30,7 @@ class PropertyCompletionItemProvider
                 cmp = this.getPropertyCmp(property, cmpClass);
                 break;
             case CompletionItemKind.Class:
-                cmp = getComponent(cmpClass) || getComponentByAlias(cmpClass);
+                cmp = getComponent(cmpClass, true);
                 break;
             default:
                 break;
@@ -193,40 +193,12 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
 class DotCompletionItemProvider extends PropertyCompletionItemProvider implements CompletionItemProvider
 {
 
-    private getFunctionName(document: TextDocument, position: Position)
-    {
-        const text = document.getText();
-        let idx = text.lastIndexOf("function", document.offsetAt(position));
-        if (idx !== -1)
-        {
-            let sidx = idx = text.lastIndexOf(":", idx);
-            if (sidx !== -1)
-            {
-                --sidx;
-                const sidx2 = text.lastIndexOf("\t", sidx),
-                      sidx3 = text.lastIndexOf("\n", sidx);
-                sidx = text.lastIndexOf(" ", sidx);
-                if (sidx2 > sidx) {
-                    sidx = sidx2;
-                }
-                if (sidx3 > sidx) {
-                    sidx = sidx3;
-                }
-                if (sidx !== -1)
-                {
-                    return text.substring(sidx, idx).trim();
-                }
-            }
-        }
-    }
-
     provideCompletionItems(document: TextDocument, position: Position)
     {
         const addedItems: string[] = [],
               lineText = document.lineAt(position).text.substr(0, position.character),
               fnText = this.getFunctionName(document, position),
               completionItems: CompletionItem[] = [];
-console.log(fnText);
         //
         // Check for "." since VSCode 24/7 Intellisense will trigger every character no matter what
         // the trigger char(s) is for this provider.  24/7 Intellisense can be turned off in settings.json:
@@ -245,6 +217,37 @@ console.log(fnText);
         log.logMethodDone("provide dot completion items", 2, "", true);
 
         return completionItems.length > 0 ? completionItems : undefined;
+    }
+
+
+    /**
+     * @method getFunctionName
+     *
+     * Get outer function name based on current document position.
+     *
+     * @param document VSCode Document object
+     * @param position VSCode position object
+     */
+    private getFunctionName(document: TextDocument, position: Position)
+    {
+        const text = document.getText();
+        let idx = text.lastIndexOf("function", document.offsetAt(position));
+        if (idx !== -1)
+        {
+            let sidx = idx = text.lastIndexOf(":", idx);
+            if (sidx !== -1)
+            {
+                const sidx2 = text.lastIndexOf("\t", --sidx),
+                      sidx3 = text.lastIndexOf("\n", sidx);
+                sidx = text.lastIndexOf(" ", sidx);
+                if (sidx2 > sidx) {  sidx = sidx2; }
+                if (sidx3 > sidx) { sidx = sidx3; }
+                if (sidx !== -1)
+                {
+                    return text.substring(sidx, idx).trim();
+                }
+            }
+        }
     }
 
 
@@ -299,6 +302,22 @@ console.log(fnText);
         if (component)
         {
             _pushItems(component);
+            //
+            // Class properties
+            //
+            // Example:
+            //
+            //     User has typed:
+            //
+            //         VSCodeExtJS.
+            //
+            //     Any existing classpaths should display in the intellisense:
+            //
+            //         AppUtilities
+            //         common
+            //         etc...
+            //
+            completionItems.push(...this.getChildClsCompletionItems(component.componentClass, addedItems));
         }
         else //
         {   // For local instance vars, only provide completion from the right function
@@ -371,6 +390,65 @@ console.log(fnText);
             }
             break;
         }
+
+        return completionItems;
+    }
+
+
+    /**
+     * @method getChildClsCompletionItems
+     *
+     * Get possible Intellisense classpaths for a given class
+     *
+     * Example:
+     *
+     *     User has typed:
+     *         VSCodeExtJS.
+     *     Any existing classpaths should display in the intellisense:
+     *         AppUtilities
+     *         common
+     *         etc...
+     *
+     * @param componentClass Component class
+     * @param addedItems Shared provider instance array to avooid duplicate references
+     *
+     * @returns {CompletionItem[]}
+     */
+    private getChildClsCompletionItems(componentClass: string, addedItems: string[]): CompletionItem[]
+    {
+        const map = componentClassToComponentsMapping,
+              cmpClsParts = componentClass.split("."),
+              completionItems: CompletionItem[] = [];
+
+        Object.keys(map).forEach((cls) =>
+        {
+            if (cls)
+            {
+                let cCls: string | undefined;
+                const clsParts = cls.split(".");
+
+                for (let i = 0; i < clsParts.length &&  i < cmpClsParts.length; i++)
+                {
+                    if (clsParts[i] !== cmpClsParts[i]) {
+                        continue;
+                    }
+                    if (i === cmpClsParts.length - 1 && clsParts.length > i + 1 && cCls !== componentClass) {
+                        cCls = clsParts[i + 1];
+                        break;
+                    }
+                }
+
+                if (cCls && addedItems.indexOf(cCls) === -1)
+                {
+                    completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
+                    addedItems.push(cCls);
+
+                    log.logBlank(1);
+                    log.log("      added inline completion item", 3);
+                    log.logValue("         item", cCls, 3);
+                }
+            }
+        });
 
         return completionItems;
     }
