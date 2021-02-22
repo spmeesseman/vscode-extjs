@@ -139,8 +139,8 @@ export const defaultSettings: ISettings =
     debugLevel: 1,
     include: [],
     intellisenseIncludeDeprecated: true,
-    intellisenseIncludePrivate: false
-
+    intellisenseIncludePrivate: false,
+    validateXTypes: true
 };
 
 
@@ -156,6 +156,7 @@ export interface ISettings
     include: string[] | string;
     intellisenseIncludeDeprecated: boolean;
     intellisenseIncludePrivate: boolean;
+    validateXTypes: boolean;
 }
 
 

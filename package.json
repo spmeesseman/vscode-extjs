@@ -145,6 +145,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Include private methods, properties, and configs in Intellisense"
+				},
+				"extjsLangSvr.ValidateXTypes": {
+					"type": "boolean",
+					"default": true,
+					"description": "Validate that all required files are included in the 'requires' array for all xtype references found"
 				}
 			}
 		}

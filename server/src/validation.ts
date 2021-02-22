@@ -3,6 +3,7 @@ import { Connection, Diagnostic, DiagnosticSeverity, Range, Position } from "vsc
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, componentClassToWidgetsMapping } from "./syntaxTree";
 import { IPosition, IRequires } from "../../common";
+import { globalSettings } from "./server";
 import * as log from "./log";
 
 
@@ -90,8 +91,11 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		//
 		// Validate xtypes
 		//
-		for (const xtype of cmp.xtypes) {
-			validateXtype(xtype.name, cmp.requires, toVscodeRange(xtype.start, xtype.end), diagnostics);
+		if (globalSettings.validateXTypes)
+		{
+			for (const xtype of cmp.xtypes) {
+				validateXtype(xtype.name, cmp.requires, toVscodeRange(xtype.start, xtype.end), diagnostics);
+			}
 		}
 
 		//
