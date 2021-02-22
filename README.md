@@ -1,4 +1,4 @@
-# ExtJs Intellisense - Because Sencha Can't
+# ExtJs Language Server - Intellisense, Code Completion, and More
 
 ## NOT YET RELEASED!!  DO NOT INSTALL
 
@@ -16,7 +16,7 @@
 
 ## Table of Contents
 
-- [ExtJs Intellisense - Because Sencha Can't](#extjs-intellisense---because-sencha-cant)
+- [ExtJs Language Server - Intellisense, Code Completion, and More](#extjs-language-server---intellisense-code-completion-and-more)
   - [NOT YET RELEASED!!  DO NOT INSTALL](#not-yet-released--do-not-install)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
@@ -29,13 +29,14 @@
 
 ## Description
 
-ExtJs Intellisense and Language Server, additional functionality that the Sencha extnsion doesn't provide:
+ExtJs Intellisense and Language Server, additional functionality that the Sencha extnsion doesn't (can't?) provide for a multi-root workspace:
 
-- Hover Tips JSDpc/Doc
-- Code Completion (Intellisense) with Inline JSDoc
-- Function inline parameter highlighting
-- XType validation (credits to original author **qzsiniong**)
-- Method and class variable validation
+- Method, Config, and Property JSDoc/Comments Hover
+- Code Completion Intellisense with Inline JSDoc/Comments
+- Method Signature Intellisense with Inline JSDoc/Comments
+- Method Parameter Validation
+- XType Validation and Completion (Credits to Original Author **qzsiniong**)
+- Method and Class Validation
 
 ## Getting Started
 
