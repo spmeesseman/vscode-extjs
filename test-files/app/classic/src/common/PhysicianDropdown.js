@@ -11,31 +11,14 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 	 * Test
 	 */
 	xtype: ['physiciandropdown'],
+	extend: 'VSCodeExtJS.common.UserDropdown',
 
 	/**
-	 * Test load description
+	 * Test get pin # description
 	 */
-	load: function()
+	getPinNumber: function()
 	{
 		console.log("test load physician");
-	},
-
-	/**
-	 * @method save
-	 * Test save description
-	 */
-	save: function()
-	{
-		console.log("test load physician");
-	},
-
-	/**
-	 * @method
-	 * Test save description
-	 */
-	delete: function()
-	{
-		console.log("test delete physician");
 	}
 
 });

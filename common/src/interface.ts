@@ -31,6 +31,7 @@ export interface IComponent
     aliases: string[];
     baseNamespace: string;
     componentClass: string;
+    extend?: string;
     requires?: IRequires;
     widgets: string[];
     xtypes: IXtype[];

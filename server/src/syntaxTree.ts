@@ -128,8 +128,17 @@ export async function parseExtJsFile(fsPath: string, text: string, isFramework?:
                         const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
                         const propertyStatics = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "statics");
                         const propertyPrivates = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "privates");
+                        const propertyExtend = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "extend");
                         const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
+
+                        if (isObjectProperty(propertyExtend))
+                        {
+                            componentInfo.extend = parseExtend(propertyExtend);
+                            if (componentInfo.extend) {
+                                logProperties("extend", [ componentInfo.extend ]);
+                            }
+                        }
 
                         if (isObjectProperty(propertyRequires))
                         {
@@ -353,6 +362,15 @@ function parseConfig(propertyConfig: ObjectProperty)
         }, requires);
     }
     return requires;
+}
+
+
+function parseExtend(propertyExtend: ObjectProperty): string | undefined
+{
+    if (isStringLiteral(propertyExtend.value))
+    {
+        return propertyExtend.value.value;
+    }
 }
 
 
