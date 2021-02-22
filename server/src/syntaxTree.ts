@@ -431,7 +431,8 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                         const paramDoc = doc.match(new RegExp(`@param\\s*(\\{\\w+\\})*\\s*${p.name}[^\\r\\n]*`));
                         if (paramDoc)
                         {
-                            p.doc = paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
+                            // p.doc = "@param " + paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
+                            p.doc = paramDoc[0].trim();
                             if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
                             {
                                 const type = paramDoc[1].replace(/[\{\}]/g, "").toLowerCase();
