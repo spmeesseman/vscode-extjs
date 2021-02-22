@@ -84,7 +84,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 	const diagnostics: Diagnostic[] = [];
 	const textObj = TextDocument.create(options.uriPath, "javascript", 2, options.text);
 
-	log.logMethodStart("validate extjs file text", 1, "", true);
+	log.methodStart("validate extjs file text", 1, "", true);
 
 	//
 	// For each component found, perform the following validations:
@@ -106,13 +106,13 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		//
 		for (const method of cmp.methods)
 		{
-			log.logValue("   check method", method.name, 3);
+			log.value("   check method", method.name, 3);
 
 			if (method.variables)
 			{
 				for (const variable of method.variables)
 				{
-					log.logValue("      check variable ", variable.name, 3);
+					log.value("      check variable ", variable.name, 3);
 				}
 			}
 		}
@@ -132,7 +132,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 	connection.sendDiagnostics({ uri: textObj.uri, diagnostics });
 
 
-	log.logMethodDone("validate extjs file text", 1, "", true);
+	log.methodDone("validate extjs file text", 1, "", true);
 }
 
 

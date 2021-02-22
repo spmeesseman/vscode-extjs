@@ -25,7 +25,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
             return undefined;
         }
 
-        log.logMethodStart("provide method signature", 2, "", true, [["line text", lineText]]);
+        log.methodStart("provide method signature", 2, "", true, [["line text", lineText]]);
 
 		//
 		// Create signature information
@@ -42,7 +42,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
 			commaIdx = lineText.indexOf(",", commaIdx + 1);
 		}
 
-        log.logMethodDone("provide method signature", 2, "", true);
+        log.methodDone("provide method signature", 2, "", true);
 
         return sigHelp;
     }

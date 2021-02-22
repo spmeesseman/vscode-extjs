@@ -35,9 +35,9 @@ class XtypeDefinitionProvider implements DefinitionProvider
                     const uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
                           uri = Uri.parse(`file://${uriPath}`),
                           range = new Range(start, end);
-                    log.log("open definition file", 1);
-                    log.logValue("   component class", componentClass, 2);
-                    log.logValue("   fsPath", uri.fsPath, 2);
+                    log.write("open definition file", 1);
+                    log.value("   component class", componentClass, 2);
+                    log.value("   fsPath", uri.fsPath, 2);
                     return {
                         uri,
                         range

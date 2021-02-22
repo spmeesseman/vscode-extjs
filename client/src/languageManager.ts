@@ -101,7 +101,7 @@ class ExtjsLanguageManager
             return;
         }
 
-        log.logMethodStart("indexing " + fsPath, 2, logPad, true);
+        log.methodStart("indexing " + fsPath, 2, logPad, true);
 
         await utils.forEachAsync(components, (cmp: IComponent) =>
         {
@@ -128,7 +128,7 @@ class ExtjsLanguageManager
                 cmp.markdown = commentToMarkdown(componentClass, cmp.doc, logPad + "   ");
             }
 
-            log.log("   map classes to components", 2, logPad);
+            log.write("   map classes to components", 2, logPad);
 
             //
             // Map the component class to the various component types found
@@ -159,7 +159,7 @@ class ExtjsLanguageManager
                 componentClassToRequiresMapping[componentClass] = requires.value;
             }
 
-            log.log("   map components to classes", 2, logPad);
+            log.write("   map components to classes", 2, logPad);
 
             //
             // Map widget/alias/xtype types found to the component class
@@ -209,7 +209,7 @@ class ExtjsLanguageManager
             });
         });
 
-        log.logMethodDone("indexing " + fsPath, 2, logPad, true);
+        log.methodDone("indexing " + fsPath, 2, logPad, true);
     }
 
 
@@ -241,7 +241,7 @@ class ExtjsLanguageManager
             return false;
         });
 
-        log.logMethodStart("indexing all", 1, "", true);
+        log.methodStart("indexing all", 1, "", true);
 
         for (const conf of config)
         {
@@ -272,8 +272,8 @@ class ExtjsLanguageManager
 
             const increment = Math.round(1 / numFiles * 100);
 
-            log.logBlank();
-            log.logValue("   # of files to index", numFiles, 1);
+            log.blank();
+            log.value("   # of files to index", numFiles, 1);
 
             for (const dir of dirs)
             {
@@ -282,8 +282,8 @@ class ExtjsLanguageManager
                     const uris = await workspace.findFiles(`${dir}/**/*.js`);
                     for (const uri of uris)
                     {
-                        log.logBlank();
-                        log.logValue("   Indexing file", uri.fsPath, 1);
+                        log.blank();
+                        log.value("   Indexing file", uri.fsPath, 1);
                         const text = (await workspace.fs.readFile(uri)).toString();
                         await this.indexing(uri.fsPath, conf.name, text, "   ");
                         const pct = Math.round(++currentFileIdx / numFiles * 100);
@@ -299,7 +299,7 @@ class ExtjsLanguageManager
             }
         }
 
-        log.logMethodDone("indexing all", 1, "", true);
+        log.methodDone("indexing all", 1, "", true);
     }
 
 
@@ -430,7 +430,7 @@ class ExtjsLanguageManager
             // {   //
             //     // TODO - process config changes
             //     //
-            //     log.log("Process settings change", 1);
+            //     log.write("Process settings change", 1);
             // }
         }, context.subscriptions));
 
@@ -484,7 +484,7 @@ function commentToMarkdown(property: string, comment: string | undefined, logPad
     //     https://clojure.org/community/editing
     //
 
-    log.logMethodStart("build markdown string from comment", 2, logPad, false, [["comment", comment]]);
+    log.methodStart("build markdown string from comment", 2, logPad, false, [["comment", comment]]);
 
     const commentFmt = comment?.trim()
         //
@@ -542,7 +542,7 @@ function commentToMarkdown(property: string, comment: string | undefined, logPad
         // });
         // .trim();
 
-        log.logValue("   process line", line, 4);
+        log.value("   process line", line, 4);
 
         if (!line.trim()) {
             return; // continue forEach()
@@ -591,7 +591,7 @@ function commentToMarkdown(property: string, comment: string | undefined, logPad
         }
         else if (mode === MarkdownStringMode.Code)
         {
-            log.logValue("      indented line", line, 4);
+            log.value("      indented line", line, 4);
             indented += MarkdownChars.NewLine + line.trim();
         }
         else if (mode === MarkdownStringMode.Returns)
@@ -612,7 +612,7 @@ function commentToMarkdown(property: string, comment: string | undefined, logPad
         }
     });
 
-    log.logMethodDone("build markdown string from comment", 2);
+    log.methodDone("build markdown string from comment", 2);
     return markdown;
 }
 
@@ -623,7 +623,7 @@ async function initConfig(): Promise<boolean>
           confUris = await workspace.findFiles(".extjsrc{.json,}"),
           appDotJsonUris = await workspace.findFiles("app.json");
 
-    log.logMethodStart("initialize config", 1, "", true);
+    log.methodStart("initialize config", 1, "", true);
 
     //
     // Clear
@@ -650,9 +650,9 @@ async function initConfig(): Promise<boolean>
             const conf: IConf = json5.parse(confJson);
             if (conf.classpath && conf.name)
             {
-                log.logValue("   add .extjsrc path", fileSystemPath, 2);
-                log.logValue("      namespace", conf.name, 2);
-                log.logValue("      classpath", conf.classpath, 3);
+                log.value("   add .extjsrc path", fileSystemPath, 2);
+                log.value("      namespace", conf.name, 2);
+                log.value("      classpath", conf.classpath, 3);
                 config.push(conf);
             }
         }
@@ -696,7 +696,7 @@ async function initConfig(): Promise<boolean>
                 if (wsConf.frameworks && wsConf.frameworks.ext)
                 {
                     conf.classpath.push(wsConf.frameworks.ext);
-                    log.logValue("   add ws.json framework path", wsConf.frameworks.ext, 2);
+                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
                 }
                 if (wsConf.packages && wsConf.packages.dir)
                 {
@@ -706,23 +706,23 @@ async function initConfig(): Promise<boolean>
                         const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
                                         .replace(/\$\{toolkit.name\}[/\\]{1}/, "classic");
                         conf.classpath.push(wsPath);
-                        log.logValue("   add ws.json path", wsPath, 2);
+                        log.value("   add ws.json path", wsPath, 2);
                     }
                 }
             }
 
             if (conf.classpath && conf.name)
             {
-                log.logValue("   add app.json paths", fileSystemPath, 2);
-                log.logValue("      namespace", conf.name, 2);
-                log.logValue("      classpath", conf.classpath, 3);
+                log.value("   add app.json paths", fileSystemPath, 2);
+                log.value("      namespace", conf.name, 2);
+                log.value("      classpath", conf.classpath, 3);
                 config.push(conf);
             }
         }
     }
 
-    log.logValue("   # of configs found", config.length, 3);
-    log.logMethodDone("initialize config", 1, "", true);
+    log.value("   # of configs found", config.length, 3);
+    log.methodDone("initialize config", 1, "", true);
 
     return (config.length > 0);
 }
@@ -738,8 +738,8 @@ export function getClassFromPath(fsPath: string)
           // wsf = workspace.getWorkspaceFolder(Uri.parse(`file://${uriPath}`));
           wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
 
-    log.log("get component by fs path", 1);
-    log.logValue("   path", fsPath, 2);
+    log.write("get component by fs path", 1);
+    log.value("   path", fsPath, 2);
 
     for (const conf of config)
     {
@@ -756,7 +756,7 @@ export function getClassFromPath(fsPath: string)
         }
     }
 
-    log.logValue("   component class", cmpClass, 2);
+    log.value("   component class", cmpClass, 2);
     return cmpClass;
 }
 
@@ -764,10 +764,10 @@ export function getClassFromPath(fsPath: string)
 export function getClassFromFile(fsPath: string): string | undefined
 {
     const cls = fileToComponentClassMapping[fsPath];
-    log.log("get component class by file", 1);
-    log.logValue("   file", fsPath, 2);
+    log.write("get component class by file", 1);
+    log.value("   file", fsPath, 2);
     if (cls) {
-        log.log("   found component class", 3);
+        log.write("   found component class", 3);
         return cls;
     }
     return undefined;
@@ -778,23 +778,23 @@ export function getComponent(componentClass: string, checkAlias?: boolean, fsPat
 {
     let component = componentClassToComponentsMapping[componentClass];
 
-    log.log("get component by class", 1);
-    log.logValue("   component class", componentClass, 2);
+    log.write("get component by class", 1);
+    log.value("   component class", componentClass, 2);
 
     if (component)
     {
-        log.log("   found component", 3);
-        log.logValue("      namespace", component.nameSpace, 4);
-        log.logValue("      base namespace", component.baseNameSpace, 4);
+        log.write("   found component", 3);
+        log.value("      namespace", component.nameSpace, 4);
+        log.value("      base namespace", component.baseNameSpace, 4);
     }
 
     if (!component && checkAlias === true)
     {
         component = getComponentByAlias(componentClass);
         if (component) {
-            log.log("   found aliased component", 3);
-            log.logValue("      namespace", component.nameSpace, 4);
-            log.logValue("      base namespace", component.baseNameSpace, 4);
+            log.write("   found aliased component", 3);
+            log.value("      namespace", component.nameSpace, 4);
+            log.value("      base namespace", component.baseNameSpace, 4);
         }
     }
 
@@ -802,9 +802,9 @@ export function getComponent(componentClass: string, checkAlias?: boolean, fsPat
     {
         component = getComponentInstance(componentClass, fsPath);
         if (component) {
-            log.log("   found instanced component", 3);
-            log.logValue("      namespace", component.nameSpace, 4);
-            log.logValue("      base namespace", component.baseNameSpace, 4);
+            log.write("   found instanced component", 3);
+            log.value("      namespace", component.nameSpace, 4);
+            log.value("      base namespace", component.baseNameSpace, 4);
         }
     }
 
@@ -815,14 +815,14 @@ export function getComponent(componentClass: string, checkAlias?: boolean, fsPat
 export function getComponentByAlias(alias: string): IComponent | undefined
 {
     const cls = widgetToComponentClassMapping[alias];
-    log.log("get component by alias", 1);
-    log.logValue("   component alias", alias, 2);
+    log.write("get component by alias", 1);
+    log.value("   component alias", alias, 2);
     if (cls) {
         const component = getComponent(cls);
         if (component) {
-            log.log("   found component", 3);
-            log.logValue("      namespace", component.nameSpace, 4);
-            log.logValue("      base namespace", component.baseNameSpace, 4);
+            log.write("   found component", 3);
+            log.value("      namespace", component.nameSpace, 4);
+            log.value("      base namespace", component.baseNameSpace, 4);
             return component;
         }
     }
@@ -833,14 +833,14 @@ export function getComponentByAlias(alias: string): IComponent | undefined
 export function getComponentByFile(fsPath: string): IComponent | undefined
 {
     const cls = getClassFromFile(fsPath);
-    log.log("get component by file", 1);
-    log.logValue("   component file", fsPath, 2);
+    log.write("get component by file", 1);
+    log.value("   component file", fsPath, 2);
     if (cls) {
         const component = getComponent(cls);
         if (component) {
-            log.log("   found component", 3);
-            log.logValue("      namespace", component.nameSpace, 4);
-            log.logValue("      base namespace", component.baseNameSpace, 4);
+            log.write("   found component", 3);
+            log.value("      namespace", component.nameSpace, 4);
+            log.value("      base namespace", component.baseNameSpace, 4);
             return component;
         }
     }
@@ -936,8 +936,8 @@ export function getComponentClass(property: string, cmpType?: ComponentType, txt
         cmpClass = aliasClass;
     }
 
-    log.logBlank(1);
-    log.logValue("class", cmpClass, 1);
+    log.blank(1);
+    log.value("class", cmpClass, 1);
     return cmpClass;
 }
 
@@ -979,7 +979,7 @@ export function getComponentInstance(property: string, fsPath: string)
                     const instanceCmp = getComponent(variable.componentClass) || getComponentByAlias(variable.componentClass);
                     if (instanceCmp && instanceCmp.markdown)
                     {
-                        log.logValue("provide instance class hover info", property, 1);
+                        log.value("provide instance class hover info", property, 1);
                         return instanceCmp;
                     }
                 }
@@ -992,16 +992,16 @@ export function getComponentInstance(property: string, fsPath: string)
 export function getConfig(cmp: string, property: string): IConfig | undefined
 {
     const configs = componentClassToConfigsMapping[cmp];
-    log.log("get config by component class", 1);
-    log.logValue("   component class", cmp, 2);
-    log.logValue("   config", property, 2);
+    log.write("get config by component class", 1);
+    log.value("   component class", cmp, 2);
+    log.value("   config", property, 2);
     if (configs) {
         for (let c = 0; c < configs.length; c++) {
             if (configs[c].name === property) {
-                log.log("   found config", 3);
-                log.logValue("      name", configs[c].name, 4);
-                log.logValue("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
-                log.logValue("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
+                log.write("   found config", 3);
+                log.value("      name", configs[c].name, 4);
+                log.value("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
+                log.value("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
                 return configs[c];
             }
         }
@@ -1013,8 +1013,8 @@ export function getConfig(cmp: string, property: string): IConfig | undefined
 export function getFilePath(componentClass: string)
 {
     const fsPath = componentClassToFsPathMapping[componentClass];
-    log.log("get fs path by component", 1);
-    log.logValue("   path", fsPath, 2);
+    log.write("get fs path by component", 1);
+    log.value("   path", fsPath, 2);
     return fsPath;
 }
 
@@ -1022,16 +1022,16 @@ export function getFilePath(componentClass: string)
 export function getProperty(cmp: string, property: string): IProperty | undefined
 {
     const properties = componentClassToPropertiesMapping[cmp];
-    log.log("get property by component class", 1);
-    log.logValue("   component class", cmp, 2);
-    log.logValue("   property", property, 2);
+    log.write("get property by component class", 1);
+    log.value("   component class", cmp, 2);
+    log.value("   property", property, 2);
     if (properties) {
         for (let c = 0; c < properties.length; c++) {
             if (properties[c].name === property) {
-                log.log("   found property", 3);
-                log.logValue("      name", properties[c].name, 4);
-                log.logValue("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
-                log.logValue("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
+                log.write("   found property", 3);
+                log.value("      name", properties[c].name, 4);
+                log.value("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
+                log.value("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
                 return properties[c];
             }
         }
@@ -1043,18 +1043,18 @@ export function getProperty(cmp: string, property: string): IProperty | undefine
 export function getMethod(cmp: string, property: string): IMethod| undefined
 {
     const methods = componentClassToMethodsMapping[cmp];
-    log.log("get config by method", 1);
-    log.logValue("   component class", cmp, 2);
-    log.logValue("   property", property, 2);
+    log.write("get config by method", 1);
+    log.value("   component class", cmp, 2);
+    log.value("   property", property, 2);
     if (methods)
     {
         for (let c = 0; c < methods.length; c++)
         {
             if (methods[c].name === property) {
-                log.log("   found method", 3);
-                log.logValue("      name", methods[c].name, 4);
-                log.logValue("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
-                log.logValue("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
+                log.write("   found method", 3);
+                log.value("      name", methods[c].name, 4);
+                log.value("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
+                log.value("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
                 return methods[c];
             }
         }
@@ -1110,8 +1110,8 @@ function getMode(line: string): MarkdownStringMode | undefined
             default:
                 break;
         }
-        log.logValue("      found @ tag", tag, 4);
-        log.logValue("      set mode", mode?.toString(), 4);
+        log.value("      found @ tag", tag, 4);
+        log.value("      set mode", mode?.toString(), 4);
     }
     else if (line.length > 3 && (line.substring(0, 3) === "   " || line[0] === "\t"))
     {
@@ -1124,18 +1124,18 @@ function getMode(line: string): MarkdownStringMode | undefined
 function getRequiredXtypes(cmp: string)
 {
     const requires = []; // Object.keys(componentClassToWidgetsMapping).filter(it => util.isNeedRequire(it));
-    log.log("get required xtypes by component class", 1);
-    log.logValue("   component class", cmp, 2);
+    log.write("get required xtypes by component class", 1);
+    log.value("   component class", cmp, 2);
     requires.push(...(componentClassToRequiresMapping[cmp] || []));
     const reqXTypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
         previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
         return previousValue;
     }, []);
-    log.logValue("   # of required xtypes", reqXTypes.length, 2);
+    log.value("   # of required xtypes", reqXTypes.length, 2);
     reqXTypes.forEach((x) => {
-        log.log("      " + x);
+        log.write("      " + x);
     });
-    log.log("completed get required xtypes by component class", 1);
+    log.write("completed get required xtypes by component class", 1);
     return reqXTypes;
 }
 
@@ -1149,16 +1149,16 @@ function getStatusString(pct: number)
 export function getXType(cmp: string, xtype: string): IXtype | undefined
 {
     const xtypes = componentClassToXTypesMapping[cmp];
-    log.log("get config by component class", 1);
-    log.logValue("   component class", cmp, 2);
-    log.logValue("   xtype", xtype, 2);
+    log.write("get config by component class", 1);
+    log.value("   component class", cmp, 2);
+    log.value("   xtype", xtype, 2);
     if (xtypes) {
         for (let c = 0; c < xtypes.length; c++) {
             if (xtypes[c].name === xtype) {
-                log.log("   found config", 3);
-                log.logValue("      name", xtypes[c].name, 4);
-                log.logValue("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
-                log.logValue("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
+                log.write("   found config", 3);
+                log.value("      name", xtypes[c].name, 4);
+                log.value("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
+                log.value("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
                 return xtypes[c];
             }
         }
@@ -1172,9 +1172,9 @@ function handleDeleFile(fsPath: string)
     const componentClass = getClassFromPath(fsPath);
     if (componentClass)
     {
-        log.log("handle file depetion", 1);
-        log.logValue("   path", fsPath, 2);
-        log.logValue("   component class", componentClass, 2);
+        log.write("handle file depetion", 1);
+        log.value("   path", fsPath, 2);
+        log.value("   component class", componentClass, 2);
 
         const component = getComponent(componentClass);
         if (component)
@@ -1238,7 +1238,7 @@ function handleClassLine(line: string, markdown: MarkdownString)
             }
         }
     }
-    log.logValue("      insert class line", classLine, 4);
+    log.value("      insert class line", classLine, 4);
     markdown.appendMarkdown(classLine);
 }
 
@@ -1247,7 +1247,7 @@ function handleDeprecatedLine(line: string, markdown: MarkdownString)
 {
     let textLine = line.trim();
     textLine = italic(textLine, false, true);
-    log.logValue("      insert deprecated line", textLine, 4);
+    log.value("      insert deprecated line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 
@@ -1262,7 +1262,7 @@ function handleObjectLine(line: string, property: string, markdown: MarkdownStri
     else {
         cfgLine = line.trim();
     }
-    log.logValue("      insert object line", cfgLine, 4);
+    log.value("      insert object line", cfgLine, 4);
     markdown.appendMarkdown(cfgLine);
 }
 
@@ -1271,7 +1271,7 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
 {
     if (!line.startsWith("@"))
     {
-        log.logValue("      insert param text line", line, 4);
+        log.value("      insert param text line", line, 4);
         markdown.appendMarkdown(line);
         return;
     }
@@ -1335,8 +1335,8 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
         return;
     }
 
-    log.logValue("          name", lineProperty, 4);
-    log.logValue("          type", lineType, 4);
+    log.value("          name", lineProperty, 4);
+    log.value("          type", lineType, 4);
 
     if (lineType)
     {
@@ -1364,7 +1364,7 @@ function handleParamLine(line: string, trailers: string[], markdown: MarkdownStr
     if (lineTrail) {
         paramLine += " " + MarkdownChars.LongDash + lineTrail;
     }
-    log.logValue("      param line", paramLine, 4);
+    log.value("      param line", paramLine, 4);
     if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
         markdown.appendMarkdown(MarkdownChars.NewLine);
     }
@@ -1393,7 +1393,7 @@ function handleReturnsLine(line: string, markdown: MarkdownString)
                                    .replace("}", MarkdownChars.TypeWrapEnd));
          });
     });
-    log.logValue("      insert returns line", rtnLine, 4);
+    log.value("      insert returns line", rtnLine, 4);
     markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
 }
 
@@ -1402,7 +1402,7 @@ function handleTagLine(line: string, markdown: MarkdownString)
 {
     let textLine = line.trim();
     textLine = italic(textLine, false, true);
-    log.logValue("      insert tag line", textLine, 4);
+    log.value("      insert tag line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 
@@ -1425,7 +1425,7 @@ function handleTextLine(line: string, markdown: MarkdownString)
             return boldItalic(matched);
        });
     }
-    log.logValue("      insert text line", textLine, 4);
+    log.value("      insert text line", textLine, 4);
     markdown.appendMarkdown(textLine);
 }
 

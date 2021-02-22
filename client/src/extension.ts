@@ -17,7 +17,7 @@ export async function activate(context: vscode.ExtensionContext)
 {
     log.initLog("extjsLangSvr", "ExtJs Language Client", context);
 
-    log.log("The ExtJs Language Server is now active!");
+    log.write("The ExtJs Language Server is now active!");
 
     registerProviders(context);
     await run(context);

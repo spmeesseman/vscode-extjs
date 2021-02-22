@@ -163,12 +163,12 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
             lineText = document.lineAt(position).text.substr(0, position.character),
             completionItems: CompletionItem[] = [];
 
-        log.logMethodStart("provide inline completion items", 2, "", true, [["line text", lineText]]);
+        log.methodStart("provide inline completion items", 2, "", true, [["line text", lineText]]);
 
         completionItems.push(...this.getCompletionItems(addedItems));
 
-        log.logValue("   # of added items", completionItems.length, 3);
-        log.logMethodDone("provide inline completion items", 2, "", true);
+        log.value("   # of added items", completionItems.length, 3);
+        log.methodDone("provide inline completion items", 2, "", true);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }
@@ -189,9 +189,9 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
                     completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
                     addedItems.push(cCls);
 
-                    log.logBlank(1);
-                    log.log("      added inline completion item", 3);
-                    log.logValue("         item", cCls, 3);
+                    log.blank(1);
+                    log.write("      added inline completion item", 3);
+                    log.value("         item", cCls, 3);
                 }
             }
         });
@@ -221,12 +221,12 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             return undefined;
         }
 
-        log.logMethodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
+        log.methodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
 
         completionItems.push(...this.getCompletionItems(lineText, fnText, document.uri.fsPath, addedItems));
 
-        log.logValue("   # of added items", completionItems.length, 3);
-        log.logMethodDone("provide dot completion items", 2, "", true);
+        log.value("   # of added items", completionItems.length, 3);
+        log.methodDone("provide dot completion items", 2, "", true);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }
@@ -271,11 +271,11 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         const _pushItems = ((cmp?: IComponent) =>
         {
             if (!cmp) { return; }
-            log.log("   methods", 1);
+            log.write("   methods", 1);
             completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
-            log.log("   properties", 1);
+            log.write("   properties", 1);
             completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
-            log.log("   configs", 1);
+            log.write("   configs", 1);
             completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
             //
             // TODO - property completion - static and private sctions
@@ -293,7 +293,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             }
         });
 
-        log.logValue("   line cls", lineCls, 3);
+        log.value("   line cls", lineCls, 3);
 
         //
         // Handle "this"
@@ -396,9 +396,9 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                 const lastProp = cCls.indexOf(".") !== -1 ? cCls.substring(cCls.indexOf(".") + 1) : cCls;
                 completionItems.push(...this.createCompletionItem(lastProp, cls, CompletionItemKind.Class));
                 addedItems.push(cCls);
-                log.logBlank(1);
-                log.log("      added dot completion class item", 3);
-                log.logValue("         item", cCls, 3);
+                log.blank(1);
+                log.write("      added dot completion class item", 3);
+                log.value("         item", cCls, 3);
             }
             break;
         }
@@ -455,9 +455,9 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                     completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
                     addedItems.push(cCls);
 
-                    log.logBlank(1);
-                    log.log("      added inline completion item", 3);
-                    log.logValue("         item", cCls, 3);
+                    log.blank(1);
+                    log.write("      added inline completion item", 3);
+                    log.value("         item", cCls, 3);
                 }
             }
         });
@@ -479,10 +479,10 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                     completionItems.push(...this.createCompletionItem(p, cls, kind));
                     addedItems.push(p);
 
-                    log.logBlank(1);
-                    log.log("      added dot completion item", 3);
-                    log.logValue("         item", p, 3);
-                    log.logValue("         kind", kind, 4);
+                    log.blank(1);
+                    log.write("      added dot completion item", 3);
+                    log.value("         item", p, 3);
+                    log.value("         kind", kind, 4);
                 }
             }
         });

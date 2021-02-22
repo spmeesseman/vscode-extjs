@@ -41,8 +41,8 @@ export function getExtJsComponent(text: string)
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
-                    log.logBlank(1);
-                    log.log("get extjs component", 1);
+                    log.blank(1);
+                    log.write("get extjs component", 1);
                     //
                     // Ext.define should be in the form:
                     //
@@ -84,7 +84,7 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: s
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
-                    log.logMethodStart("parse extjs file", 1, "", true, [["file", fsPath]]);
+                    log.methodStart("parse extjs file", 1, "", true, [["file", fsPath]]);
 
                     //
                     // Ext.define should be in the form:
@@ -128,8 +128,8 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: s
 
                         components.push(componentInfo);
 
-                        log.logBlank(1);
-                        log.logValue("   Component", args[0].value, 1);
+                        log.blank(1);
+                        log.value("   Component", args[0].value, 1);
 
                         const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
                         const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "alias" || p.key.name === "alternateClassName"));
@@ -212,7 +212,7 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: s
                         logProperties("xtypes", componentInfo.xtypes);
                     }
 
-                    log.logMethodDone("parse extjs file", 1, "", true);
+                    log.methodDone("parse extjs file", 1, "", true);
                 }
             }
         }
@@ -284,7 +284,7 @@ function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | 
         return parse(subText);
     }
     catch (e) {
-        log.logError(["failed to parse variables for method " + methodName, e.toString()]);
+        log.error(["failed to parse variables for method " + methodName, e.toString()]);
     }
 }
 
@@ -299,18 +299,18 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 {
     if (properties)
     {
-        log.logValue("   # of " + property + " found", properties.length, 2);
+        log.value("   # of " + property + " found", properties.length, 2);
         properties.forEach((p) =>
         {
             if (typeof p === "string")
             {
-                log.log("      " + p, 3);
+                log.write("      " + p, 3);
             }
             else if (p !== undefined)
             {
-                log.log("      " + p.name, 3);
+                log.write("      " + p.name, 3);
                 if (isDocObject(p) && p.doc) {
-                    log.log(p.doc.replace(/\n/g, "<br>"), 5);
+                    log.write(p.doc.replace(/\n/g, "<br>"), 5);
                 }
             }
         });
@@ -656,9 +656,9 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
 
             if (value)
             {
-                log.logValue("added variable", varName, 5);
-                log.logValue("   method", methodName, 5);
-                log.logValue("   instance cls", value, 5);
+                log.value("added variable", varName, 5);
+                log.value("   method", methodName, 5);
+                log.value("   instance cls", value, 5);
 
                 variables.push({
                     name: varName,
@@ -726,7 +726,7 @@ function parseXTypes(objEx: ObjectExpression, text: string): IXtype[]
             start.line += line;
             end.line += line;
 
-            log.log("   push xtype " + valueNode.value, 3);
+            log.write("   push xtype " + valueNode.value, 3);
 
             xType.push({
                 name: valueNode.value,

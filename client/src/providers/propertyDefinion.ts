@@ -48,9 +48,9 @@ class PropertyDefinitionProvider implements DefinitionProvider
         {
             let cmpClass: string | undefined;
 
-            log.log("provide definition", 1);
-            log.logValue("   property", property, 2);
-            log.logValue("   component type", cmpType, 2);
+            log.write("provide definition", 1);
+            log.value("   property", property, 2);
+            log.value("   component type", cmpType, 2);
 
             if (cmpType === ComponentType.Class)
             {
@@ -65,10 +65,10 @@ class PropertyDefinitionProvider implements DefinitionProvider
                     //
                     if (cmpType === ComponentType.Method && property.startsWith("get") || property.startsWith("set"))
                     {
-                        log.log("   method not found, look for getter/setter config", 2);
+                        log.write("   method not found, look for getter/setter config", 2);
                         property = utils.lowerCaseFirstChar(property.substring(3));
                         cmpType = ComponentType.Config;
-                        log.logValue("      config name", property, 2);
+                        log.value("      config name", property, 2);
                         cmpClass = getComponentClass(property, cmpType, lineText);
                     }
                     //
@@ -76,7 +76,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                     //
                     else if (cmpType === ComponentType.Property)
                     {
-                        log.log("   property not found, look for config", 2);
+                        log.write("   property not found, look for config", 2);
                         cmpType = ComponentType.Config;
                         cmpClass = getComponentClass(property, cmpType, lineText);
                     }
@@ -85,7 +85,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
 
             if (cmpClass)
             {
-                log.logValue("   component class", cmpClass, 2);
+                log.value("   component class", cmpClass, 2);
                 const fsPath = getFilePath(cmpClass);
                 if (fsPath)
                 {
@@ -96,29 +96,29 @@ class PropertyDefinitionProvider implements DefinitionProvider
                                                                                        getProperty(cmpClass, property));
                     if (pObject)
                     {
-                        log.log("   setting position", 2);
-                        log.logValue("      start line", pObject.start?.line, 3);
-                        log.logValue("      end line", pObject.end?.line, 3);
+                        log.write("   setting position", 2);
+                        log.value("      start line", pObject.start?.line, 3);
+                        log.value("      end line", pObject.end?.line, 3);
                         start = new Position(pObject.start?.line, pObject.start?.column);
                         end = new Position(pObject.end?.line, pObject.end?.column);
                     }
                     const uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
                           uri = Uri.parse(`file://${uriPath}`),
                           range = new Range(start, end);
-                    log.logValue("   fsPath", uri.fsPath, 2);
-                    log.log("   open definition file", 1);
-                    log.log("provide definition complete", 1);
+                    log.value("   fsPath", uri.fsPath, 2);
+                    log.write("   open definition file", 1);
+                    log.write("provide definition complete", 1);
                     return {
                         uri,
                         range
                     };
                 }
                 else {
-                    log.log("   fs path not found", 1);
+                    log.write("   fs path not found", 1);
                 }
             }
 
-            log.log("provide definition complete", 1);
+            log.write("provide definition complete", 1);
         }
     }
 }

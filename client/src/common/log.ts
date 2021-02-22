@@ -39,7 +39,7 @@ function isLoggingEnabled()
 }
 
 
-export function log(msg: string, level?: number, logPad = "")
+export function write(msg: string, level?: number, logPad = "")
 {
     if (msg === null || msg === undefined) {
         return;
@@ -60,31 +60,31 @@ export function log(msg: string, level?: number, logPad = "")
 }
 
 
-export function logBlank(level?: number)
+export function blank(level?: number)
 {
-    log("", level);
+    write("", level);
 }
 
 
-export function logError(msg: string | string[])
+export function error(msg: string | string[])
 {
     if (!msg === null || msg === undefined) {
         return;
     }
-    log("***");
+    write("***");
     if (typeof msg === "string") {
-        log("*** " + msg);
+        write("*** " + msg);
     }
     else {
         msg.forEach((m: string) => {
-            log("*** " + m);
+            write("*** " + m);
         });
     }
-    log("***");
+    write("***");
 }
 
 
-export function logMethodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: [string, any][])
+export function methodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: [string, any][])
 {
     if (msg === null || msg === undefined) {
         return;
@@ -94,19 +94,19 @@ export function logMethodStart(msg: string, level?: number, logPad = "", doLogBl
     {
         const lLevel = level || 1;
         if (doLogBlank === true) {
-            logBlank(lLevel);
+            blank(lLevel);
         }
-        log(logPad + "*start* " + msg, lLevel);
+        write(logPad + "*start* " + msg, lLevel);
         if (params) {
             for (const [ n, v] of params) {
-                logValue(logPad + "   " + n, v, lLevel + 1);
+                value(logPad + "   " + n, v, lLevel + 1);
             }
         }
     }
 }
 
 
-export function logMethodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean)
+export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean)
 {
     if (msg === null || msg === undefined) {
         return;
@@ -115,14 +115,14 @@ export function logMethodDone(msg: string, level?: number, logPad = "", doLogBla
     if (isLoggingEnabled())
     {
         if (doLogBlank === true) {
-            logBlank(level || 1);
+            blank(level || 1);
         }
-        log("*done* " + msg, level || 1, logPad);
+        write("*done* " + msg, level || 1, logPad);
     }
 }
 
 
-export function logValue(msg: string, value: any, level?: number, logPad = "")
+export function value(msg: string, value: any, level?: number, logPad = "")
 {
     let logMsg = msg;
     const spaces = msg && msg.length ? msg.length : (value === undefined ? 9 : 4);
@@ -141,5 +141,5 @@ export function logValue(msg: string, value: any, level?: number, logPad = "")
         logMsg += ": null";
     }
 
-    log(logMsg, level, logPad);
+    write(logMsg, level, logPad);
 }

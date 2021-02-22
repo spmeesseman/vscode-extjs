@@ -34,7 +34,7 @@ class DocHoverProvider implements HoverProvider
             const cmpClass = getComponentClass(property, ComponentType.Method, lineText);
             if (cmpClass)
             {
-                log.logValue("provide function hover info", property, 1);
+                log.value("provide function hover info", property, 1);
                 let method: IMethod | IConfig | undefined = getMethod(cmpClass, property);
                 if (!method)
                 {   //
@@ -79,13 +79,13 @@ class DocHoverProvider implements HoverProvider
                 const config = getConfig(cmpClass, property);
                 if (config && config.markdown)
                 {
-                    log.logValue("provide config hover info", property, 1);
+                    log.value("provide config hover info", property, 1);
                     return new Hover(config.markdown);
                 }
                 else {
                     const prop = getProperty(cmpClass, property);
                     if (prop && prop.markdown) {
-                        log.logValue("provide property hover info", property, 1);
+                        log.value("provide property hover info", property, 1);
                         return new Hover(prop.markdown);
                     }
                 }
@@ -104,14 +104,14 @@ class DocHoverProvider implements HoverProvider
 
             if (cmp && cmp.markdown)
             {
-                log.logValue("provide class hover info", property, 1);
+                log.value("provide class hover info", property, 1);
                 return new Hover(cmp.markdown);
             }
 
             cmp = getComponentInstance(property, document.uri.fsPath);
             if (cmp && cmp.markdown)
             {
-                log.logValue("provide class instance hover info", property, 1);
+                log.value("provide class instance hover info", property, 1);
                 return new Hover(cmp.markdown);
             }
         }
