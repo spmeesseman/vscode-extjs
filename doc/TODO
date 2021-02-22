@@ -1,5 +1,5 @@
 
-☐ Function parameter completion
+✔ Function parameter completion @done(21-02-22 02:51)
 
 ☐ Doc/Markdown Links
 	@link replaced with links to online docs
@@ -19,7 +19,7 @@
 ☐ Class Validation
 	Match class parts, check for invalid parts
 	Example:
-		Ext.csi.stor.Base
+		Ext.csi.store.Base
 	"stor" should receive error invalidation, since it should be "store"
 
 ☐ Deprecation Validation

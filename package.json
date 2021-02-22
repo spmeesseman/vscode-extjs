@@ -125,17 +125,17 @@
 					"description": "Set debug verbosity (1 - Low / 5 - High)."
 				},
 				"extjsLangSvr.include": {
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [ "app", "extjs", "node_modules/@sencha/ext" ],
-                    "title": "Include",
-                    "description": "Directories to search when indexing ExtJs files"
-                },
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": [],
+					"title": "Include",
+					"description": "Directories to search when indexing ExtJs files"
+				},
 				"extjsLangSvr.intellisenseIncludeDeprecated": {
 					"type": "boolean",
 					"default": true,

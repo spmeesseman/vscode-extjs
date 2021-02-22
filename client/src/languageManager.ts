@@ -226,8 +226,7 @@ class ExtjsLanguageManager
             // Properties, config properties, and methods
             //
 
-            const { componentClass, xtypes } = cmp;
-            const requiredXtypes = getRequiredXtypes(componentClass) || [];
+            const requiredXtypes = getRequiredXtypes(cmp.componentClass) || [];
 
             function validateXtype(xtype: string, range: Range)
             {
@@ -238,14 +237,25 @@ class ExtjsLanguageManager
                         severity: DiagnosticSeverity.Error,
                         range,
                         message: `xtype "${xtype}" not found.`,
-                        source: "vscode-ext-js"
+                        source: "vscode-extjs"
                     };
                     diagnostics.push(diagnostic);
                 }
             }
 
-            for (const xtype of xtypes) {
+            for (const xtype of cmp.xtypes) {
                 validateXtype(xtype.name, toVscodeRange(xtype.start, xtype.end));
+            }
+
+            for (const method of cmp.methods)
+            {
+                if (method.variables)
+                {
+                    for (const variable of method.variables)
+                    {
+
+                    }
+                }
             }
         });
 

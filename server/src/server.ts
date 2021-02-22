@@ -2,26 +2,47 @@
  * Copyright (c) Microsoft Corporation. All rights reserved.
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
-
 import {
-    createConnection, ProposedFeatures, InitializeParams, InitializeResult,
-    DidChangeConfigurationNotification, TextDocumentSyncKind
+    createConnection, TextDocuments, ProposedFeatures, InitializeParams,
+	DidChangeConfigurationNotification, TextDocumentSyncKind, InitializeResult
 } from "vscode-languageserver";
+import {
+	TextDocument
+} from "vscode-languageserver-textdocument";
 import { parseExtJsFile, getExtJsComponent } from "./syntaxTree";
 import { ISettings, defaultSettings } from  "../../common";
+import { validateExtJsDocument } from "./validation";
+
 
 //
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 //
-const connection = createConnection(ProposedFeatures.all);
+const connection = createConnection(ProposedFeatures.all),
+//
+// Document Management
+//
+      documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+//
+// Capabilities
+//
+let hasConfigurationCapability = false,
+    hasWorkspaceFolderCapability = false,
+    hasDiagnosticRelatedInformationCapability = false,
+//
+// Global Settings
+//
+    globalSettings: ISettings = defaultSettings;
 
-let hasConfigurationCapability = false;
-let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
+
+documents.onDidClose(e => {
+
+});
 
 
-let globalSettings: ISettings = defaultSettings;
+documents.onDidChangeContent(change => {
+	validateExtJsDocument(change.document, connection, hasDiagnosticRelatedInformationCapability);
+});
 
 
 connection.onInitialize((params: InitializeParams) =>
@@ -36,12 +57,11 @@ connection.onInitialize((params: InitializeParams) =>
         capabilities.workspace && !!capabilities.workspace.workspaceFolders
     );
 
-    // client handling dignostics, is that wrong?
-    // hasDiagnosticRelatedInformationCapability = !!(
-    //     capabilities.textDocument &&
-    //     capabilities.textDocument.publishDiagnostics &&
-    //     capabilities.textDocument.publishDiagnostics.relatedInformation
-    // );
+    hasDiagnosticRelatedInformationCapability = !!(
+        capabilities.textDocument &&
+        capabilities.textDocument.publishDiagnostics &&
+        capabilities.textDocument.publishDiagnostics.relatedInformation
+    );
 
     const result: InitializeResult = {
         capabilities: {
@@ -52,6 +72,10 @@ connection.onInitialize((params: InitializeParams) =>
             // completionProvider: {
             //     resolveProvider: true
             // }
+            textDocumentSync: {
+				openClose: true,
+				change: TextDocumentSyncKind.Incremental
+			}
         }
     };
 
@@ -66,6 +90,7 @@ connection.onInitialize((params: InitializeParams) =>
 
     return result;
 });
+
 
 connection.onInitialized(async () =>
 {
@@ -85,12 +110,17 @@ connection.onInitialized(async () =>
     // }
 });
 
+
 connection.onDidChangeConfiguration(change =>
 {
     globalSettings = <ISettings>(
         (change.settings?.extjsLangSvr || defaultSettings)
     );
+	documents.all().forEach((textDocument) => {
+        validateExtJsDocument(textDocument, connection, hasDiagnosticRelatedInformationCapability);
+    });
 });
+
 
 connection.onRequest("parseExtJsFile", async (param: any) =>
 {
@@ -107,6 +137,7 @@ connection.onRequest("parseExtJsFile", async (param: any) =>
     }
 });
 
+
 connection.onRequest("getExtJsComponent", async (text: string) =>
 {
     try {
@@ -121,9 +152,11 @@ connection.onRequest("getExtJsComponent", async (text: string) =>
     }
 });
 
+
 //
 // Listen
 //
+documents.listen(connection);
 connection.listen();
 
 
