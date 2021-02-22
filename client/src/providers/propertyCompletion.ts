@@ -16,6 +16,7 @@ class PropertyCompletionItemProvider
 
     createCompletionItem(property: string, cmpClass: string, kind: CompletionItemKind): CompletionItem[]
     {
+        let markdown: string | undefined;
         const propCompletion: CompletionItem[] = [];
 
         propCompletion.push(new CompletionItem(property, kind));
@@ -23,6 +24,7 @@ class PropertyCompletionItemProvider
         let cmp: IComponent | IMethod | IProperty | IConfig | undefined;
         switch (kind)
         {
+            case CompletionItemKind.Function:
             case CompletionItemKind.Method:
                 cmp = this.getMethodCmp(property, cmpClass);
                 break;
@@ -36,7 +38,31 @@ class PropertyCompletionItemProvider
                 break;
         }
 
-        propCompletion[0].documentation = cmp?.markdown;
+        //
+        // FunctionProvider will call with property empty
+        //
+        if (cmp && "params" in cmp && kind === CompletionItemKind.Function) // function params
+        {
+            propCompletion[0].kind = CompletionItemKind.Property;
+            propCompletion[0].label = "";
+            if (cmp.params)
+            {
+                for (const p of cmp.params)
+                {
+                    if (p.doc) {
+                        markdown = p.doc;
+                    }
+                }
+            }
+            if (!markdown) {
+                cmp = undefined;
+            }
+        }
+        else {
+            markdown = cmp?.markdown;
+        }
+
+        propCompletion[0].documentation = markdown;
 
         //
         // If this is a config property (i.e. IConfig), then add getter/setter
@@ -49,7 +75,7 @@ class PropertyCompletionItemProvider
             propCompletion[2].documentation = cmp?.markdown;
         }
 
-        return propCompletion;
+        return cmp ? propCompletion : [];
     }
 
 
@@ -107,16 +133,12 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
             lineText = document.lineAt(position).text.substr(0, position.character),
             completionItems: CompletionItem[] = [];
 
-        log.logBlank(1);
-        log.log("provide inline completion items", 1);
+        log.logMethodStart("provide inline completion items", 2, "", true, [["line text", lineText]]);
 
-        if (!lineText) {
-            log.log("   invalid input parameters, exit", 1);
-            return undefined;
-        }
-
-        log.logValue("   line text", lineText, 3);
         completionItems.push(...this.getCompletionItems(addedItems));
+
+        log.logValue("   # of added items", completionItems.length, 3);
+        log.logMethodDone("provide inline completion items", 2, "", true);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }
@@ -124,8 +146,8 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
 
     getCompletionItems(addedItems: string[]): CompletionItem[]
     {
-        const map = componentClassToComponentsMapping;
-        const completionItems: CompletionItem[] = [];
+        const map = componentClassToComponentsMapping,
+              completionItems: CompletionItem[] = [];
 
         Object.keys(map).forEach((cls) =>
         {
@@ -159,18 +181,22 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
               lineText = document.lineAt(position).text.substr(0, position.character),
               completionItems: CompletionItem[] = [];
 
-        log.logBlank(1);
-        log.log("provide dot completion items", 1);
-
-        if (!lineText) {
-            log.log("   invalid input parameters, exit", 1);
+        //
+        // Check for "." since VSCode 24/7 Intellisense will trigger every character no matter what
+        // the trigger char(s) is for this provider.  24/7 Intellisense can be turned off in settings.json:
+        //
+        //    "editor.quickSuggestions": false
+        //
+        if (!lineText || !lineText.endsWith(".")) {
             return undefined;
         }
 
+        log.logMethodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
+
         completionItems.push(...this.getCompletionItems(lineText, document.uri.fsPath, addedItems));
 
-        log.logValue("   line text", lineText, 3);
         log.logValue("   # of added items", completionItems.length, 3);
+        log.logMethodDone("provide dot completion items", 2, "", true);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }
@@ -178,8 +204,8 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
     private getCompletionItems(lineText: string, fsPath: string, addedItems: string[]): CompletionItem[]
     {
-        const map = componentClassToComponentsMapping;
-        const completionItems: CompletionItem[] = [];
+        const map = componentClassToComponentsMapping,
+              completionItems: CompletionItem[] = [];
         let lineCls = lineText?.substring(0, lineText.length - 1).trim();
 
         const _pushItems = ((cls: string) =>
@@ -194,10 +220,6 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             // TODO - property completion - static and private sctions
             //
         });
-
-        if (!lineText.endsWith(".")) {
-            return completionItems;
-        }
 
         log.logValue("   line cls", lineCls, 3);
 
@@ -309,8 +331,14 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
 
 function registerPropertyCompletionProvider(context: ExtensionContext)
 {
+    const inlineTriggers = [
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+        "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+        "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_"
+    ];
     context.subscriptions.push(
-        languages.registerCompletionItemProvider("javascript", new InlineCompletionItemProvider()),
+        languages.registerCompletionItemProvider("javascript", new InlineCompletionItemProvider(), ...inlineTriggers),
         languages.registerCompletionItemProvider("javascript", new DotCompletionItemProvider(), ".")
     );
 }

@@ -6,6 +6,7 @@ import registerXtypeHoverProvider from "./xtypeHover";
 import registerPropertyHoverProvider from "./propertyHover";
 import registerPropertyCompletionProvider from "./propertyCompletion";
 import registerPropertyDefinitionProvider from "./propertyDefinion";
+import registerMethodSignatureProvider from "./methodSignature";
 
 
 export type Register = (context: ExtensionContext) => void;
@@ -19,7 +20,8 @@ export function registerProviders(context: ExtensionContext)
         registerXtypeCompletionProvider,
         registerPropertyHoverProvider,
         registerPropertyCompletionProvider,
-        registerPropertyDefinitionProvider
+        registerPropertyDefinitionProvider,
+        registerMethodSignatureProvider
     ];
     registers.forEach(register => register(context));
 }
