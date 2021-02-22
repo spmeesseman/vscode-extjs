@@ -9,7 +9,7 @@
     },
     "packages":
     {
-        "dir": "${workspace.dir}/packages/local,${workspace.dir}/packages,${workspace.dir}/node_modules/@sencha/ext-${toolkit.name},${workspace.dir}/node_modules/@perryjohnson/extjs-pkg-server",
+        "dir": "${workspace.dir}/packages/local,${workspace.dir}/packages,${workspace.dir}/node_modules/@sencha/ext-${toolkit.name}",
         "extract": "${workspace.dir}/packages/remote"
     }
 }
