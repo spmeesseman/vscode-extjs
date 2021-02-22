@@ -41,11 +41,11 @@ ExtJs Intellisense and Language Server, additional functionality that the Sencha
 
 This language server looks at your entire workspace, whether single or multi root, and locates ExtJS files in one of three ways, or any combination thereof:
 
-1. app.json
+1. app.json / workspace.json
 2. .extjsrc.json
 3. settings.json / VSCode Settings
 
-The **app.json** file is a part of all Sencha Cmd and Sencha ext-gen generated Open Tooling projects.  If an app.json file is located, the namespaces and classpaths are extracted and added to indexing.
+The **app.json** file is a part of all Sencha Cmd and Sencha ext-gen generated Open Tooling projects.  If an app.json file is located, the namespaces and classpaths are extracted and added to indexing.  If a corresponding **workspace.json** file is located in the same directory as an **app.json** file, classpaths are extracted from the packages.dirs propert and added to indexing.  The *packages.dir* property should be a comma delimited string of package paths included in the application classpath, these normally specify the paths to the packages included in the *requires* array property of the **app.json** file.
 
 The **.extjsrc.json** / **.extjsrc** file is a custom file that can be placed into any directory.  If an .extjsrc file is located, the namespace and classpaths are extracted and added to indexing.
 
@@ -88,6 +88,7 @@ Whenever I start a project I always look for a good base to start from and for t
 ### Rate It - Leave Some Stars
 
 Please rate your experience with stars... [like five of them ;)](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-extjs&ssr=false#review-details)
+
 ## Other Code Extensions by spmeesseman
 
 | Package           | Repository                                                     | Marketplace                                                                                                          |
