@@ -5,6 +5,7 @@ import * as log from "./common/log";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
 import registerEnsureRequireCommand from "./commands/ensureRequire";
 import { registerProviders } from "./providers/manager";
+import { initStorage } from "./common/storage";
 import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 
@@ -19,6 +20,7 @@ export async function activate(context: vscode.ExtensionContext)
 
     log.write("The ExtJs Language Server is now active!");
 
+    initStorage(context);
     registerProviders(context);
     await run(context);
 

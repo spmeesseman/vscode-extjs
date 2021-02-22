@@ -7,10 +7,14 @@ import {
     ProgressLocation, TextDocument, TextEditor, window, workspace, Uri
 } from "vscode";
 import ServerRequest from "./common/ServerRequest";
+import { storage } from "./common/storage";
 import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils } from  "../../common";
 import * as log from "./common/log";
 
+
 let config: IConf[] = [];
+
+export let isIndexing = true;
 
 export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
 export const configToComponentClassMapping: { [property: string]: string | undefined } = {};
@@ -78,9 +82,6 @@ export enum ComponentType
 }
 
 
-export let isIndexing = true;
-
-
 class ExtjsLanguageManager
 {
     private serverRequest: ServerRequest;
@@ -96,7 +97,13 @@ class ExtjsLanguageManager
 
     async indexing(fsPath: string, nameSpace: string, text: string, logPad = "")
     {
-        const components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
+        let readFromStorage = true,
+            components = storage?.get<IComponent[]>(fsPath);
+        if (!components) {
+            readFromStorage = false;
+            components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
+        }
+
         if (!components || components.length === 0) {
             return;
         }
@@ -209,6 +216,10 @@ class ExtjsLanguageManager
             });
         });
 
+        if (!readFromStorage) {
+            await storage?.update(fsPath, components);
+        }
+
         log.methodDone("indexing " + fsPath, 2, logPad, true);
     }
 
@@ -285,7 +296,13 @@ class ExtjsLanguageManager
                         log.blank();
                         log.value("   Indexing file", uri.fsPath, 1);
                         const text = (await workspace.fs.readFile(uri)).toString();
+                        //
+                        // Index this file
+                        //
                         await this.indexing(uri.fsPath, conf.name, text, "   ");
+                        //
+                        // Report progress
+                        //
                         const pct = Math.round(++currentFileIdx / numFiles * 100);
                         progress?.report({
                             increment,
@@ -667,62 +684,7 @@ async function initConfig(): Promise<boolean>
     {
         for (const uri of appDotJsonUris)
         {
-            const fileSystemPath = uri.fsPath || uri.path;
-            let confJson = fs.readFileSync(fileSystemPath, "utf8");
-            const conf: IConf = json5.parse(confJson);
-            //
-            // Merge classpath to root
-            //
-            const classic = conf.classic ? Object.assign([], conf.classic) : {},
-                  modern = conf.modern ? Object.assign([], conf.modern) : {};
-
-            if (!conf.classpath)
-            {
-                conf.classpath = [];
-            }
-            else if (typeof conf.classpath === "string")
-            {
-                conf.classpath = [ conf.classpath ];
-            }
-
-            if (classic?.classpath)
-            {
-                conf.classpath = conf.classpath.concat(...classic.classpath);
-            }
-            if (modern?.classpath) {
-                conf.classpath = conf.classpath.concat(...modern.classpath);
-            }
-
-            const wsDotJsonFsPath = path.join(path.dirname(uri.fsPath), "workspace.json");
-            if (fs.existsSync(wsDotJsonFsPath))
-            {
-                confJson = fs.readFileSync(wsDotJsonFsPath, "utf8");
-                const wsConf = json5.parse(confJson);
-                if (wsConf.frameworks && wsConf.frameworks.ext)
-                {
-                    conf.classpath.push(wsConf.frameworks.ext);
-                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
-                }
-                if (wsConf.packages && wsConf.packages.dir)
-                {
-                    const dirs = wsConf.packages.dir.split(",");
-                    for (const d of dirs)
-                    {
-                        const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
-                                        .replace(/\$\{toolkit.name\}[/\\]{1}/, "classic");
-                        conf.classpath.push(wsPath);
-                        log.value("   add ws.json path", wsPath, 2);
-                    }
-                }
-            }
-
-            if (conf.classpath && conf.name)
-            {
-                log.value("   add app.json paths", fileSystemPath, 2);
-                log.value("      namespace", conf.name, 2);
-                log.value("      classpath", conf.classpath, 3);
-                config.push(conf);
-            }
+            await parseAppDotJson(uri);
         }
     }
 
@@ -1439,6 +1401,98 @@ function italic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
 {
     return (leadingSpace ? " " : "") + MarkdownChars.Italic + text +
            MarkdownChars.Italic + (trailingSpace ? " " : "");
+}
+
+
+async function parseAppDotJson(uri: Uri)
+{
+    const fileSystemPath = uri.fsPath || uri.path,
+          baseDir = path.dirname(uri.fsPath),
+          conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
+    //
+    // Merge classpath to root
+    //
+    const classic = conf.classic ? Object.assign([], conf.classic) : {},
+          modern = conf.modern ? Object.assign([], conf.modern) : {};
+
+    if (!conf.classpath)
+    {
+        conf.classpath = [];
+    }
+    else if (typeof conf.classpath === "string")
+    {
+        conf.classpath = [ conf.classpath ];
+    }
+
+    if (classic?.classpath)
+    {
+        conf.classpath = conf.classpath.concat(...classic.classpath);
+    }
+    if (modern?.classpath) {
+        conf.classpath = conf.classpath.concat(...modern.classpath);
+    }
+
+    //
+    // workspace.json
+    //
+    const wsDotJsonFsPath = path.join(baseDir, "workspace.json");
+    if (fs.existsSync(wsDotJsonFsPath))
+    {
+        const wsConf = json5.parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
+
+        if (wsConf.frameworks && wsConf.frameworks.ext)
+        {   //
+            // The framework directory should have a package.json, specifying its dependencies, i.e.
+            // the ext-core package.  Read package.json in framework directory.  If found, this is an
+            // open tooling project
+            //
+            const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
+            if (fs.existsSync(fwJsonFsPath))
+            {
+                const fwConf = json5.parse(fs.readFileSync(fwJsonFsPath, "utf8"));
+                if (fwConf.dependencies)
+                {
+                    for (const dep in fwConf.dependencies)
+                    {
+                        if (fwConf.dependencies.hasOwnProperty(dep))
+                        {
+                            const fwPath = path.join("node_modules", dep);
+                            conf.classpath.push(fwPath);
+                            log.value("   add ws.json framework path", fwPath, 2);
+                            log.value("      fraamework version", fwConf.dependencies[dep], 2);
+                        }
+                    }
+                }
+                else {
+                    log.error("No package.json found in workspace.framework directory");
+                }
+            }
+            else {
+                conf.classpath.push(wsConf.frameworks.ext);
+                log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
+            }
+        }
+
+        if (wsConf.packages && wsConf.packages.dir)
+        {
+            const dirs = wsConf.packages.dir.split(",");
+            for (const d of dirs)
+            {
+                const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
+                                .replace(/\$\{toolkit.name\}/, "classic");
+                conf.classpath.push(wsPath);
+                log.value("   add ws.json path", wsPath, 2);
+            }
+        }
+    }
+
+    if (conf.classpath && conf.name)
+    {
+        log.value("   add app.json paths", fileSystemPath, 2);
+        log.value("      namespace", conf.name, 2);
+        log.value("      classpath", conf.classpath, 3);
+        config.push(conf);
+    }
 }
 
 
