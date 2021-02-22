@@ -129,12 +129,33 @@ export interface IRequires
 }
 
 
+export const defaultSettings: ISettings =
+{   //
+    // ** IMPORTANT NOTE **
+    // Update this constant when the ISettings definition changes
+    //
+    debugClient: false,
+    debugServer: false,
+    debugLevel: 1,
+    include: [],
+    intellisenseIncludeDeprecated: true,
+    intellisenseIncludePrivate: false
+
+};
+
+
 export interface ISettings
-{
+{   //
+    // ** IMPORTANT NOTE **
+    // Be sure to update 'defaultSettings' above when adding/removing properties from this
+    // interface definition
+    //
     debugClient: boolean;
     debugServer: boolean;
     debugLevel: number;
     include: string[] | string;
+    intellisenseIncludeDeprecated: boolean;
+    intellisenseIncludePrivate: boolean;
 }
 
 

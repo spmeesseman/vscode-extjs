@@ -8,6 +8,7 @@ import {
     getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias
 } from "../languageManager";
 import * as log from "../common/log";
+import { configuration } from "../common/configuration";
 import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common";
 
 
@@ -36,7 +37,12 @@ class PropertyCompletionItemProvider
                 break;
         }
 
-        if (cmp?.private)
+        if (cmp?.private && configuration.get<boolean>("intellisenseIncludePrivate") !== true)
+        {
+            return propCompletion;
+        }
+
+        if (cmp?.deprecated && configuration.get<boolean>("intellisenseIncludeDeprecated") !== true)
         {
             return propCompletion;
         }
@@ -70,13 +76,19 @@ class PropertyCompletionItemProvider
             if (cmp?.deprecated)
             {
                 propCompletion[0].insertText = property;
-                propCompletion[0].label = property + " (deprecated)";
+                propCompletion[0].label = propCompletion[0].label + " (deprecated)";
             }
 
-            if (cmp?.since)
+            if (cmp?.private)
             {
                 propCompletion[0].insertText = property;
-                propCompletion[0].label = property + ` (since ${cmp.since})`;
+                propCompletion[0].label = propCompletion[0].label + " (private)";
+            }
+
+            if (cmp?.since && !cmp?.deprecated)
+            {
+                propCompletion[0].insertText = property;
+                propCompletion[0].label = propCompletion[0].label + ` (since ${cmp.since})`;
             }
         }
 

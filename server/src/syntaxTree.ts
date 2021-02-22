@@ -240,7 +240,13 @@ function getSince(doc?: string)
             since = matches[1];
         }
     }
-    return since;
+    if (since)
+    {
+        if (since[0] !== "v") {
+            since = "v" + since;
+        }
+    }
+    return since?.toLowerCase();
 }
 
 

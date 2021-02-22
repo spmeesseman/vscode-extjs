@@ -8,7 +8,7 @@ import {
     DidChangeConfigurationNotification, TextDocumentSyncKind
 } from "vscode-languageserver";
 import { parseExtJsFile, getExtJsComponent } from "./syntaxTree";
-import { ISettings } from  "../../common";
+import { ISettings, defaultSettings } from  "../../common";
 
 //
 // Create a connection for the server. The connection uses Node's IPC as a transport.
@@ -20,12 +20,6 @@ let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
-const defaultSettings: ISettings = {
-    debugClient: false,
-    debugServer: false,
-    debugLevel: 1,
-    include: [ "app", "extjs", "node_modules/@sencha/ext" ]
-};
 
 let globalSettings: ISettings = defaultSettings;
 
