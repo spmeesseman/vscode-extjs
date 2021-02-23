@@ -197,6 +197,9 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
             }
         });
 
+        //
+        // Aliases
+        //
         Object.entries(amap).forEach(([ cls, alias ]) =>
         {
             if (cls && alias)
