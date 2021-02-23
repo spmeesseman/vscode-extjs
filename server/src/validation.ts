@@ -1,5 +1,5 @@
 
-import { Connection, Diagnostic, DiagnosticSeverity, Range, Position } from "vscode-languageserver";
+import { Connection, Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, componentClassToWidgetsMapping, widgetToComponentClassMapping } from "./syntaxTree";
 import { IPosition, IRequires, utils } from "../../common";
@@ -94,7 +94,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		if (globalSettings.validateXTypes)
 		{
 			for (const xtype of cmp.xtypes) {
-				validateXtype(xtype.name, cmp.requires, toVscodeRange(xtype.start, xtype.end), diagnostics);
+				validateXtype(xtype.name, cmp.requires, toVscodeRange(xtype.start, xtype.end), diagRelatedInfoCapability, textObj, diagnostics);
 			}
 		}
 
@@ -152,7 +152,7 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 }
 
 
-function validateXtype(xtype: string, cmpRequires: IRequires | undefined, range: Range, diagnostics: Diagnostic[])
+function validateXtype(xtype: string, cmpRequires: IRequires | undefined, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
 	if (!utils.isNeedRequire(widgetToComponentClassMapping[xtype])) {
 		return;
@@ -166,11 +166,25 @@ function validateXtype(xtype: string, cmpRequires: IRequires | undefined, range:
 
 	if (!requiredXtypes.includes(xtype))
 	{
-		diagnostics.push({
+		const diagnostic: Diagnostic = {
 			severity: DiagnosticSeverity.Error,
 			range,
-			message: `xtype "${xtype}" not found.`,
-			source: "vscode-extjs"
-		});
+			message: `The referenced xtype "${xtype}" was not found.`,
+			source: "vscode-extjs",
+		};
+/*
+		if (diagRelatedInfoCapability)
+        {
+			diagnostic.relatedInformation = [
+            {
+                location: {
+                    uri: document.uri,
+                    range: { ...diagnostic.range }
+                },
+                message: xtype
+            }];
+		}
+*/
+		diagnostics.push(diagnostic);
 	}
 }

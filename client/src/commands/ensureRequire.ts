@@ -8,7 +8,7 @@ import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
 
 
-export async function ensureRequires()
+export async function ensureRequires(xtype: string | undefined)
 {
 	const document = window.activeTextEditor?.document;
 	if (!document) {
@@ -42,7 +42,7 @@ export async function ensureRequires()
 		for (const x of component.xtypes)
 		{
 			const c = getComponentClass(x.name);
-			if (c !== undefined && utils.isNeedRequire(c)) {
+			if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
 				componentClasses.add(c);
 			}
 		}
@@ -55,11 +55,8 @@ export async function ensureRequires()
 
 			for (let i = 0; i < lineText.length; i++)
 			{
-				if (lineText[i] === "\t") {
-					pad += "    ";
-				}
-				else if (lineText[i] === " ") {
-					pad += " ";
+				if (lineText[i] === " " || lineText[i] === "\t") {
+					pad += lineText[i];
 				}
 				else {
 					break;
@@ -86,7 +83,7 @@ export async function ensureRequires()
 function registerEnsureRequiresCommand(context: ExtensionContext)
 {
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:ensure-require", async function() { await ensureRequires(); })
+        commands.registerCommand("vscode-extjs:ensure-require", async (xtype) => { await ensureRequires(xtype); })
     );
 }
 
