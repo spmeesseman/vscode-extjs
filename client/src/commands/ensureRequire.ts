@@ -1,6 +1,6 @@
 
 import json5 from "json5";
-import { window, workspace, WorkspaceEdit } from "vscode";
+import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
 import { utils } from "../../../common";
 import { getComponentClass, getNamespaceFromFile } from "../languageManager";
 import { toVscodeRange } from "../common/clientUtils";
@@ -81,3 +81,15 @@ export async function ensureRequires()
 		}
 	}
 }
+
+
+function registerEnsureRequiresCommand(context: ExtensionContext)
+{
+	context.subscriptions.push(
+        commands.registerCommand("vscode-extjs:ensure-require", async function() { await ensureRequires(); })
+    );
+}
+
+
+export default registerEnsureRequiresCommand;
+

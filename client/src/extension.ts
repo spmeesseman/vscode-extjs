@@ -4,7 +4,7 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } f
 import { registerProviders } from "./providers/manager";
 import { initStorage } from "./common/storage";
 import { initFsStorage } from "./common/fsStorage";
-import { ensureRequires } from "./commands/ensureRequire";
+import registerEnsureRequiresCommand from "./commands/ensureRequire";
 import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 import * as log from "./common/log";
@@ -66,9 +66,7 @@ export async function activate(context: ExtensionContext)
 
 function registerCommands(context: ExtensionContext)
 {
-    context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:ensure-require", async function() { await ensureRequires(); })
-    );
+    registerEnsureRequiresCommand(context);
 }
 
 
