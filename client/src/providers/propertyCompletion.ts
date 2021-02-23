@@ -4,8 +4,8 @@ import {
     TextDocument, CompletionItemKind
 } from "vscode";
 import {
-    methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance, getComponentByFile, getSubComponentNames,
-    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias, componentClassToAliasesMapping
+    getComponentInstance, getComponentByFile, getSubComponentNames, componentClassToAliasesMapping,
+    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile
 } from "../languageManager";
 import * as log from "../common/log";
 import { configuration } from "../common/configuration";
@@ -292,15 +292,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         const _pushItems = ((cmp?: IComponent) =>
         {
             if (!cmp) { return; }
-            log.write("   methods", 1);
-            completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, methodToComponentClassMapping, CompletionItemKind.Method, addedItems));
-            log.write("   properties", 1);
-            completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, propertyToComponentClassMapping, CompletionItemKind.Property, addedItems));
-            log.write("   configs", 1);
-            completionItems.push(...this.getCmpCompletionItems(cmp.componentClass, configToComponentClassMapping, CompletionItemKind.Property, addedItems));
-            //
-            // TODO - property completion - static and private sctions
-            //
+            completionItems.push(...this.getCmpCompletionItems(cmp, addedItems));
             //
             // Traverse up the inheritance tree, checking the 'extend' property and if
             // it exists, we include public class properties in the Intellisense
@@ -505,26 +497,52 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
     }
 
 
-    private getCmpCompletionItems(lineCls: string, map: { [s: string]: string | undefined } | ArrayLike<string>, kind: CompletionItemKind, addedItems: string[]): CompletionItem[]
+    private getCmpCompletionItems(component: IComponent, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [];
 
-        Object.entries(map).forEach(([p, cls]) =>
+        component.methods.forEach((c) =>
         {
-            if (cls === lineCls)
+            if (addedItems.indexOf(c.name) === -1)
             {
-                if (addedItems.indexOf(p) === -1)
-                {
-                    completionItems.push(...this.createCompletionItem(p, cls, kind));
-                    addedItems.push(p);
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Method));
+                addedItems.push(c.name);
 
-                    log.blank(1);
-                    log.write("      added dot completion item", 3);
-                    log.value("         item", p, 3);
-                    log.value("         kind", kind, 4);
-                }
+                log.blank(1);
+                log.write("      added dot completion method", 3);
+                log.value("         name", c.name, 3);
             }
         });
+
+        component.properties.forEach((c) =>
+        {
+            if (addedItems.indexOf(c.name) === -1)
+            {
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Property));
+                addedItems.push(c.name);
+
+                log.blank(1);
+                log.write("      added dot completion method", 3);
+                log.value("         name", c.name, 3);
+            }
+        });
+
+        component.configs.forEach((c) =>
+        {
+            if (addedItems.indexOf(c.name) === -1)
+            {
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Property));
+                addedItems.push(c.name);
+
+                log.blank(1);
+                log.write("      added dot completion method", 3);
+                log.value("         name", c.name, 3);
+            }
+        });
+
+        //
+        // TODO - property completion - static and private sctions
+        //
 
         return completionItems;
     }

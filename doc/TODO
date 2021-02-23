@@ -46,7 +46,7 @@
 
 ✔ Quick Fix for invalidated xtype (xtype definition provider?) @done(21-02-23 15:33)
 
-☐ Bug - Function/method/property names of the same name get overwritten in the mappings
+✔ Bug - Function/method/property names of the same name get overwritten in the mappings @done(21-02-23 16:12)
         If exist in more than one class
 		Mappings at prop/config/method level need to be mapped at a lower level
 		Knew that was coming, saw it when i looked at the original extension used to
