@@ -21,6 +21,9 @@
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
   - [Getting Started](#getting-started)
+  - [ESLint](#eslint)
+  - [Sencha ESLint Plugin](#sencha-eslint-plugin)
+  - [Caching](#caching)
   - [Thank You](#thank-you)
   - [Feedback & Contributing](#feedback--contributing)
     - [Rate It - Leave Some Stars](#rate-it---leave-some-stars)
@@ -39,6 +42,10 @@ ExtJs Intellisense and Language Server, additional functionality that the Sencha
 - Method and Class Validation
 
 ## Getting Started
+
+Assuming a standard JavaScript linter is already in place, the ExtJs Language Server attempts to provide the missing functionlality that the standard JavaScript Language Server cannot handle due to the nature of the ExtJS class definitions, which are basically just one function expression per class file as far as a standard JavaScript parser is concerned.
+
+A standard linter used in most all JavaScript projects is [ESLint](https://github.com/eslint/eslint), some quick install details can be found in the [section below](#eslint).  You should also use the [Sencha ESLint Plugin](#sencha-eslint-plugin) in your ExtJS projects.
 
 This language server looks at your entire workspace, whether single or multi root, and locates ExtJS files in one of three ways, or any combination thereof:
 
@@ -73,6 +80,72 @@ The **classpath** is a string, or an array of strings, of where the ExtJS JavaSc
 Note that classpaths defined in toolkit blocks in app.json will be merged into the main object classpath for indexing.
 
 That's it, ExtJS Languge Server should start indexing your files once a valid configuration file has been found.
+
+## ESLint
+
+Always use [ESLint](https://github.com/eslint/eslint) for JavaScript/TypeScript projects.  It is **GREAT**.  To install ESLint to a project, run the following command from the root project directory containing the package.json file:
+
+    npm install --save-dev eslint
+
+**Or** install globally:
+
+    npm install -g eslint
+
+A configuration file is required in the root project directory, usually the same directory that the *package.json* file would be in.  The file can be a JavaScript ot a JSON file:
+
+    .eslintrc.js
+    .eslintrc.json
+
+To create a default connfiguration file in a project that does not contain one, run the following command from the root project directory containing the *package.json* file:
+
+    npx eslint --init
+
+You should now have an *.eslintrc.js* file in the directory the command has been ran in.
+
+Add your ExtJS globals to the config file, or any other globals not understood by eslint, primarily *Ext* ad your project namespace:
+
+    "globals": {
+        "Ext": "readonly",
+        "MyApp": "writable",
+        "SharedArrayBuffer": "readonly",
+        "ArrayBuffer": "readonly",
+        "DataView": "readonly"
+    }
+
+Linting is dynamic as you edit files.  But also create a task in package.json for linting reports.  For example, if the JavaScript code is located in the directory *app*:
+
+    "scripts": {
+        ...existing scripts...
+        "lint": "eslint -c .eslintrc.json --ext .js ./app"
+    }
+
+You should also install and use the [Sencha ESLint Plugin](#sencha-eslint-plugin).
+
+## Sencha ESLint Plugin
+
+For additional component definition coverage, install the ExtJS ESLint PLugin from Sencha.  Run the following command from the root project directory containing the package.json file
+
+    npm install --save-dev @sencha/eslint-plugin-extjs
+
+**Or** install globally:
+
+    npm install -g @sencha/eslint-plugin-extjs
+
+To configure ESLint to use the Sencha plugin, add the following to the ESLint configuration file (*.eslint.js/json*):
+
+    "plugins": [
+        ...existing plugins...
+        "@sencha/extjs"
+    ],
+
+    "extends": [
+        ...existing extends...
+        "plugin:@sencha/extjs/recommended"
+    ]
+
+## Caching
+
+The first time the extension activates, it will index all ExtJS files found within the workspace.  This could take a while depending on the # of ExtJS projects/files found.  The ExtJS Language Server will cache the syntax tree after the initial build, improving performance by 2-3x over what it is without caching once the initial index is built.
 
 ## Thank You
 
