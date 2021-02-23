@@ -333,7 +333,9 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         //
         let component = getComponent(lineCls, true);
         if (component)
-        {
+        {   //
+            // Push component items, i.e. methods, properties, and configs
+            //
             _pushItems(component);
             //
             // Class properties
@@ -352,14 +354,12 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             //
             completionItems.push(...this.getChildClsCompletionItems(component.componentClass, addedItems));
         }
-        else //
-        {
+        else {
             log.write("   try sub-component tree", 3);
             const subComponents = getSubComponentNames(lineCls);
             if (subComponents.length > 0)
             {
                 log.write("   found sub-components", 3);
-                // completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
                 for (const sf of subComponents)
                 {
                     if (!addedItems.includes(sf)) {
@@ -368,8 +368,8 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                         addedItems.push(sf);
                     }
                 }
-            }
-            // For local instance vars, only provide completion from the right function
+            } //
+             // For local instance vars, only provide completion from the right function
             //
             else {
                 component = getComponentByFile(fsPath);
@@ -396,8 +396,6 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                     }
                 }
                 else {
-                    // completionItems.push(...this.getChildClsCompletionItems(lineCls, addedItems));
-                    const subComponents = getSubComponentNames(lineCls);
                     completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
                 }
             }

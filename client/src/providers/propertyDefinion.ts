@@ -21,24 +21,57 @@ class PropertyDefinitionProvider implements DefinitionProvider
         }
 
         const line = position.line,
-              nextLine = document.lineAt(line + 1),
-              lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start))
-                                 .trim().replace(/[\s\w]+=[\s]*(new)*\s*/, "");
-        let property = document.getText(range);
+              nextLine = document.lineAt(line + 1);
+        let lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start))
+                               .trim().replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
+            property = document.getText(range);
 
         if (property === "this")
         {
-
+            // TODO - this definition
         }
 
-        if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
+        //
+        // Class string literals
+        // Match string literal class, e.g.:
+        //
+        //     Ext.create("Ext.data.Connection", {
+        //     Ext.create("Ext.panel.Panel", {
+        //     requires: [ "MyApp.common.Utilities" ]
+        //
+        if (lineText.match(new RegExp(`["']{1}[\\w.]*.${property}[\\w.]*["']{1}`)) ||
+            lineText.match(new RegExp(`["']{1}[\\w.]*${property}.[\\w.]*["']{1}`)))
+        {
+            cmpType = ComponentType.Class;
+            lineText = lineText.replace(/^[\w\W][^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
+            //
+            // Set the property to the last piece of the class name.  We want the effect that clicking
+            // anywhere within the string references th  entore component class, not just the "part" that
+            // gets looked at when doing a goto def for a non-quoted class variable/path
+            //
+            const strParts = lineText.split(".");
+            property = strParts[strParts.length - 1];
+        }
+        //
+        // Methods
+        // Match function/method signature type, e.g.
+        //
+        //     testFn();
+        //
+        else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
         {
             cmpType = ComponentType.Method;
         }
+        //
+        // Properties / configs
+        //
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
         {
             cmpType = ComponentType.Property;
         }
+        //
+        // Classes (non string literal)
+        //
         else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
         {
             cmpType = ComponentType.Class;
