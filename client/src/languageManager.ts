@@ -176,7 +176,11 @@ class ExtjsLanguageManager
         for (let line of docLines)
         {
             if (!line.trim()) {
-                continue; // continue forEach()
+                continue;
+            }
+
+            if (currentLine === 0 && line.includes("eslint")) {
+                continue;
             }
 
             if (markdown.value.length > 0 && mode !== MarkdownStringMode.Code) {
@@ -205,7 +209,7 @@ class ExtjsLanguageManager
             log.value("   process line", line, 4);
 
             if (!line.trim()) {
-                continue; // continue forEach()
+                continue;
             }
 
             mode = getMode(line);
