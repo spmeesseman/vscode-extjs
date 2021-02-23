@@ -1,58 +1,79 @@
 
 import json5 from "json5";
-import * as vscode from "vscode";
+import { window, workspace, WorkspaceEdit } from "vscode";
 import { utils } from "../../../common";
-import { getComponentClass } from "../languageManager";
+import { getComponentClass, getNamespaceFromFile } from "../languageManager";
 import { toVscodeRange } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
+import { EOL } from "os";
 
 
-function registerEnsureRequireCommand(context: vscode.ExtensionContext)
+export async function ensureRequires()
 {
-    const command = vscode.commands.registerCommand("vscode-extjs:ensure-require", async () =>
-    {
-        const document = vscode.window.activeTextEditor?.document;
-        if (!document) {
-            return;
-        }
+	const document = window.activeTextEditor?.document;
+	if (!document) {
+		return;
+	}
 
-        const text = document.getText(),
-		      path = document.uri.fsPath,
-			  components = await extjsLangMgr.indexFile(path, "", text),
-			  workspaceEdit = new vscode.WorkspaceEdit();
+	const fsPath = document.uri.fsPath,
+			ns = getNamespaceFromFile(fsPath);
 
-		components?.forEach(component =>
+	if (!ns) {
+		window.showErrorMessage("Could not find base namespace");
+		return;
+	}
+
+	const components = await extjsLangMgr.indexFile(fsPath, ns, document),
+		  workspaceEdit = new WorkspaceEdit();
+
+	if (!components) {
+		window.showErrorMessage("Could not find component syntax tree");
+		return;
+	}
+
+	for (const component of components)
+	{
+		if (!component.requires) {
+			continue;
+		}
+
+		const componentClasses = new Set<string>();
+
+		for (const x of component.xtypes)
 		{
-		    const { requires, xtypes } = component;
-		    const componentClasses = new Set<string>();
+			const c = getComponentClass(x.name);
+			if (c !== undefined && utils.isNeedRequire(c)) {
+				componentClasses.add(c);
+			}
+		}
 
-		    xtypes.forEach(x =>
-		    {
-		        const c = getComponentClass(x.name);
-		        if (c !== undefined && utils.isNeedRequire(c)) {
-		            componentClasses.add(c);
-		        }
-		    });
-
-		    if (componentClasses.size > 0)
-		    {
-		        if (requires)
-		        {
-		            const _requires = requires.value
-		                .filter(it => utils.isNeedRequire(it))
-		                .concat(Array.from(componentClasses))
-		                .sort();
-		            const range = toVscodeRange(requires.start, requires.end);
-		            workspaceEdit.replace(document.uri, range, "requires: " + json5.stringify(Array.from(new Set(_requires))));
-		        }
-		    }
-		});
-
-		vscode.workspace.applyEdit(workspaceEdit);
-    });
-
-    context.subscriptions.push(command);
+		if (componentClasses.size > 0)
+		{
+			const _requires = component.requires.value
+				.filter(it => utils.isNeedRequire(it))
+				.concat(Array.from(componentClasses))
+				.sort();
+			let pad = "";
+			const range = toVscodeRange(component.requires.start, component.requires.end),
+			      lineText = document.lineAt(range.start.line).text.substr(0, range.start.character);
+			for (let i = 0; i < lineText.length; i++)
+			{
+				if (lineText[i] === "\t") {
+					pad += "    ";
+				}
+				else if (lineText[i] === " ") {
+					pad += " ";
+				}
+				else {
+					break;
+				}
+			}
+			const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
+									   .replace(/\[/, "[" + EOL + pad + "    ")
+									   .replace(/,/g, "," + EOL + pad + "    ")
+									   .replace(/\]/, EOL + pad + "]");
+			workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
+			workspace.applyEdit(workspaceEdit);
+		}
+	}
 }
-
-
-export default registerEnsureRequireCommand;

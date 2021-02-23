@@ -1,23 +1,24 @@
 
-import * as path from "path";
-import * as vscode from "vscode";
-import * as log from "./common/log";
+import { commands, Disposable, ExtensionContext, OutputChannel, window } from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
-import registerEnsureRequireCommand from "./commands/ensureRequire";
 import { registerProviders } from "./providers/manager";
 import { initStorage } from "./common/storage";
 import { initFsStorage } from "./common/fsStorage";
+import { ensureRequires } from "./commands/ensureRequire";
 import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
+import * as log from "./common/log";
+import * as path from "path";
+
 
 let client: LanguageClient;
-let disposables: vscode.Disposable[];
+let disposables: Disposable[];
 const clients: Map<string, LanguageClient> = new Map();
 
 export let extjsLangMgr: ExtjsLanguageManager;
 
 
-export async function activate(context: vscode.ExtensionContext)
+export async function activate(context: ExtensionContext)
 {
     log.initLog("extjsLangSvr", "ExtJs Language Client", context);
 
@@ -63,13 +64,13 @@ export async function activate(context: vscode.ExtensionContext)
 }
 
 
-function registerCommands(context: vscode.ExtensionContext)
+function registerCommands(context: ExtensionContext)
 {
-    registerEnsureRequireCommand(context);
+    context.subscriptions.push(commands.registerCommand("vscode-extjs:ensure-require", async function() { await ensureRequires(); }));
 }
 
 
-async function run(context: vscode.ExtensionContext)
+async function run(context: ExtensionContext)
 {
     //
     // Create an output channel for the server to log to
@@ -82,7 +83,7 @@ async function run(context: vscode.ExtensionContext)
     // Otherwise, extension debug logging only will occur on this channel, if it is enabled in
     // the user's settings.
     //
-    const outputChannel: vscode.OutputChannel = vscode.window.createOutputChannel("ExtJs Language Server");
+    const outputChannel: OutputChannel = window.createOutputChannel("ExtJs Language Server");
 
     //
     // The server is implemented in nodevscode.

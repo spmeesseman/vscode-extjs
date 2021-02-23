@@ -94,7 +94,7 @@
 		"commands": [
 			{
 				"command": "vscode-extjs:ensure-require",
-				"title": "vscode-extjs:ensure-require"
+				"title": "vscode-extjs: Ensure Requires for XTypes"
 			}
 		],
 		"configuration": {

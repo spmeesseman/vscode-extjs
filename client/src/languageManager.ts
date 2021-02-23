@@ -1031,7 +1031,7 @@ export function getClassFromPath(fsPath: string)
 export function getNamespaceFromFile(fsPath: string, part?: number): string | undefined
 {
     log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
-    const cls = getClassFromFile(fsPath);
+    const cls = fileToComponentClassMapping[fsPath];
     if (cls){
         log.write("   found base class", 3);
         return cls.split(".")[part ?? 0];
@@ -1042,8 +1042,8 @@ export function getNamespaceFromFile(fsPath: string, part?: number): string | un
 
 export function getClassFromFile(fsPath: string, logPad = ""): string | undefined
 {
-    const cls = fileToComponentClassMapping[fsPath];
     log.methodStart("get component class by file", 1, logPad, false, [["file", fsPath]]);
+    const cls = fileToComponentClassMapping[fsPath];
     if (cls) {
         log.write("   found component class", 3, logPad);
         return cls;

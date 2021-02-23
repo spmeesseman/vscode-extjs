@@ -396,7 +396,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 
 function parseConfig(propertyConfig: ObjectProperty)
 {
-    const requires: IConfig[] = [];
+    const configs: IConfig[] = [];
     if (isObjectExpression(propertyConfig.value))
     {
         propertyConfig.value.properties.reduce<IConfig[]>((p, it) =>
@@ -419,9 +419,9 @@ function parseConfig(propertyConfig: ObjectProperty)
                 }
             }
             return p;
-        }, requires);
+        }, configs);
     }
-    return requires;
+    return configs;
 }
 
 
