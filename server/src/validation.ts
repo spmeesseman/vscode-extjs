@@ -1,8 +1,8 @@
 
 import { Connection, Diagnostic, DiagnosticSeverity, Range, Position } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { parseExtJsFile, componentClassToWidgetsMapping } from "./syntaxTree";
-import { IPosition, IRequires } from "../../common";
+import { parseExtJsFile, componentClassToWidgetsMapping, widgetToComponentClassMapping } from "./syntaxTree";
+import { IPosition, IRequires, utils } from "../../common";
 import { globalSettings } from "./server";
 import * as log from "./log";
 
@@ -154,6 +154,9 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 
 function validateXtype(xtype: string, cmpRequires: IRequires | undefined, range: Range, diagnostics: Diagnostic[])
 {
+	if (!utils.isNeedRequire(widgetToComponentClassMapping[xtype])) {
+		return;
+	}
 	const requires = [];
 	requires.push(...(cmpRequires?.value || []));
 	const requiredXtypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {

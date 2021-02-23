@@ -66,7 +66,9 @@ export async function activate(context: ExtensionContext)
 
 function registerCommands(context: ExtensionContext)
 {
-    context.subscriptions.push(commands.registerCommand("vscode-extjs:ensure-require", async function() { await ensureRequires(); }));
+    context.subscriptions.push(
+        commands.registerCommand("vscode-extjs:ensure-require", async function() { await ensureRequires(); })
+    );
 }
 
 

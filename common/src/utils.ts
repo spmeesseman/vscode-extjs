@@ -29,9 +29,9 @@ export function isGetterSetter(method: string): boolean
 }
 
 
-export function isNeedRequire(componentClass: string)
+export function isNeedRequire(componentClass: string | undefined)
 {
-    if (componentClass.startsWith("Ext.")) {
+    if (!componentClass || componentClass.startsWith("Ext.")) {
         return false;
     }
     return true;

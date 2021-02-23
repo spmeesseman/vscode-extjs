@@ -16,7 +16,7 @@ export async function ensureRequires()
 	}
 
 	const fsPath = document.uri.fsPath,
-			ns = getNamespaceFromFile(fsPath);
+		  ns = getNamespaceFromFile(fsPath);
 
 	if (!ns) {
 		window.showErrorMessage("Could not find base namespace");
@@ -49,13 +49,10 @@ export async function ensureRequires()
 
 		if (componentClasses.size > 0)
 		{
-			const _requires = component.requires.value
-				.filter(it => utils.isNeedRequire(it))
-				.concat(Array.from(componentClasses))
-				.sort();
 			let pad = "";
 			const range = toVscodeRange(component.requires.start, component.requires.end),
 			      lineText = document.lineAt(range.start.line).text.substr(0, range.start.character);
+
 			for (let i = 0; i < lineText.length; i++)
 			{
 				if (lineText[i] === "\t") {
@@ -68,10 +65,17 @@ export async function ensureRequires()
 					break;
 				}
 			}
+
+			const _requires = component.requires.value
+				  .filter(it => utils.isNeedRequire(it))
+				  .concat(Array.from(componentClasses))
+				  .sort();
+
 			const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
 									   .replace(/\[/, "[" + EOL + pad + "    ")
 									   .replace(/,/g, "," + EOL + pad + "    ")
 									   .replace(/\]/, EOL + pad + "]");
+
 			workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
 			workspace.applyEdit(workspaceEdit);
 		}

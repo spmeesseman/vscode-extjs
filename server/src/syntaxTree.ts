@@ -19,6 +19,7 @@ const ignoreProperties = [
 ];
 
 export const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
+export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
 
 
 export function getExtJsComponent(text: string)
@@ -72,6 +73,9 @@ export async function loadExtJsComponent(ast: string | undefined)
         for (const c of components)
         {
             componentClassToWidgetsMapping[c.componentClass] = c.widgets;
+            c.widgets.forEach(xtype => {
+                widgetToComponentClassMapping[xtype] = c.componentClass;
+            });
         }
     }
 }
