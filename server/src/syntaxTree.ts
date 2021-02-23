@@ -2,7 +2,6 @@
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as log from "./log";
-import * as fs from "fs";
 import {
     IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
     DeclarationType, IParameter, utils, VariableType

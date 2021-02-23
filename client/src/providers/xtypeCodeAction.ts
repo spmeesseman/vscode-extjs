@@ -1,7 +1,7 @@
 
 import {
-    CancellationToken, CompletionContext, CompletionItem, CodeActionProvider, CompletionList,
-    ExtensionContext, languages, Position, ProviderResult, TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind
+    CancellationToken, CodeActionProvider, ExtensionContext, languages, ProviderResult,
+    TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind
 } from "vscode";
 
 

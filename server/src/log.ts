@@ -44,7 +44,7 @@ export function error(msg: string | string[])
 }
 
 
-export function methodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: [string, any][])
+export function methodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: (string|any)[][])
 {
     if (msg === null || msg === undefined) {
         return;

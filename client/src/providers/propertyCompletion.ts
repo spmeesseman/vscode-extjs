@@ -3,10 +3,13 @@ import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
     TextDocument, CompletionItemKind
 } from "vscode";
+
 import {
     getComponentInstance, getComponentByFile, getSubComponentNames, componentClassToAliasesMapping,
     getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile
 } from "../languageManager";
+
+import { EOL } from "os";
 import * as log from "../common/log";
 import { configuration } from "../common/configuration";
 import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common";
@@ -47,7 +50,9 @@ class PropertyCompletionItemProvider
             return propCompletion;
         }
 
-        propCompletion.push(new CompletionItem(property, kind));
+        const completionItem: CompletionItem = new CompletionItem(property, kind);
+        completionItem.commitCharacters = [ "." ];
+        propCompletion.push(completionItem);
 
         //
         // FunctionProvider will call with property empty
@@ -166,6 +171,25 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
         log.methodStart("provide inline completion items", 2, "", true, [["line text", lineText]]);
 
         completionItems.push(...this.getCompletionItems(addedItems));
+
+        // completionItems.push({
+        //     label: "Ext.create",
+        //     kind: CompletionItemKind.Keyword,
+        //     insertText: `Ext.create(\"\",${EOL}{${EOL}${EOL}});`, // SnippetString('Good ${1|morning,afternoon,evening|}. It is ${1}, right?')
+        //     // documentation: new MarkdownString("Inserts a snippet that lets you select the _appropriate_ part of the day for your greeting.")
+        // });
+
+        //
+        // A completion item that retriggers IntelliSense when being accepted, the `command`-property is
+        // set which the editor will execute after completion has been inserted. Also, the `insertText`
+        // is set so that a space is inserted after `new`
+        //
+        completionItems.push({
+            label: "new",
+            kind: CompletionItemKind.Keyword,
+            insertText: "new ",
+            command: { command: "editor.action.triggerSuggest", title: "Re-trigger completions..." }
+        });
 
         log.value("   # of added items", completionItems.length, 3);
         log.methodDone("provide inline completion items", 2, "", true);

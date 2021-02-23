@@ -19,7 +19,7 @@ class Configuration
     }
 
 
-    constructor() 
+    constructor()
     {
         this.configuration = workspace.getConfiguration(extensionName);
         workspace.onDidChangeConfiguration(this.onConfigurationChanged, this);

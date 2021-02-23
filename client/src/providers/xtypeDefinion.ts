@@ -1,5 +1,8 @@
 
-import { CancellationToken, DefinitionProvider, ExtensionContext, languages, Location, LocationLink, Position, ProviderResult, Range, TextDocument, Uri, workspace } from "vscode";
+import {
+    CancellationToken, DefinitionProvider, ExtensionContext, languages, Location,
+    LocationLink, Position, ProviderResult, Range, TextDocument, Uri
+} from "vscode";
 import { getComponentClass, getFilePath, getXType } from "../languageManager";
 import * as log from "../common/log";
 

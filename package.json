@@ -42,7 +42,7 @@
 		"pretest": "npm run compile && npm run lint",
 		"test": "node ./out/test/runTest.js",
 		"vscode:prepublish": "npm run webpack-prod",
-		"lint": "eslint -c .eslintrc.json --ext .js ./client ./server",
+		"lint": "eslint -c .eslintrc.js --ext .ts ./client/src ./server/src ./common/src",
 		"semantic_release-release": "semantic-release",
 		"semantic_release-release_no_ci": "semantic-release --no-ci",
 		"semantic_release-release_dry": "semantic-release --dry-run",

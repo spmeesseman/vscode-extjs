@@ -1135,7 +1135,7 @@ export function getComponentByFile(fsPath: string): IComponent | undefined
  *
  * @param {String} property Property name, i.e. an xtype, alias, or widget aliased string
  * @param {String} txt The complete line of text the property is found in
- * 
+ *
  * @returns {String}
  */
 export function getComponentClass(property: string, cmpType?: ComponentType, txt?: string): string | undefined

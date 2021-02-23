@@ -4,8 +4,8 @@ import { OutputChannel, ExtensionContext, commands, window } from "vscode";
 
 
 const logValueWhiteSpace = 40;
-let writeToConsole = true;
-let writeToConsoleLevel = 2;
+const writeToConsole = true;
+const writeToConsoleLevel = 2;
 let logOutputChannel: OutputChannel | undefined;
 
 
@@ -84,7 +84,7 @@ export function error(msg: string | string[])
 }
 
 
-export function methodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: [string, any][])
+export function methodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: (string|any)[][])
 {
     if (msg === null || msg === undefined) {
         return;
