@@ -88,6 +88,7 @@ class ExtjsLanguageManager
     private reIndexTaskId: NodeJS.Timeout | undefined;
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
 
+
     constructor(serverRequest: ServerRequest)
     {
         this.serverRequest = serverRequest;
@@ -95,165 +96,416 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, nameSpace: string, text: string, logPad = "")
+    private boldItalic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
     {
-        const storedComponents = storage?.get<string>(fsPath),
-              storedTimestamp = storage?.get<Date>(fsPath + "_TIMESTAMP");
-        let components: IComponent[] | undefined;
+        return (leadingSpace ? " " : "") + MarkdownChars.BoldItalicStart + text +
+               MarkdownChars.BoldItalicEnd + (trailingSpace ? " " : "");
+    }
 
-        log.methodStart("indexing " + fsPath, 2, logPad, true, [
-            [ "namespace", nameSpace ],
-            [ "stored timestamp", storedTimestamp ]
-        ]);
 
-        //
-        // Get components for this file from the Language Server or local storage if exists
-        //
-        if (!storedComponents) {
-            components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
-        }
-        else {
-            components = JSON.parse(storedComponents);
-        }
+    private bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
+    {
+        return (leadingSpace ? " " : "") + MarkdownChars.Bold + text + MarkdownChars.Bold +
+               (trailingSpace ? " " : "");
+    }
 
-        //
-        // If no commponenst, then bye
-        //
-        if (!components || components.length === 0) {
+
+    private commentToMarkdown(property: string, comment: string | undefined, logPad = ""): MarkdownString | undefined
+    {
+        if (!comment || !property) {
             return;
         }
-        log.value("   # of stored components", components.length, 3);
+
+        const markdown = new MarkdownString();
 
         //
-        // Loog the list of components and create component mappings
+        // JSDoc comments in the following form:
         //
-        await utils.forEachAsync(components, (cmp: IComponent) =>
+        //     /**
+        //     * @property propName
+        //     * The property description
+        //     * @returns {Boolean}
+        //     */
+        //
+        //     /**
+        //     * @method methodName
+        //     * The method description
+        //     * @property prop1 Property 1 description
+        //     * @property prop2 Property 2 description
+        //     * @returns {Boolean}
+        //     */
+        //
+        // VSCode Hover API takes Clojure based markdown text.  See:
+        //
+        //     https://clojure.org/community/editing
+        //
+
+        log.methodStart("build markdown string from comment", 2, logPad, false, [["comment", comment]]);
+
+        const commentFmt = comment?.trim()
+            //
+            // Clean up beginning of string /**\n...
+            //
+            .replace(/^[\* \t\n\r]+/, "");
+            //
+            // Format line breaks to Clojure standard
+            //
+            // .replace(/\n/, newLine)
+            // //
+            // // Remove leading "* " for each line in the comment
+            // //
+            // .replace(/\* /, "")
+            // //
+            // // Bold @ tags
+            // //
+            // .replace(/@[a-z]+ /, function(match) {
+            //     return "_**" + match.trim() + "**_ ";
+            // })
+            // .trim();
+
+        const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/);
+        let mode: MarkdownStringMode | undefined,
+            indented = "",
+            previousMode: MarkdownStringMode | undefined,
+            trailers: string[] = [];
+
+        docLines.forEach((line) =>
         {
-            const {
-                componentClass, requires, widgets, xtypes, methods, configs, properties, aliases
-            } = cmp;
-
-            //
-            // The components documentation.  Defined at the very top of the class file, e.g.:
-            //
-            //     /**
-            //      * @class MyApp.Utilities
-            //      *
-            //      * Description for MyApp utilities class
-            //      *
-            //      * @singleton
-            //      * @since 2.0.0
-            //      */
-            //     Ext.define("MyApp.Utilities", {
-            //         ...
-            //     });
-            //
-            if (cmp?.doc) {
-                cmp.markdown = commentToMarkdown(componentClass, cmp.doc, logPad + "   ");
+            if (!line.trim()) {
+                return; // continue forEach()
             }
 
-            log.write("   map classes to components", 2, logPad);
-
-            //
-            // Map the component class to the various component types found
-            //
-            componentClassToFsPathMapping[componentClass] = fsPath;
-            componentClassToWidgetsMapping[componentClass] = widgets;
-            componentClassToMethodsMapping[componentClass] = methods;
-            componentClassToConfigsMapping[componentClass] = configs;
-            componentClassToPropertiesMapping[componentClass] = properties;
-            componentClassToXTypesMapping[componentClass] = xtypes;
-            componentClassToAliasesMapping[componentClass] = aliases;
-
-            //
-            // Map the filesystem path <-> component class
-            //
-            fileToComponentClassMapping[fsPath] = componentClass;
-            componentClassToFilesMapping[componentClass] = fsPath;
-
-            //
-            // Map the component class to it's component (it's own definition)
-            //
-            componentClassToComponentsMapping[componentClass] = cmp;
-
-            //
-            // Map the component class to any requires strings found
-            //
-            if (requires) {
-                componentClassToRequiresMapping[componentClass] = requires.value;
+            if (markdown.value.length > 0 && mode !== MarkdownStringMode.Code) {
+                markdown.appendMarkdown(MarkdownChars.NewLine);
             }
 
-            log.write("   map components to classes", 2, logPad);
+            line = line
+            //
+            // Remove line breaks, we format later depending on comment parts, done w/ Clojure
+            // standard line breaks
+            //
+            .replace(/\n/, "")
+            //
+            // Remove leading "* " for each line in the comment
+            //
+            .replace(/\* /, "")
+            .replace(/\s*\*$/, ""); // <- Blank lines
+            //
+            // Italicize @ tags
+            //
+            // .replace(/@[a-z]+ /, function(match) {
+            //     return "_" + match.trim() + "_";
+            // });
+            // .trim();
+
+            log.value("   process line", line, 4);
+
+            if (!line.trim()) {
+                return; // continue forEach()
+            }
+
+            mode = getMode(line);
+
+            if (indented && mode !== MarkdownStringMode.Code)
+            {
+                markdown.appendCodeblock(indented.trim());
+                indented = "";
+            }
 
             //
-            // Map widget/alias/xtype types found to the component class
+            // If 'mode' defined, and strings exist in the 'trailers' array, then then we are done
+            // processing previous tag block.  e.g.:
             //
-            widgets.forEach(xtype => {
-                widgetToComponentClassMapping[xtype] = componentClass;
-            });
+            //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
+            //     User can select whetheror not to submit a ticket.
+            //     [ TRAILERS GO HERE ]
+            //     @param {Boolean} [ask=true]  Prompt for input   ( <--- processing this line)
+            //
+            if (mode !== undefined && mode !== MarkdownStringMode.Code && trailers.length)
+            {
+                trailers.forEach((t) => {
+                    markdown.appendMarkdown(t);
+                });
+                trailers = [];
+            }
 
-            //
-            // Map methods found to the component class
-            //
-            methods.forEach(method => {
-                method.markdown = commentToMarkdown(method.name, method.doc);
-                methodToComponentClassMapping[method.name] = componentClass;
-                if (method.params)
-                {
-                    for (const p of method.params)
-                    {
-                        if (p.doc) {
-                            p.markdown = commentToMarkdown(p.name, p.doc);
-                        }
-                    }
-                }
-            });
+            mode = mode !== undefined ? mode : previousMode;
 
-            //
-            // Map config properties found to the component class
-            //
-            configs.forEach(config => {
-                config.markdown = commentToMarkdown(config.name, config.doc);
-                configToComponentClassMapping[config.name] = componentClass;
-            });
+            previousMode = mode;
 
-            //
-            // Map properties found to the component class
-            //
-            properties.forEach(property => {
-                property.markdown = commentToMarkdown(property.name, property.doc);
-                propertyToComponentClassMapping[property.name] = componentClass;
-            });
-
-            //
-            // Map xtypes found to the component class
-            //
-            xtypes.forEach(xtype => {
-                xtypeToComponentClassMapping[xtype.name] = componentClass;
-            });
+            if (mode === MarkdownStringMode.Config || mode === MarkdownStringMode.Property || mode === MarkdownStringMode.Method)
+            {
+                this.handleObjectLine(line, property, markdown);
+            }
+            else if (mode === MarkdownStringMode.Class)
+            {
+                this.handleClassLine(line, markdown);
+            }
+            else if (mode === MarkdownStringMode.Param)
+            {
+                this.handleParamLine(line, trailers, markdown);
+            }
+            else if (mode === MarkdownStringMode.Code)
+            {
+                log.value("      indented line", line, 4);
+                indented += MarkdownChars.NewLine + line.trim();
+            }
+            else if (mode === MarkdownStringMode.Returns)
+            {
+                this.handleReturnsLine(line, markdown);
+            }
+            else if (mode === MarkdownStringMode.Deprecated)
+            {
+                this.handleDeprecatedLine(line, markdown);
+            }
+            else if (mode === MarkdownStringMode.Singleton)
+            {
+                this.handleTagLine(line, markdown);
+            }
+            else
+            {
+                this.handleTextLine(line, markdown);
+            }
         });
 
-        //
-        // Update local storage
-        //
-        if (!storedComponents) {
-           await storage?.update(fsPath, JSON.stringify(components));
-        }
-        await storage?.update(fsPath + "_TIMESTAMP", new Date());
-
-        log.methodDone("indexing " + fsPath, 2, logPad, true);
-
-        return components;
+        log.methodDone("build markdown string from comment", 2);
+        return markdown;
     }
 
 
-    private validateDocument(textDocument: TextDocument, nameSpace: string)
+    private getNamespace(document: TextDocument | undefined)
     {
-        this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, textDocument.getText());
+        if (document) {
+            return this.dirNamespaceMap.get(path.dirname(document.uri.fsPath)) || "Ext";
+        }
+        return "Ext";
     }
 
 
-    private async indexingAll(progress?: Progress<any>)
+    private getStorageKey(fsPath: string)
+    {
+        return fsPath;
+    }
+
+
+    private handleClassLine(line: string, markdown: MarkdownString)
+    {
+        let classLine = line.trim();
+        if (classLine.match(/@[\w]+ /))
+        {
+            const lineParts = line.trim().split(" ");
+            classLine = this.italic(lineParts[0], false, true);
+            if (lineParts.length > 1)
+            {
+                lineParts.shift();
+                classLine += this.bold(lineParts[0], true, true);
+                if (lineParts.length > 1)
+                {
+                    lineParts.shift();
+                    classLine += MarkdownChars.NewLine + lineParts.join(" ");
+                }
+            }
+        }
+        log.value("      insert class line", classLine, 4);
+        markdown.appendMarkdown(classLine);
+    }
+
+
+    private handleDeprecatedLine(line: string, markdown: MarkdownString)
+    {
+        let textLine = line.trim();
+        textLine = this.italic(textLine, false, true);
+        log.value("      insert deprecated line", textLine, 4);
+        markdown.appendMarkdown(textLine);
+    }
+
+
+    private handleObjectLine(line: string, property: string, markdown: MarkdownString)
+    {
+        let cfgLine = "";
+        if (line.startsWith("@")) {
+            const lineParts = line.split(property);
+            cfgLine = lineParts[0] + this.boldItalic(property) + " " + lineParts[1];
+        }
+        else {
+            cfgLine = line.trim();
+        }
+        log.value("      insert object line", cfgLine, 4);
+        markdown.appendMarkdown(cfgLine);
+    }
+
+
+    private handleParamLine(line: string, trailers: string[], markdown: MarkdownString)
+    {
+        if (!line.startsWith("@"))
+        {
+            log.value("      insert param text line", line, 4);
+            markdown.appendMarkdown(line);
+            return;
+        }
+
+        let lineProperty = "", lineType = "",
+            lineValue = "", lineTrail = "";
+        const lineParts = line.split(" ");
+        //
+        // Examples:
+        //
+        //     @param {Object} opt Delivery options.
+        //     @param {String} msg The specific error message.
+        //     Some more descriptive text about the above property.
+        //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
+        //     Some more descriptive text about the above property.
+        //
+        // Trailing line text i.e. 'Some more descriptive text about the above property' gets
+        // stored into 'lineTrail'.  THis is placed "before" the default value extracted from a
+        // first line i.e. [show=true].
+        //
+        if (lineParts.length > 1)
+        {   //
+            // Check for no type i.e. @param propName the description here
+            //
+            if (!lineParts[1].match(/\{[A-Z]+\}/i))
+            {
+                lineType = "";
+                lineProperty = lineParts[1];
+                if (lineParts.length > 2)
+                {
+                    lineParts.shift();
+                    lineParts.shift();
+                    lineTrail = lineParts.join(" ");
+                }
+                else {
+                    lineParts.shift();
+                    lineTrail = "";
+                }
+            }
+            //
+            // Has type i.e. @param {String} propName the description here
+            //
+            else if (lineParts.length > 2)
+            {
+                lineType = lineParts[1];
+                lineProperty = lineParts[2];
+                if (lineParts.length > 3)
+                {
+                    lineParts.shift();
+                    lineParts.shift();
+                    lineParts.shift();
+                    lineTrail = lineParts.join(" ");
+                }
+            }
+        }
+
+        //
+        // If no property name was found, then there's nothing to add to the markdown, exit
+        //
+        if (!lineProperty) {
+            return;
+        }
+
+        log.value("          name", lineProperty, 4);
+        log.value("          type", lineType, 4);
+
+        if (lineType)
+        {
+            lineType = lineType.replace(/[\{\}]/g, "");
+        }
+
+        //
+        // Check for a default value, for example:
+        //
+        //     @param {Boolean} [debug=true] Set to `true` to...
+        //
+        // If a default value is found, set 'lineValue' and this is added to the 'trailers'
+        // array to be placed at the end of the params documentation body
+        //
+        if (lineProperty.match(/\[[A-Z0-9]+=[A-Z0-9"'`]+\]/i))
+        {
+            lineProperty = lineProperty.replace(/[\[\]]/g, "");
+            const paramParts = lineProperty.split("=");
+            lineProperty = paramParts[0];
+            lineValue = paramParts[1];
+        }
+
+        let paramLine = this.italic("@param", false, true) + this.boldItalic(lineProperty, false, true) +
+                        this.italic(MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd);
+        if (lineTrail) {
+            paramLine += " " + MarkdownChars.LongDash + lineTrail;
+        }
+        log.value("      param line", paramLine, 4);
+        if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
+            markdown.appendMarkdown(MarkdownChars.NewLine);
+        }
+        markdown.appendMarkdown(paramLine);
+
+        if (lineValue)
+        {
+            trailers.push(MarkdownChars.NewLine + "- " + this.italic("Defaults to:") + " `" +
+                        lineValue.replace(/`/g, "") + "`" +  MarkdownChars.NewLine +  MarkdownChars.NewLine);
+        }
+        else {
+            markdown.appendMarkdown(MarkdownChars.NewLine);
+        }
+    }
+
+
+    private handleReturnsLine(line: string, markdown: MarkdownString)
+    {
+        const rtnLineParts = line.trim().split(" ");
+        let rtnLine = MarkdownChars.Italic + rtnLineParts[0] + MarkdownChars.Italic + " ";
+        rtnLineParts.shift();
+        rtnLine += rtnLineParts.join(" ");
+        rtnLine = rtnLine.replace(/\*@return[s]{0,1}\* \{[A-Za-z]+\}/, (matched) => {
+            return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
+                return this.italic(matched2.replace("{", MarkdownChars.TypeWrapBegin)
+                                    .replace("}", MarkdownChars.TypeWrapEnd));
+            });
+        });
+        log.value("      insert returns line", rtnLine, 4);
+        markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
+    }
+
+
+    private handleTagLine(line: string, markdown: MarkdownString)
+    {
+        let textLine = line.trim();
+        textLine = this.italic(textLine, false, true);
+        log.value("      insert tag line", textLine, 4);
+        markdown.appendMarkdown(textLine);
+    }
+
+
+    private handleTextLine(line: string, markdown: MarkdownString)
+    {
+        let textLine = line.trim();
+        if (textLine.match(/@[\w]+ /))
+        {
+            const lineParts = line.trim().split(" ");
+            textLine = this.italic(lineParts[0], false, true);
+            if (lineParts.length > 1) {
+                lineParts.shift();
+                textLine += lineParts.join(" ");
+            }
+        }
+        if (textLine.match(/\{\s*@link [\w]+\s*\}/))
+        {
+            textLine = textLine.replace(/\{\s*@link [\w]+\s*\}/, (matched) => {
+                return this.boldItalic(matched);
+        });
+        }
+        log.value("      insert text line", textLine, 4);
+        markdown.appendMarkdown(textLine);
+    }
+
+
+    private italic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
+    {
+        return (leadingSpace ? " " : "") + MarkdownChars.Italic + text +
+            MarkdownChars.Italic + (trailingSpace ? " " : "");
+    }
+
+
+    private async indexAll(progress?: Progress<any>)
     {
         const processedDirs: string[] = [];
         let dirs: string[] = [],
@@ -355,7 +607,7 @@ class ExtjsLanguageManager
         {
             isIndexing = true;
             try {
-                await this.indexingAll(progress);
+                await this.indexAll(progress);
             }
             catch {}
             isIndexing = false;
@@ -363,36 +615,167 @@ class ExtjsLanguageManager
     }
 
 
-    async setup(context: ExtensionContext): Promise<Disposable[]>
+    async indexFile(fsPath: string, nameSpace: string, text: string, logPad = "")
     {
-        const success = await initConfig();
-        if (!success) {
-            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
-            return [];
+        const storageKey = this.getStorageKey(fsPath),
+              storedComponents = storage?.get<string>(storageKey),
+              storedTimestamp = storage?.get<Date>(storageKey + "_TIMESTAMP");
+        let components: IComponent[] | undefined;
+
+        //
+        // TODO - Store only set of files from framework, or one per version
+        // i.e. a user can have 5 projects all with the same 7.2 framework local to the project,
+        // we dont want to process or store each copy of the same set of files, only one copy
+        // Will need to use relative path storage keys.
+        //
+
+        log.methodStart("indexing " + fsPath, 2, logPad, true, [
+            [ "namespace", nameSpace ],
+            [ "stored timestamp", storedTimestamp ]
+        ]);
+
+        //
+        // Get components for this file from the Language Server or local storage if exists
+        //
+        if (!storedComponents) {
+            components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
+        }
+        else {
+            components = JSON.parse(storedComponents);
         }
 
-        await this.indexingAllWithProgress();
         //
-        // Validate active js document if there is one
+        // If no commponenst, then bye
         //
-        const activeTextDocument = window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        if (!components || components.length === 0) {
+            return;
         }
-        return this.registerWatchers(context);
+        log.value("   # of stored components", components.length, 3);
+
+        //
+        // Loog the list of components and create component mappings
+        //
+        await utils.forEachAsync(components, (cmp: IComponent) =>
+        {
+            const {
+                componentClass, requires, widgets, xtypes, methods, configs, properties, aliases
+            } = cmp;
+
+            //
+            // The components documentation.  Defined at the very top of the class file, e.g.:
+            //
+            //     /**
+            //      * @class MyApp.Utilities
+            //      *
+            //      * Description for MyApp utilities class
+            //      *
+            //      * @singleton
+            //      * @since 2.0.0
+            //      */
+            //     Ext.define("MyApp.Utilities", {
+            //         ...
+            //     });
+            //
+            if (cmp?.doc) {
+                cmp.markdown = this.commentToMarkdown(componentClass, cmp.doc, logPad + "   ");
+            }
+
+            log.write("   map classes to components", 2, logPad);
+
+            //
+            // Map the component class to the various component types found
+            //
+            componentClassToFsPathMapping[componentClass] = fsPath;
+            componentClassToWidgetsMapping[componentClass] = widgets;
+            componentClassToMethodsMapping[componentClass] = methods;
+            componentClassToConfigsMapping[componentClass] = configs;
+            componentClassToPropertiesMapping[componentClass] = properties;
+            componentClassToXTypesMapping[componentClass] = xtypes;
+            componentClassToAliasesMapping[componentClass] = aliases;
+
+            //
+            // Map the filesystem path <-> component class
+            //
+            fileToComponentClassMapping[fsPath] = componentClass;
+            componentClassToFilesMapping[componentClass] = fsPath;
+
+            //
+            // Map the component class to it's component (it's own definition)
+            //
+            componentClassToComponentsMapping[componentClass] = cmp;
+
+            //
+            // Map the component class to any requires strings found
+            //
+            if (requires) {
+                componentClassToRequiresMapping[componentClass] = requires.value;
+            }
+
+            log.write("   map components to classes", 2, logPad);
+
+            //
+            // Map widget/alias/xtype types found to the component class
+            //
+            widgets.forEach(xtype => {
+                widgetToComponentClassMapping[xtype] = componentClass;
+            });
+
+            //
+            // Map methods found to the component class
+            //
+            methods.forEach(method => {
+                method.markdown = this.commentToMarkdown(method.name, method.doc);
+                methodToComponentClassMapping[method.name] = componentClass;
+                if (method.params)
+                {
+                    for (const p of method.params)
+                    {
+                        if (p.doc) {
+                            p.markdown = this.commentToMarkdown(p.name, p.doc);
+                        }
+                    }
+                }
+            });
+
+            //
+            // Map config properties found to the component class
+            //
+            configs.forEach(config => {
+                config.markdown = this.commentToMarkdown(config.name, config.doc);
+                configToComponentClassMapping[config.name] = componentClass;
+            });
+
+            //
+            // Map properties found to the component class
+            //
+            properties.forEach(property => {
+                property.markdown = this.commentToMarkdown(property.name, property.doc);
+                propertyToComponentClassMapping[property.name] = componentClass;
+            });
+
+            //
+            // Map xtypes found to the component class
+            //
+            xtypes.forEach(xtype => {
+                xtypeToComponentClassMapping[xtype.name] = componentClass;
+            });
+        });
+
+        //
+        // Update local storage
+        //
+        if (!storedComponents) {
+           await storage?.update(storageKey, JSON.stringify(components));
+        }
+        await storage?.update(storageKey + "_TIMESTAMP", new Date());
+
+        log.methodDone("indexing " + fsPath, 2, logPad, true);
+
+        return components;
     }
 
 
-    getNamespace(document: TextDocument | undefined)
-    {
-        if (document) {
-            return this.dirNamespaceMap.get(path.dirname(document.uri.fsPath)) || "Ext";
-        }
-        return "Ext";
-    }
-
-
-    registerWatchers(context: ExtensionContext): Disposable[]
+    private registerWatchers(context: ExtensionContext): Disposable[]
     {
         //
         // rc/conf file / app.json
@@ -492,183 +875,32 @@ class ExtjsLanguageManager
         return disposables;
     }
 
-}
 
+    async setup(context: ExtensionContext): Promise<Disposable[]>
+    {
+        const success = await initConfig();
+        if (!success) {
+            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
+            return [];
+        }
 
-function boldItalic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
-{
-    return (leadingSpace ? " " : "") + MarkdownChars.BoldItalicStart + text +
-           MarkdownChars.BoldItalicEnd + (trailingSpace ? " " : "");
-}
-
-
-function bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
-{
-    return (leadingSpace ? " " : "") + MarkdownChars.Bold + text + MarkdownChars.Bold +
-           (trailingSpace ? " " : "");
-}
-
-
-function commentToMarkdown(property: string, comment: string | undefined, logPad = ""): MarkdownString | undefined
-{
-    if (!comment || !property) {
-        return;
+        await this.indexingAllWithProgress();
+        //
+        // Validate active js document if there is one
+        //
+        const activeTextDocument = window.activeTextEditor?.document;
+        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+            this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        }
+        return this.registerWatchers(context);
     }
 
-    const markdown = new MarkdownString();
 
-    //
-    // JSDoc comments in the following form:
-    //
-    //     /**
-    //     * @property propName
-    //     * The property description
-    //     * @returns {Boolean}
-    //     */
-    //
-    //     /**
-    //     * @method methodName
-    //     * The method description
-    //     * @property prop1 Property 1 description
-    //     * @property prop2 Property 2 description
-    //     * @returns {Boolean}
-    //     */
-    //
-    // VSCode Hover API takes Clojure based markdown text.  See:
-    //
-    //     https://clojure.org/community/editing
-    //
-
-    log.methodStart("build markdown string from comment", 2, logPad, false, [["comment", comment]]);
-
-    const commentFmt = comment?.trim()
-        //
-        // Clean up beginning of string /**\n...
-        //
-        .replace(/^[\* \t\n\r]+/, "");
-        //
-        // Format line breaks to Clojure standard
-        //
-        // .replace(/\n/, newLine)
-        // //
-        // // Remove leading "* " for each line in the comment
-        // //
-        // .replace(/\* /, "")
-        // //
-        // // Bold @ tags
-        // //
-        // .replace(/@[a-z]+ /, function(match) {
-        //     return "_**" + match.trim() + "**_ ";
-        // })
-        // .trim();
-
-    const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/);
-    let mode: MarkdownStringMode | undefined,
-        indented = "",
-        previousMode: MarkdownStringMode | undefined,
-        trailers: string[] = [];
-
-    docLines.forEach((line) =>
+    private validateDocument(textDocument: TextDocument, nameSpace: string)
     {
-        if (!line.trim()) {
-            return; // continue forEach()
-        }
+        this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, textDocument.getText());
+    }
 
-        if (markdown.value.length > 0 && mode !== MarkdownStringMode.Code) {
-            markdown.appendMarkdown(MarkdownChars.NewLine);
-        }
-
-        line = line
-        //
-        // Remove line breaks, we format later depending on comment parts, done w/ Clojure
-        // standard line breaks
-        //
-        .replace(/\n/, "")
-        //
-        // Remove leading "* " for each line in the comment
-        //
-        .replace(/\* /, "")
-        .replace(/\s*\*$/, ""); // <- Blank lines
-        //
-        // Italicize @ tags
-        //
-        // .replace(/@[a-z]+ /, function(match) {
-        //     return "_" + match.trim() + "_";
-        // });
-        // .trim();
-
-        log.value("   process line", line, 4);
-
-        if (!line.trim()) {
-            return; // continue forEach()
-        }
-
-        mode = getMode(line);
-
-        if (indented && mode !== MarkdownStringMode.Code)
-        {
-            markdown.appendCodeblock(indented.trim());
-            indented = "";
-        }
-
-        //
-        // If 'mode' defined, and strings exist in the 'trailers' array, then then we are done
-        // processing previous tag block.  e.g.:
-        //
-        //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
-        //     User can select whetheror not to submit a ticket.
-        //     [ TRAILERS GO HERE ]
-        //     @param {Boolean} [ask=true]  Prompt for input   ( <--- processing this line)
-        //
-        if (mode !== undefined && mode !== MarkdownStringMode.Code && trailers.length)
-        {
-            trailers.forEach((t) => {
-                markdown.appendMarkdown(t);
-            });
-            trailers = [];
-        }
-
-        mode = mode !== undefined ? mode : previousMode;
-
-        previousMode = mode;
-
-        if (mode === MarkdownStringMode.Config || mode === MarkdownStringMode.Property || mode === MarkdownStringMode.Method)
-        {
-            handleObjectLine(line, property, markdown);
-        }
-        else if (mode === MarkdownStringMode.Class)
-        {
-            handleClassLine(line, markdown);
-        }
-        else if (mode === MarkdownStringMode.Param)
-        {
-            handleParamLine(line, trailers, markdown);
-        }
-        else if (mode === MarkdownStringMode.Code)
-        {
-            log.value("      indented line", line, 4);
-            indented += MarkdownChars.NewLine + line.trim();
-        }
-        else if (mode === MarkdownStringMode.Returns)
-        {
-            handleReturnsLine(line, markdown);
-        }
-        else if (mode === MarkdownStringMode.Deprecated)
-        {
-            handleDeprecatedLine(line, markdown);
-        }
-        else if (mode === MarkdownStringMode.Singleton)
-        {
-            handleTagLine(line, markdown);
-        }
-        else
-        {
-            handleTextLine(line, markdown);
-        }
-    });
-
-    log.methodDone("build markdown string from comment", 2);
-    return markdown;
 }
 
 
@@ -1121,31 +1353,6 @@ function getMode(line: string): MarkdownStringMode | undefined
 }
 
 
-function getRequiredXtypes(cmp: string)
-{
-    const requires = []; // Object.keys(componentClassToWidgetsMapping).filter(it => util.isNeedRequire(it));
-    log.write("get required xtypes by component class", 1);
-    log.value("   component class", cmp, 2);
-    requires.push(...(componentClassToRequiresMapping[cmp] || []));
-    const reqXTypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
-        previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
-        return previousValue;
-    }, []);
-    log.value("   # of required xtypes", reqXTypes.length, 2);
-    reqXTypes.forEach((x) => {
-        log.write("      " + x);
-    });
-    log.write("completed get required xtypes by component class", 1);
-    return reqXTypes;
-}
-
-
-function getStatusString(pct: number)
-{
-    return "$(loading~spin) Indexing ExtJs Files " + (pct ?? "0") + "%";
-}
-
-
 export function getXType(cmp: string, xtype: string): IXtype | undefined
 {
     const xtypes = componentClassToXTypesMapping[cmp];
@@ -1217,223 +1424,6 @@ function handleDeleFile(fsPath: string)
         delete componentClassToMethodsMapping[componentClass];
         delete componentClassToComponentsMapping[componentClass];
     }
-}
-
-
-function handleClassLine(line: string, markdown: MarkdownString)
-{
-    let classLine = line.trim();
-    if (classLine.match(/@[\w]+ /))
-    {
-        const lineParts = line.trim().split(" ");
-        classLine = italic(lineParts[0], false, true);
-        if (lineParts.length > 1)
-        {
-            lineParts.shift();
-            classLine += bold(lineParts[0], true, true);
-            if (lineParts.length > 1)
-            {
-                lineParts.shift();
-                classLine += MarkdownChars.NewLine + lineParts.join(" ");
-            }
-        }
-    }
-    log.value("      insert class line", classLine, 4);
-    markdown.appendMarkdown(classLine);
-}
-
-
-function handleDeprecatedLine(line: string, markdown: MarkdownString)
-{
-    let textLine = line.trim();
-    textLine = italic(textLine, false, true);
-    log.value("      insert deprecated line", textLine, 4);
-    markdown.appendMarkdown(textLine);
-}
-
-
-function handleObjectLine(line: string, property: string, markdown: MarkdownString)
-{
-    let cfgLine = "";
-    if (line.startsWith("@")) {
-        const lineParts = line.split(property);
-        cfgLine = lineParts[0] + boldItalic(property) + " " + lineParts[1];
-    }
-    else {
-        cfgLine = line.trim();
-    }
-    log.value("      insert object line", cfgLine, 4);
-    markdown.appendMarkdown(cfgLine);
-}
-
-
-function handleParamLine(line: string, trailers: string[], markdown: MarkdownString)
-{
-    if (!line.startsWith("@"))
-    {
-        log.value("      insert param text line", line, 4);
-        markdown.appendMarkdown(line);
-        return;
-    }
-
-    let lineProperty = "", lineType = "",
-        lineValue = "", lineTrail = "";
-    const lineParts = line.split(" ");
-    //
-    // Examples:
-    //
-    //     @param {Object} opt Delivery options.
-    //     @param {String} msg The specific error message.
-    //     Some more descriptive text about the above property.
-    //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
-    //     Some more descriptive text about the above property.
-    //
-    // Trailing line text i.e. 'Some more descriptive text about the above property' gets
-    // stored into 'lineTrail'.  THis is placed "before" the default value extracted from a
-    // first line i.e. [show=true].
-    //
-    if (lineParts.length > 1)
-    {   //
-        // Check for no type i.e. @param propName the description here
-        //
-        if (!lineParts[1].match(/\{[A-Z]+\}/i))
-        {
-            lineType = "";
-            lineProperty = lineParts[1];
-            if (lineParts.length > 2)
-            {
-                lineParts.shift();
-                lineParts.shift();
-                lineTrail = lineParts.join(" ");
-            }
-            else {
-                lineParts.shift();
-                lineTrail = "";
-            }
-        }
-        //
-        // Has type i.e. @param {String} propName the description here
-        //
-        else if (lineParts.length > 2)
-        {
-            lineType = lineParts[1];
-            lineProperty = lineParts[2];
-            if (lineParts.length > 3)
-            {
-                lineParts.shift();
-                lineParts.shift();
-                lineParts.shift();
-                lineTrail = lineParts.join(" ");
-            }
-        }
-    }
-
-    //
-    // If no property name was found, then there's nothing to add to the markdown, exit
-    //
-    if (!lineProperty) {
-        return;
-    }
-
-    log.value("          name", lineProperty, 4);
-    log.value("          type", lineType, 4);
-
-    if (lineType)
-    {
-        lineType = lineType.replace(/[\{\}]/g, "");
-    }
-
-    //
-    // Check for a default value, for example:
-    //
-    //     @param {Boolean} [debug=true] Set to `true` to...
-    //
-    // If a default value is found, set 'lineValue' and this is added to the 'trailers'
-    // array to be placed at the end of the params documentation body
-    //
-    if (lineProperty.match(/\[[A-Z0-9]+=[A-Z0-9"'`]+\]/i))
-    {
-        lineProperty = lineProperty.replace(/[\[\]]/g, "");
-        const paramParts = lineProperty.split("=");
-        lineProperty = paramParts[0];
-        lineValue = paramParts[1];
-    }
-
-    let paramLine = italic("@param", false, true) + boldItalic(lineProperty, false, true) +
-                    italic(MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd);
-    if (lineTrail) {
-        paramLine += " " + MarkdownChars.LongDash + lineTrail;
-    }
-    log.value("      param line", paramLine, 4);
-    if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
-        markdown.appendMarkdown(MarkdownChars.NewLine);
-    }
-    markdown.appendMarkdown(paramLine);
-
-    if (lineValue)
-    {
-        trailers.push(MarkdownChars.NewLine + "- " + italic("Defaults to:") + " `" +
-                      lineValue.replace(/`/g, "") + "`" +  MarkdownChars.NewLine +  MarkdownChars.NewLine);
-    }
-    else {
-        markdown.appendMarkdown(MarkdownChars.NewLine);
-    }
-}
-
-
-function handleReturnsLine(line: string, markdown: MarkdownString)
-{
-    const rtnLineParts = line.trim().split(" ");
-    let rtnLine = MarkdownChars.Italic + rtnLineParts[0] + MarkdownChars.Italic + " ";
-    rtnLineParts.shift();
-    rtnLine += rtnLineParts.join(" ");
-    rtnLine = rtnLine.replace(/\*@return[s]{0,1}\* \{[A-Za-z]+\}/, (matched) => {
-         return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
-             return italic(matched2.replace("{", MarkdownChars.TypeWrapBegin)
-                                   .replace("}", MarkdownChars.TypeWrapEnd));
-         });
-    });
-    log.value("      insert returns line", rtnLine, 4);
-    markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
-}
-
-
-function handleTagLine(line: string, markdown: MarkdownString)
-{
-    let textLine = line.trim();
-    textLine = italic(textLine, false, true);
-    log.value("      insert tag line", textLine, 4);
-    markdown.appendMarkdown(textLine);
-}
-
-
-function handleTextLine(line: string, markdown: MarkdownString)
-{
-    let textLine = line.trim();
-    if (textLine.match(/@[\w]+ /))
-    {
-        const lineParts = line.trim().split(" ");
-        textLine = italic(lineParts[0], false, true);
-        if (lineParts.length > 1) {
-            lineParts.shift();
-            textLine += lineParts.join(" ");
-        }
-    }
-    if (textLine.match(/\{\s*@link [\w]+\s*\}/))
-    {
-        textLine = textLine.replace(/\{\s*@link [\w]+\s*\}/, (matched) => {
-            return boldItalic(matched);
-       });
-    }
-    log.value("      insert text line", textLine, 4);
-    markdown.appendMarkdown(textLine);
-}
-
-
-function italic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
-{
-    return (leadingSpace ? " " : "") + MarkdownChars.Italic + text +
-           MarkdownChars.Italic + (trailingSpace ? " " : "");
 }
 
 
