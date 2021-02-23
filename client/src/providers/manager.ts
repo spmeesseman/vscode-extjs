@@ -1,5 +1,6 @@
 
 import { ExtensionContext } from "vscode";
+import registerXtypeCodeActionProvider from "./xtypeCodeAction";
 import registerXtypeCompletionProvider from "./xtypeCompletion";
 import registerXtypeDefinitionProvider from "./xtypeDefinion";
 import registerXtypeHoverProvider from "./xtypeHover";
@@ -19,6 +20,7 @@ export function registerProviders(context: ExtensionContext)
     const registers: Register[] = [
         registerXtypeHoverProvider,
         registerXtypeDefinitionProvider,
+        registerXtypeCodeActionProvider,
         registerXtypeCompletionProvider,
         registerPropertyHoverProvider,
         registerPropertyCompletionProvider,
