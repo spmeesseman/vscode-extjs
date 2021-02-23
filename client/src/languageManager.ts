@@ -583,12 +583,11 @@ class ExtjsLanguageManager
                     {
                         log.blank();
                         log.value("   Indexing file", uri.fsPath, 1);
-                        const text = (await workspace.fs.readFile(uri)).toString();
                         //
                         // Index this file
                         //
                         try {
-                            await this.indexFile(uri.fsPath, conf.name, text, "   ");
+                            await this.indexFile(uri.fsPath, conf.name, uri, "   ");
                         }
                         catch (e) {
                             log.error(e.toString());
@@ -634,7 +633,7 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, project: string, text: string, logPad = "")
+    async indexFile(fsPath: string, project: string, document: TextDocument | Uri, logPad = "")
     {
         const storageKey = this.getStorageKey(fsPath),
               storedComponents = fsStorage?.get(project, storageKey),
@@ -656,7 +655,15 @@ class ExtjsLanguageManager
         //
         // Get components for this file from the Language Server or local storage if exists
         //
-        if (!storedComponents) {
+        if (!storedComponents)
+        {
+            let text: string | undefined;
+            if (document instanceof Uri) {
+                text = (await workspace.fs.readFile(document)).toString();
+            }
+            else {
+                text = document.getText();
+            }
             components = await this.serverRequest.parseExtJsFile(fsPath, project, text);
         }
         else {
@@ -834,7 +841,7 @@ class ExtjsLanguageManager
                     //
                     // Index the file
                     //
-                    await this.indexFile(textDocument.uri.fsPath, ns, textDocument.getText());
+                    await this.indexFile(textDocument.uri.fsPath, ns, textDocument);
                     //
                     // Validate document
                     //
@@ -1015,13 +1022,30 @@ export function getClassFromPath(fsPath: string)
 }
 
 
-export function getClassFromFile(fsPath: string): string | undefined
+/**
+ * @method getNamespaceFromFile
+ *
+ * @param fsPath Filesystem path to file
+ * @param part Zero-based index of namespace part to return
+ */
+export function getNamespaceFromFile(fsPath: string, part?: number): string | undefined
+{
+    log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
+    const cls = getClassFromFile(fsPath);
+    if (cls){
+        log.write("   found base class", 3);
+        return cls.split(".")[part ?? 0];
+    }
+    return undefined;
+}
+
+
+export function getClassFromFile(fsPath: string, logPad = ""): string | undefined
 {
     const cls = fileToComponentClassMapping[fsPath];
-    log.write("get component class by file", 1);
-    log.value("   file", fsPath, 2);
+    log.methodStart("get component class by file", 1, logPad, false, [["file", fsPath]]);
     if (cls) {
-        log.write("   found component class", 3);
+        log.write("   found component class", 3, logPad);
         return cls;
     }
     return undefined;
@@ -1103,16 +1127,18 @@ export function getComponentByFile(fsPath: string): IComponent | undefined
 
 
 /**
- * Get component class name
+ * @method getComponentClass
  *
- * Old original function from base project, does not support multi-/root/project
+ * Get component class name from an xtype, alias, or alternateClassName
+ * Note that xtypes/aliases must be unique within an application for this /**
+ * to work properly every time.
  *
- * @deprecated Use other helper functions
- *
- * @param {String} property Property name
+ * @param {String} property Property name, i.e. an xtype, alias, or widget aliased string
  * @param {String} txt The complete line of text the property is found in
+ * 
+ * @returns {String}
  */
-export function getComponentClass(property: string, cmpType?: ComponentType, txt?: string)
+export function getComponentClass(property: string, cmpType?: ComponentType, txt?: string): string | undefined
 {
     let cmpClass = "this", // getComponentByConfig(property);
         cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
