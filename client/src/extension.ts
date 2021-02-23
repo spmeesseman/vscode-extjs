@@ -13,6 +13,8 @@ let client: LanguageClient;
 let disposables: vscode.Disposable[];
 const clients: Map<string, LanguageClient> = new Map();
 
+export let extjsLangMgr: ExtjsLanguageManager;
+
 
 export async function activate(context: vscode.ExtensionContext)
 {
@@ -25,11 +27,17 @@ export async function activate(context: vscode.ExtensionContext)
     await run(context);
 
     const serverRequest = new ServerRequest(client);
-    const extjsLanguageManager = new ExtjsLanguageManager(serverRequest);
+    extjsLangMgr = new ExtjsLanguageManager(serverRequest);
 
-    registerEnsureRequireCommand(context, serverRequest);
+    registerCommands(context);
 
-    disposables = await extjsLanguageManager.setup(context);
+    disposables = await extjsLangMgr.setup(context);
+}
+
+
+function registerCommands(context: vscode.ExtensionContext)
+{
+    registerEnsureRequireCommand(context);
 }
 
 

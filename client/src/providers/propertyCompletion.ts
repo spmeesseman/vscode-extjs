@@ -298,7 +298,7 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         //
         // Handle "this"
         //
-        if (lineText === "this.")
+        if (lineText.trim() === "this.")
         {
             const thisCls = getClassFromFile(fsPath);
             if (thisCls) {

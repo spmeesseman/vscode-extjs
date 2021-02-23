@@ -95,21 +95,38 @@ class ExtjsLanguageManager
     }
 
 
-    async indexing(fsPath: string, nameSpace: string, text: string, logPad = "")
+    async indexFile(fsPath: string, nameSpace: string, text: string, logPad = "")
     {
-        let readFromStorage = true,
-            components = storage?.get<IComponent[]>(fsPath);
-        if (!components) {
-            readFromStorage = false;
+        const storedComponents = storage?.get<string>(fsPath),
+              storedTimestamp = storage?.get<Date>(fsPath + "_TIMESTAMP");
+        let components: IComponent[] | undefined;
+
+        log.methodStart("indexing " + fsPath, 2, logPad, true, [
+            [ "namespace", nameSpace ],
+            [ "stored timestamp", storedTimestamp ]
+        ]);
+
+        //
+        // Get components for this file from the Language Server or local storage if exists
+        //
+        if (!storedComponents) {
             components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
         }
+        else {
+            components = JSON.parse(storedComponents);
+        }
 
+        //
+        // If no commponenst, then bye
+        //
         if (!components || components.length === 0) {
             return;
         }
+        log.value("   # of stored components", components.length, 3);
 
-        log.methodStart("indexing " + fsPath, 2, logPad, true);
-
+        //
+        // Loog the list of components and create component mappings
+        //
         await utils.forEachAsync(components, (cmp: IComponent) =>
         {
             const {
@@ -216,11 +233,17 @@ class ExtjsLanguageManager
             });
         });
 
-        if (!readFromStorage) {
-            await storage?.update(fsPath, components);
+        //
+        // Update local storage
+        //
+        if (!storedComponents) {
+           await storage?.update(fsPath, JSON.stringify(components));
         }
+        await storage?.update(fsPath + "_TIMESTAMP", new Date());
 
         log.methodDone("indexing " + fsPath, 2, logPad, true);
+
+        return components;
     }
 
 
@@ -299,7 +322,7 @@ class ExtjsLanguageManager
                         //
                         // Index this file
                         //
-                        await this.indexing(uri.fsPath, conf.name, text, "   ");
+                        await this.indexFile(uri.fsPath, conf.name, text, "   ");
                         //
                         // Report progress
                         //
@@ -394,12 +417,22 @@ class ExtjsLanguageManager
                 if (this.reIndexTaskId) {
                     clearTimeout(this.reIndexTaskId);
                 }
-                this.reIndexTaskId = setTimeout(async () => {
+                this.reIndexTaskId = setTimeout(async () =>
+                {
                     this.reIndexTaskId = undefined;
-                    const fsPath = textDocument.uri.fsPath;
-                    const ns = this.getNamespace(textDocument);
+                    const fsPath = textDocument.uri.fsPath,
+                          ns = this.getNamespace(textDocument);
+                    //
+                    // Clear
+                    //
                     handleDeleFile(fsPath);
-                    await this.indexing(textDocument.uri.fsPath, ns, textDocument.getText());
+                    //
+                    // Index the file
+                    //
+                    await this.indexFile(textDocument.uri.fsPath, ns, textDocument.getText());
+                    //
+                    // Validate document
+                    //
                     this.validateDocument(textDocument, ns);
                 }, debounceMs);
             }

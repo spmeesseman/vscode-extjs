@@ -3,10 +3,11 @@ import json5 from "json5";
 import * as vscode from "vscode";
 import { utils } from "../../../common";
 import { getComponentClass } from "../languageManager";
-import ServerRequest, { toVscodeRange } from "../common/ServerRequest";
+import { toVscodeRange } from "../common/clientUtils";
+import { extjsLangMgr } from "../extension";
 
 
-function registerEnsureRequireCommand(context: vscode.ExtensionContext, serverRequest: ServerRequest)
+function registerEnsureRequireCommand(context: vscode.ExtensionContext)
 {
     const command = vscode.commands.registerCommand("vscode-extjs:ensure-require", async () =>
     {
@@ -17,12 +18,12 @@ function registerEnsureRequireCommand(context: vscode.ExtensionContext, serverRe
 
         const text = document.getText(),
 		      path = document.uri.fsPath,
-			  components = await serverRequest.parseExtJsFile(path, "", text),
+			  components = await extjsLangMgr.indexFile(path, "", text),
 			  workspaceEdit = new vscode.WorkspaceEdit();
 
 		components?.forEach(component =>
 		{
-		    const { componentClass, requires, widgets, xtypes } = component;
+		    const { requires, xtypes } = component;
 		    const componentClasses = new Set<string>();
 
 		    xtypes.forEach(x =>

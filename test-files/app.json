@@ -45,28 +45,28 @@
     {
         "classpath": [
             "app/shared/src",
-            "app/desktop/src"
+            "app/classic/src"
         ],
         "overrides": [
             "app/shared/overrides",
-            "app/desktop/overrides"
+            "app/classic/overrides"
         ],
         "sass":
         {
             "namespace": "VSCodeExtJS",
             "etc": [
                 "app/shared/sass/etc/all.scss",
-                "app/desktop/sass/etc/all.scss"
+                "app/classic/sass/etc/all.scss"
             ],
             "var": [
                 "app/shared/sass/var/all.scss",
-                "app/desktop/sass/var/all.scss",
+                "app/classic/sass/var/all.scss",
                 "app/shared/sass/var",
-                "app/desktop/sass/var"
+                "app/classic/sass/var"
             ],
             "src": [
                 "app/shared/sass/src",
-                "app/desktop/sass/src"
+                "app/classic/sass/src"
             ]
         }
     },
@@ -75,28 +75,28 @@
     {
         "classpath": [
             "app/shared/src",
-            "app/mobile/src"
+            "app/modern/src"
         ],
         "overrides": [
             "app/shared/overrides",
-            "app/mobile/overrides"
+            "app/modern/overrides"
         ],
         "sass":
         {
             "namespace": "VSCodeExtJS",
             "etc": [
                 "app/shared/sass/etc/all.scss",
-                "app/mobile/sass/etc/all.scss"
+                "app/modern/sass/etc/all.scss"
             ],
             "var": [
                 "app/shared/sass/var/all.scss",
-                "app/mobile/sass/var/all.scss",
+                "app/modern/sass/var/all.scss",
                 "app/shared/sass/var",
-                "app/mobile/sass/var"
+                "app/modern/sass/var"
             ],
             "src": [
                 "app/shared/sass/src",
-                "app/mobile/sass/src"
+                "app/modern/sass/src"
             ]
         }
     },
