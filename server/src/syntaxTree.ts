@@ -81,7 +81,7 @@ export async function loadExtJsComponent(ast: string | undefined)
 }
 
 
-export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: string, isFramework?: boolean)
+export async function parseExtJsFile(fsPath: string, text: string, project?: string, isFramework?: boolean)
 {
     let ast: any;
 
@@ -128,12 +128,11 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: s
 
                         const dotIdx = args[0].value.indexOf("."),
                               baseNameSpace = dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value;
-                        if (!nameSpace) {
-                            nameSpace = baseNameSpace;
-                        }
 
                         const componentInfo: IComponent = {
-                            baseNameSpace, fsPath, isFramework, nameSpace,
+                            name: project || args[0].value,
+                            baseNameSpace, fsPath, isFramework,
+                            nameSpace: project || baseNameSpace,
                             componentClass: args[0].value,
                             xtypes: [],
                             aliases: [],
@@ -142,7 +141,9 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: s
                             properties: [],
                             configs: [],
                             statics: [],
-                            privates: []
+                            privates: [],
+                            end: { line: 0, column: 1 },
+                            start: { line: 0, column: 1 }
                         };
 
                         if (isExpressionStatement(path.container)) {
@@ -203,37 +204,37 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: s
 
                         if (isObjectProperty(propertyConfig))
                         {
-                            componentInfo.configs.push(...parseConfig(propertyConfig));
+                            componentInfo.configs.push(...parseConfig(propertyConfig, componentInfo.componentClass));
                         }
                         logProperties("configs", componentInfo.configs);
 
                         if (isObjectProperty(propertyPrivates))
                         {
-                            componentInfo.privates.push(...parseConfig(propertyPrivates));
+                            componentInfo.privates.push(...parseConfig(propertyPrivates, componentInfo.componentClass));
                         }
                         logProperties("privates", componentInfo.privates);
 
                         if (isObjectProperty(propertyStatics))
                         {
-                            componentInfo.privates.push(...parseConfig(propertyStatics));
+                            componentInfo.privates.push(...parseConfig(propertyStatics, componentInfo.componentClass));
                         }
                         logProperties("statics", componentInfo.statics);
 
                         if (propertyProperty && propertyProperty.length)
                         {
-                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[]));
+                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass));
                         }
                         logProperties("properties", componentInfo.properties);
 
                         if (propertyMethod && propertyMethod.length)
                         {
-                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], !isFramework ? text : undefined));
+                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], !isFramework ? text : undefined, componentInfo.componentClass));
                         }
                         logProperties("methods", componentInfo.methods);
 
                         if (componentInfo.xtypes)
                         {
-                            componentInfo.xtypes.push(...parseXTypes(args[1], text));
+                            componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo.componentClass));
                         }
                         logProperties("xtypes", componentInfo.xtypes);
                     }
@@ -247,6 +248,9 @@ export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: s
     for (const c of components)
     {
         componentClassToWidgetsMapping[c.componentClass] = c.widgets;
+        c.widgets.forEach(xtype => {
+            widgetToComponentClassMapping[xtype] = c.componentClass;
+        });
     }
 
     return components;
@@ -398,7 +402,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
 }
 
 
-function parseConfig(propertyConfig: ObjectProperty)
+function parseConfig(propertyConfig: ObjectProperty, componentClass: string)
 {
     const configs: IConfig[] = [];
     if (isObjectExpression(propertyConfig.value))
@@ -418,7 +422,8 @@ function parseConfig(propertyConfig: ObjectProperty)
                         start: it.loc!.start,
                         end: it.loc!.end,
                         getter: "get" + utils.properCase(name),
-                        setter: "set" + utils.properCase(name)
+                        setter: "set" + utils.properCase(name),
+                        componentClass
                     });
                 }
             }
@@ -438,7 +443,7 @@ function parseExtend(propertyExtend: ObjectProperty): string | undefined
 }
 
 
-function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined): IMethod[]
+function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string): IMethod[]
 {
     const methods: IMethod[] = [];
     for (const m of propertyMethods)
@@ -449,7 +454,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             if (propertyName)
             {
                 const doc = getComments(m.leadingComments),
-                      params = parseParams(m, propertyName, text);
+                      params = parseParams(m, propertyName, text, componentClass);
                 if (doc && params.length)
                 {
                     for (const p of params)
@@ -494,7 +499,8 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     variables: parseVariables(m, propertyName, text),
                     since: getSince(doc),
                     private: doc?.includes("@private"),
-                    deprecated: doc?.includes("@deprecated")
+                    deprecated: doc?.includes("@deprecated"),
+                    componentClass
                 });
             }
         }
@@ -503,7 +509,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
 }
 
 
-function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
+function parseProperties(propertyProperties: ObjectProperty[], componentClass: string): IProperty[]
 {
     const properties: IProperty[] = [];
     propertyProperties.forEach((m) =>
@@ -520,7 +526,8 @@ function parseProperties(propertyProperties: ObjectProperty[]): IProperty[]
                     end: m.loc!.end,
                     since: getSince(doc),
                     private: doc?.includes("@private"),
-                    deprecated: doc?.includes("@deprecated")
+                    deprecated: doc?.includes("@deprecated"),
+                    componentClass
                 });
             }
         }
@@ -546,7 +553,7 @@ function parseRequires(propertyRequires: ObjectProperty)
 }
 
 
-function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined): IParameter[]
+function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, componentClass: string): IParameter[]
 {
     const params: IParameter[] = [];
     if (!text || !methodName) {
@@ -568,7 +575,7 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
                     declaration: DeclarationType.var,
                     start: p.loc!.start,
                     end: p.loc!.end,
-                    methodName
+                    methodName, componentClass
                 });
             }
         }
@@ -703,7 +710,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
 }
 
 
-function parseXTypes(objEx: ObjectExpression, text: string): IXtype[]
+function parseXTypes(objEx: ObjectExpression, text: string, componentClass: string): IXtype[]
 {
     const xType: IXtype[] = [];
     const line = objEx.loc!.start.line - 1;
@@ -758,7 +765,8 @@ function parseXTypes(objEx: ObjectExpression, text: string): IXtype[]
             xType.push({
                 name: valueNode.value,
                 start,
-                end
+                end,
+                componentClass
             });
         }
     });

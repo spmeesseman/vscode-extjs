@@ -19,6 +19,7 @@ export enum VariableType
 
 export interface IExtJsBase
 {
+    componentClass: string;
     name: string;
     start: IPosition;
     end: IPosition;
@@ -26,16 +27,14 @@ export interface IExtJsBase
 }
 
 
-export interface IComponent
+export interface IComponent extends IExtJsBase
 {
     aliases: string[];
     baseNameSpace: string;
-    componentClass: string;
     configs: IConfig[];
     deprecated?: boolean;
     doc?: string;
     extend?: string;
-    fsPath: string;
     isFramework: boolean;
     markdown?: any;
     methods: IMethod[];
@@ -162,7 +161,6 @@ export interface ISettings
 
 export interface IVariable extends IExtJsBase
 {
-    componentClass: string;
     methodName: string;
     declaration?: DeclarationType;
     type?: VariableType;
