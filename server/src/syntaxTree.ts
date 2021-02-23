@@ -2,6 +2,7 @@
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as log from "./log";
+import * as fs from "fs";
 import {
     IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
     DeclarationType, IParameter, utils, VariableType
@@ -63,9 +64,30 @@ export function getExtJsComponent(text: string)
 }
 
 
+export async function loadExtJsComponent(ast: string | undefined)
+{
+    if (ast)
+    {
+        const components: IComponent[] = JSON.parse(ast);
+        for (const c of components)
+        {
+            componentClassToWidgetsMapping[c.componentClass] = c.widgets;
+        }
+    }
+}
+
+
 export async function parseExtJsFile(fsPath: string, text: string, nameSpace?: string, isFramework?: boolean)
 {
-    const ast = parse(text);
+    let ast: any;
+
+    try {
+        ast = parse(text);
+    }
+    catch (ex) {
+        log.error(ex.toString());
+    }
+
     const components: IComponent[] = [];
 
     //

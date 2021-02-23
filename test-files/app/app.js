@@ -74,7 +74,7 @@ CCC
 
 		VSCodeExtJS.common.PhysicianDropdown.create();
 		VSCodeExtJS.common.UserDropdown.create();
-VSCodeExtJS.
+
 		const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown", {
 			hidden: false,
 			disabled: true

@@ -43,6 +43,11 @@ class PropertyDefinitionProvider implements DefinitionProvider
             lineText.match(new RegExp(`["']{1}[\\w.]*${property}.[\\w.]*["']{1}`)))
         {
             cmpType = ComponentType.Class;
+            //
+            // Strip off everything outside the quotes to get our full class name, i.e.
+            //
+            //     MyApp.common.Utilities
+            //
             lineText = lineText.replace(/^[\w\W][^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
             //
             // Set the property to the last piece of the class name.  We want the effect that clicking

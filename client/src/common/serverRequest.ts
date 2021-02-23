@@ -12,6 +12,11 @@ class ServerRequest
         this.client = client;
     }
 
+    async loadExtJsComponent(ast: string)
+    {
+        await this.client.sendRequest("loadExtJsComponent", ast);
+    }
+
     async parseExtJsFile(fsPath: string, nameSpace: string, text: string)
     {
         return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", JSON.stringify({ fsPath, text, nameSpace }));

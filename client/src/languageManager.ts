@@ -661,6 +661,7 @@ class ExtjsLanguageManager
         }
         else {
             components = JSON.parse(storedComponents);
+            await this.serverRequest.loadExtJsComponent(storedComponents);
         }
 
         //

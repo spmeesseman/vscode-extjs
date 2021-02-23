@@ -9,7 +9,7 @@ import {
 import {
 	TextDocument
 } from "vscode-languageserver-textdocument";
-import { parseExtJsFile, getExtJsComponent } from "./syntaxTree";
+import { parseExtJsFile, getExtJsComponent, loadExtJsComponent } from "./syntaxTree";
 import { ISettings, defaultSettings } from  "../../common";
 import { validateExtJsDocument, validateExtJsFile } from "./validation";
 
@@ -141,6 +141,21 @@ connection.onRequest("validateExtJsFile", async (param: any) =>
 {
     try {
         await validateExtJsFile(JSON.parse(param), connection, hasDiagnosticRelatedInformationCapability);
+    }
+    catch (error)
+    {
+        if (error instanceof SyntaxError) {
+            return null;
+        }
+        throw error;
+    }
+});
+
+
+connection.onRequest("loadExtJsComponent", async (ast: string) =>
+{
+    try {
+        await loadExtJsComponent(ast);
     }
     catch (error)
     {
