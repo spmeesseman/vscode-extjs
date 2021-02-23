@@ -189,7 +189,7 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
                     completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
                     addedItems.push(cCls);
 
-                    log.blank(1);
+                    log.blank(3);
                     log.write("      added inline completion item", 3);
                     log.value("         item", cCls, 3);
                 }

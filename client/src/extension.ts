@@ -6,6 +6,7 @@ import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } f
 import registerEnsureRequireCommand from "./commands/ensureRequire";
 import { registerProviders } from "./providers/manager";
 import { initStorage } from "./common/storage";
+import { initFsStorage } from "./common/fsStorage";
 import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 
@@ -22,7 +23,20 @@ export async function activate(context: vscode.ExtensionContext)
 
     log.write("The ExtJs Language Server is now active!");
 
+    //
+    // Init global local storage
+    //
     initStorage(context);
+    //
+    // Init FS storage for syntax caching, per project / workspace folder
+    //
+    // if (vscode.workspace.workspaceFolders) {
+    //     for (const wsf of vscode.workspace.workspaceFolders) {
+    //         initFsStorage(wsf.name, context);
+    //     }
+    // }
+    initFsStorage(context);
+
     registerProviders(context);
     await run(context);
 
@@ -30,6 +44,20 @@ export async function activate(context: vscode.ExtensionContext)
     extjsLangMgr = new ExtjsLanguageManager(serverRequest);
 
     registerCommands(context);
+
+    //
+    // Init/clear FS storage for syntax caching when a new project/workspace folder is added/removed
+    //
+    // const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async(_e) =>
+    // {
+    //     for (const wsf of _e.removed) {
+    //         // clearFsStorage(wsf.name, context);
+    //     }
+    //     for (const wsf of _e.added) {
+    //         initFsStorage(wsf.name, context);
+    //     }
+    // });
+    // context.subscriptions.push(workspaceWatcher);
 
     disposables = await extjsLangMgr.setup(context);
 }

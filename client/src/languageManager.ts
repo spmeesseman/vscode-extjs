@@ -7,9 +7,11 @@ import {
     ProgressLocation, TextDocument, TextEditor, window, workspace, Uri
 } from "vscode";
 import ServerRequest from "./common/ServerRequest";
+import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils } from  "../../common";
 import * as log from "./common/log";
+import * as clientUtils from "./common/clientUtils";
 
 
 let config: IConf[] = [];
@@ -284,7 +286,11 @@ class ExtjsLanguageManager
 
     private getStorageKey(fsPath: string)
     {
-        return fsPath;
+        const wsf = workspace.getWorkspaceFolder(Uri.parse(clientUtils.getUriPath(fsPath)));
+        if (wsf) {
+            return fsPath.replace(wsf.uri.fsPath, "");
+        }
+        return Uri.parse(fsPath).path;
     }
 
 
@@ -574,7 +580,13 @@ class ExtjsLanguageManager
                         //
                         // Index this file
                         //
-                        await this.indexFile(uri.fsPath, conf.name, text, "   ");
+                        try {
+                            await this.indexFile(uri.fsPath, conf.name, text, "   ");
+                        }
+                        catch (e) {
+                            log.error(e.toString());
+                            break;
+                        }
                         //
                         // Report progress
                         //
@@ -615,10 +627,10 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, nameSpace: string, text: string, logPad = "")
+    async indexFile(fsPath: string, project: string, text: string, logPad = "")
     {
         const storageKey = this.getStorageKey(fsPath),
-              storedComponents = storage?.get<string>(storageKey),
+              storedComponents = fsStorage?.get(project, storageKey),
               storedTimestamp = storage?.get<Date>(storageKey + "_TIMESTAMP");
         let components: IComponent[] | undefined;
 
@@ -630,7 +642,7 @@ class ExtjsLanguageManager
         //
 
         log.methodStart("indexing " + fsPath, 2, logPad, true, [
-            [ "namespace", nameSpace ],
+            [ "project", project ],
             [ "stored timestamp", storedTimestamp ]
         ]);
 
@@ -638,7 +650,7 @@ class ExtjsLanguageManager
         // Get components for this file from the Language Server or local storage if exists
         //
         if (!storedComponents) {
-            components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
+            components = await this.serverRequest.parseExtJsFile(fsPath, project, text);
         }
         else {
             components = JSON.parse(storedComponents);
@@ -764,10 +776,12 @@ class ExtjsLanguageManager
         //
         // Update local storage
         //
-        if (!storedComponents) {
-           await storage?.update(storageKey, JSON.stringify(components));
+        if (project) {
+            if (!storedComponents) {
+                await fsStorage?.update(project, storageKey, JSON.stringify(components));
+            }
+            await storage?.update(storageKey + "_TIMESTAMP", new Date());
         }
-        await storage?.update(storageKey + "_TIMESTAMP", new Date());
 
         log.methodDone("indexing " + fsPath, 2, logPad, true);
 
@@ -780,7 +794,7 @@ class ExtjsLanguageManager
         //
         // rc/conf file / app.json
         //
-        const debounceMs = 1500,
+        const debounceMs = 1250,
               disposables: Disposable[] = [],
               confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
 
@@ -1479,7 +1493,7 @@ async function parseAppDotJson(uri: Uri)
                     {
                         if (fwConf.dependencies.hasOwnProperty(dep))
                         {
-                            const fwPath = path.join("node_modules", dep);
+                            const fwPath = path.join("node_modules", dep).replace("\\", "/");
                             conf.classpath.push(fwPath);
                             log.value("   add ws.json framework path", fwPath, 2);
                             log.value("      fraamework version", fwConf.dependencies[dep], 2);

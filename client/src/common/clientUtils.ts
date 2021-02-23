@@ -1,6 +1,13 @@
 
-import { Range, Position, Uri, Location } from "vscode";
+import { Range, Position, Uri, Location, workspace, WorkspaceFolder } from "vscode";
 import { IPosition } from "../../../common";
+import * as path from "path";
+
+
+export function getUriPath(fsPath: string)
+{
+    return "file://" + fsPath.replace(/\\/g, "/").replace(/\:/g, "%3A");
+}
 
 
 export function toVscodePosition(position: IPosition)
