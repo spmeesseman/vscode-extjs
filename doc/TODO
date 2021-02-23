@@ -44,7 +44,7 @@
 ☐ Peek References
 	?
 
-☐ Quick Fix for invalidated xtype (xtype definition provider?)
+✔ Quick Fix for invalidated xtype (xtype definition provider?) @done(21-02-23 15:33)
 
 ☐ Bug - Function/method/property names of the same name get overwritten in the mappings
         If exist in more than one class
