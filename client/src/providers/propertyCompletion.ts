@@ -105,7 +105,7 @@ class PropertyCompletionItemProvider
             propCompletion[2].documentation = cmp?.markdown;
         }
 
-        return cmp ? propCompletion : [];
+        return cmp || kind === CompletionItemKind.Class ? propCompletion : [];
     }
 
 
@@ -180,21 +180,28 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
               amap = componentClassToAliasesMapping,
               completionItems: CompletionItem[] = [];
 
-        Object.keys(map).forEach((cls) =>
+        const _add = ((cls: string) =>
         {
             if (cls)
             {
                 const cCls = cls.split(".")[0];
                 if (addedItems.indexOf(cCls) === -1)
                 {
-                    completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
-                    addedItems.push(cCls);
-
+                    const cItems = this.createCompletionItem(cCls, cCls, CompletionItemKind.Class);
+                    if (cItems.length > 0) {
+                        completionItems.push(...cItems);
+                        addedItems.push(cCls);
+                    }
                     log.blank(3);
                     log.write("      added inline completion item", 3);
                     log.value("         item", cCls, 3);
                 }
             }
+        });
+
+        Object.keys(map).forEach((cls) =>
+        {
+            _add(cls);
         });
 
         //
@@ -204,18 +211,8 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
         {
             if (cls && alias)
             {
-                for (const a of alias)
-                {
-                    const cCls = a.split(".")[0];
-                    if (addedItems.indexOf(cCls) === -1)
-                    {
-                        completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
-                        addedItems.push(cCls);
-
-                        log.blank(3);
-                        log.write("      added inline completion item", 3);
-                        log.value("         item", cCls, 3);
-                    }
+                for (const a of alias) {
+                    _add(a);
                 }
             }
         });
@@ -365,8 +362,11 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
                 // completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
                 for (const sf of subComponents)
                 {
-                    log.value("   add sub-component", sf, 4);
-                    completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, CompletionItemKind.Class));
+                    if (!addedItems.includes(sf)) {
+                        log.value("   add sub-component", sf, 4);
+                        completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, CompletionItemKind.Class));
+                        addedItems.push(sf);
+                    }
                 }
             }
             // For local instance vars, only provide completion from the right function

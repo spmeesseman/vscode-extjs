@@ -165,16 +165,18 @@ class ExtjsLanguageManager
             // })
             // .trim();
 
-        const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/);
+        const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/),
+              maxLines = 75;
         let mode: MarkdownStringMode | undefined,
             indented = "",
             previousMode: MarkdownStringMode | undefined,
-            trailers: string[] = [];
+            trailers: string[] = [],
+            currentLine = 0;
 
-        docLines.forEach((line) =>
+        for (let line of docLines)
         {
             if (!line.trim()) {
-                return; // continue forEach()
+                continue; // continue forEach()
             }
 
             if (markdown.value.length > 0 && mode !== MarkdownStringMode.Code) {
@@ -203,7 +205,7 @@ class ExtjsLanguageManager
             log.value("   process line", line, 4);
 
             if (!line.trim()) {
-                return; // continue forEach()
+                continue; // continue forEach()
             }
 
             mode = getMode(line);
@@ -268,7 +270,12 @@ class ExtjsLanguageManager
             {
                 this.handleTextLine(line, markdown);
             }
-        });
+
+            ++currentLine;
+            if (currentLine >= maxLines) {
+                break;
+            }
+        }
 
         log.methodDone("build markdown string from comment", 4, logPad);
         return markdown;
@@ -370,7 +377,7 @@ class ExtjsLanguageManager
         {   //
             // Check for no type i.e. @param propName the description here
             //
-            if (!lineParts[1].match(/\{[A-Z]+\}/i))
+            if (!lineParts[1].match(/\{[A-Z(\[\])]+\}/i))
             {
                 lineType = "";
                 lineProperty = lineParts[1];
