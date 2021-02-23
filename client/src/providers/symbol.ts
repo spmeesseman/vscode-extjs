@@ -60,8 +60,8 @@ class SymbolProvider implements DocumentSymbolProvider
             }
         }
 
-        const location = toVscodeLocation({ line: 75, column: 9 }, { line: 75, column: 20 }, document.uri);
-        symbolInfo.push(new SymbolInformation("VSCodeExtJS", SymbolKind.Class, "testFn2", location));
+        // const location = toVscodeLocation({ line: 75, column: 9 }, { line: 75, column: 20 }, document.uri);
+        // symbolInfo.push(new SymbolInformation("VSCodeExtJS", SymbolKind.Class, "testFn2", location));
 
         log.methodDone("provide document symbols", 2, "", true);
 

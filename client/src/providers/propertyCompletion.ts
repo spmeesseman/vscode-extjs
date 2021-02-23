@@ -4,8 +4,8 @@ import {
     TextDocument, CompletionItemKind
 } from "vscode";
 import {
-    methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance, getComponentByFile,
-    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias
+    methodToComponentClassMapping, configToComponentClassMapping, propertyToComponentClassMapping, getComponentInstance, getComponentByFile, getSubComponentNames,
+    getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile, getComponentByAlias, componentClassToAliasesMapping
 } from "../languageManager";
 import * as log from "../common/log";
 import { configuration } from "../common/configuration";
@@ -177,6 +177,7 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
     getCompletionItems(addedItems: string[]): CompletionItem[]
     {
         const map = componentClassToComponentsMapping,
+              amap = componentClassToAliasesMapping,
               completionItems: CompletionItem[] = [];
 
         Object.keys(map).forEach((cls) =>
@@ -192,6 +193,26 @@ class InlineCompletionItemProvider extends PropertyCompletionItemProvider implem
                     log.blank(3);
                     log.write("      added inline completion item", 3);
                     log.value("         item", cCls, 3);
+                }
+            }
+        });
+
+        Object.entries(amap).forEach(([ cls, alias ]) =>
+        {
+            if (cls && alias)
+            {
+                for (const a of alias)
+                {
+                    const cCls = a.split(".")[0];
+                    if (addedItems.indexOf(cCls) === -1)
+                    {
+                        completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
+                        addedItems.push(cCls);
+
+                        log.blank(3);
+                        log.write("      added inline completion item", 3);
+                        log.value("         item", cCls, 3);
+                    }
                 }
             }
         });
@@ -332,33 +353,50 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
             completionItems.push(...this.getChildClsCompletionItems(component.componentClass, addedItems));
         }
         else //
-        {   // For local instance vars, only provide completion from the right function
-            //
-            component = getComponentByFile(fsPath);
-            if (component)
+        {
+            log.write("   try sub-component tree", 3);
+            const subComponents = getSubComponentNames(lineCls);
+            if (subComponents.length > 0)
             {
-                let lCmp: any;
-                for (const m of component.methods)
+                log.write("   found sub-components", 3);
+                // completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
+                for (const sf of subComponents)
                 {
-                    if (m.name === fnText)
+                    log.value("   add sub-component", sf, 4);
+                    completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, CompletionItemKind.Class));
+                }
+            }
+            // For local instance vars, only provide completion from the right function
+            //
+            else {
+                component = getComponentByFile(fsPath);
+                if (component)
+                {
+                    let lCmp: any;
+                    for (const m of component.methods)
                     {
-                        if (!m.variables) { continue; }
-                        for (const p of m.variables)
+                        if (m.name === fnText)
                         {
-                            if (p.name === lineCls) {
-                                lCmp = getComponentInstance(lineCls, fsPath);
-                                _pushItems(lCmp);
+                            if (!m.variables) { continue; }
+                            for (const p of m.variables)
+                            {
+                                if (p.name === lineCls) {
+                                    lCmp = getComponentInstance(lineCls, fsPath);
+                                    _pushItems(lCmp);
+                                    break;
+                                }
+                            }
+                            if (lCmp) {
                                 break;
                             }
                         }
-                        if (lCmp) {
-                            break;
-                        }
                     }
                 }
-            }
-            else {
-                completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
+                else {
+                    // completionItems.push(...this.getChildClsCompletionItems(lineCls, addedItems));
+                    const subComponents = getSubComponentNames(lineCls);
+                    completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
+                }
             }
         }
 

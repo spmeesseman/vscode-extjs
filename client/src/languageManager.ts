@@ -26,7 +26,6 @@ export const xtypeToComponentClassMapping: { [method: string]: string | undefine
 export const fileToComponentClassMapping: { [fsPath: string]: string | undefined } = {};
 
 const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
-const componentClassToAliasesMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
 const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
 const componentClassToXTypesMapping: { [componentClass: string]: IXtype[] | undefined } = {};
@@ -35,6 +34,7 @@ const componentClassToPropertiesMapping: { [componentClass: string]: IProperty[]
 const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
 export const componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
 export const componentClassToFilesMapping: { [componentClass: string]: string | undefined } = {};
+export const componentClassToAliasesMapping: { [componentClass: string]: string[] | undefined } = {};
 
 enum MarkdownChars
 {
@@ -142,7 +142,7 @@ class ExtjsLanguageManager
         //     https://clojure.org/community/editing
         //
 
-        log.methodStart("build markdown string from comment", 2, logPad, false, [["comment", comment]]);
+        log.methodStart("build markdown string from comment", 4, logPad, false, [["comment", comment]]);
 
         const commentFmt = comment?.trim()
             //
@@ -249,7 +249,7 @@ class ExtjsLanguageManager
             }
             else if (mode === MarkdownStringMode.Code)
             {
-                log.value("      indented line", line, 4);
+                log.value("      indented line", line, 5);
                 indented += MarkdownChars.NewLine + line.trim();
             }
             else if (mode === MarkdownStringMode.Returns)
@@ -270,7 +270,7 @@ class ExtjsLanguageManager
             }
         });
 
-        log.methodDone("build markdown string from comment", 2);
+        log.methodDone("build markdown string from comment", 4, logPad);
         return markdown;
     }
 
@@ -312,7 +312,7 @@ class ExtjsLanguageManager
                 }
             }
         }
-        log.value("      insert class line", classLine, 4);
+        log.value("      insert class line", classLine, 5);
         markdown.appendMarkdown(classLine);
     }
 
@@ -321,7 +321,7 @@ class ExtjsLanguageManager
     {
         let textLine = line.trim();
         textLine = this.italic(textLine, false, true);
-        log.value("      insert deprecated line", textLine, 4);
+        log.value("      insert deprecated line", textLine, 5);
         markdown.appendMarkdown(textLine);
     }
 
@@ -336,7 +336,7 @@ class ExtjsLanguageManager
         else {
             cfgLine = line.trim();
         }
-        log.value("      insert object line", cfgLine, 4);
+        log.value("      insert object line", cfgLine, 5);
         markdown.appendMarkdown(cfgLine);
     }
 
@@ -345,7 +345,7 @@ class ExtjsLanguageManager
     {
         if (!line.startsWith("@"))
         {
-            log.value("      insert param text line", line, 4);
+            log.value("      insert param text line", line, 5);
             markdown.appendMarkdown(line);
             return;
         }
@@ -409,8 +409,8 @@ class ExtjsLanguageManager
             return;
         }
 
-        log.value("          name", lineProperty, 4);
-        log.value("          type", lineType, 4);
+        log.value("          name", lineProperty, 5);
+        log.value("          type", lineType, 5);
 
         if (lineType)
         {
@@ -438,7 +438,7 @@ class ExtjsLanguageManager
         if (lineTrail) {
             paramLine += " " + MarkdownChars.LongDash + lineTrail;
         }
-        log.value("      param line", paramLine, 4);
+        log.value("      param line", paramLine, 5);
         if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
             markdown.appendMarkdown(MarkdownChars.NewLine);
         }
@@ -467,7 +467,7 @@ class ExtjsLanguageManager
                                     .replace("}", MarkdownChars.TypeWrapEnd));
             });
         });
-        log.value("      insert returns line", rtnLine, 4);
+        log.value("      insert returns line", rtnLine, 5);
         markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
     }
 
@@ -476,7 +476,7 @@ class ExtjsLanguageManager
     {
         let textLine = line.trim();
         textLine = this.italic(textLine, false, true);
-        log.value("      insert tag line", textLine, 4);
+        log.value("      insert tag line", textLine, 5);
         markdown.appendMarkdown(textLine);
     }
 
@@ -499,7 +499,7 @@ class ExtjsLanguageManager
                 return this.boldItalic(matched);
         });
         }
-        log.value("      insert text line", textLine, 4);
+        log.value("      insert text line", textLine, 5);
         markdown.appendMarkdown(textLine);
     }
 
@@ -736,14 +736,14 @@ class ExtjsLanguageManager
             // Map methods found to the component class
             //
             methods.forEach(method => {
-                method.markdown = this.commentToMarkdown(method.name, method.doc);
+                method.markdown = this.commentToMarkdown(method.name, method.doc, logPad + "   ");
                 methodToComponentClassMapping[method.name] = componentClass;
                 if (method.params)
                 {
                     for (const p of method.params)
                     {
                         if (p.doc) {
-                            p.markdown = this.commentToMarkdown(p.name, p.doc);
+                            p.markdown = this.commentToMarkdown(p.name, p.doc, logPad + "   ");
                         }
                     }
                 }
@@ -753,7 +753,7 @@ class ExtjsLanguageManager
             // Map config properties found to the component class
             //
             configs.forEach(config => {
-                config.markdown = this.commentToMarkdown(config.name, config.doc);
+                config.markdown = this.commentToMarkdown(config.name, config.doc, logPad + "   ");
                 configToComponentClassMapping[config.name] = componentClass;
             });
 
@@ -761,7 +761,7 @@ class ExtjsLanguageManager
             // Map properties found to the component class
             //
             properties.forEach(property => {
-                property.markdown = this.commentToMarkdown(property.name, property.doc);
+                property.markdown = this.commentToMarkdown(property.name, property.doc, logPad + "   ");
                 propertyToComponentClassMapping[property.name] = componentClass;
             });
 
@@ -1364,6 +1364,29 @@ function getMode(line: string): MarkdownStringMode | undefined
         mode = MarkdownStringMode.Code;
     }
     return mode;
+}
+
+
+export function getSubComponentNames(componentClass: string): string[]
+{
+    const subComponentNames: string[] = [],
+          map = componentClassToComponentsMapping;
+
+    log.write("get component by class", 1);
+    log.value("   component class", componentClass, 2);
+
+    Object.keys(map).forEach((cls) =>
+    {
+        if (cls && cls.startsWith(componentClass))
+        {
+            const subCMp = cls.replace(componentClass + ".", "").split(".")[0];
+            if (subCMp) {
+                subComponentNames.push(subCMp);
+            }
+        }
+    });
+
+    return subComponentNames;
 }
 
 
