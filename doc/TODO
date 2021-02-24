@@ -29,7 +29,7 @@
 	If "timeout" is tagged with @deprectaed in the comments, then warning underling
 	Add formatted hover markdown for all methods/properties when deprecated
 
-☐ Dot Key Selection Intellisense
+✔ Dot Key Selection Intellisense @done(21-02-23 21:20)
 	Same as how keying 'enter' behaves on an Intellisense selection
 
 ☐ Go To Type Definition

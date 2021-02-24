@@ -252,7 +252,7 @@ class ExtjsLanguageManager
             }
             else if (mode === MarkdownStringMode.Param)
             {
-                this.handleParamLine(line, trailers, markdown);
+                this.handleParamLine(line, trailers, currentLine === 0, markdown);
             }
             else if (mode === MarkdownStringMode.Code)
             {
@@ -353,7 +353,7 @@ class ExtjsLanguageManager
     }
 
 
-    private handleParamLine(line: string, trailers: string[], markdown: MarkdownString)
+    private handleParamLine(line: string, trailers: string[], useCode: boolean, markdown: MarkdownString)
     {
         if (!line.startsWith("@"))
         {
@@ -445,16 +445,28 @@ class ExtjsLanguageManager
             lineValue = paramParts[1];
         }
 
-        let paramLine = this.italic("@param", false, true) + this.boldItalic(lineProperty, false, true) +
+        let paramLine: string;
+
+        if (!useCode) {
+            paramLine = this.italic("@param", false, true) + this.boldItalic(lineProperty, false, true) +
                         this.italic(MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd);
-        if (lineTrail) {
-            paramLine += " " + MarkdownChars.LongDash + lineTrail;
+            if (lineTrail) {
+                paramLine += (" " + MarkdownChars.LongDash + lineTrail);
+            }
+            if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
+                markdown.appendMarkdown(MarkdownChars.NewLine);
+            }
+            markdown.appendMarkdown(paramLine);
         }
+        else {
+            paramLine = lineProperty + " " + MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd;
+            if (lineTrail) {
+                paramLine += " - " + lineTrail;
+            }
+            markdown.appendCodeblock(paramLine);
+        }
+
         log.value("      param line", paramLine, 5);
-        if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
-            markdown.appendMarkdown(MarkdownChars.NewLine);
-        }
-        markdown.appendMarkdown(paramLine);
 
         if (lineValue)
         {
