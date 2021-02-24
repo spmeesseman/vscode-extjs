@@ -1,7 +1,7 @@
 
 import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
-    TextDocument, CompletionItemKind
+    TextDocument, CompletionItemKind, window
 } from "vscode";
 
 import {
@@ -9,18 +9,70 @@ import {
     getComponent, getConfig, getMethod, getProperty, componentClassToComponentsMapping, getClassFromFile
 } from "../languageManager";
 
-import { EOL } from "os";
+// import { EOL } from "os";
 import * as log from "../common/log";
 import { configuration } from "../common/configuration";
 import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common";
 
 
-class PropertyCompletionItemProvider
+
+class ExtJsCompletionItemProvider implements CompletionItemProvider
 {
+
+    provideCompletionItems(document: TextDocument, position: Position)
+    {
+        const addedItems: string[] = [],
+              lineText = document.lineAt(position).text.substr(0, position.character),
+              fnText = this.getFunctionName(document, position),
+              completionItems: CompletionItem[] = [];
+        //
+        // Check for "." since VSCode 24/7 Intellisense will trigger every character no matter what
+        // the trigger char(s) is for this provider.  24/7 Intellisense can be turned off in settings.json:
+        //
+        //    "editor.quickSuggestions": false
+        //
+
+        if (!lineText) {
+            return undefined;
+        }
+
+        if (!lineText.includes(".")) {
+            completionItems.push(...this.getInlineCompletionItems(lineText));
+            return completionItems;
+        }
+
+        log.methodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
+
+        completionItems.push(...this.getCompletionItems(lineText, fnText, document.uri.fsPath, addedItems));
+
+        // completionItems.push({
+        //     label: "Ext.create",
+        //     kind: CompletionItemKind.Keyword,
+        //     insertText: `Ext.create(\"\",${EOL}{${EOL}${EOL}});`, // SnippetString('Good ${1|morning,afternoon,evening|}. It is ${1}, right?')
+        //     // documentation: new MarkdownString("Inserts a snippet that lets you select the _appropriate_ part of the day for your greeting.")
+        // });
+
+        //
+        // A completion item that retriggers IntelliSense when being accepted, the `command`-property is
+        // set which the editor will execute after completion has been inserted. Also, the `insertText`
+        // is set so that a space is inserted after `new`
+        //
+        // completionItems.push({
+        //     label: "new",
+        //     kind: CompletionItemKind.Keyword,
+        //     insertText: "new ",
+        //     command: { command: "editor.action.triggerSuggest", title: "Re-trigger completions..." }
+        // });
+
+        log.value("   # of added items", completionItems.length, 3);
+        log.methodDone("provide dot completion items", 2, "", true);
+
+        return completionItems.length > 0 ? completionItems : undefined;
+    }
+
 
     createCompletionItem(property: string, cmpClass: string, kind: CompletionItemKind): CompletionItem[]
     {
-        let markdown: string | undefined;
         const propCompletion: CompletionItem[] = [];
 
         let cmp: IComponent | IMethod | IProperty | IConfig | undefined;
@@ -40,69 +92,82 @@ class PropertyCompletionItemProvider
                 break;
         }
 
+        //
+        // Hide private properties according to user settings (default true).
+        //
         if (cmp?.private && configuration.get<boolean>("intellisenseIncludePrivate") !== true)
         {
             return propCompletion;
         }
 
+        //
+        // Hide deprecated properties according to user settings (default true).
+        //
         if (cmp?.deprecated && configuration.get<boolean>("intellisenseIncludeDeprecated") !== true)
         {
             return propCompletion;
         }
 
+        //
+        // Create completion item
+        //
         const completionItem: CompletionItem = new CompletionItem(property, kind);
-        completionItem.commitCharacters = [ "." ];
+
+        //
+        // For methods/functions, we want the trigger character to be "(", otherwise, "."
+        //
+        if (kind === CompletionItemKind.Method || kind === CompletionItemKind.Function)
+        {
+            completionItem.commitCharacters = [ "(" ];
+        }
+        else {
+            completionItem.commitCharacters = [ "." ];
+        }
+
+        //
+        // Show/hide deprecated properties according to user settings (default true).
+        // If this property is hidden by user preference, this methid exited already above.
+        //
+        if (cmp?.deprecated)
+        {
+            completionItem.insertText = property;
+            completionItem.label = completionItem.label + " (deprecated)";
+        }
+
+        //
+        // Show/hide private properties according to user settings (default false)
+        // If this property is hidden by user preference, this methid exited already above.
+        //
+        if (cmp?.private)
+        {
+            completionItem.insertText = property;
+            completionItem.label = completionItem.label + " (private)";
+        }
+
+        //
+        // Show  `since` properties if not deprecated
+        //
+        if (cmp?.since && !cmp?.deprecated)
+        {
+            completionItem.insertText = property;
+            completionItem.label = completionItem.label + ` (since ${cmp.since})`;
+        }
+
+        //
+        // Documentation / JSDoc / Leading Comments
+        //
+        completionItem.documentation = cmp?.markdown;
+
+        //
+        // Add the populated completion item to the array of items to be returned to the caller,
+        // if this is a `config`, then we are going to add getter/setter items as well
+        //
         propCompletion.push(completionItem);
 
         //
-        // FunctionProvider will call with property empty
+        // If this is a `config` property (i.e. IConfig), then add getter/setter
         //
-        if (cmp && "params" in cmp && kind === CompletionItemKind.Function) // function params
-        {
-            propCompletion[0].kind = CompletionItemKind.Property;
-            propCompletion[0].label = "";
-            if (cmp.params)
-            {
-                for (const p of cmp.params)
-                {
-                    if (p.doc) {
-                        markdown = p.doc;
-                    }
-                }
-            }
-            if (!markdown) {
-                cmp = undefined;
-            }
-        }
-        else
-        {
-            markdown = cmp?.markdown;
-
-            if (cmp?.deprecated)
-            {
-                propCompletion[0].insertText = property;
-                propCompletion[0].label = propCompletion[0].label + " (deprecated)";
-            }
-
-            if (cmp?.private)
-            {
-                propCompletion[0].insertText = property;
-                propCompletion[0].label = propCompletion[0].label + " (private)";
-            }
-
-            if (cmp?.since && !cmp?.deprecated)
-            {
-                propCompletion[0].insertText = property;
-                propCompletion[0].label = propCompletion[0].label + ` (since ${cmp.since})`;
-            }
-        }
-
-        propCompletion[0].documentation = markdown;
-
-        //
-        // If this is a config property (i.e. IConfig), then add getter/setter
-        //
-        if (cmp && "getter" in cmp)
+        if (kind === CompletionItemKind.Property && cmp && "getter" in cmp)
         {
             propCompletion.push(new CompletionItem(cmp.getter, CompletionItemKind.Method));
             propCompletion.push(new CompletionItem(cmp.setter, CompletionItemKind.Method));
@@ -111,169 +176,6 @@ class PropertyCompletionItemProvider
         }
 
         return cmp || kind === CompletionItemKind.Class ? propCompletion : [];
-    }
-
-
-    private getMethodCmp(property: string, cmpClass: string): IMethod | IConfig | undefined
-    {
-        let cmp: IMethod | IConfig | undefined = getMethod(cmpClass, property);
-        if (!cmp)
-        {   //
-            // A config property:
-            //
-            //     user: null
-            //
-            // Will have the folloiwng getter/setter created by the framework if not defined
-            // on the object:
-            //
-            //     getUser()
-            //     setUser(value)
-            //
-            // Check for these config methods, see if they exist for this property
-            //
-            if (utils.isGetterSetter(property))
-            {   //
-                // Extract the property name from the getter/setter.  Note the actual config
-                // property will be a lower-case-first-leter version of the extracted property
-                //
-                const gsProperty = utils.lowerCaseFirstChar(property.substring(3));
-                cmp = getConfig(cmpClass, gsProperty);
-                if (!cmp) {
-                    cmp = getConfig(cmpClass, property);
-                }
-            }
-        }
-        return cmp;
-    }
-
-
-    private getPropertyCmp(property: string, cmpClass: string): IProperty | IConfig | undefined
-    {
-        let cmp: IProperty | IConfig | undefined = getConfig(cmpClass, property);
-        if (!cmp) {
-            cmp = getProperty(cmpClass, property);
-        }
-        return cmp;
-    }
-
-}
-
-
-class InlineCompletionItemProvider extends PropertyCompletionItemProvider implements CompletionItemProvider
-{
-
-    provideCompletionItems(document: TextDocument, position: Position)
-    {
-        const addedItems: string[] = [],
-            lineText = document.lineAt(position).text.substr(0, position.character),
-            completionItems: CompletionItem[] = [];
-
-        log.methodStart("provide inline completion items", 2, "", true, [["line text", lineText]]);
-
-        completionItems.push(...this.getCompletionItems(addedItems));
-
-        // completionItems.push({
-        //     label: "Ext.create",
-        //     kind: CompletionItemKind.Keyword,
-        //     insertText: `Ext.create(\"\",${EOL}{${EOL}${EOL}});`, // SnippetString('Good ${1|morning,afternoon,evening|}. It is ${1}, right?')
-        //     // documentation: new MarkdownString("Inserts a snippet that lets you select the _appropriate_ part of the day for your greeting.")
-        // });
-
-        //
-        // A completion item that retriggers IntelliSense when being accepted, the `command`-property is
-        // set which the editor will execute after completion has been inserted. Also, the `insertText`
-        // is set so that a space is inserted after `new`
-        //
-        completionItems.push({
-            label: "new",
-            kind: CompletionItemKind.Keyword,
-            insertText: "new ",
-            command: { command: "editor.action.triggerSuggest", title: "Re-trigger completions..." }
-        });
-
-        log.value("   # of added items", completionItems.length, 3);
-        log.methodDone("provide inline completion items", 2, "", true);
-
-        return completionItems.length > 0 ? completionItems : undefined;
-    }
-
-
-    getCompletionItems(addedItems: string[]): CompletionItem[]
-    {
-        const map = componentClassToComponentsMapping,
-              amap = componentClassToAliasesMapping,
-              completionItems: CompletionItem[] = [];
-
-        const _add = ((cls: string) =>
-        {
-            if (cls)
-            {
-                const cCls = cls.split(".")[0];
-                if (addedItems.indexOf(cCls) === -1)
-                {
-                    const cItems = this.createCompletionItem(cCls, cCls, CompletionItemKind.Class);
-                    if (cItems.length > 0) {
-                        completionItems.push(...cItems);
-                        addedItems.push(cCls);
-                    }
-                    log.blank(3);
-                    log.write("      added inline completion item", 3);
-                    log.value("         item", cCls, 3);
-                }
-            }
-        });
-
-        Object.keys(map).forEach((cls) =>
-        {
-            _add(cls);
-        });
-
-        //
-        // Aliases
-        //
-        Object.entries(amap).forEach(([ cls, alias ]) =>
-        {
-            if (cls && alias)
-            {
-                for (const a of alias) {
-                    _add(a);
-                }
-            }
-        });
-
-        return completionItems;
-    }
-
-}
-
-
-class DotCompletionItemProvider extends PropertyCompletionItemProvider implements CompletionItemProvider
-{
-
-    provideCompletionItems(document: TextDocument, position: Position)
-    {
-        const addedItems: string[] = [],
-              lineText = document.lineAt(position).text.substr(0, position.character),
-              fnText = this.getFunctionName(document, position),
-              completionItems: CompletionItem[] = [];
-        //
-        // Check for "." since VSCode 24/7 Intellisense will trigger every character no matter what
-        // the trigger char(s) is for this provider.  24/7 Intellisense can be turned off in settings.json:
-        //
-        //    "editor.quickSuggestions": false
-        //
-        if (!lineText || !lineText.endsWith(".")) {
-            return undefined;
-        }
-
-        log.methodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
-
-        completionItems.push(...this.getCompletionItems(lineText, fnText, document.uri.fsPath, addedItems));
-
-        log.value("   # of added items", completionItems.length, 3);
-        log.methodDone("provide dot completion items", 2, "", true);
-
-        return completionItems.length > 0 ? completionItems : undefined;
     }
 
 
@@ -308,10 +210,18 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
     }
 
 
+    /**
+     * @method getCompletionItems
+     *
+     * @param lineText The complete text of the line of the current trigger position.
+     * @param fnText
+     * @param fsPath The filesystem path to the JavasSript class file.
+     * @param addedItems Array holding item labels already added in this request.
+     */
     private getCompletionItems(lineText: string, fnText: string | undefined, fsPath: string, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [],
-              lineCls = lineText?.substring(0, lineText.length - 1).trim();
+              lineCls = lineText?.substring(0, lineText.lastIndexOf(".")).trim();
 
         const _pushItems = ((cmp?: IComponent) =>
         {
@@ -571,20 +481,110 @@ class DotCompletionItemProvider extends PropertyCompletionItemProvider implement
         return completionItems;
     }
 
+
+    private getInlineCompletionItems(lineText: string): CompletionItem[]
+    {
+        const map = componentClassToComponentsMapping,
+              amap = componentClassToAliasesMapping,
+              addedItems: string[] = [],
+              completionItems: CompletionItem[] = [];
+
+        const _add = ((cls: string) =>
+        {
+            if (cls)
+            {
+                const cCls = cls.split(".")[0];
+                if (addedItems.indexOf(cCls) === -1)
+                {
+                    const cItems = this.createCompletionItem(cCls, cCls, CompletionItemKind.Class);
+                    if (cItems.length > 0) {
+                        completionItems.push(...cItems);
+                        addedItems.push(cCls);
+                    }
+                    log.blank(3);
+                    log.write("      added inline completion item", 3);
+                    log.value("         item", cCls, 3);
+                }
+            }
+        });
+
+        Object.keys(map).forEach((cls) =>
+        {
+            _add(cls);
+        });
+
+        //
+        // Aliases
+        //
+        Object.entries(amap).forEach(([ cls, alias ]) =>
+        {
+            if (cls && alias)
+            {
+                for (const a of alias) {
+                    _add(a);
+                }
+            }
+        });
+
+        return completionItems;
+    }
+
+
+    private getMethodCmp(property: string, cmpClass: string): IMethod | IConfig | undefined
+    {
+        let cmp: IMethod | IConfig | undefined = getMethod(cmpClass, property);
+        if (!cmp)
+        {   //
+            // A config property:
+            //
+            //     user: null
+            //
+            // Will have the folloiwng getter/setter created by the framework if not defined
+            // on the object:
+            //
+            //     getUser()
+            //     setUser(value)
+            //
+            // Check for these config methods, see if they exist for this property
+            //
+            if (utils.isGetterSetter(property))
+            {   //
+                // Extract the property name from the getter/setter.  Note the actual config
+                // property will be a lower-case-first-leter version of the extracted property
+                //
+                const gsProperty = utils.lowerCaseFirstChar(property.substring(3));
+                cmp = getConfig(cmpClass, gsProperty);
+                if (!cmp) {
+                    cmp = getConfig(cmpClass, property);
+                }
+            }
+        }
+        return cmp;
+    }
+
+
+    private getPropertyCmp(property: string, cmpClass: string): IProperty | IConfig | undefined
+    {
+        let cmp: IProperty | IConfig | undefined = getConfig(cmpClass, property);
+        if (!cmp) {
+            cmp = getProperty(cmpClass, property);
+        }
+        return cmp;
+    }
+
 }
 
 
 function registerPropertyCompletionProvider(context: ExtensionContext)
 {
-    const inlineTriggers = [
+    const triggerChars = [
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
         "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-        "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_"
+        "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_", "."
     ];
     context.subscriptions.push(
-        languages.registerCompletionItemProvider("javascript", new InlineCompletionItemProvider(), ...inlineTriggers),
-        languages.registerCompletionItemProvider("javascript", new DotCompletionItemProvider(), ".")
+        languages.registerCompletionItemProvider("javascript", new ExtJsCompletionItemProvider(), ...triggerChars)
     );
 }
 
