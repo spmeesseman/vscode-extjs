@@ -20,7 +20,14 @@
   - [NOT YET RELEASED!!  DO NOT INSTALL](#not-yet-released--do-not-install)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
-  - [Getting Started](#getting-started)
+  - [Configuration](#configuration)
+    - [The app.json ExtJs Project File](#the-appjson-extjs-project-file)
+    - [The .extjsrc.json Configuration File](#the-extjsrcjson-configuration-file)
+    - [The include Setting](#the-include-setting)
+    - [Required Configuration Properties](#required-configuration-properties)
+      - [Required Configuration Property - `name`](#required-configuration-property---name)
+      - [Required Configuration Property - `classpath`](#required-configuration-property---classpath)
+  - [Versus the Sencha Extension](#versus-the-sencha-extension)
   - [ESLint](#eslint)
   - [Sencha ESLint Plugin](#sencha-eslint-plugin)
   - [Caching](#caching)
@@ -41,7 +48,7 @@ ExtJs Intellisense and Language Server, additional functionality that the Sencha
 - XType Validation and Completion (Credits to Original Author **qzsiniong**)
 - Method and Class Validation
 
-## Getting Started
+## Configuration
 
 Assuming a standard JavaScript linter is already in place, the ExtJs Language Server attempts to provide the missing functionlality that the standard JavaScript Language Server cannot handle due to the nature of the ExtJS class definitions, which are basically just one function expression per class file as far as a standard JavaScript parser is concerned.
 
@@ -53,33 +60,73 @@ This language server looks at your entire workspace, whether single or multi roo
 2. .extjsrc.json
 3. settings.json / VSCode Settings
 
+### The app.json ExtJs Project File
+
 The **app.json** file is a part of all Sencha Cmd and Sencha ext-gen generated Open Tooling projects.  If an app.json file is located, the namespaces and classpaths are extracted and added to indexing.  If a corresponding **workspace.json** file is located in the same directory as an **app.json** file, classpaths are extracted from the packages.dirs propert and added to indexing.  The *packages.dir* property should be a comma delimited string of package paths included in the application classpath, these normally specify the paths to the packages included in the *requires* array property of the **app.json** file.
 
+### The .extjsrc.json Configuration File
+
 The **.extjsrc.json** / **.extjsrc** file is a custom file that can be placed into any directory.  If an .extjsrc file is located, the namespace and classpaths are extracted and added to indexing.
+
+The **.extjsrc** file can contain any of the defined properties of a Sencha ExtJS project **app.json** file, but must in the least contain the following two properties:
+
+1. name
+2. classpath
+
+### The include Setting
 
 The **include** path can be set to a string or an array of strings of additional paths to index.  These strings must be in the form:
 
     NAME|RELATIVE_DIRECTORY
 
-The *NAME* part represents the **name** filed described below.  The *RELATIVE_DIRECTORY* is a directory that is *relative* to the workspace folder it resides in.
+The `NAME` part represents the `name` field [described below](#required-configuration-property---name).  The `RELATIVE_DIRECTORY` is a directory that is *relative* to the workspace folders and represents the `classpath` field [described below](#required-configuration-property---classpath).
 
-The app.json/.extjsrc file can contain any of the defined properties of a Sencha ExtJS project, but must in the least contain the following two properties:
+### Required Configuration Properties
 
-1. name
-2. classpath
+Whether or not an **app.json**, **.extjsrc.json**, or **include** path is used, there are two required properties that must be present.  For **include** paths, see the [section above](#the-include-setting) describing how to specify both of these properties in the Settings entries.
 
-The **name** is the project name, or main project namespace.  FOr example, if your ExtJS files are defined like:
+#### Required Configuration Property - `name`
+
+The `name` is a string specifying the project name, or main project namespace.  FOr example, if your ExtJS files are defined like:
 
     VSCodeExtJs.view.common.Users
     VSCodeExtJs.view.common.Admins
 
-Then the default namespace / project name, in most cases, would be "VSCodeExtJS".  This field corresponds to the **name** property of an **app.json** file.
+Then the default namespace / project name, in most cases, would be "VSCodeExtJS".  This field corresponds to the `name` property of an **app.json** file.
 
-The **classpath** is a string, or an array of strings, of where the ExtJS JavaScript files can be located.  This field corresponds to the **classpath** property of an **app.json** file.
+#### Required Configuration Property - `classpath`
 
-Note that classpaths defined in toolkit blocks in app.json will be merged into the main object classpath for indexing.
+The `classpath` is a string, or an array of strings, of where the ExtJS JavaScript files can be located.  This field corresponds to the `classpath` property of an **app.json** file.
+
+Note that classpaths defined in toolkit blocks in **app.json** will be merged into the main object classpath for indexing.
 
 That's it, ExtJS Languge Server should start indexing your files once a valid configuration file has been found.
+
+## Versus the Sencha Extension
+
+This extension is unable to perform the app/workspace commands using Sencha Cmd that the Sencha extension provides.
+
+Aside from that, the ExtJs Language Server provides everything else it is capable of, in addition to the following:
+
+1. Free :)
+2. `Intellisense` with Full `JSDoc`.
+3. Method Signature / inline parameter helper with `JsDoc`.
+4. Hover `JsDoc` for all classes, methods, properties and configs.
+5. Hover `JsDoc` for xtype and class string literals.
+6. Static vs. Instance `Intellisense`.
+7. `Go To Definition` for xtype string literals.
+8. Supports `Multi-Root Workspace` and any number of class paths.
+9. `XType validation` and `requires` field checking.
+10. Diagnostic `Quick Fix` for invalidated xtype declarations.
+11. Parses **app.json**, **workspace.json**, and **package.json** files for `auto-import of classpaths`, including dependencies.
+12. Turn on/off the inclusion of deprecated members into `Intellisense` directly in VSCode Settings.
+13. Turn on/off the inclusion of private members into `Intellisense` directly in VSCode Settings.
+14. Configure specific classpaths for Indexing directly in VSCode Settings.
+15. Since, Deprecated, and Private `JsDoc` tags and `Intellisense` tags.
+16. Parsing performance is slightly slower the first time the extensionl loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
+17. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
+18. Other custom validations.
+19. Doesn't require yet another .sencha directory to be created.
 
 ## ESLint
 
