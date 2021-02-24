@@ -3,6 +3,7 @@
 'use strict';
 
 const path = require('path');
+const exec = require('child_process').exec;
 
 /**
  * @type {import('webpack').Configuration}
@@ -49,6 +50,20 @@ const config =
 				loader: 'ts-loader'
 			}]
 		}]
-	}
+	},
+	plugins: [ //
+	{         // Can't get webpack to build and touch the individual js files in ./lib, these
+	         // sre referenced when running in dev mode.  Run tsc to update these files afer actions
+			// webpack build
+		   //
+		apply: (compiler) => {
+			compiler.hooks.afterEmit.tap('AfterEmitPlugin', (compilation) => {
+				exec('tsc -b ./common', (err, stdout, stderr) => {
+				if (stdout) process.stdout.write(stdout);
+				if (stderr) process.stderr.write(stderr);
+				});
+			});
+		}
+	}]
 };
 module.exports = config;

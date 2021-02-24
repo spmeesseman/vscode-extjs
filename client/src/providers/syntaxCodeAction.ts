@@ -31,15 +31,6 @@ class SyntaxCodeActionProvider implements CodeActionProvider
                         title: "Convert to camel case",
                         command: "editor.action.transformToLowercase"
                     }
-                },
-                {
-                    title: "Convert to lower case",
-                    isPreferred: true,
-                    kind: CodeActionKind.QuickFix,
-                    command: {
-                        title: "Convert to lower case",
-                        command: "editor.action.transformToLowercase"
-                    }
                 }]);
             }
         }

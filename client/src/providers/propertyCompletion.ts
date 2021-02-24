@@ -36,6 +36,16 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             return undefined;
         }
 
+        //
+        // The `getInlineCompletionItems` method handles completion items that lead all other
+        // parts of a classpath.  FOr example, the class:
+        //
+        //     MyApp.view.users.Users
+        //
+        // The `MyApp` part of the class path is of interest, when the user starts typing into a
+        // blank line (or a new statement block), we want to display all possible parts of a
+        // classpath that lead the classname, in this case we ant to add 'MyApp' as a completion item
+        //
         if (!lineText.includes(".")) {
             completionItems.push(...this.getInlineCompletionItems(lineText));
             return completionItems;
@@ -75,6 +85,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     {
         const propCompletion: CompletionItem[] = [];
 
+        //
+        // Get the appropriate component part, a method, property, config, or class, as specified
+        // by the caller
+        //
         let cmp: IComponent | IMethod | IProperty | IConfig | undefined;
         switch (kind)
         {
@@ -182,7 +196,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     /**
      * @method getFunctionName
      *
-     * Get outer function name based on current document position.
+     * Get outer function name based on current document position.  Used to determine if
+     * targeted properties are local to a function or global
      *
      * @param document VSCode Document object
      * @param position VSCode position object
@@ -214,7 +229,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      * @method getCompletionItems
      *
      * @param lineText The complete text of the line of the current trigger position.
-     * @param fnText
+     * @param fnText The outer function name of the funtion that contains the reference to this property,
+     * if this property is found within a controller method.  Used for local property (relative to the
+     * outer function) inspection only.
      * @param fsPath The filesystem path to the JavasSript class file.
      * @param addedItems Array holding item labels already added in this request.
      */
@@ -299,27 +316,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             else {
                 component = getComponentByFile(fsPath);
-                if (component)
+                if (component && fnText)
                 {
-                    let lCmp: any;
-                    for (const m of component.methods)
-                    {
-                        if (m.name === fnText)
-                        {
-                            if (!m.variables) { continue; }
-                            for (const p of m.variables)
-                            {
-                                if (p.name === lineCls) {
-                                    lCmp = getComponentInstance(lineCls, fsPath);
-                                    _pushItems(lCmp);
-                                    break;
-                                }
-                            }
-                            if (lCmp) {
-                                break;
-                            }
-                        }
-                    }
+                    _pushItems(...this.getLocalInstanceComponents(fnText, lineCls, fsPath, component));
                 }
                 else {
                     completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
@@ -527,6 +526,31 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         });
 
         return completionItems;
+    }
+
+
+    private getLocalInstanceComponents(fnText: string, lineCls: string, fsPath: string, component: IComponent): IComponent[]
+    {
+        const components: IComponent[] = [];
+        for (const m of component.methods)
+        {
+            if (m.name === fnText)
+            {
+                if (!m.variables) { continue; }
+                for (const p of m.variables)
+                {
+                    if (p.name === lineCls) {
+                        const lCmp = getComponentInstance(lineCls, fsPath);
+                        if (lCmp){
+                            components.push(lCmp);
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        return components;
     }
 
 

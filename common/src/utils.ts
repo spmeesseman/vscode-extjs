@@ -23,6 +23,12 @@ export async function forEachMapAsync(map: any, callback: any)
 }
 
 
+export function isExtJsFile(documentText: string | undefined)
+{
+    return documentText && documentText.includes("Ext.define");
+}
+
+
 export function isGetterSetter(method: string): boolean
 {
     return method.startsWith("get") || method.startsWith("set") && method[3] >= "A" && method[3] <= "Z";

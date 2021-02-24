@@ -139,7 +139,8 @@ export const defaultSettings: ISettings =
     include: [],
     intellisenseIncludeDeprecated: true,
     intellisenseIncludePrivate: false,
-    validateXTypes: true
+    validateXTypes: true,
+    validationDelay: 1250
 };
 
 
