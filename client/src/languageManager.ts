@@ -3,8 +3,8 @@ import * as fs from "fs";
 import json5 from "json5";
 import * as path from "path";
 import {
-    Disposable, ExtensionContext, MarkdownString , Progress,
-    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri
+    Disposable, ExtensionContext, MarkdownString , Progress, TextDocumentChangeEvent,
+    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri, FileDeleteEvent, ConfigurationChangeEvent
 } from "vscode";
 import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
@@ -638,7 +638,7 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, project: string, document: TextDocument | Uri, logPad = "")
+    async indexFile(fsPath: string, project: string, document: TextDocument | Uri, logPad = ""): Promise<IComponent[] | false | undefined>
     {
         const storageKey = this.getStorageKey(fsPath),
               storedComponents = fsStorage?.get(project, storageKey),
@@ -668,6 +668,9 @@ class ExtjsLanguageManager
             }
             else {
                 text = document.getText();
+            }
+            if (!utils.isExtJsFile(text)) {
+                return false;
             }
             components = await this.serverRequest.parseExtJsFile(fsPath, project, text);
         }
@@ -809,13 +812,91 @@ class ExtjsLanguageManager
     }
 
 
+    private processConfigChange(e: ConfigurationChangeEvent)
+    {
+        // if (e.affectsConfiguration("extjsLangSvr.debug") || e.affectsConfiguration("extjsLangSvr.debugLevel")) // ||
+        //     // e.affectsConfiguration("extjsLangSvr.intellisenseIncludeDeprecated") || e.affectsConfiguration("extjsLangSvr.intellisenseIncludePrivate")) {
+        // {   //
+        //     // TODO - process config changes
+        //     //
+        //     log.write("Process settings change", 1);
+        // }
+    }
+
+
+    private processDocumentChange(e: TextDocumentChangeEvent)
+    {
+        const debounceMs = configuration.get<number>("validationDelay", 1250),
+             textDocument = e.document;
+        if (textDocument.languageId === "javascript")
+        {   //
+            // Debounce!!
+            //
+            if (this.reIndexTaskId) {
+                clearTimeout(this.reIndexTaskId);
+            }
+            this.reIndexTaskId = setTimeout(async () =>
+            {
+                this.reIndexTaskId = undefined;
+                const fsPath = textDocument.uri.fsPath,
+                        ns = this.getNamespace(textDocument);
+                //
+                // Clear
+                //
+                handleDeleFile(fsPath);
+                //
+                // Index the file
+                //
+                const components = await this.indexFile(textDocument.uri.fsPath, ns, textDocument);
+                //
+                // Validate document
+                //
+                if (components && components.length > 0) {
+                    this.validateDocument(textDocument, ns);
+                }
+            }, debounceMs);
+        }
+    }
+
+
+    private processDocumentDelete(e: FileDeleteEvent)
+    {
+        e.files.forEach(async file =>
+        {
+            handleDeleFile(file.fsPath);
+            const activeTextDocument = window.activeTextEditor?.document;
+            if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+                this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+            }
+        });
+    }
+
+
+    private processDocumentOpen(textDocument: TextDocument)
+    {
+        if (textDocument.languageId === "javascript") {
+           this.validateDocument(textDocument, this.getNamespace(textDocument));
+        }
+    }
+
+
+    private processEditorChange(e: TextEditor | undefined)
+    {
+        const textDocument = e?.document;
+        if (textDocument) {
+            if (textDocument.languageId === "javascript") {
+                this.validateDocument(textDocument, this.getNamespace(textDocument));
+            }
+        }
+    }
+
+
     private registerWatchers(context: ExtensionContext): Disposable[]
     {
         //
         // rc/conf file / app.json
         //
-        const debounceMs = configuration.get<number>("validationDelay", 1250),
-              disposables: Disposable[] = [],
+        const disposables: Disposable[] = [],
               confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
 
         context.subscriptions.push(confWatcher);
@@ -824,87 +905,23 @@ class ExtjsLanguageManager
         //
         // Open dcument text change
         //
-        disposables.push(workspace.onDidChangeTextDocument(async (event) =>
-        {
-            const textDocument = event.document;
-            if (textDocument.languageId === "javascript")
-            {   //
-                // Debounce!!
-                //
-                if (this.reIndexTaskId) {
-                    clearTimeout(this.reIndexTaskId);
-                }
-                this.reIndexTaskId = setTimeout(async () =>
-                {
-                    this.reIndexTaskId = undefined;
-                    const fsPath = textDocument.uri.fsPath,
-                          ns = this.getNamespace(textDocument);
-                    //
-                    // Clear
-                    //
-                    handleDeleFile(fsPath);
-                    //
-                    // Index the file
-                    //
-                    await this.indexFile(textDocument.uri.fsPath, ns, textDocument);
-                    //
-                    // Validate document
-                    //
-                    this.validateDocument(textDocument, ns);
-                }, debounceMs);
-            }
-        }, context.subscriptions));
-
+        disposables.push(workspace.onDidChangeTextDocument(async (e) => this.processDocumentChange, context.subscriptions));
         //
         // Deletions
         //
-        disposables.push(workspace.onDidDeleteFiles((event) =>
-        {
-            event.files.forEach(async file =>
-            {
-                handleDeleFile(file.fsPath);
-                const activeTextDocument = window.activeTextEditor?.document;
-                if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-                    this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-                }
-            });
-        }, context.subscriptions));
-
+        disposables.push(workspace.onDidDeleteFiles((e) => this.processDocumentDelete, context.subscriptions));
         //
         // Active editor changed
         //
-        disposables.push(window.onDidChangeActiveTextEditor((e: TextEditor | undefined) =>
-        {
-            const textDocument = e?.document;
-            if (textDocument) {
-                if (textDocument.languageId === "javascript") {
-                    this.validateDocument(textDocument, this.getNamespace(textDocument));
-                }
-            }
-        }, context.subscriptions));
-
+        disposables.push(window.onDidChangeActiveTextEditor((e) => this.processEditorChange , context.subscriptions));
         //
         // Open text document
         //
-        disposables.push(workspace.onDidOpenTextDocument((textDocument: TextDocument) =>
-        {
-            if (textDocument.languageId === "javascript") {
-               this.validateDocument(textDocument, this.getNamespace(textDocument));
-            }
-        }, context.subscriptions));
-
+        disposables.push(workspace.onDidOpenTextDocument((e) => this.processDocumentOpen, context.subscriptions));
         //
         // Register configurations/settings change watcher
         //
-        disposables.push(workspace.onDidChangeConfiguration(e => {
-            // if (e.affectsConfiguration("extjsLangSvr.debug") || e.affectsConfiguration("extjsLangSvr.debugLevel")) // ||
-            //     // e.affectsConfiguration("extjsLangSvr.intellisenseIncludeDeprecated") || e.affectsConfiguration("extjsLangSvr.intellisenseIncludePrivate")) {
-            // {   //
-            //     // TODO - process config changes
-            //     //
-            //     log.write("Process settings change", 1);
-            // }
-        }, context.subscriptions));
+        disposables.push(workspace.onDidChangeConfiguration(e => this.processConfigChange, context.subscriptions));
 
         return disposables;
     }
@@ -932,7 +949,11 @@ class ExtjsLanguageManager
 
     private validateDocument(textDocument: TextDocument, nameSpace: string)
     {
-        this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, textDocument.getText());
+        const text = textDocument.getText();
+        if (!utils.isExtJsFile(text)) {
+            return;
+        }
+        this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, text);
     }
 
 }
