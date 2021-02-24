@@ -150,6 +150,21 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Validate that all required classes are included in the 'requires' array for all xtype references found"
+				},
+				"extjsLangSvr.validationDelay": {
+					"type": "number",
+					"enum": [
+						250,
+						400,
+						500,
+						750,
+						1000,
+						1250,
+						1500,
+						1750,
+						2000
+					],
+					"description": "The time (in ms) to allow between keystrokes before validation is triggered."
 				}
 			}
 		}

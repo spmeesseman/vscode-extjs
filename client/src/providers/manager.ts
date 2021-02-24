@@ -8,6 +8,7 @@ import registerPropertyHoverProvider from "./propertyHover";
 import registerPropertyCompletionProvider from "./propertyCompletion";
 import registerPropertyDefinitionProvider from "./propertyDefinion";
 import registerMethodSignatureProvider from "./methodSignature";
+import registerSyntaxCodeActionProvider from "./syntaxCodeAction";
 import registerSymbolProvider from "./symbol";
 import { isIndexing } from "../languageManager";
 
@@ -25,7 +26,8 @@ export function registerProviders(context: ExtensionContext)
         registerPropertyHoverProvider,
         registerPropertyCompletionProvider,
         registerPropertyDefinitionProvider,
-        registerMethodSignatureProvider
+        registerMethodSignatureProvider,
+        registerSyntaxCodeActionProvider
     ];
 
     const delayedRegisters: Register[] = [

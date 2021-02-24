@@ -156,6 +156,7 @@ export interface ISettings
     intellisenseIncludeDeprecated: boolean;
     intellisenseIncludePrivate: boolean;
     validateXTypes: boolean;
+    validationDelay: number;
 }
 
 

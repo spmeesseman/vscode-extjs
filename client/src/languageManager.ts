@@ -9,6 +9,7 @@ import {
 import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
+import { configuration } from "./common/configuration";
 import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils } from  "../../common";
 import * as log from "./common/log";
 import * as clientUtils from "./common/clientUtils";
@@ -813,7 +814,7 @@ class ExtjsLanguageManager
         //
         // rc/conf file / app.json
         //
-        const debounceMs = 1250,
+        const debounceMs = configuration.get<number>("validationDelay", 1250),
               disposables: Disposable[] = [],
               confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
 
@@ -939,9 +940,9 @@ class ExtjsLanguageManager
 
 async function initConfig(): Promise<boolean>
 {
-    const // settingsPaths = configuration.get<string[]>("include"),
-          confUris = await workspace.findFiles(".extjsrc{.json,}"),
+    const confUris = await workspace.findFiles(".extjsrc{.json,}"),
           appDotJsonUris = await workspace.findFiles("app.json");
+    let settingsPaths = configuration.get<string[]|string>("include");
 
     log.methodStart("initialize config", 1, "", true);
 
@@ -950,17 +951,30 @@ async function initConfig(): Promise<boolean>
     //
     config = [];
 
-    // if (settingsPaths)
-    // {
-    //     for (const path of settingsPaths)
-    //     {
-    //         config.push({
-    //             classpath: path,
-    //             name: AppNamespace
-    //         });
-    //     }
-    // }
+    //
+    // Specific directories set directly in user settings, the `include` setting
+    //
+    if (settingsPaths)
+    {
+        if (typeof settingsPaths === "string") {
+            settingsPaths = [ settingsPaths ];
+        }
+        for (const path of settingsPaths)
+        {
+            const pathParts = path?.split("|");
+            if (pathParts.length === 2)
+            {
+                config.push({
+                    classpath: pathParts[1],
+                    name: pathParts[0]
+                });
+            }
+        }
+    }
 
+    //
+    // The `.extjsrc` config files
+    //
     if (confUris)
     {
         for (const uri of confUris)
@@ -978,6 +992,9 @@ async function initConfig(): Promise<boolean>
         }
     }
 
+    //
+    // The `app.json` files
+    //
     if (appDotJsonUris)
     {
         for (const uri of appDotJsonUris)
