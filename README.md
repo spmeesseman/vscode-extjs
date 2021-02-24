@@ -106,27 +106,34 @@ That's it, ExtJS Languge Server should start indexing your files once a valid co
 
 This extension is unable to perform the app/workspace commands using Sencha Cmd that the Sencha extension provides.
 
-Aside from that, the ExtJs Language Server provides everything else it is capable of, in addition to the following:
+Aside from that, the ExtJs Language Server provides everything else it is capable of:
+
+1. `Intellisense` and `Code Completion` for class members and local controller variables created with Ext.create.
+2. `Go To Definition` for classes and class string literals.
+3. Static configuration file for specifying project name and classpaths to parse.
+
+And, in addition:
 
 1. Free :)
-2. `Intellisense` with Full `JSDoc`.
-3. Method Signature / inline parameter helper with `JsDoc`.
-4. Hover `JsDoc` for all classes, methods, properties and configs.
-5. Hover `JsDoc` for xtype and class string literals.
+2. `Multi-Root Workspace` Support.
+3. `Intellisense` with Full `JSDoc`.
+4. Method Signature / inline parameter helper with `JsDoc`.
+5. `Hover JsDoc` for all classes, methods, properties, configs, xtypes and class string literals.
 6. Static vs. Instance `Intellisense`.
-7. `Go To Definition` for xtype string literals.
-8. Supports `Multi-Root Workspace` and any number of class paths.
-9. `XType validation` and `requires` field checking.
-10. Diagnostic `Quick Fix` for invalidated xtype declarations.
+7. `Go To Definition` for xtype string literals (credits to [qzsiniong](#thank-you)).
+8. `XType validation` and `requires` field checking (credits to [qzsiniong](#thank-you)).
+9. Command Pallette command for fixing invalidated xtype declarations (credits to [qzsiniong](#thank-you)).
+10. Diagnostic `Quick Fix` and Command Pallette command for fixing invalidated xtype declarations.
 11. Parses **app.json**, **workspace.json**, and **package.json** files for `auto-import of classpaths`, including dependencies.
-12. Turn on/off the inclusion of deprecated members into `Intellisense` directly in VSCode Settings.
-13. Turn on/off the inclusion of private members into `Intellisense` directly in VSCode Settings.
+12. Turn on/off the inclusion of deprecated class members into `Intellisense` directly in VSCode Settings.
+13. Turn on/off the inclusion of private class members into `Intellisense` directly in VSCode Settings.
 14. Configure specific classpaths for Indexing directly in VSCode Settings.
-15. Since, Deprecated, and Private `JsDoc` tags and `Intellisense` tags.
+15. *Since*, *Deprecated*, and *Private* `JsDoc` tags and `Intellisense` tags.
 16. Parsing performance is slightly slower the first time the extensionl loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
 17. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
-18. Other custom validations.
-19. Doesn't require yet another .sencha directory to be created.
+18. Configurable validation timeout useful for slower systems.
+19. Miscellaneous custom validations.
+20. Doesn't require yet another .sencha directory to be created.
 
 ## ESLint
 
