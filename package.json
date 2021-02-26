@@ -35,10 +35,9 @@
 		"theme": "light"
 	},
 	"scripts": {
-		"clean": "rimraf out && rimraf dist",
+		"clean": "rimraf dist && rimraf ./common/lib",
 		"build": "npm run webpack-build",
-		"compile": "tsc -b",
-		"compile2": "npx tsc -p ./",
+		"build_common": "tsc -p ./common",
 		"coverage-open-report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" coverage/index.html",
 		"coverage-full_on": "enable-full-coverage.sh",
 		"coverage-full_off": "enable-full-coverage.sh --off",
@@ -57,15 +56,13 @@
 		"test:before": "npm run clean && rimraf c:\\code\\data\\user-data\\cacheddata && npm run build && npm run coverage-full_on",
 		"test:openreport": "npm run coverage-open-report",
 		"vscode:prepublish": "npm run webpack-prod",
-		"watch": "tsc -b -w",
-		"webpack-watch": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js --config ./webpack.config.server.js --config ./webpack.config.common.js",
-		"webpack-build": "npm run webpack-build:common && npm run webpack-build:client && npm run webpack-build:server",
+		"watch": "tsc -b ./common -w && npm run webpack:watch",
+		"webpack-watch": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js --config ./webpack.config.server.js",
+		"webpack-build": "npm run build_common && npm run webpack-build:client && npm run webpack-build:server",
 		"webpack-build:client": "webpack --mode production --config ./webpack.config.client.js",
 		"webpack-build:server": "webpack --mode production --config ./webpack.config.server.js",
-		"webpack-build:common": "webpack --mode production --config ./webpack.config.common.js",
 		"webpack-watch:client": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js",
-		"webpack-watch:server": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.server.js",
-		"webpack-watch:common": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.common.js"
+		"webpack-watch:server": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.server.js"
 	},
 	"devDependencies": {
 		"@istanbuljs/nyc-config-typescript": "^1.0.1",
