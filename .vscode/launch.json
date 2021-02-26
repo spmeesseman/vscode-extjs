@@ -15,7 +15,7 @@
 			"outFiles": ["${workspaceRoot}/dist/**/*.js"],
 			"stopOnEntry": false,
             "sourceMaps": true,
-			"preLaunchTask": "npm: webpack-watch"
+			"preLaunchTask": "watch"
 		},
 		{
 			"type": "node",

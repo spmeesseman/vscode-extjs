@@ -4,6 +4,10 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "watch",
+			"dependsOn": ["npm: webpack-watch", "npm: tsc-watch"]
+		},
+		{
 			"type": "npm",
 			"script": "webpack-watch",
 			"problemMatcher": {
@@ -18,47 +22,36 @@
 				],
 				"background": {
 					"activeOnStart": true,
-					// Webpack 
+					// Webpack
 					"beginsPattern": "Compilation \\w+ starting…",
 					"endsPattern": "Compilation\\s+finished"
 				}
 			},
 			"isBackground": true,
 			"presentation": {
-				"reveal": "never"
+				"reveal": "never",
+                "panel": "dedicated"
 			},
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+		{
+			"type": "npm",
+			"script": "tsc-watch",
+			"isBackground": true,
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"panel": "dedicated",
+				"reveal": "never"
+			},
+			"problemMatcher": [
+				"$tsc-watch"
+			]
 		}
-		//{
-		//	"type": "npm",
-		//	"script": "compile",
-		//	"group": "build",
-		//	"presentation": {
-		//		"panel": "dedicated",
-		//		"reveal": "never"
-		//	},
-		//	"problemMatcher": [
-		//		"$tsc"
-		//	]
-		//},
-		//{
-		//	"type": "npm",
-		//	"script": "watch",
-		//	"isBackground": true,
-		//	"group": {
-		//		"kind": "build",
-		//		"isDefault": true
-		//	},
-		//	"presentation": {
-		//		"panel": "dedicated",
-		//		"reveal": "never"
-		//	},
-		//	"problemMatcher": [
-		//		"$tsc-watch"
-		//	]
-		//}
 	]
 }
