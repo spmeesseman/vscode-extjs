@@ -1,6 +1,6 @@
 
 import * as fs from "fs";
-import json5 from "json5";
+import * as json5 from "json5";
 import * as path from "path";
 import {
     Disposable, ExtensionContext, MarkdownString , Progress, TextDocumentChangeEvent,

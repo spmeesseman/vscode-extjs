@@ -1,5 +1,5 @@
 
-import json5 from "json5";
+import * as json5 from "json5";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
 import { utils } from "../../../common";
 import { getComponentClass, getNamespaceFromFile } from "../languageManager";
@@ -64,7 +64,7 @@ export async function ensureRequires(xtype: string | undefined)
 			}
 
 			const _requires = component.requires.value
-				  .filter(it => utils.isNeedRequire(it))
+				  .filter((it: string) => utils.isNeedRequire(it))
 				  .concat(Array.from(componentClasses))
 				  .sort();
 
