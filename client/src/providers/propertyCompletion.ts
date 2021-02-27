@@ -434,7 +434,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     {
         const completionItems: CompletionItem[] = [];
 
-        component.methods.forEach((c) =>
+        component.methods.forEach((c: IMethod) =>
         {
             if (addedItems.indexOf(c.name) === -1)
             {
@@ -447,7 +447,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         });
 
-        component.properties.forEach((c) =>
+        component.properties.forEach((c: IProperty) =>
         {
             if (addedItems.indexOf(c.name) === -1)
             {
@@ -460,7 +460,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         });
 
-        component.configs.forEach((c) =>
+        component.configs.forEach((c: IConfig) =>
         {
             if (addedItems.indexOf(c.name) === -1)
             {

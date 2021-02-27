@@ -23,14 +23,20 @@ class Storage
 
     public get<T>(key: string, defaultValue?: T): T | undefined
     {
-        if (key) {
-            if (defaultValue) {
-                return this.storage.get<T>(key, defaultValue);
+        if (defaultValue)
+        {
+            let v = this.storage.get<T>(key, defaultValue);
+            //
+            // why have to do this?  In one case, passing a default of [] for a non-existent
+            // value, the VSCode memento does not return[]. It returns an empty string????
+            // So perform a double check if the value is falsy.
+            //
+            if (!v) {
+                v = defaultValue;
             }
-            else {
-                return this.storage.get(key);
-            }
+            return v;
         }
+        return this.storage.get<T>(key);
     }
 
     public async update(key: string, value: any)

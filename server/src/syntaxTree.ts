@@ -72,7 +72,7 @@ export async function loadExtJsComponent(ast: string | undefined)
         for (const c of components)
         {
             componentClassToWidgetsMapping[c.componentClass] = c.widgets;
-            c.widgets.forEach(xtype => {
+            c.widgets.forEach((xtype: string) => {
                 widgetToComponentClassMapping[xtype] = c.componentClass;
             });
         }
@@ -247,7 +247,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
     for (const c of components)
     {
         componentClassToWidgetsMapping[c.componentClass] = c.widgets;
-        c.widgets.forEach(xtype => {
+        c.widgets.forEach((xtype: string) => {
             widgetToComponentClassMapping[xtype] = c.componentClass;
         });
     }
