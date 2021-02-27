@@ -5,7 +5,7 @@
 	"tasks": [
 		{
 			"label": "watch",
-			"dependsOn": ["npm: webpack-watch"] //, "npm: tsc_watch"]
+			"dependsOn": ["npm: webpack-watch", "npm: tsc-watch_common"]
 		},
 		{
 			"type": "npm",
@@ -29,7 +29,67 @@
 			},
 			"isBackground": true,
 			"presentation": {
-				"reveal": "never",
+				"reveal": "always",
+                "panel": "dedicated"
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"type": "npm",
+			"script": "tsc-watch",
+			"problemMatcher": {
+				"owner": "typescript",
+				"pattern": [
+					{
+						"regexp": "\\[tsl\\] ERROR",
+						"file": 1,
+						"location": 2,
+						"message": 3
+					}
+				],
+				"background": {
+					"activeOnStart": true,
+					// Webpack
+					"beginsPattern": "Compilation \\w+ starting…",
+					"endsPattern": "Compilation\\s+finished"
+				}
+			},
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
+                "panel": "dedicated"
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"type": "npm",
+			"script": "tsc-watch_common",
+			"problemMatcher": {
+				"owner": "typescript",
+				"pattern": [
+					{
+						"regexp": "\\[tsl\\] ERROR",
+						"file": 1,
+						"location": 2,
+						"message": 3
+					}
+				],
+				"background": {
+					"activeOnStart": true,
+					// Webpack
+					"beginsPattern": "Compilation \\w+ starting…",
+					"endsPattern": "Compilation\\s+finished"
+				}
+			},
+			"isBackground": true,
+			"presentation": {
+				"reveal": "always",
                 "panel": "dedicated"
 			},
 			"group": {

@@ -1,5 +1,5 @@
 
-import * as json5 from "json5";
+import { stringify } from "json5";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
 import { utils } from "../../../common";
 import { getComponentClass, getNamespaceFromFile } from "../languageManager";
@@ -68,10 +68,10 @@ export async function ensureRequires(xtype: string | undefined)
 				  .concat(Array.from(componentClasses))
 				  .sort();
 
-			const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
-									   .replace(/\[/, "[" + EOL + pad + "    ")
-									   .replace(/,/g, "," + EOL + pad + "    ")
-									   .replace(/\]/, EOL + pad + "]");
+			const requiresBlock = stringify(Array.from(new Set(_requires)))
+									.replace(/\[/, "[" + EOL + pad + "    ")
+									.replace(/,/g, "," + EOL + pad + "    ")
+									.replace(/\]/, EOL + pad + "]");
 
 			workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
 			workspace.applyEdit(workspaceEdit);

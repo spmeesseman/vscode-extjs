@@ -1,6 +1,6 @@
 
 import * as fs from "fs";
-import * as json5 from "json5";
+import { parse } from "json5";
 import * as path from "path";
 import {
     Disposable, ExtensionContext, MarkdownString , Progress, TextDocumentChangeEvent,
@@ -1014,7 +1014,7 @@ async function initConfig(): Promise<boolean>
         {
             const fileSystemPath = uri.fsPath || uri.path;
             const confJson = fs.readFileSync(fileSystemPath, "utf8");
-            const conf: IConf = json5.parse(confJson);
+            const conf: IConf = parse(confJson);
             if (conf.classpath && conf.name)
             {
                 log.value("   add .extjsrc path", fileSystemPath, 2);
@@ -1556,7 +1556,7 @@ async function parseAppDotJson(uri: Uri)
 {
     const fileSystemPath = uri.fsPath || uri.path,
           baseDir = path.dirname(uri.fsPath),
-          conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
+          conf: IConf = parse(fs.readFileSync(fileSystemPath, "utf8"));
     //
     // Merge classpath to root
     //
@@ -1586,7 +1586,7 @@ async function parseAppDotJson(uri: Uri)
     const wsDotJsonFsPath = path.join(baseDir, "workspace.json");
     if (fs.existsSync(wsDotJsonFsPath))
     {
-        const wsConf = json5.parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
+        const wsConf = parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
 
         if (wsConf.frameworks && wsConf.frameworks.ext)
         {   //
@@ -1597,7 +1597,7 @@ async function parseAppDotJson(uri: Uri)
             const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
             if (fs.existsSync(fwJsonFsPath))
             {
-                const fwConf = json5.parse(fs.readFileSync(fwJsonFsPath, "utf8"));
+                const fwConf = parse(fs.readFileSync(fwJsonFsPath, "utf8"));
                 if (fwConf.dependencies)
                 {
                     for (const dep in fwConf.dependencies)

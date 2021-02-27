@@ -1,8 +1,10 @@
 {
 	"compilerOptions": {
+		"target": "es2019",
+		"lib": ["ES2019"],
 		"module": "commonjs",
-		"target": "es6",
-		"outDir": "out",
+		"outDir": "../dist/client",
+		"moduleResolution": "node",
 		"rootDir": "src",
 		"strict": true,
 		"sourceMap": true,

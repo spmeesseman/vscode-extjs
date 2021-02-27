@@ -99,7 +99,7 @@ async function run(context: ExtensionContext)
     // The server is implemented in nodevscode.
     //
     const serverModule = context.asAbsolutePath(
-        path.join("dist", "server.js")
+        path.join("dist", "server", "server.js")
     );
 
     //

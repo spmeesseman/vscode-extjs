@@ -11,7 +11,7 @@ const config =
 {   //
 	// vscode extensions run in a Node.js-context -> https://webpack.js.org/configuration/node/
 	//
-	target: 'node', 
+	target: 'node',
 	//
 	// the entry point of this extension, -> https://webpack.js.org/configuration/entry-context/
 	//
@@ -20,10 +20,10 @@ const config =
 	{   //
 		// the bundle is stored in the 'dist' folder (check package.json), -> https://webpack.js.org/configuration/output/
 		//
-		path: path.resolve(__dirname, 'dist'),
+		path: path.resolve(__dirname, 'dist', 'server'),
 		filename: 'server.js',
-		libraryTarget: 'commonjs2',
-		devtoolModuleFilenameTemplate: '../[resource-path]'
+		libraryTarget: 'commonjs',
+		devtoolModuleFilenameTemplate: '../../[resource-path]'
 	},
 	devtool: 'source-map',
 	externals:

@@ -82,7 +82,8 @@ suite("Extension Test Suite", () =>
     async function initSettings(enable = true)
     {
         // Use update() here for coverage, since these two settings wont trigger any processing
-        await configuration.update("debug", true);
+        await configuration.update("debugClient", true);
+        await configuration.update("debugServer", true);
         await configuration.update("debugLevel", 3);
         await configuration.updateWs("debug", true);
         await configuration.updateWs("debugLevel", 3);

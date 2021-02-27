@@ -18,14 +18,6 @@
 			"preLaunchTask": "watch"
 		},
 		{
-			"type": "node",
-			"request": "attach",
-			"name": "Attach to Server",
-			"port": 6009,
-			"restart": true,
-			"outFiles": ["${workspaceRoot}/dist/**/*.js"]
-		},
-		{
 			"type": "extensionHost",
 			"request": "launch",
 			"name": "Launch Test Client",
@@ -35,23 +27,18 @@
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"${workspaceRoot}/test-files"
 			],
-			"outFiles": ["${workspaceRoot}/client/out/**/*.js"],
+			"outFiles": ["${workspaceRoot}/dist/**/*.js"],
 			"stopOnEntry": false,
             "sourceMaps": true,
-			//"preLaunchTask": "npm: tsc_watch"
+			"preLaunchTask": "npm: tsc-watch"
 		},
 		{
-			"name": "Language Server E2E Test",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--disable-extensions",
-				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceRoot}/client/out/test/index",
-				"${workspaceRoot}/test-files"
-			],
-			"outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
+			"type": "node",
+			"request": "attach",
+			"name": "Attach to Server",
+			"port": 6009,
+			"restart": true,
+			"outFiles": ["${workspaceRoot}/dist/**/*.js"]
 		},
         {
             "name": "Launch Tests",
@@ -59,9 +46,9 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "${workspaceFolder}/dist/test",
+                "${workspaceFolder}/dist/client/test",
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/test",
+                // "--extensionTestsPath=${workspaceFolder}/dist/client/test",
                 "--disable-extensions"
             ],
             "stopOnEntry": false,
