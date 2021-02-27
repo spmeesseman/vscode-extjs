@@ -1,7 +1,10 @@
 dist
+out
 node_modules
 .vscode-test/
 *.vsix
 lib
 *.tsbuildinfo
 .sencha
+coverage
+.nyc_output

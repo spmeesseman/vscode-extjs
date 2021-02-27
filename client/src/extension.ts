@@ -18,7 +18,13 @@ const clients: Map<string, LanguageClient> = new Map();
 export let extjsLangMgr: ExtjsLanguageManager;
 
 
-export async function activate(context: ExtensionContext)
+export interface ExtJsApi
+{
+    extjsLangMgr: ExtjsLanguageManager | undefined;
+}
+
+
+export async function activate(context: ExtensionContext): Promise<ExtJsApi>
 {
     log.initLog("extjsLangSvr", "ExtJs Language Client", context);
 
@@ -61,6 +67,10 @@ export async function activate(context: ExtensionContext)
     // context.subscriptions.push(workspaceWatcher);
 
     disposables = await extjsLangMgr.setup(context);
+
+    return {
+        extjsLangMgr
+    };
 }
 
 

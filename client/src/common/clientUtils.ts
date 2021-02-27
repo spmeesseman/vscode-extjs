@@ -10,6 +10,12 @@ export function getUriPath(fsPath: string)
 }
 
 
+export function timeout(ms: number)
+{
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 export function toVscodePosition(position: IPosition)
 {
     const { line, column } = position;

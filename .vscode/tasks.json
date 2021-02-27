@@ -5,7 +5,7 @@
 	"tasks": [
 		{
 			"label": "watch",
-			"dependsOn": ["npm: webpack-watch", "npm: tsc-watch"]
+			"dependsOn": ["npm: webpack-watch"] //, "npm: tsc_watch"]
 		},
 		{
 			"type": "npm",
@@ -39,7 +39,7 @@
 		},
 		{
 			"type": "npm",
-			"script": "tsc-watch",
+			"script": "tsc_watch_common",
 			"isBackground": true,
 			"group": {
 				"kind": "build",

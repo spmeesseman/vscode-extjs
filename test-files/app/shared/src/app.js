@@ -34,7 +34,7 @@ Ext.define('VSCodeExtJS',
 		xtype: "physiciandropdown"
 	},
 	{ 
-		xtype: "patientdropdown"
+		xtype: "patieuntdropdown"
 	},
 	{
 		xtype: 'userdropdown'

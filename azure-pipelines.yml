@@ -287,7 +287,7 @@ jobs:
       #    mergeTestResults: true
       #    testRunTitle: '$(Agent.OS) $(Agent.JobName)'
       #- task: PublishCodeCoverageResults@1
-      #  displayName: 'Publish Code Coverage to Azure'
+      #  displayName: 'Publish Code Coverage to Azure'         // dc10c1c7-a30c-41b0-b048-f68a22dbace9
       #  inputs:
       #    codeCoverageTool: Cobertura
       #    summaryFileLocation: '$(System.DefaultWorkingDirectory)/coverage/cobertura-coverage.xml'

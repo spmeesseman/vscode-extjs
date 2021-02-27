@@ -26,6 +26,21 @@
 			"outFiles": ["${workspaceRoot}/dist/**/*.js"]
 		},
 		{
+			"type": "extensionHost",
+			"request": "launch",
+			"name": "Launch Test Client",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceRoot}",
+				"${workspaceRoot}/test-files"
+			],
+			"outFiles": ["${workspaceRoot}/client/out/**/*.js"],
+			"stopOnEntry": false,
+            "sourceMaps": true,
+			//"preLaunchTask": "npm: tsc_watch"
+		},
+		{
 			"name": "Language Server E2E Test",
 			"type": "extensionHost",
 			"request": "launch",
@@ -37,7 +52,26 @@
 				"${workspaceRoot}/test-files"
 			],
 			"outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
-		}
+		},
+        {
+            "name": "Launch Tests",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "${workspaceFolder}/dist/test",
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "--extensionTestsPath=${workspaceFolder}/dist/test",
+                "--disable-extensions"
+            ],
+            "stopOnEntry": false,
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceFolder}/dist/test/**/*.js"
+            ],
+            "preLaunchTask": "npm: test:before",
+            "postDebugTask": "npm: test:after"
+        }
 
 		// {
 		// 	"type": "extensionHost",

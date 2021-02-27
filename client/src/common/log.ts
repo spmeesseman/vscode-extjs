@@ -4,10 +4,9 @@ import { OutputChannel, ExtensionContext, commands, window } from "vscode";
 
 
 const logValueWhiteSpace = 40;
-const writeToConsole = true;
-const writeToConsoleLevel = 2;
+let writeToConsole = false;
+let writeToConsoleLevel = 2;
 let logOutputChannel: OutputChannel | undefined;
-
 
 
 export function initLog(settingGrpName: string, dispName: string, context?: ExtensionContext, showLog?: boolean)
@@ -150,4 +149,11 @@ export function value(msg: string, value: any, level?: number, logPad = "")
     }
 
     write(logMsg, level, logPad);
+}
+
+
+export function setWriteToConsole(set: boolean, level = 2)
+{
+    writeToConsole = set;
+    writeToConsoleLevel = level;
 }
