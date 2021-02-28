@@ -53,6 +53,7 @@ export interface IComponent extends IExtJsBase
 export interface IConf
 {
     archivePath?: string;
+    baseDir: string;
     bootstrap?: any;
     builds?: any;
     cache?: any;
@@ -83,13 +84,6 @@ export interface IConfig extends IProperty
 {
     setter: string;
     getter: string;
-}
-
-
-export interface IError
-{
-	code: number | undefined;
-	fsPath: string | undefined;
 }
 
 
@@ -132,41 +126,6 @@ export interface IRequires
     value: string[];
     start: IPosition;
     end: IPosition;
-}
-
-
-export const defaultSettings: ISettings =
-{   //
-    // ** IMPORTANT NOTE **
-    // Update this constant when the ISettings definition changes
-    //
-    debugClient: false,
-    debugServer: false,
-    debugLevel: 1,
-    include: [],
-    intellisenseIncludeDeprecated: true,
-    intellisenseIncludePrivate: false,
-    validateXTypes: true,
-    validationDelay: 1250,
-    ignoreErrors: []
-};
-
-
-export interface ISettings
-{   //
-    // ** IMPORTANT NOTE **
-    // Be sure to update 'defaultSettings' above when adding/removing properties from this
-    // interface definition
-    //
-    debugClient: boolean;
-    debugServer: boolean;
-    debugLevel: number;
-    include: string[] | string;
-    intellisenseIncludeDeprecated: boolean;
-    intellisenseIncludePrivate: boolean;
-    validateXTypes: boolean;
-    validationDelay: number;
-    ignoreErrors: IError[];
 }
 
 
