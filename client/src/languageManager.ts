@@ -911,30 +911,32 @@ class ExtjsLanguageManager
         const disposables: Disposable[] = [],
               confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
 
-        context.subscriptions.push(confWatcher);
         confWatcher.onDidChange(initConfig);
+        disposables.push(confWatcher);
 
         //
         // Open dcument text change
         //
-        disposables.push(workspace.onDidChangeTextDocument(async (e) => this.processDocumentChange, context.subscriptions));
+        disposables.push(workspace.onDidChangeTextDocument((e) => { this.processDocumentChange(e); }, this));
+        // disposables.push(workspace.onDidChangeTextDocument((e) => this.processDocumentChange));
         //
         // Deletions
         //
-        disposables.push(workspace.onDidDeleteFiles((e) => this.processDocumentDelete, context.subscriptions));
+        disposables.push(workspace.onDidDeleteFiles((e) => { this.processDocumentDelete(e); }, this));
         //
         // Active editor changed
         //
-        disposables.push(window.onDidChangeActiveTextEditor((e) => this.processEditorChange , context.subscriptions));
+        disposables.push(window.onDidChangeActiveTextEditor((e) => { this.processEditorChange(e); }, this));
         //
         // Open text document
         //
-        disposables.push(workspace.onDidOpenTextDocument((e) => this.processDocumentOpen, context.subscriptions));
+        disposables.push(workspace.onDidOpenTextDocument((e) => { this.processDocumentOpen(e); }, this));
         //
         // Register configurations/settings change watcher
         //
-        disposables.push(workspace.onDidChangeConfiguration(e => this.processConfigChange, context.subscriptions));
+        disposables.push(workspace.onDidChangeConfiguration((e) => { this.processConfigChange(e); }, this));
 
+        context.subscriptions.push(...disposables);
         return disposables;
     }
 

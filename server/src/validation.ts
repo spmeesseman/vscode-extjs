@@ -2,7 +2,7 @@
 import { Connection, Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, componentClassToWidgetsMapping, widgetToComponentClassMapping } from "./syntaxTree";
-import { IPosition, IRequires, utils } from "../../common";
+import { IPosition, IRequires, utils, ErrorCode } from "../../common";
 import { globalSettings } from "./server";
 import * as log from "./log";
 
@@ -154,37 +154,100 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 
 function validateXtype(xtype: string, cmpRequires: IRequires | undefined, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
-	if (!utils.isNeedRequire(widgetToComponentClassMapping[xtype])) {
-		return;
-	}
-	const requires = [];
-	requires.push(...(cmpRequires?.value || []));
-	const requiredXtypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
-		previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
-		return previousValue;
-	}, []);
-
-	if (!requiredXtypes.includes(xtype))
+	//
+	// First check to make sure we have the widget/xtype/alias indexed
+	//
+	if (!widgetToComponentClassMapping[xtype])
 	{
 		const diagnostic: Diagnostic = {
 			severity: DiagnosticSeverity.Error,
 			range,
 			message: `The referenced xtype "${xtype}" was not found.`,
 			source: "vscode-extjs",
+			code: ErrorCode.xtypeNotFound
 		};
-/*
+
 		if (diagRelatedInfoCapability)
-        {
-			diagnostic.relatedInformation = [
-            {
-                location: {
-                    uri: document.uri,
-                    range: { ...diagnostic.range }
-                },
-                message: xtype
-            }];
+		{
+			const suggestions: string[] = [];
+			//
+			// See if some suggestions can be made...
+			//
+			for (const widget in widgetToComponentClassMapping)
+			{   //
+				// Don''t expect the user to misspell by more than a character or two, so apply
+				// a 2 character threshhold on the length of the strings that we should compare
+				//
+				if (widget.length < xtype.length - 2 || widget.length > xtype.length + 2) {
+					continue;
+				}
+				const widgetPart1 = widget.substring(0, widget.length / 2),
+					widgetPart2 = widget.substring(widget.length / 2);
+				//
+				// Max 5 suggestions
+				//
+				if (suggestions.length === 5) {
+					break;
+				}
+				if (xtype.match(new RegExp(`${widgetPart1}[\\w]+`))) {
+					suggestions.push(widget);
+					continue;
+				}
+				if (xtype.match(new RegExp(`[\\w]+${widgetPart2}`))) {
+					suggestions.push(widget);
+					continue;
+				}
+			}
+
+			if (suggestions.length > 0)
+			{
+				diagnostic.relatedInformation = [
+				{
+					location: {
+						uri: document.uri,
+						range: { ...diagnostic.range }
+					},
+					message: "Did you mean: " + suggestions.join(", ")
+				}];
+			}
+
+			diagnostics.push(diagnostic);
 		}
-*/
-		diagnostics.push(diagnostic);
 	}
+
+	if (utils.isNeedRequire(widgetToComponentClassMapping[xtype]))
+	{
+		const requires = [];
+		requires.push(...(cmpRequires?.value || []));
+		const requiredXtypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
+			previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
+			return previousValue;
+		}, []);
+
+		if (!requiredXtypes.includes(xtype))
+		{
+			const diagnostic: Diagnostic = {
+				severity: DiagnosticSeverity.Warning,
+				range,
+				message: `The referenced xtype "${xtype}" does not have a corresponding requires directive.`,
+				source: "vscode-extjs",
+				code: ErrorCode.xtypeNoRequires
+			};
+	/*
+			if (diagRelatedInfoCapability)
+			{
+				diagnostic.relatedInformation = [
+				{
+					location: {
+						uri: document.uri,
+						range: { ...diagnostic.range }
+					},
+					message: xtype
+				}];
+			}
+	*/
+			diagnostics.push(diagnostic);
+		}
+	}
+
 }

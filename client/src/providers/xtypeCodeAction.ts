@@ -3,6 +3,7 @@ import {
     CancellationToken, CodeActionProvider, ExtensionContext, languages, ProviderResult,
     TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind
 } from "vscode";
+import { ErrorCode } from "../../../common/src";
 
 
 class XtypeCodeActionProvider implements CodeActionProvider
@@ -20,21 +21,49 @@ class XtypeCodeActionProvider implements CodeActionProvider
             if (d.source !== "vscode-extjs") {
                 continue;
             }
-            if (d.message.match(/^The referenced xtype "\w+" was not found.$/))
+            if (d.code === ErrorCode.xtypeNotFound && d.relatedInformation)
+            {
+                for (const info of d.relatedInformation)
+                {
+                    const matches = info.message.match(/Did you mean: ([A-Z0-9]+)/i);
+                    if (matches)
+                    {
+                        const suggestions = matches[1].replace(/ /g, "").split(","),
+                            addSuggest = [];
+                        for (const suggestion of suggestions)
+                        {
+                            addSuggest.push({
+                                title: "Replace declared xtype with '" + suggestion + "'",
+                                isPreferred: true,
+                                kind: CodeActionKind.QuickFix,
+                                command: {
+                                    title: "Replace declared xtype with '" + suggestion + "'",
+                                    command: "vscode-extjs:replace-text",
+                                    arguments: [ '"' + suggestion + '"', range ]
+                                }
+                            });
+                        }
+                        if (addSuggest.length > 0) {
+                            actions.push(...addSuggest);
+                        }
+                    }
+                }
+            }
+            else if (d.code === ErrorCode.xtypeNoRequires)
             {
                 actions.push(...[
                 {
-                    title: "Fix the 'requires' array for this invalid xtype",
+                    title: "Fix the 'requires' array for this declared xtype",
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {
-                        title: "Fix the 'requires' array for this invalid xtype",
+                        title: "Fix the 'requires' array for this declared xtype",
                         command: "vscode-extjs:ensure-require",
                         arguments: [ document.getText(range).replace(/["']/g, "") ]
                     }
                 },
                 {
-                    title: "Fix the 'requires' array for all invalid xtypes",
+                    title: "Fix the 'requires' array for all declared xtypes",
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {

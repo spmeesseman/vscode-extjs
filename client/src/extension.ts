@@ -1,10 +1,11 @@
 
-import { commands, Disposable, ExtensionContext, OutputChannel, window } from "vscode";
+import { Disposable, ExtensionContext, OutputChannel, window } from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
 import { registerProviders } from "./providers/manager";
 import { initStorage } from "./common/storage";
 import { initFsStorage } from "./common/fsStorage";
 import registerEnsureRequiresCommand from "./commands/ensureRequire";
+import registerReplaceTextCommand from "./commands/replaceText";
 import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 import * as log from "./common/log";
@@ -77,6 +78,7 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
 function registerCommands(context: ExtensionContext)
 {
     registerEnsureRequiresCommand(context);
+    registerReplaceTextCommand(context);
 }
 
 

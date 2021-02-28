@@ -119,6 +119,11 @@
 			{
 				"command": "vscode-extjs:ensure-require",
 				"title": "vscode-extjs: Ensure Requires for XTypes"
+			},
+			{
+				"command": "vscode-extjs:replace-text",
+				"title": "vscode-extjs: Replace Text",
+				"enablement": "none!=none"
 			}
 		],
 		"configuration": {
