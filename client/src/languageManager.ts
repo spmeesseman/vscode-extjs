@@ -10,280 +10,712 @@ import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils } from  "../../common";
+import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType } from  "../../common";
 import * as log from "./common/log";
 import * as clientUtils from "./common/clientUtils";
-
-
-let config: IConf[] = [];
-
-export let isIndexing = true;
-
-export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
-export const configToComponentClassMapping: { [property: string]: string | undefined } = {};
-export const methodToComponentClassMapping: { [method: string]: string | undefined } = {};
-export const propertyToComponentClassMapping: { [method: string]: string | undefined } = {};
-export const xtypeToComponentClassMapping: { [method: string]: string | undefined } = {};
-export const fileToComponentClassMapping: { [fsPath: string]: string | undefined } = {};
-
-const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
-const componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
-const componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
-const componentClassToXTypesMapping: { [componentClass: string]: IXtype[] | undefined } = {};
-const componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | undefined } = {};
-const componentClassToPropertiesMapping: { [componentClass: string]: IProperty[] | undefined } = {};
-const componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
-export const componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
-export const componentClassToFilesMapping: { [componentClass: string]: string | undefined } = {};
-export const componentClassToAliasesMapping: { [componentClass: string]: string[] | undefined } = {};
-
-enum MarkdownChars
-{
-    NewLine = "  \n",
-    TypeWrapBegin = "[",
-    TypeWrapEnd = "]",
-    Bold = "**",
-    Italic = "*",
-    BoldItalicStart = "_**",
-    BoldItalicEnd = "**_",
-    LongDash = "&#8212;",
-    Black = "\\u001b[30m",
-    Red = "\\u001b[31",
-    Green = "\\u001b[32m",
-    Yellow = "\\u001b[33m",
-    Blue = "\\u001b[34m", // "<span style=\"color:blue\">"  "</style>"
-    Magenta = "\\u001b[35",
-    Cyan = "\\u001b[36m",
-    White = "\\u001b[37m"
-}
-
-enum MarkdownStringMode
-{
-    Class,
-    Code,
-    Config,
-    Deprecated,
-    Link,
-    Method,
-    Normal,
-    Private,
-    Property,
-    Param,
-    Returns,
-    Since,
-    Singleton
-}
-
-export enum ComponentType
-{
-    None,
-    Config = 1 << 0,
-    Method = 1 << 1,
-    Property = 1 << 2,
-    Widget = 1 << 3,
-    Class = 1 << 4
-}
+import { CommentParser } from "./common/commentParser";
 
 
 class ExtjsLanguageManager
 {
+    private isIndexing = true;
+    private config: IConf[] = [];
     private serverRequest: ServerRequest;
     private reIndexTaskId: NodeJS.Timeout | undefined;
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
+    private commentParser: CommentParser = new CommentParser();
+
+    private widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
+    private configToComponentClassMapping: { [property: string]: string | undefined } = {};
+    private methodToComponentClassMapping: { [method: string]: string | undefined } = {};
+    private propertyToComponentClassMapping: { [method: string]: string | undefined } = {};
+    private xtypeToComponentClassMapping: { [method: string]: string | undefined } = {};
+    private fileToComponentClassMapping: { [fsPath: string]: string | undefined } = {};
+
+    private componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
+    private componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
+    private componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
+    private componentClassToXTypesMapping: { [componentClass: string]: IXtype[] | undefined } = {};
+    private componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | undefined } = {};
+    private componentClassToPropertiesMapping: { [componentClass: string]: IProperty[] | undefined } = {};
+    private componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
+    private componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
+    private componentClassToFilesMapping: { [componentClass: string]: string | undefined } = {};
+    private componentClassToAliasesMapping: { [componentClass: string]: string[] | undefined } = {};
 
 
     constructor(serverRequest: ServerRequest)
     {
         this.serverRequest = serverRequest;
-        isIndexing = true;
     }
 
 
-    private boldItalic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
+    private async initConfig(): Promise<boolean>
     {
-        return (leadingSpace ? " " : "") + MarkdownChars.BoldItalicStart + text +
-               MarkdownChars.BoldItalicEnd + (trailingSpace ? " " : "");
-    }
+        const confUris = await workspace.findFiles(".extjsrc{.json,}"),
+              appDotJsonUris = await workspace.findFiles("app.json");
+        let settingsPaths = configuration.get<string[]|string>("include");
 
+        log.methodStart("initialize config", 1, "", true);
 
-    private bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
-    {
-        return (leadingSpace ? " " : "") + MarkdownChars.Bold + text + MarkdownChars.Bold +
-               (trailingSpace ? " " : "");
-    }
+        //
+        // Clear
+        //
+        this.config = [];
 
-
-    private commentToMarkdown(property: string, comment: string | undefined, logPad = ""): MarkdownString | undefined
-    {
-        if (!comment || !property) {
-            return;
+        //
+        // Specific directories set directly in user settings, the `include` setting
+        //
+        if (settingsPaths)
+        {
+            if (typeof settingsPaths === "string") {
+                settingsPaths = [ settingsPaths ];
+            }
+            for (const path of settingsPaths)
+            {
+                const pathParts = path?.split("|");
+                if (pathParts.length === 2)
+                {
+                    this.config.push({
+                        classpath: pathParts[1],
+                        name: pathParts[0]
+                    });
+                }
+            }
         }
 
-        const markdown = new MarkdownString();
-
         //
-        // JSDoc comments in the following form:
+        // The `.extjsrc` config files
         //
-        //     /**
-        //     * @property propName
-        //     * The property description
-        //     * @returns {Boolean}
-        //     */
-        //
-        //     /**
-        //     * @method methodName
-        //     * The method description
-        //     * @property prop1 Property 1 description
-        //     * @property prop2 Property 2 description
-        //     * @returns {Boolean}
-        //     */
-        //
-        // VSCode Hover API takes Clojure based markdown text.  See:
-        //
-        //     https://clojure.org/community/editing
-        //
-
-        log.methodStart("build markdown string from comment", 4, logPad, false, [["comment", comment]]);
-
-        const commentFmt = comment?.trim()
-            //
-            // Clean up beginning of string /**\n...
-            //
-            .replace(/^[\* \t\n\r]+/, "");
-            //
-            // Format line breaks to Clojure standard
-            //
-            // .replace(/\n/, newLine)
-            // //
-            // // Remove leading "* " for each line in the comment
-            // //
-            // .replace(/\* /, "")
-            // //
-            // // Bold @ tags
-            // //
-            // .replace(/@[a-z]+ /, function(match) {
-            //     return "_**" + match.trim() + "**_ ";
-            // })
-            // .trim();
-
-        const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/),
-              maxLines = 75;
-        let mode: MarkdownStringMode | undefined,
-            indented = "",
-            previousMode: MarkdownStringMode | undefined,
-            trailers: string[] = [],
-            currentLine = 0;
-
-        for (let line of docLines)
+        if (confUris)
         {
-            if (!line.trim()) {
-                continue;
-            }
-
-            if (currentLine === 0 && line.includes("eslint")) {
-                continue;
-            }
-
-            if (markdown.value.length > 0 && mode !== MarkdownStringMode.Code) {
-                markdown.appendMarkdown(MarkdownChars.NewLine);
-            }
-
-            line = line
-            //
-            // Remove line breaks, we format later depending on comment parts, done w/ Clojure
-            // standard line breaks
-            //
-            .replace(/\n/, "")
-            //
-            // Remove leading "* " for each line in the comment
-            //
-            .replace(/\* /, "")
-            .replace(/\s*\*$/, ""); // <- Blank lines
-            //
-            // Italicize @ tags
-            //
-            // .replace(/@[a-z]+ /, function(match) {
-            //     return "_" + match.trim() + "_";
-            // });
-            // .trim();
-
-            log.value("   process line", line, 4);
-
-            if (!line.trim()) {
-                continue;
-            }
-
-            mode = getMode(line);
-
-            if (indented && mode !== MarkdownStringMode.Code)
+            for (const uri of confUris)
             {
-                markdown.appendCodeblock(indented.trim());
-                indented = "";
+                const fileSystemPath = uri.fsPath || uri.path;
+                const confJson = fs.readFileSync(fileSystemPath, "utf8");
+                const conf: IConf = json5.parse(confJson);
+                if (conf.classpath && conf.name)
+                {
+                    log.value("   add .extjsrc path", fileSystemPath, 2);
+                    log.value("      namespace", conf.name, 2);
+                    log.value("      classpath", conf.classpath, 3);
+                    this.config.push(conf);
+                }
             }
+        }
 
-            //
-            // If 'mode' defined, and strings exist in the 'trailers' array, then then we are done
-            // processing previous tag block.  e.g.:
-            //
-            //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
-            //     User can select whetheror not to submit a ticket.
-            //     [ TRAILERS GO HERE ]
-            //     @param {Boolean} [ask=true]  Prompt for input   ( <--- processing this line)
-            //
-            if (mode !== undefined && mode !== MarkdownStringMode.Code && trailers.length)
+        //
+        // The `app.json` files
+        //
+        if (appDotJsonUris)
+        {
+            for (const uri of appDotJsonUris)
             {
-                trailers.forEach((t) => {
-                    markdown.appendMarkdown(t);
-                });
-                trailers = [];
+                await this.parseAppDotJson(uri);
             }
+        }
 
-            mode = mode !== undefined ? mode : previousMode;
+        log.value("   # of configs found", this.config.length, 3);
+        log.methodDone("initialize config", 1, "", true);
 
-            previousMode = mode;
+        return (this.config.length > 0);
+    }
 
-            if (mode === MarkdownStringMode.Config || mode === MarkdownStringMode.Property || mode === MarkdownStringMode.Method)
-            {
-                this.handleObjectLine(line, property, markdown);
-            }
-            else if (mode === MarkdownStringMode.Class)
-            {
-                this.handleClassLine(line, markdown);
-            }
-            else if (mode === MarkdownStringMode.Param)
-            {
-                this.handleParamLine(line, trailers, currentLine === 0, markdown);
-            }
-            else if (mode === MarkdownStringMode.Code)
-            {
-                log.value("      indented line", line, 5);
-                indented += MarkdownChars.NewLine + line.trim();
-            }
-            else if (mode === MarkdownStringMode.Returns)
-            {
-                this.handleReturnsLine(line, markdown);
-            }
-            else if (mode === MarkdownStringMode.Deprecated)
-            {
-                this.handleDeprecatedLine(line, markdown);
-            }
-            else if (mode === MarkdownStringMode.Singleton)
-            {
-                this.handleTagLine(line, markdown);
-            }
-            else
-            {
-                this.handleTextLine(line, markdown);
-            }
 
-            ++currentLine;
-            if (currentLine >= maxLines) {
+    getAliasNames(): string[]
+    {
+        const aliases: string[] = [],
+              amap = this.componentClassToAliasesMapping;
+
+        Object.entries(amap).forEach(([ cls, alias ]) =>
+        {
+            if (cls && alias)
+            {
+                for (const a of alias) {
+                    aliases.push(a);
+                }
+            }
+        });
+        return aliases;
+    }
+
+
+    getClassFromPath(fsPath: string)
+    {
+        //
+        // TODO - check / test file delete
+        //
+        let cmpClass: string | undefined;
+        const // uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
+              // wsf = workspace.getWorkspaceFolder(Uri.parse(`file://${uriPath}`));
+              wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
+
+        log.write("get component by fs path", 1);
+        log.value("   path", fsPath, 2);
+
+        for (const conf of this.config)
+        {
+            if (conf.classpath.includes(fsPath))
+            {
+                if (wsf) {
+                    fsPath = fsPath.replace(wsf.uri.fsPath, "");
+                }
+
+                fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.classpath}${path.sep}*`), "");
+                fsPath = fsPath.replace(/\..+$/, "");
+                cmpClass = conf.name + "." + fsPath.split(path.sep).join(".");
                 break;
             }
         }
 
-        log.methodDone("build markdown string from comment", 4, logPad);
-        return markdown;
+        log.value("   component class", cmpClass, 2);
+        return cmpClass;
+    }
+
+
+    /**
+     * @method getNamespaceFromFile
+     *
+     * @param fsPath Filesystem path to file
+     * @param part Zero-based index of namespace part to return
+     */
+    getNamespaceFromFile(fsPath: string, part?: number): string | undefined
+    {
+        log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
+        const cls = this.fileToComponentClassMapping[fsPath];
+        if (cls){
+            log.write("   found base class", 3);
+            return cls.split(".")[part ?? 0];
+        }
+        return undefined;
+    }
+
+
+    getClassFromFile(fsPath: string, logPad = ""): string | undefined
+    {
+        log.methodStart("get component class by file", 1, logPad, false, [["file", fsPath]]);
+        const cls = this.fileToComponentClassMapping[fsPath];
+        if (cls) {
+            log.write("   found component class", 3, logPad);
+            return cls;
+        }
+        return undefined;
+    }
+
+
+    getComponent(componentClass: string, checkAlias?: boolean, fsPath?: string): IComponent | undefined
+    {
+        let component = this.componentClassToComponentsMapping[componentClass];
+
+        log.write("get component by class", 1);
+        log.value("   component class", componentClass, 2);
+
+        if (component)
+        {
+            log.write("   found component", 3);
+            log.value("      namespace", component.nameSpace, 4);
+            log.value("      base namespace", component.baseNameSpace, 4);
+        }
+
+        if (!component && checkAlias === true)
+        {
+            component = this.getComponentByAlias(componentClass);
+            if (component) {
+                log.write("   found aliased component", 3);
+                log.value("      namespace", component.nameSpace, 4);
+                log.value("      base namespace", component.baseNameSpace, 4);
+            }
+        }
+
+        if (!component && fsPath)
+        {
+            component = this.getComponentInstance(componentClass, fsPath);
+            if (component) {
+                log.write("   found instanced component", 3);
+                log.value("      namespace", component.nameSpace, 4);
+                log.value("      base namespace", component.baseNameSpace, 4);
+            }
+        }
+
+        return component;
+    }
+
+
+    getComponentNames(): string[]
+    {
+        const cmps: string[] = [],
+              map = this.componentClassToComponentsMapping;
+        Object.keys(map).forEach((cls) =>
+        {
+            cmps.push(cls);
+        });
+        return cmps;
+    }
+
+
+    getComponentByAlias(alias: string): IComponent | undefined
+    {
+        const cls = this.widgetToComponentClassMapping[alias];
+        log.write("get component by alias", 1);
+        log.value("   component alias", alias, 2);
+        if (cls) {
+            const component = this.getComponent(cls);
+            if (component) {
+                log.write("   found component", 3);
+                log.value("      namespace", component.nameSpace, 4);
+                log.value("      base namespace", component.baseNameSpace, 4);
+                return component;
+            }
+        }
+        return undefined;
+    }
+
+
+    getComponentByFile(fsPath: string): IComponent | undefined
+    {
+        const cls = this.getClassFromFile(fsPath);
+        log.write("get component by file", 1);
+        log.value("   component file", fsPath, 2);
+        if (cls) {
+            const component = this.getComponent(cls);
+            if (component) {
+                log.write("   found component", 3);
+                log.value("      namespace", component.nameSpace, 4);
+                log.value("      base namespace", component.baseNameSpace, 4);
+                return component;
+            }
+        }
+        return undefined;
+    }
+
+
+    /**
+     * @method getComponentClass
+     *
+     * Get component class name from an xtype, alias, or alternateClassName
+     * Note that xtypes/aliases must be unique within an application for this /**
+     * to work properly every time.
+     *
+     * @param {String} property Property name, i.e. an xtype, alias, or widget aliased string
+     * @param {String} txt The complete line of text the property is found in
+     *
+     * @returns {String}
+     */
+    getComponentClass(property: string, cmpType?: ComponentType, txt?: string): string | undefined
+    {
+        let cmpClass = "this", // getComponentByConfig(property);
+            cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
+
+        if (!txt)
+        {
+            if (!cmpType || cmpType === ComponentType.Widget) {
+                return this.widgetToComponentClassMapping[property];
+            }
+            else if (cmpType === ComponentType.Method) {
+                return this.methodToComponentClassMapping[property];
+            }
+            else if (cmpType === ComponentType.Property) {
+                return this.propertyToComponentClassMapping[property];
+            }
+            else if (cmpType === (ComponentType.Property | ComponentType.Config)) {
+                if (this.propertyToComponentClassMapping[property]) {
+                    return this.propertyToComponentClassMapping[property];
+                }
+                return this.configToComponentClassMapping[property];
+            }
+            else {
+                return undefined;
+            }
+        }
+
+        //
+        // Get class name prependature to hovered property
+        //
+        // classPre could be something like:
+        //
+        //     Ext.csi.view.common.
+        //     Ext.csi.store.
+        //     Ext.form.field.
+        //     MyApp.view.myview.
+        //
+        cmpClassPre = txt.substring(0, txt.indexOf(property));
+        cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
+
+        //
+        // Remove the trailing '.' for the component name
+        //
+        cmpClass = cmpClassPre.substr(0, cmpClassPre.length - 1);
+        if (cmpClassPreIdx > 0)
+        {
+            cmpClassPre = cmpClassPre.substring(cmpClassPreIdx);
+        }
+
+        for (let i = cmpClass.length - 1; i >= 0 ; i--)
+        {
+            if (cmpClass[i] < "A" || cmpClass > "z")
+            {
+                if (cmpClass[i] < "0" || cmpClass > "9") {
+                    if (cmpClass[i] !== ".") {
+                        cutAt = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
+
+        if (!cmpClass || cmpClass === "this")
+        {
+            cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
+        }
+
+        //
+        // Check aliases/alternate class names
+        //
+        let aliasClass: string | undefined;
+        if (aliasClass = this.widgetToComponentClassMapping[cmpClass])
+        {
+            cmpClass = aliasClass;
+        }
+
+        log.blank(1);
+        log.value("class", cmpClass, 1);
+        return cmpClass;
+    }
+
+
+    getComponentInstance(property: string, fsPath: string)
+    {
+         //
+        // Check instance properties
+        //
+
+        const thisCls = this.getClassFromFile(fsPath);
+        if (!thisCls) {
+            return;
+        }
+
+        const cmp = this.getComponent(thisCls) || this.getComponentByAlias(thisCls);
+        if (!cmp) {
+            return;
+        }
+
+        for (const variable of cmp.privates)
+        {
+            // TODO - property hover - check private sec
+        }
+
+        for (const variable of cmp.statics)
+        {
+            // TODO - property hover - check static sec
+        }
+
+        for (const method of cmp.methods)
+        {
+            if (method.variables)
+            {
+                for (const variable of method.variables)
+                {
+                    if (variable.name === property)
+                    {
+                        const instanceCmp = this.getComponent(variable.componentClass) || this.getComponentByAlias(variable.componentClass);
+                        if (instanceCmp && instanceCmp.markdown)
+                        {
+                            log.value("provide instance class hover info", property, 1);
+                            return instanceCmp;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    getConfig(cmp: string, property: string): IConfig | undefined
+    {
+        const configs = this.componentClassToConfigsMapping[cmp];
+        log.write("get config by component class", 1);
+        log.value("   component class", cmp, 2);
+        log.value("   config", property, 2);
+        if (configs) {
+            for (let c = 0; c < configs.length; c++) {
+                if (configs[c].name === property) {
+                    log.write("   found config", 3);
+                    log.value("      name", configs[c].name, 4);
+                    log.value("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
+                    log.value("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
+                    return configs[c];
+                }
+            }
+        }
+        return undefined;
+    }
+
+
+    getFilePath(componentClass: string)
+    {
+        const fsPath = this.componentClassToFsPathMapping[componentClass];
+        log.write("get fs path by component", 1);
+        log.value("   path", fsPath, 2);
+        return fsPath;
+    }
+
+
+    getProperty(cmp: string, property: string): IProperty | undefined
+    {
+        const properties = this.componentClassToPropertiesMapping[cmp];
+        log.write("get property by component class", 1);
+        log.value("   component class", cmp, 2);
+        log.value("   property", property, 2);
+        if (properties) {
+            for (let c = 0; c < properties.length; c++) {
+                if (properties[c].name === property) {
+                    log.write("   found property", 3);
+                    log.value("      name", properties[c].name, 4);
+                    log.value("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
+                    log.value("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
+                    return properties[c];
+                }
+            }
+        }
+        return undefined;
+    }
+
+
+    getMethod(cmp: string, property: string): IMethod| undefined
+    {
+        const methods = this.componentClassToMethodsMapping[cmp];
+        log.write("get config by method", 1);
+        log.value("   component class", cmp, 2);
+        log.value("   property", property, 2);
+        if (methods)
+        {
+            for (let c = 0; c < methods.length; c++)
+            {
+                if (methods[c].name === property) {
+                    log.write("   found method", 3);
+                    log.value("      name", methods[c].name, 4);
+                    log.value("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
+                    log.value("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
+                    return methods[c];
+                }
+            }
+        }
+        return undefined;
+    }
+
+
+    getSubComponentNames(componentClass: string): string[]
+    {
+        const subComponentNames: string[] = [],
+              map = this.componentClassToComponentsMapping;
+
+        log.write("get component by class", 1);
+        log.value("   component class", componentClass, 2);
+
+        Object.keys(map).forEach((cls) =>
+        {
+            if (cls && cls.startsWith(componentClass))
+            {
+                const subCMp = cls.replace(componentClass + ".", "").split(".")[0];
+                if (subCMp) {
+                    subComponentNames.push(subCMp);
+                }
+            }
+        });
+
+        return subComponentNames;
+    }
+
+
+    getXType(cmp: string, xtype: string): IXtype | undefined
+    {
+        const xtypes = this.componentClassToXTypesMapping[cmp];
+        log.write("get config by component class", 1);
+        log.value("   component class", cmp, 2);
+        log.value("   xtype", xtype, 2);
+        if (xtypes) {
+            for (let c = 0; c < xtypes.length; c++) {
+                if (xtypes[c].name === xtype) {
+                    log.write("   found config", 3);
+                    log.value("      name", xtypes[c].name, 4);
+                    log.value("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
+                    log.value("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
+                    return xtypes[c];
+                }
+            }
+        }
+        return undefined;
+    }
+
+
+    getWidgetNames(): string[]
+    {
+        const aliases: string[] = [],
+              amap = this.componentClassToWidgetsMapping;
+
+        Object.entries(amap).forEach(([ cls, widget ]) =>
+        {
+            if (cls && widget)
+            {
+                for (const a of widget) {
+                    aliases.push(a);
+                }
+            }
+        });
+        return aliases;
+    }
+
+
+    handleDeleFile(fsPath: string)
+    {
+        const componentClass = this.getClassFromPath(fsPath);
+        if (componentClass)
+        {
+            log.write("handle file depetion", 1);
+            log.value("   path", fsPath, 2);
+            log.value("   component class", componentClass, 2);
+
+            const component = this.getComponent(componentClass);
+            if (component)
+            {
+                // component.aliases.forEach((alias) => {
+                //     delete aliasToComponentClassMapping[alias];
+                // });
+
+                component.configs.forEach((config) => {
+                    delete this.configToComponentClassMapping[config.name];
+                });
+
+                component.methods.forEach((method) => {
+                    delete this.methodToComponentClassMapping[method.name];
+                });
+
+                // component.privates.forEach((private) => {
+                //     delete privateToComponentClassMapping[private.name];
+                // });
+
+                component.properties.forEach((property) => {
+                    delete this.propertyToComponentClassMapping[property.name];
+                });
+
+                // component.statics.forEach((static) => {
+                //     delete configToComponentClassMapping[static.name];
+                // });
+
+                component.widgets.forEach((widget) => {
+                    delete this.widgetToComponentClassMapping[widget];
+                });
+            }
+
+            delete this.componentClassToWidgetsMapping[componentClass];
+            delete this.componentClassToAliasesMapping[componentClass];
+            delete this.componentClassToFsPathMapping[componentClass];
+            delete this.componentClassToRequiresMapping[componentClass];
+            delete this.componentClassToConfigsMapping[componentClass];
+            delete this.componentClassToPropertiesMapping[componentClass];
+            delete this.componentClassToMethodsMapping[componentClass];
+            delete this.componentClassToComponentsMapping[componentClass];
+        }
+    }
+
+
+    isBusy()
+    {
+        return this.isIndexing;
+    }
+
+
+    parseAppDotJson(uri: Uri)
+    {
+        const fileSystemPath = uri.fsPath || uri.path,
+              baseDir = path.dirname(uri.fsPath),
+              conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
+        //
+        // Merge classpath to root
+        //
+        const classic = conf.classic ? Object.assign([], conf.classic) : {},
+              modern = conf.modern ? Object.assign([], conf.modern) : {};
+
+        if (!conf.classpath)
+        {
+            conf.classpath = [];
+        }
+        else if (typeof conf.classpath === "string")
+        {
+            conf.classpath = [ conf.classpath ];
+        }
+
+        if (classic?.classpath)
+        {
+            conf.classpath = conf.classpath.concat(...classic.classpath);
+        }
+        if (modern?.classpath) {
+            conf.classpath = conf.classpath.concat(...modern.classpath);
+        }
+
+        //
+        // workspace.json
+        //
+        const wsDotJsonFsPath = path.join(baseDir, "workspace.json");
+        if (fs.existsSync(wsDotJsonFsPath))
+        {
+            const wsConf = json5.parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
+
+            if (wsConf.frameworks && wsConf.frameworks.ext)
+            {   //
+                // The framework directory should have a package.json, specifying its dependencies, i.e.
+                // the ext-core package.  Read package.json in framework directory.  If found, this is an
+                // open tooling project
+                //
+                const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
+                if (fs.existsSync(fwJsonFsPath))
+                {
+                    const fwConf = json5.parse(fs.readFileSync(fwJsonFsPath, "utf8"));
+                    if (fwConf.dependencies)
+                    {
+                        for (const dep in fwConf.dependencies)
+                        {
+                            if (fwConf.dependencies.hasOwnProperty(dep))
+                            {
+                                const fwPath = path.join("node_modules", dep).replace("\\", "/");
+                                conf.classpath.push(fwPath);
+                                log.value("   add ws.json framework path", fwPath, 2);
+                                log.value("      fraamework version", fwConf.dependencies[dep], 2);
+                            }
+                        }
+                    }
+                    else {
+                        log.error("No package.json found in workspace.framework directory");
+                    }
+                }
+                else {
+                    conf.classpath.push(wsConf.frameworks.ext);
+                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
+                }
+            }
+
+            if (wsConf.packages && wsConf.packages.dir)
+            {
+                const dirs = wsConf.packages.dir.split(",");
+                for (const d of dirs)
+                {
+                    const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
+                                    .replace(/\$\{toolkit.name\}/, "classic");
+                    conf.classpath.push(wsPath);
+                    log.value("   add ws.json path", wsPath, 2);
+                }
+            }
+        }
+
+        if (conf.classpath && conf.name)
+        {
+            log.value("   add app.json paths", fileSystemPath, 2);
+            log.value("      namespace", conf.name, 2);
+            log.value("      classpath", conf.classpath, 3);
+            this.config.push(conf);
+        }
     }
 
 
@@ -303,235 +735,6 @@ class ExtjsLanguageManager
             return fsPath.replace(wsf.uri.fsPath, "");
         }
         return Uri.parse(fsPath).path;
-    }
-
-
-    private handleClassLine(line: string, markdown: MarkdownString)
-    {
-        let classLine = line.trim();
-        if (classLine.match(/@[\w]+ /))
-        {
-            const lineParts = line.trim().split(" ");
-            classLine = this.italic(lineParts[0], false, true);
-            if (lineParts.length > 1)
-            {
-                lineParts.shift();
-                classLine += this.bold(lineParts[0], true, true);
-                if (lineParts.length > 1)
-                {
-                    lineParts.shift();
-                    classLine += MarkdownChars.NewLine + lineParts.join(" ");
-                }
-            }
-        }
-        log.value("      insert class line", classLine, 5);
-        markdown.appendMarkdown(classLine);
-    }
-
-
-    private handleDeprecatedLine(line: string, markdown: MarkdownString)
-    {
-        let textLine = line.trim();
-        textLine = this.italic(textLine, false, true);
-        log.value("      insert deprecated line", textLine, 5);
-        markdown.appendMarkdown(textLine);
-    }
-
-
-    private handleObjectLine(line: string, property: string, markdown: MarkdownString)
-    {
-        let cfgLine = "";
-        if (line.startsWith("@")) {
-            const lineParts = line.split(property);
-            cfgLine = lineParts[0] + this.boldItalic(property) + " " + lineParts[1];
-        }
-        else {
-            cfgLine = line.trim();
-        }
-        log.value("      insert object line", cfgLine, 5);
-        markdown.appendMarkdown(cfgLine);
-    }
-
-
-    private handleParamLine(line: string, trailers: string[], useCode: boolean, markdown: MarkdownString)
-    {
-        if (!line.startsWith("@"))
-        {
-            log.value("      insert param text line", line, 5);
-            markdown.appendMarkdown(line);
-            return;
-        }
-
-        let lineProperty = "", lineType = "",
-            lineValue = "", lineTrail = "";
-        const lineParts = line.split(" ");
-        //
-        // Examples:
-        //
-        //     @param {Object} opt Delivery options.
-        //     @param {String} msg The specific error message.
-        //     Some more descriptive text about the above property.
-        //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
-        //     Some more descriptive text about the above property.
-        //
-        // Trailing line text i.e. 'Some more descriptive text about the above property' gets
-        // stored into 'lineTrail'.  THis is placed "before" the default value extracted from a
-        // first line i.e. [show=true].
-        //
-        if (lineParts.length > 1)
-        {   //
-            // Check for no type i.e. @param propName the description here
-            //
-            if (!lineParts[1].match(/\{[A-Z(\[\])]+\}/i))
-            {
-                lineType = "";
-                lineProperty = lineParts[1];
-                if (lineParts.length > 2)
-                {
-                    lineParts.shift();
-                    lineParts.shift();
-                    lineTrail = lineParts.join(" ");
-                }
-                else {
-                    lineParts.shift();
-                    lineTrail = "";
-                }
-            }
-            //
-            // Has type i.e. @param {String} propName the description here
-            //
-            else if (lineParts.length > 2)
-            {
-                lineType = lineParts[1];
-                lineProperty = lineParts[2];
-                if (lineParts.length > 3)
-                {
-                    lineParts.shift();
-                    lineParts.shift();
-                    lineParts.shift();
-                    lineTrail = lineParts.join(" ");
-                }
-            }
-        }
-
-        //
-        // If no property name was found, then there's nothing to add to the markdown, exit
-        //
-        if (!lineProperty) {
-            return;
-        }
-
-        log.value("          name", lineProperty, 5);
-        log.value("          type", lineType, 5);
-
-        if (lineType)
-        {
-            lineType = lineType.replace(/[\{\}]/g, "");
-        }
-
-        //
-        // Check for a default value, for example:
-        //
-        //     @param {Boolean} [debug=true] Set to `true` to...
-        //
-        // If a default value is found, set 'lineValue' and this is added to the 'trailers'
-        // array to be placed at the end of the params documentation body
-        //
-        if (lineProperty.match(/\[[A-Z0-9]+=[A-Z0-9"'`]+\]/i))
-        {
-            lineProperty = lineProperty.replace(/[\[\]]/g, "");
-            const paramParts = lineProperty.split("=");
-            lineProperty = paramParts[0];
-            lineValue = paramParts[1];
-        }
-
-        let paramLine: string;
-
-        if (!useCode) {
-            paramLine = this.italic("@param", false, true) + this.boldItalic(lineProperty, false, true) +
-                        this.italic(MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd);
-            if (lineTrail) {
-                paramLine += (" " + MarkdownChars.LongDash + lineTrail);
-            }
-            if (!markdown.value.endsWith(MarkdownChars.NewLine)) {
-                markdown.appendMarkdown(MarkdownChars.NewLine);
-            }
-            markdown.appendMarkdown(paramLine);
-        }
-        else {
-            paramLine = lineProperty + " " + MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd;
-            if (lineTrail) {
-                paramLine += " - " + lineTrail;
-            }
-            markdown.appendCodeblock(paramLine);
-        }
-
-        log.value("      param line", paramLine, 5);
-
-        if (lineValue)
-        {
-            trailers.push(MarkdownChars.NewLine + "- " + this.italic("Defaults to:") + " `" +
-                        lineValue.replace(/`/g, "") + "`" +  MarkdownChars.NewLine +  MarkdownChars.NewLine);
-        }
-        else {
-            markdown.appendMarkdown(MarkdownChars.NewLine);
-        }
-    }
-
-
-    private handleReturnsLine(line: string, markdown: MarkdownString)
-    {
-        const rtnLineParts = line.trim().split(" ");
-        let rtnLine = MarkdownChars.Italic + rtnLineParts[0] + MarkdownChars.Italic + " ";
-        rtnLineParts.shift();
-        rtnLine += rtnLineParts.join(" ");
-        rtnLine = rtnLine.replace(/\*@return[s]{0,1}\* \{[A-Za-z]+\}/, (matched) => {
-            return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
-                return this.italic(matched2.replace("{", MarkdownChars.TypeWrapBegin)
-                                    .replace("}", MarkdownChars.TypeWrapEnd));
-            });
-        });
-        log.value("      insert returns line", rtnLine, 5);
-        markdown.appendMarkdown(MarkdownChars.NewLine + rtnLine);
-    }
-
-
-    private handleTagLine(line: string, markdown: MarkdownString)
-    {
-        let textLine = line.trim();
-        textLine = this.italic(textLine, false, true);
-        log.value("      insert tag line", textLine, 5);
-        markdown.appendMarkdown(textLine);
-    }
-
-
-    private handleTextLine(line: string, markdown: MarkdownString)
-    {
-        let textLine = line.trim();
-        if (textLine.match(/@[\w]+ /))
-        {
-            const lineParts = line.trim().split(" ");
-            textLine = this.italic(lineParts[0], false, true);
-            if (lineParts.length > 1) {
-                lineParts.shift();
-                textLine += lineParts.join(" ");
-            }
-        }
-        if (textLine.match(/\{\s*@link [\w]+\s*\}/))
-        {
-            textLine = textLine.replace(/\{\s*@link [\w]+\s*\}/, (matched) => {
-                return this.boldItalic(matched);
-        });
-        }
-        log.value("      insert text line", textLine, 5);
-        markdown.appendMarkdown(textLine);
-    }
-
-
-    private italic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
-    {
-        return (leadingSpace ? " " : "") + MarkdownChars.Italic + text +
-            MarkdownChars.Italic + (trailingSpace ? " " : "");
     }
 
 
@@ -559,7 +762,7 @@ class ExtjsLanguageManager
 
         log.methodStart("indexing all", 1, "", true);
 
-        for (const conf of config)
+        for (const conf of this.config)
         {
             if (typeof conf.classpath === "string")
             {
@@ -640,12 +843,12 @@ class ExtjsLanguageManager
         },
         async (progress) =>
         {
-            isIndexing = true;
+            this.isIndexing = true;
             try {
                 await this.indexAll(progress);
             }
             catch {}
-            isIndexing = false;
+            this.isIndexing = false;
         });
     }
 
@@ -724,7 +927,7 @@ class ExtjsLanguageManager
             //     });
             //
             if (cmp?.doc) {
-                cmp.markdown = this.commentToMarkdown(componentClass, cmp.doc, logPad + "   ");
+                cmp.markdown = this.commentParser.toMarkdown(componentClass, cmp.doc, logPad + "   ");
             }
 
             log.write("   map classes to components", 2, logPad);
@@ -732,30 +935,30 @@ class ExtjsLanguageManager
             //
             // Map the component class to the various component types found
             //
-            componentClassToFsPathMapping[componentClass] = fsPath;
-            componentClassToWidgetsMapping[componentClass] = widgets;
-            componentClassToMethodsMapping[componentClass] = methods;
-            componentClassToConfigsMapping[componentClass] = configs;
-            componentClassToPropertiesMapping[componentClass] = properties;
-            componentClassToXTypesMapping[componentClass] = xtypes;
-            componentClassToAliasesMapping[componentClass] = aliases;
+            this.componentClassToFsPathMapping[componentClass] = fsPath;
+            this.componentClassToWidgetsMapping[componentClass] = widgets;
+            this.componentClassToMethodsMapping[componentClass] = methods;
+            this.componentClassToConfigsMapping[componentClass] = configs;
+            this.componentClassToPropertiesMapping[componentClass] = properties;
+            this.componentClassToXTypesMapping[componentClass] = xtypes;
+            this.componentClassToAliasesMapping[componentClass] = aliases;
 
             //
             // Map the filesystem path <-> component class
             //
-            fileToComponentClassMapping[fsPath] = componentClass;
-            componentClassToFilesMapping[componentClass] = fsPath;
+            this.fileToComponentClassMapping[fsPath] = componentClass;
+            this.componentClassToFilesMapping[componentClass] = fsPath;
 
             //
             // Map the component class to it's component (it's own definition)
             //
-            componentClassToComponentsMapping[componentClass] = cmp;
+            this.componentClassToComponentsMapping[componentClass] = cmp;
 
             //
             // Map the component class to any requires strings found
             //
             if (requires) {
-                componentClassToRequiresMapping[componentClass] = requires.value;
+                this.componentClassToRequiresMapping[componentClass] = requires.value;
             }
 
             log.write("   map components to classes", 2, logPad);
@@ -764,21 +967,21 @@ class ExtjsLanguageManager
             // Map widget/alias/xtype types found to the component class
             //
             widgets.forEach(xtype => {
-                widgetToComponentClassMapping[xtype] = componentClass;
+                this.widgetToComponentClassMapping[xtype] = componentClass;
             });
 
             //
             // Map methods found to the component class
             //
             methods.forEach(method => {
-                method.markdown = this.commentToMarkdown(method.name, method.doc, logPad + "   ");
-                methodToComponentClassMapping[method.name] = componentClass;
+                method.markdown = this.commentParser.toMarkdown(method.name, method.doc, logPad + "   ");
+                this.methodToComponentClassMapping[method.name] = componentClass;
                 if (method.params)
                 {
                     for (const p of method.params)
                     {
                         if (p.doc) {
-                            p.markdown = this.commentToMarkdown(p.name, p.doc, logPad + "   ");
+                            p.markdown = this.commentParser.toMarkdown(p.name, p.doc, logPad + "   ");
                         }
                     }
                 }
@@ -788,23 +991,23 @@ class ExtjsLanguageManager
             // Map config properties found to the component class
             //
             configs.forEach(config => {
-                config.markdown = this.commentToMarkdown(config.name, config.doc, logPad + "   ");
-                configToComponentClassMapping[config.name] = componentClass;
+                config.markdown = this.commentParser.toMarkdown(config.name, config.doc, logPad + "   ");
+                this.configToComponentClassMapping[config.name] = componentClass;
             });
 
             //
             // Map properties found to the component class
             //
             properties.forEach(property => {
-                property.markdown = this.commentToMarkdown(property.name, property.doc, logPad + "   ");
-                propertyToComponentClassMapping[property.name] = componentClass;
+                property.markdown = this.commentParser.toMarkdown(property.name, property.doc, logPad + "   ");
+                this.propertyToComponentClassMapping[property.name] = componentClass;
             });
 
             //
             // Map xtypes found to the component class
             //
             xtypes.forEach(xtype => {
-                xtypeToComponentClassMapping[xtype.name] = componentClass;
+                this.xtypeToComponentClassMapping[xtype.name] = componentClass;
             });
         });
 
@@ -855,7 +1058,7 @@ class ExtjsLanguageManager
                 //
                 // Clear
                 //
-                handleDeleFile(fsPath);
+                this.handleDeleFile(fsPath);
                 //
                 // Index the file
                 //
@@ -875,7 +1078,7 @@ class ExtjsLanguageManager
     {
         e.files.forEach(async file =>
         {
-            handleDeleFile(file.fsPath);
+            this.handleDeleFile(file.fsPath);
             const activeTextDocument = window.activeTextEditor?.document;
             if (activeTextDocument && activeTextDocument.languageId === "javascript") {
                 this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
@@ -911,7 +1114,7 @@ class ExtjsLanguageManager
         const disposables: Disposable[] = [],
               confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
 
-        confWatcher.onDidChange(initConfig);
+        confWatcher.onDidChange(this.initConfig);
         disposables.push(confWatcher);
 
         //
@@ -943,7 +1146,7 @@ class ExtjsLanguageManager
 
     async setup(context: ExtensionContext): Promise<Disposable[]>
     {
-        const success = await initConfig();
+        const success = await this.initConfig();
         if (!success) {
             window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
             return [];
@@ -984,679 +1187,6 @@ class ExtjsLanguageManager
         }
     }
 
-}
-
-
-async function initConfig(): Promise<boolean>
-{
-    const confUris = await workspace.findFiles(".extjsrc{.json,}"),
-          appDotJsonUris = await workspace.findFiles("app.json");
-    let settingsPaths = configuration.get<string[]|string>("include");
-
-    log.methodStart("initialize config", 1, "", true);
-
-    //
-    // Clear
-    //
-    config = [];
-
-    //
-    // Specific directories set directly in user settings, the `include` setting
-    //
-    if (settingsPaths)
-    {
-        if (typeof settingsPaths === "string") {
-            settingsPaths = [ settingsPaths ];
-        }
-        for (const path of settingsPaths)
-        {
-            const pathParts = path?.split("|");
-            if (pathParts.length === 2)
-            {
-                config.push({
-                    classpath: pathParts[1],
-                    name: pathParts[0]
-                });
-            }
-        }
-    }
-
-    //
-    // The `.extjsrc` config files
-    //
-    if (confUris)
-    {
-        for (const uri of confUris)
-        {
-            const fileSystemPath = uri.fsPath || uri.path;
-            const confJson = fs.readFileSync(fileSystemPath, "utf8");
-            const conf: IConf = json5.parse(confJson);
-            if (conf.classpath && conf.name)
-            {
-                log.value("   add .extjsrc path", fileSystemPath, 2);
-                log.value("      namespace", conf.name, 2);
-                log.value("      classpath", conf.classpath, 3);
-                config.push(conf);
-            }
-        }
-    }
-
-    //
-    // The `app.json` files
-    //
-    if (appDotJsonUris)
-    {
-        for (const uri of appDotJsonUris)
-        {
-            await parseAppDotJson(uri);
-        }
-    }
-
-    log.value("   # of configs found", config.length, 3);
-    log.methodDone("initialize config", 1, "", true);
-
-    return (config.length > 0);
-}
-
-
-export function getClassFromPath(fsPath: string)
-{
-    //
-    // TODO - check / test file delete
-    //
-    let cmpClass: string | undefined;
-    const // uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
-          // wsf = workspace.getWorkspaceFolder(Uri.parse(`file://${uriPath}`));
-          wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
-
-    log.write("get component by fs path", 1);
-    log.value("   path", fsPath, 2);
-
-    for (const conf of config)
-    {
-        if (conf.classpath.includes(fsPath))
-        {
-            if (wsf) {
-                fsPath = fsPath.replace(wsf.uri.fsPath, "");
-            }
-
-            fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.classpath}${path.sep}*`), "");
-            fsPath = fsPath.replace(/\..+$/, "");
-            cmpClass = conf.name + "." + fsPath.split(path.sep).join(".");
-            break;
-        }
-    }
-
-    log.value("   component class", cmpClass, 2);
-    return cmpClass;
-}
-
-
-/**
- * @method getNamespaceFromFile
- *
- * @param fsPath Filesystem path to file
- * @param part Zero-based index of namespace part to return
- */
-export function getNamespaceFromFile(fsPath: string, part?: number): string | undefined
-{
-    log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
-    const cls = fileToComponentClassMapping[fsPath];
-    if (cls){
-        log.write("   found base class", 3);
-        return cls.split(".")[part ?? 0];
-    }
-    return undefined;
-}
-
-
-export function getClassFromFile(fsPath: string, logPad = ""): string | undefined
-{
-    log.methodStart("get component class by file", 1, logPad, false, [["file", fsPath]]);
-    const cls = fileToComponentClassMapping[fsPath];
-    if (cls) {
-        log.write("   found component class", 3, logPad);
-        return cls;
-    }
-    return undefined;
-}
-
-
-export function getComponent(componentClass: string, checkAlias?: boolean, fsPath?: string): IComponent | undefined
-{
-    let component = componentClassToComponentsMapping[componentClass];
-
-    log.write("get component by class", 1);
-    log.value("   component class", componentClass, 2);
-
-    if (component)
-    {
-        log.write("   found component", 3);
-        log.value("      namespace", component.nameSpace, 4);
-        log.value("      base namespace", component.baseNameSpace, 4);
-    }
-
-    if (!component && checkAlias === true)
-    {
-        component = getComponentByAlias(componentClass);
-        if (component) {
-            log.write("   found aliased component", 3);
-            log.value("      namespace", component.nameSpace, 4);
-            log.value("      base namespace", component.baseNameSpace, 4);
-        }
-    }
-
-    if (!component && fsPath)
-    {
-        component = getComponentInstance(componentClass, fsPath);
-        if (component) {
-            log.write("   found instanced component", 3);
-            log.value("      namespace", component.nameSpace, 4);
-            log.value("      base namespace", component.baseNameSpace, 4);
-        }
-    }
-
-    return component;
-}
-
-
-export function getComponentByAlias(alias: string): IComponent | undefined
-{
-    const cls = widgetToComponentClassMapping[alias];
-    log.write("get component by alias", 1);
-    log.value("   component alias", alias, 2);
-    if (cls) {
-        const component = getComponent(cls);
-        if (component) {
-            log.write("   found component", 3);
-            log.value("      namespace", component.nameSpace, 4);
-            log.value("      base namespace", component.baseNameSpace, 4);
-            return component;
-        }
-    }
-    return undefined;
-}
-
-
-export function getComponentByFile(fsPath: string): IComponent | undefined
-{
-    const cls = getClassFromFile(fsPath);
-    log.write("get component by file", 1);
-    log.value("   component file", fsPath, 2);
-    if (cls) {
-        const component = getComponent(cls);
-        if (component) {
-            log.write("   found component", 3);
-            log.value("      namespace", component.nameSpace, 4);
-            log.value("      base namespace", component.baseNameSpace, 4);
-            return component;
-        }
-    }
-    return undefined;
-}
-
-
-/**
- * @method getComponentClass
- *
- * Get component class name from an xtype, alias, or alternateClassName
- * Note that xtypes/aliases must be unique within an application for this /**
- * to work properly every time.
- *
- * @param {String} property Property name, i.e. an xtype, alias, or widget aliased string
- * @param {String} txt The complete line of text the property is found in
- *
- * @returns {String}
- */
-export function getComponentClass(property: string, cmpType?: ComponentType, txt?: string): string | undefined
-{
-    let cmpClass = "this", // getComponentByConfig(property);
-        cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
-
-    if (!txt)
-    {
-        if (!cmpType || cmpType === ComponentType.Widget) {
-            return widgetToComponentClassMapping[property];
-        }
-        else if (cmpType === ComponentType.Method) {
-            return methodToComponentClassMapping[property];
-        }
-        else if (cmpType === ComponentType.Property) {
-            return propertyToComponentClassMapping[property];
-        }
-        else if (cmpType === (ComponentType.Property | ComponentType.Config)) {
-            if (propertyToComponentClassMapping[property]) {
-                return propertyToComponentClassMapping[property];
-            }
-            return configToComponentClassMapping[property];
-        }
-        else {
-            return undefined;
-        }
-    }
-
-    //
-    // Get class name prependature to hovered property
-    //
-    // classPre could be something like:
-    //
-    //     Ext.csi.view.common.
-    //     Ext.csi.store.
-    //     Ext.form.field.
-    //     MyApp.view.myview.
-    //
-    cmpClassPre = txt.substring(0, txt.indexOf(property));
-    cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
-
-    //
-    // Remove the trailing '.' for the component name
-    //
-    cmpClass = cmpClassPre.substr(0, cmpClassPre.length - 1);
-    if (cmpClassPreIdx > 0)
-    {
-        cmpClassPre = cmpClassPre.substring(cmpClassPreIdx);
-    }
-
-    for (let i = cmpClass.length - 1; i >= 0 ; i--)
-    {
-        if (cmpClass[i] < "A" || cmpClass > "z")
-        {
-            if (cmpClass[i] < "0" || cmpClass > "9") {
-                if (cmpClass[i] !== ".") {
-                    cutAt = i;
-                    break;
-                }
-            }
-        }
-    }
-
-    cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
-
-    if (!cmpClass || cmpClass === "this")
-    {
-        cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
-    }
-
-    //
-    // Check aliases/alternate class names
-    //
-    let aliasClass: string | undefined;
-    if (aliasClass = widgetToComponentClassMapping[cmpClass])
-    {
-        cmpClass = aliasClass;
-    }
-
-    log.blank(1);
-    log.value("class", cmpClass, 1);
-    return cmpClass;
-}
-
-
-export function getComponentInstance(property: string, fsPath: string)
-{
-     //
-    // Check instance properties
-    //
-
-    const thisCls = getClassFromFile(fsPath);
-    if (!thisCls) {
-        return;
-    }
-
-    const cmp = getComponent(thisCls) || getComponentByAlias(thisCls);
-    if (!cmp) {
-        return;
-    }
-
-    for (const variable of cmp.privates)
-    {
-        // TODO - property hover - check private sec
-    }
-
-    for (const variable of cmp.statics)
-    {
-        // TODO - property hover - check static sec
-    }
-
-    for (const method of cmp.methods)
-    {
-        if (method.variables)
-        {
-            for (const variable of method.variables)
-            {
-                if (variable.name === property)
-                {
-                    const instanceCmp = getComponent(variable.componentClass) || getComponentByAlias(variable.componentClass);
-                    if (instanceCmp && instanceCmp.markdown)
-                    {
-                        log.value("provide instance class hover info", property, 1);
-                        return instanceCmp;
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-export function getConfig(cmp: string, property: string): IConfig | undefined
-{
-    const configs = componentClassToConfigsMapping[cmp];
-    log.write("get config by component class", 1);
-    log.value("   component class", cmp, 2);
-    log.value("   config", property, 2);
-    if (configs) {
-        for (let c = 0; c < configs.length; c++) {
-            if (configs[c].name === property) {
-                log.write("   found config", 3);
-                log.value("      name", configs[c].name, 4);
-                log.value("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
-                log.value("      end", configs[c].end.line + ", " + configs[c].end.column, 4);
-                return configs[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-export function getFilePath(componentClass: string)
-{
-    const fsPath = componentClassToFsPathMapping[componentClass];
-    log.write("get fs path by component", 1);
-    log.value("   path", fsPath, 2);
-    return fsPath;
-}
-
-
-export function getProperty(cmp: string, property: string): IProperty | undefined
-{
-    const properties = componentClassToPropertiesMapping[cmp];
-    log.write("get property by component class", 1);
-    log.value("   component class", cmp, 2);
-    log.value("   property", property, 2);
-    if (properties) {
-        for (let c = 0; c < properties.length; c++) {
-            if (properties[c].name === property) {
-                log.write("   found property", 3);
-                log.value("      name", properties[c].name, 4);
-                log.value("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
-                log.value("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
-                return properties[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-export function getMethod(cmp: string, property: string): IMethod| undefined
-{
-    const methods = componentClassToMethodsMapping[cmp];
-    log.write("get config by method", 1);
-    log.value("   component class", cmp, 2);
-    log.value("   property", property, 2);
-    if (methods)
-    {
-        for (let c = 0; c < methods.length; c++)
-        {
-            if (methods[c].name === property) {
-                log.write("   found method", 3);
-                log.value("      name", methods[c].name, 4);
-                log.value("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
-                log.value("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
-                return methods[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-function getMode(line: string): MarkdownStringMode | undefined
-{
-    let mode;
-    if (line.startsWith("@"))
-    {
-        const tag = line.trim().substring(0, line.indexOf(" ") !== -1 ? line.indexOf(" ") : line.length);
-        switch (tag)
-        {
-            case "@cfg":
-            case "@config":
-                mode = MarkdownStringMode.Config;
-                break;
-            case "@class":
-                mode = MarkdownStringMode.Class;
-                break;
-            // case "{@link":
-            //     mode = MarkdownStringMode.Link;
-            //     break;
-            case "@property":
-                mode = MarkdownStringMode.Property;
-                break;
-            case "@param":
-                mode = MarkdownStringMode.Param;
-                break;
-            case "@returns":
-            case "@return":
-                mode = MarkdownStringMode.Returns;
-                break;
-            case "@method":
-                mode = MarkdownStringMode.Method;
-                break;
-            case "@since":
-                mode = MarkdownStringMode.Since;
-                break;
-            case "@deprecated":
-                mode = MarkdownStringMode.Deprecated;
-                break;
-            case "@private":
-                mode = MarkdownStringMode.Private;
-                break;
-            case "@singleton":
-                mode = MarkdownStringMode.Singleton;
-                break;
-            case "@inheritdoc":
-            default:
-                break;
-        }
-        log.value("      found @ tag", tag, 4);
-        log.value("      set mode", mode?.toString(), 4);
-    }
-    else if (line.length > 3 && (line.substring(0, 3) === "   " || line[0] === "\t"))
-    {
-        mode = MarkdownStringMode.Code;
-    }
-    return mode;
-}
-
-
-export function getSubComponentNames(componentClass: string): string[]
-{
-    const subComponentNames: string[] = [],
-          map = componentClassToComponentsMapping;
-
-    log.write("get component by class", 1);
-    log.value("   component class", componentClass, 2);
-
-    Object.keys(map).forEach((cls) =>
-    {
-        if (cls && cls.startsWith(componentClass))
-        {
-            const subCMp = cls.replace(componentClass + ".", "").split(".")[0];
-            if (subCMp) {
-                subComponentNames.push(subCMp);
-            }
-        }
-    });
-
-    return subComponentNames;
-}
-
-
-export function getXType(cmp: string, xtype: string): IXtype | undefined
-{
-    const xtypes = componentClassToXTypesMapping[cmp];
-    log.write("get config by component class", 1);
-    log.value("   component class", cmp, 2);
-    log.value("   xtype", xtype, 2);
-    if (xtypes) {
-        for (let c = 0; c < xtypes.length; c++) {
-            if (xtypes[c].name === xtype) {
-                log.write("   found config", 3);
-                log.value("      name", xtypes[c].name, 4);
-                log.value("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
-                log.value("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
-                return xtypes[c];
-            }
-        }
-    }
-    return undefined;
-}
-
-
-function handleDeleFile(fsPath: string)
-{
-    const componentClass = getClassFromPath(fsPath);
-    if (componentClass)
-    {
-        log.write("handle file depetion", 1);
-        log.value("   path", fsPath, 2);
-        log.value("   component class", componentClass, 2);
-
-        const component = getComponent(componentClass);
-        if (component)
-        {
-            // component.aliases.forEach((alias) => {
-            //     delete aliasToComponentClassMapping[alias];
-            // });
-
-            component.configs.forEach((config) => {
-                delete configToComponentClassMapping[config.name];
-            });
-
-            component.methods.forEach((method) => {
-                delete methodToComponentClassMapping[method.name];
-            });
-
-            // component.privates.forEach((private) => {
-            //     delete privateToComponentClassMapping[private.name];
-            // });
-
-            component.properties.forEach((property) => {
-                delete propertyToComponentClassMapping[property.name];
-            });
-
-            // component.statics.forEach((static) => {
-            //     delete configToComponentClassMapping[static.name];
-            // });
-
-            component.widgets.forEach((widget) => {
-                delete widgetToComponentClassMapping[widget];
-            });
-        }
-
-        delete componentClassToWidgetsMapping[componentClass];
-        delete componentClassToAliasesMapping[componentClass];
-        delete componentClassToFsPathMapping[componentClass];
-        delete componentClassToRequiresMapping[componentClass];
-        delete componentClassToConfigsMapping[componentClass];
-        delete componentClassToPropertiesMapping[componentClass];
-        delete componentClassToMethodsMapping[componentClass];
-        delete componentClassToComponentsMapping[componentClass];
-    }
-}
-
-
-async function parseAppDotJson(uri: Uri)
-{
-    const fileSystemPath = uri.fsPath || uri.path,
-          baseDir = path.dirname(uri.fsPath),
-          conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
-    //
-    // Merge classpath to root
-    //
-    const classic = conf.classic ? Object.assign([], conf.classic) : {},
-          modern = conf.modern ? Object.assign([], conf.modern) : {};
-
-    if (!conf.classpath)
-    {
-        conf.classpath = [];
-    }
-    else if (typeof conf.classpath === "string")
-    {
-        conf.classpath = [ conf.classpath ];
-    }
-
-    if (classic?.classpath)
-    {
-        conf.classpath = conf.classpath.concat(...classic.classpath);
-    }
-    if (modern?.classpath) {
-        conf.classpath = conf.classpath.concat(...modern.classpath);
-    }
-
-    //
-    // workspace.json
-    //
-    const wsDotJsonFsPath = path.join(baseDir, "workspace.json");
-    if (fs.existsSync(wsDotJsonFsPath))
-    {
-        const wsConf = json5.parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
-
-        if (wsConf.frameworks && wsConf.frameworks.ext)
-        {   //
-            // The framework directory should have a package.json, specifying its dependencies, i.e.
-            // the ext-core package.  Read package.json in framework directory.  If found, this is an
-            // open tooling project
-            //
-            const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
-            if (fs.existsSync(fwJsonFsPath))
-            {
-                const fwConf = json5.parse(fs.readFileSync(fwJsonFsPath, "utf8"));
-                if (fwConf.dependencies)
-                {
-                    for (const dep in fwConf.dependencies)
-                    {
-                        if (fwConf.dependencies.hasOwnProperty(dep))
-                        {
-                            const fwPath = path.join("node_modules", dep).replace("\\", "/");
-                            conf.classpath.push(fwPath);
-                            log.value("   add ws.json framework path", fwPath, 2);
-                            log.value("      fraamework version", fwConf.dependencies[dep], 2);
-                        }
-                    }
-                }
-                else {
-                    log.error("No package.json found in workspace.framework directory");
-                }
-            }
-            else {
-                conf.classpath.push(wsConf.frameworks.ext);
-                log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
-            }
-        }
-
-        if (wsConf.packages && wsConf.packages.dir)
-        {
-            const dirs = wsConf.packages.dir.split(",");
-            for (const d of dirs)
-            {
-                const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
-                                .replace(/\$\{toolkit.name\}/, "classic");
-                conf.classpath.push(wsPath);
-                log.value("   add ws.json path", wsPath, 2);
-            }
-        }
-    }
-
-    if (conf.classpath && conf.name)
-    {
-        log.value("   add app.json paths", fileSystemPath, 2);
-        log.value("      namespace", conf.name, 2);
-        log.value("      classpath", conf.classpath, 3);
-        config.push(conf);
-    }
 }
 
 

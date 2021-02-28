@@ -46,12 +46,15 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     // }
     initFsStorage(context);
 
+    //
+    // Register VSCode Language Providers, i.e. Hover providers, completion providers, etc
+    //
     registerProviders(context);
     await run(context);
 
-    const serverRequest = new ServerRequest(client);
-    extjsLangMgr = new ExtjsLanguageManager(serverRequest);
-
+    //
+    // Register VSCode Commands found in package.json contribuets.commands
+    //
     registerCommands(context);
 
     //
@@ -68,6 +71,11 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     // });
     // context.subscriptions.push(workspaceWatcher);
 
+
+    //
+    // Language Manager
+    //
+    extjsLangMgr = new ExtjsLanguageManager(new ServerRequest(client));
     disposables = await extjsLangMgr.setup(context);
 
     return {

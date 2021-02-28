@@ -3,7 +3,7 @@ import {
     ExtensionContext, languages, CancellationToken, ProviderResult, Location,
     TextDocument, DocumentSymbolProvider, DocumentSymbol, SymbolInformation, SymbolKind
 } from "vscode";
-import { getComponent, getComponentByAlias } from "../languageManager";
+import { extjsLangMgr } from "../extension";
 import { toVscodeLocation } from "../common/clientUtils";
 import * as log from "../common/log";
 import { IExtJsBase } from "../../../common";
@@ -37,7 +37,7 @@ class SymbolProvider implements DocumentSymbolProvider
         const matches = text.match(/Ext\.define\s*\(\s*["']{1}([\w\.]+)["']{1}\s*,/);
         if (matches && matches[1])
         {
-            const cmp = getComponent(matches[1], true);
+            const cmp = extjsLangMgr.getComponent(matches[1], true);
             if (!cmp) {
                 return;
             }

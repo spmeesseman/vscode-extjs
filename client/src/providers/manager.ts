@@ -10,7 +10,7 @@ import registerPropertyDefinitionProvider from "./propertyDefinion";
 import registerMethodSignatureProvider from "./methodSignature";
 import registerSyntaxCodeActionProvider from "./syntaxCodeAction";
 import registerSymbolProvider from "./symbol";
-import { isIndexing } from "../languageManager";
+import { extjsLangMgr } from "../extension";
 
 
 export type Register = (context: ExtensionContext) => void;
@@ -36,7 +36,7 @@ export function registerProviders(context: ExtensionContext)
 
     const _regSymbolProvider = ((context: ExtensionContext) => {
         setTimeout(() => {
-            if (!isIndexing)
+            if (!extjsLangMgr.isBusy())
             {
                 delayedRegisters.forEach(register => register(context));
             }

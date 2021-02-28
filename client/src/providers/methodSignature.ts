@@ -3,8 +3,7 @@ import {
     ExtensionContext, languages, Position, CancellationToken, ProviderResult, ParameterInformation,
     TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation
 } from "vscode";
-import { IMethod } from "../../../common";
-import { getComponent, getComponentByAlias } from "../languageManager";
+import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
 
 
@@ -65,7 +64,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 cls += m;
             }
             cls = cls.substring(0, cls.length - 1); // remove trailing .
-            const cmp = getComponent(cls) || getComponentByAlias(cls);
+            const cmp = extjsLangMgr.getComponent(cls) || extjsLangMgr.getComponentByAlias(cls);
 
             if (cmp)
             {

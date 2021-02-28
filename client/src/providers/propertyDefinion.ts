@@ -3,11 +3,9 @@ import {
     CancellationToken, DefinitionProvider, ExtensionContext, languages, Location,
     LocationLink, Position, ProviderResult, Range, TextDocument, Uri,
 } from "vscode";
-import {
-    getComponentClass, getFilePath, ComponentType, getConfig, getProperty, getMethod
-} from "../languageManager";
+import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
-import { utils } from "../../../common";
+import { utils, ComponentType } from "../../../common";
 
 
 class PropertyDefinitionProvider implements DefinitionProvider
@@ -96,7 +94,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
             }
             else
             {
-                cmpClass = getComponentClass(property, cmpType);
+                cmpClass = extjsLangMgr.getComponentClass(property, cmpType);
                 if (!cmpClass)
                 {   //
                     // If this is a method, check for getter/setter for a config property...
@@ -107,7 +105,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                         property = utils.lowerCaseFirstChar(property.substring(3));
                         cmpType = ComponentType.Config;
                         log.value("      config name", property, 2);
-                        cmpClass = getComponentClass(property, cmpType, lineText);
+                        cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText);
                     }
                     //
                     // If this is a property, check for a config property...
@@ -116,7 +114,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                     {
                         log.write("   property not found, look for config", 2);
                         cmpType = ComponentType.Config;
-                        cmpClass = getComponentClass(property, cmpType, lineText);
+                        cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText);
                     }
                 }
             }
@@ -124,14 +122,14 @@ class PropertyDefinitionProvider implements DefinitionProvider
             if (cmpClass)
             {
                 log.value("   component class", cmpClass, 2);
-                const fsPath = getFilePath(cmpClass);
+                const fsPath = extjsLangMgr.getFilePath(cmpClass);
                 if (fsPath)
                 {
                     let start = new Position(0, 0),
                         end = new Position(0, 0);
-                    const pObject = cmpType === ComponentType.Method ? getMethod(cmpClass, property) :
-                                                    (cmpType === ComponentType.Config ? getConfig(cmpClass, property) :
-                                                                                       getProperty(cmpClass, property));
+                    const pObject = cmpType === ComponentType.Method ? extjsLangMgr.getMethod(cmpClass, property) :
+                                                    (cmpType === ComponentType.Config ? extjsLangMgr.getConfig(cmpClass, property) :
+                                                                                        extjsLangMgr.getProperty(cmpClass, property));
                     if (pObject)
                     {
                         log.write("   setting position", 2);

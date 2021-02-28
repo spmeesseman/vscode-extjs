@@ -3,7 +3,7 @@ import {
     CancellationToken, DefinitionProvider, ExtensionContext, languages, Location,
     LocationLink, Position, ProviderResult, Range, TextDocument, Uri
 } from "vscode";
-import { getComponentClass, getFilePath, getXType } from "../languageManager";
+import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
 
 
@@ -22,15 +22,15 @@ class XtypeDefinitionProvider implements DefinitionProvider
 
         if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
         {
-            const componentClass = getComponentClass(xtype);
+            const componentClass = extjsLangMgr.getComponentClass(xtype);
             if (componentClass)
             {
-                const fsPath = getFilePath(componentClass);
+                const fsPath = extjsLangMgr.getFilePath(componentClass);
                 if (fsPath)
                 {
                     let start = new Position(0, 0),
                         end = new Position(0, 0);
-                    const pObject = getXType(componentClass, xtype);
+                    const pObject = extjsLangMgr.getXType(componentClass, xtype);
                     if (pObject) {
                         start = new Position(pObject.start?.line, pObject.start?.column);
                         end = new Position(pObject.end?.line, pObject.end?.column);

@@ -1,17 +1,11 @@
 
-import { IMethod, IConfig, utils } from "../../../common";
-import * as log from "../common/log";
-
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
     ProviderResult, Range, TextDocument
 } from "vscode";
-
-import {
-    ComponentType, getComponent, getComponentClass, getConfig, getMethod,
-    getProperty, getComponentByAlias, getComponentInstance
-} from "../languageManager";
-
+import { IMethod, IConfig, utils, ComponentType } from "../../../common";
+import * as log from "../common/log";
+import { extjsLangMgr } from "../extension";
 
 class DocHoverProvider implements HoverProvider
 {
@@ -31,11 +25,11 @@ class DocHoverProvider implements HoverProvider
         //
         if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
         {
-            const cmpClass = getComponentClass(property, ComponentType.Method, lineText);
+            const cmpClass = extjsLangMgr.getComponentClass(property, ComponentType.Method, lineText);
             if (cmpClass)
             {
                 log.value("provide function hover info", property, 1);
-                let method: IMethod | IConfig | undefined = getMethod(cmpClass, property);
+                let method: IMethod | IConfig | undefined = extjsLangMgr.getMethod(cmpClass, property);
                 if (!method)
                 {   //
                     // A config property:
@@ -56,9 +50,9 @@ class DocHoverProvider implements HoverProvider
                         // property will be a lower-case-first-leter version of the extracted property
                         //
                         const gsProperty = utils.lowerCaseFirstChar(property.substring(3));
-                        method = getConfig(cmpClass, gsProperty);
+                        method = extjsLangMgr.getConfig(cmpClass, gsProperty);
                         if (!method) {
-                            method = getConfig(cmpClass, property);
+                            method = extjsLangMgr.getConfig(cmpClass, property);
                         }
                     }
                 }
@@ -73,17 +67,17 @@ class DocHoverProvider implements HoverProvider
         //
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
         {
-            const cmpClass = getComponentClass(property, ComponentType.Config | ComponentType.Property, lineText);
+            const cmpClass = extjsLangMgr.getComponentClass(property, ComponentType.Config | ComponentType.Property, lineText);
             if (cmpClass)
             {
-                const config = getConfig(cmpClass, property);
+                const config = extjsLangMgr.getConfig(cmpClass, property);
                 if (config && config.markdown)
                 {
                     log.value("provide config hover info", property, 1);
                     return new Hover(config.markdown);
                 }
                 else {
-                    const prop = getProperty(cmpClass, property);
+                    const prop = extjsLangMgr.getProperty(cmpClass, property);
                     if (prop && prop.markdown) {
                         log.value("provide property hover info", property, 1);
                         return new Hover(prop.markdown);
@@ -100,7 +94,7 @@ class DocHoverProvider implements HoverProvider
             const pIdx = lineText.indexOf(property),
                   lineCls = lineText?.substring(0, pIdx + property.length).trim()
                                      .replace(/[\s\w]+=[\s]*(new)*\s*/, "");
-            let cmp = getComponent(lineCls) || getComponentByAlias(lineCls);
+            let cmp = extjsLangMgr.getComponent(lineCls) || extjsLangMgr.getComponentByAlias(lineCls);
 
             if (cmp && cmp.markdown)
             {
@@ -108,7 +102,7 @@ class DocHoverProvider implements HoverProvider
                 return new Hover(cmp.markdown);
             }
 
-            cmp = getComponentInstance(property, document.uri.fsPath);
+            cmp = extjsLangMgr.getComponentInstance(property, document.uri.fsPath);
             if (cmp && cmp.markdown)
             {
                 log.value("provide class instance hover info", property, 1);

@@ -2,7 +2,6 @@
 import * as json5 from "json5";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
 import { utils } from "../../../common";
-import { getComponentClass, getNamespaceFromFile } from "../languageManager";
 import { toVscodeRange } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
@@ -16,7 +15,7 @@ export async function ensureRequires(xtype: string | undefined)
 	}
 
 	const fsPath = document.uri.fsPath,
-		  ns = getNamespaceFromFile(fsPath);
+		  ns = extjsLangMgr.getNamespaceFromFile(fsPath);
 
 	if (!ns) {
 		window.showErrorMessage("Could not find base namespace");
@@ -41,7 +40,7 @@ export async function ensureRequires(xtype: string | undefined)
 
 		for (const x of component.xtypes)
 		{
-			const c = getComponentClass(x.name);
+			const c = extjsLangMgr.getComponentClass(x.name);
 			if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
 				componentClasses.add(c);
 			}
