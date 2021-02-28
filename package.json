@@ -177,7 +177,7 @@
                     },
 					"default": [],
 					"description": "Errors that are excluded from validation, globally or for a document only"
-				},,
+				},
 				"extjsLangSvr.intellisenseIncludeDeprecated": {
 					"type": "boolean",
 					"default": true,

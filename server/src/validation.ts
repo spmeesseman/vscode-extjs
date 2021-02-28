@@ -7,6 +7,25 @@ import { globalSettings } from "./server";
 import * as log from "./log";
 
 
+function isErrorIgnored(code: number, fsPath: string): boolean
+{
+	if (!globalSettings.ignoreErrors || globalSettings.ignoreErrors.length === 0) {
+		return false;
+	}
+
+	for (const iError of globalSettings.ignoreErrors)
+	{
+		if (iError.code === code) {
+			if (!fsPath || !iError.fsPath || iError.fsPath === fsPath) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+
 /**
  * @method validateExtJsDocument
  *
@@ -18,43 +37,48 @@ import * as log from "./log";
  */
 export async function validateExtJsDocument(textDocument: TextDocument, connection: Connection, diagRelatedInfoCapability: boolean, sendToClient?: boolean): Promise<Diagnostic[]>
 {
-	const text = textDocument.getText();
-	const pattern = /\b[A-Z]{2,}\b/g;
-	let m: RegExpExecArray | null;
+	const text = textDocument.getText(),
+		  diagnostics: Diagnostic[] = [];
 
-	let problems = 0;
-	const diagnostics: Diagnostic[] = [];
-	while ((m = pattern.exec(text)) && problems < 5)
-    {
-		problems++;
-		const diagnostic: Diagnostic =
-        {
-			severity: DiagnosticSeverity.Warning,
-			range: {
-				start: textDocument.positionAt(m.index),
-				end: textDocument.positionAt(m.index + m[0].length)
-			},
-			message: `${m[0]} is all uppercase.`,
-			source: "vscode-extjs"
-		};
+	if (!isErrorIgnored(ErrorCode.syntaxAllCaps, textDocument.uri))
+	{
+		const pattern = /\b[A-Z]{2,}\b/g;
+		let m: RegExpExecArray | null;
 
-		if (diagRelatedInfoCapability)
-        {
-			diagnostic.relatedInformation = [
-            {
-                location: {
-                    uri: textDocument.uri,
-                    range: { ...diagnostic.range }
-                },
-                message: "Casing matters, don't do it!!"
-            }];
+		let problems = 0;
+		while ((m = pattern.exec(text)) && problems < 5)
+		{
+			problems++;
+			const diagnostic: Diagnostic =
+			{
+				severity: DiagnosticSeverity.Warning,
+				range: {
+					start: textDocument.positionAt(m.index),
+					end: textDocument.positionAt(m.index + m[0].length)
+				},
+				message: `${m[0]} is all uppercase.`,
+				source: "vscode-extjs",
+				code: ErrorCode.syntaxAllCaps
+			};
+
+			if (diagRelatedInfoCapability)
+			{
+				diagnostic.relatedInformation = [
+				{
+					location: {
+						uri: textDocument.uri,
+						range: { ...diagnostic.range }
+					},
+					message: "Casing matters, don't do it!!"
+				}];
+			}
+
+			diagnostics.push(diagnostic);
 		}
 
-		diagnostics.push(diagnostic);
-	}
-
-	if (sendToClient !== false) {
-		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+		if (sendToClient !== false) {
+			connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+		}
 	}
 
 	return diagnostics;

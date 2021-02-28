@@ -3,7 +3,7 @@ import {
     CancellationToken, CodeActionProvider, ExtensionContext, languages, ProviderResult,
     TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind
 } from "vscode";
-import { utils } from "../../../common/src";
+import { utils, ErrorCode } from "../../../common";
 
 
 class SyntaxCodeActionProvider implements CodeActionProvider
@@ -26,13 +26,23 @@ class SyntaxCodeActionProvider implements CodeActionProvider
                 const text = document.getText(range);
                 actions.push(...[
                 {
-                    title: "Ignore errors of this type",
+                    title: "Ignore errors of this type (file)",
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {
                         title: "Ignore errors of this type",
                         command: "vscode-extjs:ignoreError",
-                        arguments: [ utils.toCamelCase(text, 1), range ]
+                        arguments: [ ErrorCode.syntaxAllCaps, document.uri.fsPath ]
+                    }
+                },
+                {
+                    title: "Ignore errors of this type (global)",
+                    isPreferred: true,
+                    kind: CodeActionKind.QuickFix,
+                    command: {
+                        title: "Ignore errors of this type",
+                        command: "vscode-extjs:ignoreError",
+                        arguments: [ ErrorCode.syntaxAllCaps ]
                     }
                 },
                 {

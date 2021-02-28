@@ -6,6 +6,7 @@ import { initStorage } from "./common/storage";
 import { initFsStorage } from "./common/fsStorage";
 import registerEnsureRequiresCommand from "./commands/ensureRequire";
 import registerReplaceTextCommand from "./commands/replaceText";
+import registerIgnoreErrorCommand from "./commands/ignoreError";
 import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 import * as log from "./common/log";
@@ -79,6 +80,7 @@ function registerCommands(context: ExtensionContext)
 {
     registerEnsureRequiresCommand(context);
     registerReplaceTextCommand(context);
+    registerIgnoreErrorCommand(context);
 }
 
 

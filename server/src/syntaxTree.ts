@@ -420,8 +420,8 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string)
                         deprecated: doc?.includes("@deprecated"),
                         start: it.loc!.start,
                         end: it.loc!.end,
-                        getter: "get" + utils.properCase(name),
-                        setter: "set" + utils.properCase(name),
+                        getter: "get" + utils.toProperCase(name),
+                        setter: "set" + utils.toProperCase(name),
                         componentClass
                     });
                 }

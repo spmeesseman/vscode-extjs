@@ -949,25 +949,39 @@ class ExtjsLanguageManager
             return [];
         }
 
+        //
+        // Do full indexing
+        //
         await this.indexingAllWithProgress();
+
         //
         // Validate active js document if there is one
         //
         const activeTextDocument = window.activeTextEditor?.document;
         if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
         }
+
         return this.registerWatchers(context);
     }
 
 
-    private validateDocument(textDocument: TextDocument, nameSpace: string)
+    async validateDocument(textDocument?: TextDocument, nameSpace?: string)
     {
-        const text = textDocument.getText();
-        if (!utils.isExtJsFile(text)) {
-            return;
+        if (!textDocument) {
+            textDocument = window.activeTextEditor?.document;
         }
-        this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, text);
+        if (textDocument)
+        {
+            const text = textDocument.getText();
+            if (!nameSpace) {
+                nameSpace = this.getNamespace(textDocument);
+            }
+            if (!utils.isExtJsFile(text)) {
+                return;
+            }
+            await this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, text);
+        }
     }
 
 }

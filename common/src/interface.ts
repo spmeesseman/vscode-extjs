@@ -86,6 +86,13 @@ export interface IConfig extends IProperty
 }
 
 
+export interface IError
+{
+	code: number | undefined;
+	fsPath: string | undefined;
+}
+
+
 export interface IMethod extends IProperty
 {
     params?: IParameter[];
@@ -140,7 +147,8 @@ export const defaultSettings: ISettings =
     intellisenseIncludeDeprecated: true,
     intellisenseIncludePrivate: false,
     validateXTypes: true,
-    validationDelay: 1250
+    validationDelay: 1250,
+    ignoreErrors: []
 };
 
 
@@ -158,6 +166,7 @@ export interface ISettings
     intellisenseIncludePrivate: boolean;
     validateXTypes: boolean;
     validationDelay: number;
+    ignoreErrors: IError[];
 }
 
 

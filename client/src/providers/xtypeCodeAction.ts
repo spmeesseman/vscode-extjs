@@ -3,7 +3,7 @@ import {
     CancellationToken, CodeActionProvider, ExtensionContext, languages, ProviderResult,
     TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind
 } from "vscode";
-import { ErrorCode } from "../../../common/src";
+import { ErrorCode } from "../../../common";
 
 
 class XtypeCodeActionProvider implements CodeActionProvider
