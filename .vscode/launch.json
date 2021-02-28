@@ -15,7 +15,7 @@
 			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
 			"stopOnEntry": false,
             "sourceMaps": true,
-			"preLaunchTask": "watch"
+			"preLaunchTask": "npm: webpack-watch"
 		},
 		{
 			"type": "extensionHost",
@@ -30,7 +30,7 @@
 			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
 			"stopOnEntry": false,
             "sourceMaps": true,
-			"preLaunchTask": "watch-test"
+			"preLaunchTask": "npm tsc-watch"
 		},
 		{
 			"type": "node",
