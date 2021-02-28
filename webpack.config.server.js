@@ -22,7 +22,7 @@ const config =
 		//
 		path: path.resolve(__dirname, 'dist', 'server'),
 		filename: 'server.js',
-		libraryTarget: 'commonjs',
+		libraryTarget: 'commonjs2',
 		devtoolModuleFilenameTemplate: '../../[resource-path]'
 	},
 	devtool: 'source-map',

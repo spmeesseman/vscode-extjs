@@ -5,14 +5,14 @@
 		{
 			"type": "extensionHost",
 			"request": "launch",
-			"name": "Launch Client",
+			"name": "Launch Webpack Client",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"${workspaceRoot}/test-files"
 			],
-			"outFiles": ["${workspaceRoot}/dist/**/*.js"],
+			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
 			"stopOnEntry": false,
             "sourceMaps": true,
 			"preLaunchTask": "watch"
@@ -20,17 +20,17 @@
 		{
 			"type": "extensionHost",
 			"request": "launch",
-			"name": "Launch Test Client",
+			"name": "Launch TSC Client",
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--disable-extensions",
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"${workspaceRoot}/test-files"
 			],
-			"outFiles": ["${workspaceRoot}/dist/**/*.js"],
+			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
 			"stopOnEntry": false,
             "sourceMaps": true,
-			"preLaunchTask": "npm: tsc-watch"
+			"preLaunchTask": "watch-test"
 		},
 		{
 			"type": "node",
@@ -38,7 +38,7 @@
 			"name": "Attach to Server",
 			"port": 6009,
 			"restart": true,
-			"outFiles": ["${workspaceRoot}/dist/**/*.js"]
+			"outFiles": ["${workspaceRoot}/dist/server/**/*.js"]
 		},
         {
             "name": "Launch Tests",
@@ -58,7 +58,19 @@
             ],
             "preLaunchTask": "npm: test:before",
             "postDebugTask": "npm: test:after"
-        }
+        },
+		{
+			"name": "Language Server E2E Test",
+			"type": "extensionHost",
+			"request": "launch",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceRoot}",
+				"--extensionTestsPath=${workspaceRoot}/client/out/test/index",
+				"${workspaceRoot}/client/testFixture"
+			],
+			"outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
+		}
 
 		// {
 		// 	"type": "extensionHost",

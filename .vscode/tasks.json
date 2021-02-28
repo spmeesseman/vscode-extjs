@@ -5,7 +5,11 @@
 	"tasks": [
 		{
 			"label": "watch",
-			"dependsOn": ["npm: webpack-watch", "npm: tsc-watch_common"]
+			"dependsOn": ["npm: webpack-watch"] //, "npm: tsc-watch_common"]
+		},
+		{
+			"label": "watch-test",
+			"dependsOn": ["npm: tsc-watch"]
 		},
 		{
 			"type": "npm",
@@ -40,23 +44,9 @@
 		{
 			"type": "npm",
 			"script": "tsc-watch",
-			"problemMatcher": {
-				"owner": "typescript",
-				"pattern": [
-					{
-						"regexp": "\\[tsl\\] ERROR",
-						"file": 1,
-						"location": 2,
-						"message": 3
-					}
-				],
-				"background": {
-					"activeOnStart": true,
-					// Webpack
-					"beginsPattern": "Compilation \\w+ starting…",
-					"endsPattern": "Compilation\\s+finished"
-				}
-			},
+			"problemMatcher": [
+				"$tsc-watch"
+			],
 			"isBackground": true,
 			"presentation": {
 				"reveal": "always",
@@ -70,23 +60,9 @@
 		{
 			"type": "npm",
 			"script": "tsc-watch_common",
-			"problemMatcher": {
-				"owner": "typescript",
-				"pattern": [
-					{
-						"regexp": "\\[tsl\\] ERROR",
-						"file": 1,
-						"location": 2,
-						"message": 3
-					}
-				],
-				"background": {
-					"activeOnStart": true,
-					// Webpack
-					"beginsPattern": "Compilation \\w+ starting…",
-					"endsPattern": "Compilation\\s+finished"
-				}
-			},
+			"problemMatcher": [
+				"$tsc-watch"
+			],
 			"isBackground": true,
 			"presentation": {
 				"reveal": "always",
