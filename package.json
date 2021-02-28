@@ -117,12 +117,17 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "vscode-extjs:ensure-require",
+				"command": "vscode-extjs:ensureRequire",
 				"title": "vscode-extjs: Ensure Requires for XTypes"
 			},
 			{
-				"command": "vscode-extjs:replace-text",
+				"command": "vscode-extjs:replaceText",
 				"title": "vscode-extjs: Replace Text",
+				"enablement": "none!=none"
+			},
+			{
+				"command": "vscode-extjs:ignoreError",
+				"title": "vscode-extjs: Ignore Error",
 				"enablement": "none!=none"
 			}
 		],
@@ -165,6 +170,14 @@
 					"title": "Include",
 					"description": "Directories to search when indexing ExtJs files"
 				},
+				"extjsLangSvr.ignoreErrors": {
+					"type": "array",
+					"items": {
+                        "type": "object"
+                    },
+					"default": [],
+					"description": "Errors that are excluded from validation, globally or for a document only"
+				},,
 				"extjsLangSvr.intellisenseIncludeDeprecated": {
 					"type": "boolean",
 					"default": true,
