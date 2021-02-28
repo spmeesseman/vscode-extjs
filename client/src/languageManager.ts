@@ -14,6 +14,7 @@ import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, Componen
 import * as log from "./common/log";
 import * as clientUtils from "./common/clientUtils";
 import { CommentParser } from "./common/commentParser";
+import { ConfigParser } from "./common/configParser";
 
 
 class ExtjsLanguageManager
@@ -23,7 +24,8 @@ class ExtjsLanguageManager
     private serverRequest: ServerRequest;
     private reIndexTaskId: NodeJS.Timeout | undefined;
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
-    private commentParser: CommentParser = new CommentParser();
+    private commentParser: CommentParser;
+    private configParser: ConfigParser;
 
     private widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
     private configToComponentClassMapping: { [property: string]: string | undefined } = {};
@@ -47,78 +49,8 @@ class ExtjsLanguageManager
     constructor(serverRequest: ServerRequest)
     {
         this.serverRequest = serverRequest;
-    }
-
-
-    private async initConfig(): Promise<boolean>
-    {
-        const confUris = await workspace.findFiles(".extjsrc{.json,}"),
-              appDotJsonUris = await workspace.findFiles("app.json");
-        let settingsPaths = configuration.get<string[]|string>("include");
-
-        log.methodStart("initialize config", 1, "", true);
-
-        //
-        // Clear
-        //
-        this.config = [];
-
-        //
-        // Specific directories set directly in user settings, the `include` setting
-        //
-        if (settingsPaths)
-        {
-            if (typeof settingsPaths === "string") {
-                settingsPaths = [ settingsPaths ];
-            }
-            for (const path of settingsPaths)
-            {
-                const pathParts = path?.split("|");
-                if (pathParts.length === 2)
-                {
-                    this.config.push({
-                        classpath: pathParts[1],
-                        name: pathParts[0]
-                    });
-                }
-            }
-        }
-
-        //
-        // The `.extjsrc` config files
-        //
-        if (confUris)
-        {
-            for (const uri of confUris)
-            {
-                const fileSystemPath = uri.fsPath || uri.path;
-                const confJson = fs.readFileSync(fileSystemPath, "utf8");
-                const conf: IConf = json5.parse(confJson);
-                if (conf.classpath && conf.name)
-                {
-                    log.value("   add .extjsrc path", fileSystemPath, 2);
-                    log.value("      namespace", conf.name, 2);
-                    log.value("      classpath", conf.classpath, 3);
-                    this.config.push(conf);
-                }
-            }
-        }
-
-        //
-        // The `app.json` files
-        //
-        if (appDotJsonUris)
-        {
-            for (const uri of appDotJsonUris)
-            {
-                await this.parseAppDotJson(uri);
-            }
-        }
-
-        log.value("   # of configs found", this.config.length, 3);
-        log.methodDone("initialize config", 1, "", true);
-
-        return (this.config.length > 0);
+        this.commentParser = new CommentParser();
+        this.configParser = new ConfigParser();
     }
 
 
@@ -568,7 +500,7 @@ class ExtjsLanguageManager
     }
 
 
-    handleDeleFile(fsPath: string)
+    private handleDeleFile(fsPath: string)
     {
         const componentClass = this.getClassFromPath(fsPath);
         if (componentClass)
@@ -621,101 +553,34 @@ class ExtjsLanguageManager
     }
 
 
-    isBusy()
+    async initialize(context: ExtensionContext): Promise<Disposable[]>
     {
-        return this.isIndexing;
+        this.config = await this.configParser.getConfig();
+        if (this.config.length === 0) {
+            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
+            return [];
+        }
+
+        //
+        // Do full indexing
+        //
+        await this.indexingAllWithProgress();
+
+        //
+        // Validate active js document if there is one
+        //
+        const activeTextDocument = window.activeTextEditor?.document;
+        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        }
+
+        return this.registerWatchers(context);
     }
 
 
-    parseAppDotJson(uri: Uri)
+    isBusy()
     {
-        const fileSystemPath = uri.fsPath || uri.path,
-              baseDir = path.dirname(uri.fsPath),
-              conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
-        //
-        // Merge classpath to root
-        //
-        const classic = conf.classic ? Object.assign([], conf.classic) : {},
-              modern = conf.modern ? Object.assign([], conf.modern) : {};
-
-        if (!conf.classpath)
-        {
-            conf.classpath = [];
-        }
-        else if (typeof conf.classpath === "string")
-        {
-            conf.classpath = [ conf.classpath ];
-        }
-
-        if (classic?.classpath)
-        {
-            conf.classpath = conf.classpath.concat(...classic.classpath);
-        }
-        if (modern?.classpath) {
-            conf.classpath = conf.classpath.concat(...modern.classpath);
-        }
-
-        //
-        // workspace.json
-        //
-        const wsDotJsonFsPath = path.join(baseDir, "workspace.json");
-        if (fs.existsSync(wsDotJsonFsPath))
-        {
-            const wsConf = json5.parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
-
-            if (wsConf.frameworks && wsConf.frameworks.ext)
-            {   //
-                // The framework directory should have a package.json, specifying its dependencies, i.e.
-                // the ext-core package.  Read package.json in framework directory.  If found, this is an
-                // open tooling project
-                //
-                const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
-                if (fs.existsSync(fwJsonFsPath))
-                {
-                    const fwConf = json5.parse(fs.readFileSync(fwJsonFsPath, "utf8"));
-                    if (fwConf.dependencies)
-                    {
-                        for (const dep in fwConf.dependencies)
-                        {
-                            if (fwConf.dependencies.hasOwnProperty(dep))
-                            {
-                                const fwPath = path.join("node_modules", dep).replace("\\", "/");
-                                conf.classpath.push(fwPath);
-                                log.value("   add ws.json framework path", fwPath, 2);
-                                log.value("      fraamework version", fwConf.dependencies[dep], 2);
-                            }
-                        }
-                    }
-                    else {
-                        log.error("No package.json found in workspace.framework directory");
-                    }
-                }
-                else {
-                    conf.classpath.push(wsConf.frameworks.ext);
-                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
-                }
-            }
-
-            if (wsConf.packages && wsConf.packages.dir)
-            {
-                const dirs = wsConf.packages.dir.split(",");
-                for (const d of dirs)
-                {
-                    const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
-                                    .replace(/\$\{toolkit.name\}/, "classic");
-                    conf.classpath.push(wsPath);
-                    log.value("   add ws.json path", wsPath, 2);
-                }
-            }
-        }
-
-        if (conf.classpath && conf.name)
-        {
-            log.value("   add app.json paths", fileSystemPath, 2);
-            log.value("      namespace", conf.name, 2);
-            log.value("      classpath", conf.classpath, 3);
-            this.config.push(conf);
-        }
+        return this.isIndexing;
     }
 
 
@@ -824,7 +689,7 @@ class ExtjsLanguageManager
                         // statusBarSpace.text = getStatusString(pct);
                     }
                     processedDirs.push(dir);
-                    this.dirNamespaceMap.set(dir, conf.name);
+                    this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
                 }
             }
         }
@@ -1106,16 +971,28 @@ class ExtjsLanguageManager
     }
 
 
+    /**
+     * @method registerWatchers
+     *
+     * Register application event watchers - Document open/change/delete, config file filesystem,
+     * settings/config
+     *
+     * @private
+     *
+     * @param context VSCode extension context
+     */
     private registerWatchers(context: ExtensionContext): Disposable[]
     {
         //
         // rc/conf file / app.json
         //
-        const disposables: Disposable[] = [],
-              confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
+        const disposables: Disposable[] = [];
 
-        confWatcher.onDidChange(this.initConfig);
-        disposables.push(confWatcher);
+        //
+        // Config watcher
+        //
+        const confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
+        disposables.push(confWatcher.onDidChange(async (e) => { this.config = await this.configParser.getConfig(); }, this));
 
         //
         // Open dcument text change
@@ -1141,31 +1018,6 @@ class ExtjsLanguageManager
 
         context.subscriptions.push(...disposables);
         return disposables;
-    }
-
-
-    async setup(context: ExtensionContext): Promise<Disposable[]>
-    {
-        const success = await this.initConfig();
-        if (!success) {
-            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
-            return [];
-        }
-
-        //
-        // Do full indexing
-        //
-        await this.indexingAllWithProgress();
-
-        //
-        // Validate active js document if there is one
-        //
-        const activeTextDocument = window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-        }
-
-        return this.registerWatchers(context);
     }
 
 

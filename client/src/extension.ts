@@ -76,7 +76,7 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     // Language Manager
     //
     extjsLangMgr = new ExtjsLanguageManager(new ServerRequest(client));
-    disposables = await extjsLangMgr.setup(context);
+    disposables = await extjsLangMgr.initialize(context);
 
     return {
         extjsLangMgr

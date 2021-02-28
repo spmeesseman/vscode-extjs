@@ -188,6 +188,10 @@
 					"default": false,
 					"description": "Include private methods, properties, and configs in Intellisense"
 				},
+				"extjsLangSvr.frameworkDirectory": {
+					"type": "string",
+					"description": "Directory to the ExtJS Framework.  If not specified, the fist frammework directory found by the Syntax Parser will be used."
+				},
 				"extjsLangSvr.validateXTypes": {
 					"type": "boolean",
 					"default": true,
