@@ -106,7 +106,7 @@ export function methodStart(msg: string, level?: number, logPad = "", doLogBlank
 }
 
 
-export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: [string, any][])
+export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: (string|any)[][])
 {
     if (msg === null || msg === undefined) {
         return;
