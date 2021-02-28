@@ -30,7 +30,7 @@
 			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
 			"stopOnEntry": false,
             "sourceMaps": true,
-			"preLaunchTask": "npm tsc-watch"
+			"preLaunchTask": "npm: tsc-watch"
 		},
 		{
 			"type": "node",
