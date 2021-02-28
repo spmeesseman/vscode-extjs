@@ -18,7 +18,7 @@ class XtypeCompletionItemProvider implements CompletionItemProvider
         {
             const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`);
             xtypeCompletion.insertText = `xtype: "${xtype}",`;
-            xtypeCompletion.command = {command: "vscode-extjs:ensure-require", title: "ensure-require"};
+            xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
             completionItems.push(xtypeCompletion);
         });
 

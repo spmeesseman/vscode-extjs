@@ -38,7 +38,7 @@ class XtypeCodeActionProvider implements CodeActionProvider
                                 kind: CodeActionKind.QuickFix,
                                 command: {
                                     title: "Replace declared xtype with '" + suggestion + "'",
-                                    command: "vscode-extjs:replace-text",
+                                    command: "vscode-extjs:replaceText",
                                     arguments: [ '"' + suggestion + '"', range ]
                                 }
                             });
@@ -58,7 +58,7 @@ class XtypeCodeActionProvider implements CodeActionProvider
                     kind: CodeActionKind.QuickFix,
                     command: {
                         title: "Fix the 'requires' array for this declared xtype",
-                        command: "vscode-extjs:ensure-require",
+                        command: "vscode-extjs:ensureRequire",
                         arguments: [ document.getText(range).replace(/["']/g, "") ]
                     }
                 },
@@ -68,7 +68,7 @@ class XtypeCodeActionProvider implements CodeActionProvider
                     kind: CodeActionKind.QuickFix,
                     command: {
                         title: "Fix the 'requires' array for invalid xtypes",
-                        command: "vscode-extjs:ensure-require"
+                        command: "vscode-extjs:ensureRequire"
                     }
                 }]);
             }
