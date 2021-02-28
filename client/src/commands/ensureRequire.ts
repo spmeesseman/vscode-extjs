@@ -83,7 +83,7 @@ export async function ensureRequires(xtype: string | undefined)
 function registerEnsureRequiresCommand(context: ExtensionContext)
 {
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:ensure-require", async (xtype) => { await ensureRequires(xtype); })
+        commands.registerCommand("vscode-extjs:ensureRequire", async (xtype) => { await ensureRequires(xtype); })
     );
 }
 

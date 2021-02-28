@@ -52,7 +52,27 @@ export function lowerCaseFirstChar(text: string)
 }
 
 
-export function properCase(name: string)
+/**
+ * Camel case a string
+ *
+ * @param name The string to manipulate
+ * @param indexUpper The index of the string to upper case
+ */
+export function toCamelCase(name: string | undefined, indexUpper: number)
+{
+    if (!name || indexUpper <= 0 || indexUpper >= name.length) {
+      return name;
+    }
+
+    return name
+        .replace(/(?:^\w|[A-Za-z]|\b\w)/g, (letter, index) => {
+            return index !== indexUpper ? letter.toLowerCase() : letter.toUpperCase();
+        })
+        .replace(/[\s\-]+/g, "");
+}
+
+
+export function toProperCase(name: string)
 {
     if (!name) {
       return name;
