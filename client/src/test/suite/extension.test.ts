@@ -9,6 +9,8 @@ import { configuration } from "../../common/configuration";
 
 export let extjsApi: ExtJsApi;
 
+let activated = false;
+
 
 suite("Extension Test Suite", () =>
 {
@@ -18,7 +20,7 @@ suite("Extension Test Suite", () =>
         this.timeout(10 * 1000);
         assert.ok(vscode.extensions.getExtension("spmeesseman.vscode-extjs"));
         await initSettings();
-        log.setWriteToConsole(false); // FOR DEBUGGING - write debug logging from exiension to console
+        log.setWriteToConsole(true); // FOR DEBUGGING - write debug logging from exiension to console
     });
 
 
@@ -27,7 +29,7 @@ suite("Extension Test Suite", () =>
         let wait = 0;
         const maxWait = 15;  // seconds
 
-        this.timeout(20 * 1000);
+        this.timeout(60 * 1000);
 
         const ext = vscode.extensions.getExtension("spmeesseman.vscode-extjs");
         assert(ext, "Could not find extension");
@@ -36,7 +38,7 @@ suite("Extension Test Suite", () =>
         // For coverage, we remove activationEvents "*" in package.json, we should
         // not be active at this point
         //
-        if (!ext.isActive)
+        if (!ext.isActive && !activated)
         {
             console.log("        Manually activating extension for full coverage");
             try {
@@ -46,6 +48,7 @@ suite("Extension Test Suite", () =>
                 assert.fail("Failed to activate extension");
             }
             console.log("         ✔ Extension activated");
+            activated = true;
         }
         else {
             console.log("         ℹ Extension is already activated, coverage will not occur");
@@ -72,7 +75,7 @@ suite("Extension Test Suite", () =>
     });
 
 
-    test("Wait for Indexing", async function()
+    test("Wait for Post-Indexing", async function()
     {
         this.timeout(10 * 1000);
         await timeout(5000);
@@ -82,10 +85,11 @@ suite("Extension Test Suite", () =>
     async function initSettings(enable = true)
     {
         // Use update() here for coverage, since these two settings wont trigger any processing
-        await configuration.update("debugClient", true);
-        await configuration.update("debugServer", true);
+        await configuration.update("debugClient", enable);
+        await configuration.update("debugServer", enable);
         await configuration.update("debugLevel", 3);
-        await configuration.updateWs("debug", true);
+        await configuration.updateWs("debugClient", enable);
+        await configuration.updateWs("debugServer", enable);
         await configuration.updateWs("debugLevel", 3);
     }
 

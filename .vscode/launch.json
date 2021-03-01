@@ -46,18 +46,18 @@
             "request": "launch",
             "runtimeExecutable": "${execPath}",
             "args": [
-                "${workspaceFolder}/dist/client/test",
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                // "--extensionTestsPath=${workspaceFolder}/dist/client/test",
-                "--disable-extensions"
+                "--extensionTestsPath=${workspaceFolder}/dist/client/test/suite/index",
+                "--disable-extensions",
+                "${workspaceFolder}/dist/client/test/extjs",
             ],
             "stopOnEntry": false,
             "sourceMaps": true,
             "outFiles": [
-                "${workspaceFolder}/dist/test/**/*.js"
+                "${workspaceFolder}/dist/client/test/**/*.js"
             ],
-            "preLaunchTask": "npm: test:before",
-            "postDebugTask": "npm: test:after"
+            "preLaunchTask": "npm: test-before",
+            "postDebugTask": "npm: test-after"
         },
 		{
 			"name": "Language Server E2E Test",

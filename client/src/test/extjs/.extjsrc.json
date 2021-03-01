@@ -1,4 +1,4 @@
 {
-    "classpath":"test/extjs",
+    "classpath":"fw",
     "name":"Ext"
 }

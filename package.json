@@ -26,9 +26,7 @@
 		"sencha",
 		"multi-root ready"
 	],
-	"activationEvents": [
-		"*"
-	],
+	"activationEvents": [],
 	"main": "./dist/client/extension.js",
 	"galleryBanner": {
 		"color": "#EEEEEE",
