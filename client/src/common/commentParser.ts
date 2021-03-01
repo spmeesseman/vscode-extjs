@@ -232,11 +232,11 @@ export class CommentParser
         }
 
         log.value("          name", lineProperty, 5);
-        log.value("          type", lineType, 5);
 
         if (lineType)
         {
-            lineType = lineType.replace(/[\{\}]/g, "");
+            lineType = lineType.replace("*", "any").replace(/[\{\}]/g, "");
+            log.value("          type", lineType, 5);
         }
 
         //
