@@ -605,10 +605,9 @@ class ExtjsLanguageManager
 
     private async indexAll(progress?: Progress<any>)
     {
-        const processedDirs: string[] = [];
-        let dirs: string[] = [],
-            numFiles = 0,
-            currentFileIdx = 0;
+        const processedDirs: string[] = [],
+              cfgPct = this.config && this.config.length ? 100 / this.config.length : 100;
+        let currentCfgIdx = 0;
 
         const _isIndexed = ((dir: string) =>
         {
@@ -625,10 +624,14 @@ class ExtjsLanguageManager
             return false;
         });
 
-        log.methodStart("indexing all", 1, "", true);
+        log.methodStart("indexing all", 1, "", true, [[ "# of configs", this.config.length ]]);
 
         for (const conf of this.config)
         {
+            let currentFileIdx = 0,
+                numFiles = 0,
+                dirs: string[] = [];
+
             if (typeof conf.classpath === "string")
             {
                 dirs = [ conf.classpath ];
@@ -654,7 +657,7 @@ class ExtjsLanguageManager
                 }
             }
 
-            const increment = Math.round(1 / numFiles * 100);
+            const increment = Math.round(1 / numFiles * cfgPct);
 
             log.blank();
             log.value("   # of files to index", numFiles, 1);
@@ -681,7 +684,7 @@ class ExtjsLanguageManager
                         //
                         // Report progress
                         //
-                        const pct = Math.round(++currentFileIdx / numFiles * 100);
+                        const pct = (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / numFiles * (100 / this.config.length));
                         progress?.report({
                             increment,
                             message: pct + "%"
@@ -692,6 +695,11 @@ class ExtjsLanguageManager
                     this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
                 }
             }
+
+            progress?.report({
+                increment,
+                message: Math.round(++currentCfgIdx * cfgPct) + "%"
+            });
         }
 
         log.methodDone("indexing all", 1, "", true);
