@@ -83,9 +83,10 @@ export class ConfigParser
         //
         if (appDotJsonUris)
         {
+            let foundFwDir = !!fwDirectory;
             for (const uri of appDotJsonUris)
             {
-                this.parseAppDotJson(uri, !fwDirectory, config);
+                foundFwDir = this.parseAppDotJson(uri, !fwDirectory && !foundFwDir, config);
             }
         }
 
@@ -96,12 +97,13 @@ export class ConfigParser
     }
 
 
-    private parseAppDotJson(uri: Uri, parseFwDir: boolean, config: IConf[])
+    private parseAppDotJson(uri: Uri, parseFwDir: boolean, config: IConf[]): boolean
     {
         const fileSystemPath = uri.fsPath || uri.path,
               baseDir = path.dirname(uri.fsPath),
               confs: IConf[] = [],
               conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
+        let foundFwDir = false;
 
         //
         // Merge classpath to root
@@ -134,7 +136,7 @@ export class ConfigParser
         {
             const wsConf = json5.parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
 
-            if (wsConf.frameworks && wsConf.frameworks.ext)
+            if (parseFwDir && wsConf.frameworks && wsConf.frameworks.ext)
             {   //
                 // The framework directory should have a package.json, specifying its dependencies, i.e.
                 // the ext-core package.  Read package.json in framework directory.  If found, this is an
@@ -159,6 +161,7 @@ export class ConfigParser
                                 };
                                 if (sdkConf.classpath)
                                 {
+                                    foundFwDir = true;
                                     confs.push(sdkConf);
                                     log.value("   add framework package.json path", fwPath, 2);
                                     log.value("      framework version", fwConf.dependencies[dep], 2);
@@ -170,7 +173,7 @@ export class ConfigParser
                         log.error("No package.json found in workspace.framework directory");
                     }
                 }
-                else if (parseFwDir) {
+                else {
 					confs.push({
 						name: "Ext",
 						classpath: wsConf.frameworks.ext,
@@ -211,6 +214,8 @@ export class ConfigParser
 			}
             config.push(...confs);
         }
+
+        return foundFwDir;
     }
 
 }
