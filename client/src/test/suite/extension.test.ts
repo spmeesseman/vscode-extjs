@@ -19,8 +19,8 @@ suite("Extension Test Suite", () =>
     {
         this.timeout(10 * 1000);
         assert.ok(vscode.extensions.getExtension("spmeesseman.vscode-extjs"));
-        await initSettings();
-        log.setWriteToConsole(true); // FOR DEBUGGING - write debug logging from exiension to console
+        //await initSettings(false);
+        //log.setWriteToConsole(true); // FOR DEBUGGING - write debug logging from exiension to console
     });
 
 
@@ -40,6 +40,7 @@ suite("Extension Test Suite", () =>
         //
         if (!ext.isActive && !activated)
         {
+            activated = true;
             console.log("        Manually activating extension for full coverage");
             try {
                 extjsApi = await ext.activate();
@@ -48,7 +49,6 @@ suite("Extension Test Suite", () =>
                 assert.fail("Failed to activate extension");
             }
             console.log("         ✔ Extension activated");
-            activated = true;
         }
         else {
             console.log("         ℹ Extension is already activated, coverage will not occur");
@@ -68,7 +68,9 @@ suite("Extension Test Suite", () =>
             //
             // Set extension api exports
             //
-            extjsApi = ext.exports;
+            if (!activated) {
+                extjsApi = ext.exports;
+            }
         }
 
         assert(extjsApi, "Exported API is empty");
@@ -78,7 +80,7 @@ suite("Extension Test Suite", () =>
     test("Wait for Post-Indexing", async function()
     {
         this.timeout(10 * 1000);
-        await timeout(5000);
+        await timeout(9000);
     });
 
 

@@ -46,8 +46,9 @@ export async function run(): Promise<void>
         hookRequire: true,
         hookRunInContext: true,
         hookRunInThisContext: true,
+        useSpawnWrap: true,           // wrap language server spawn
         include: ["dist/**/*.js"],
-        exclude: ["dist/test/**"],
+        exclude: ["dist/client/test/**"]
     });
     await nyc.wrap();
     //

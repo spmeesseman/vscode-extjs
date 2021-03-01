@@ -33,10 +33,11 @@
 		"theme": "light"
 	},
 	"scripts": {
-		"clean": "rimraf dist && rimraf client/.nyc_output && rimraf client/coverage",
+		"clean": "rimraf dist && npm run coverage-clean",
 		"build-webpack": "npm run clean && npm run build-common && npm run webpack-build",
 		"build-common": "tsc -p ./common",
 		"build-tsc": "npm run clean && npm run build-common && npm run tsc-build && npm run test-copy_extjs",
+		"coverage-clean": "rimraf .nyc_output && rimraf coverage",
 		"coverage-open_report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" coverage/index.html",
 		"coverage-full_on": "enable-full-coverage.sh",
 		"coverage-full_off": "enable-full-coverage.sh --off",
@@ -48,7 +49,7 @@
 		"semantic_release-release": "semantic-release",
 		"semantic_release-release_no_ci": "semantic-release --no-ci",
 		"semantic_release-release_dry": "semantic-release --dry-run",
-		"test-run_mocha": "node ./dist/client/test/runTest.js",
+		"test-run_mocha": "npm run coverage-clean && node ./dist/client/test/runTest.js",
 		"test-copy_extjs": "cp -r ./client/src/test/extjs/ ./dist/client/test/extjs/",
 		"test-dev": "npm run test-before && npm run test-run_mocha && npm run test-after",
 		"test-after": "npm run coverage-full_off",

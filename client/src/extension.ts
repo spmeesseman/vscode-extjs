@@ -23,13 +23,13 @@ export let extjsLangMgr: ExtjsLanguageManager;
 export interface ExtJsApi
 {
     extjsLangMgr: ExtjsLanguageManager | undefined;
+    client: LanguageClient | undefined;
 }
 
 
 export async function activate(context: ExtensionContext): Promise<ExtJsApi>
 {
     log.initLog("extjsLangSvr", "ExtJs Language Client", context);
-
     log.write("The ExtJs Language Server is now active!");
 
     //
@@ -79,7 +79,8 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     disposables = await extjsLangMgr.initialize(context);
 
     return {
-        extjsLangMgr
+        extjsLangMgr,
+        client
     };
 }
 
