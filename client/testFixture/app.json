@@ -1,0 +1,225 @@
+{
+    "name": "VSCodeExtJS",
+    "version": "1.0.0",
+
+    "indexHtmlPath": "index.html",
+    "url": null,
+    "framework": "ext",
+
+    "requires": [
+        "extjspkg"
+    ],
+
+    "builds":
+    {
+        "neptune":
+        {
+            "toolkit": "classic",
+            "theme": "theme-neptune"
+        },
+        "neptune-m":
+        {
+            "toolkit": "modern",
+            "theme": "theme-neptune"
+        }
+    },
+
+    "fashion":
+    {
+        "inliner":
+        {
+            "enable": false
+        }
+    },
+
+    "language":
+    {
+        "js":
+        {
+            "input": "ES8",
+            "output": "ES5"
+        }
+    },
+
+    "classic":
+    {
+        "classpath": [
+            "app/shared/src",
+            "app/classic/src"
+        ],
+        "overrides": [
+            "app/shared/overrides",
+            "app/classic/overrides"
+        ],
+        "sass":
+        {
+            "namespace": "VSCodeExtJS",
+            "etc": [
+                "app/shared/sass/etc/all.scss",
+                "app/classic/sass/etc/all.scss"
+            ],
+            "var": [
+                "app/shared/sass/var/all.scss",
+                "app/classic/sass/var/all.scss",
+                "app/shared/sass/var",
+                "app/classic/sass/var"
+            ],
+            "src": [
+                "app/shared/sass/src",
+                "app/classic/sass/src"
+            ]
+        }
+    },
+
+    "modern":
+    {
+        "classpath": [
+            "app/shared/src",
+            "app/modern/src"
+        ],
+        "overrides": [
+            "app/shared/overrides",
+            "app/modern/overrides"
+        ],
+        "sass":
+        {
+            "namespace": "VSCodeExtJS",
+            "etc": [
+                "app/shared/sass/etc/all.scss",
+                "app/modern/sass/etc/all.scss"
+            ],
+            "var": [
+                "app/shared/sass/var/all.scss",
+                "app/modern/sass/var/all.scss",
+                "app/shared/sass/var",
+                "app/modern/sass/var"
+            ],
+            "src": [
+                "app/shared/sass/src",
+                "app/modern/sass/src"
+            ]
+        }
+    },
+
+    "css": [
+    {
+        "path": "${build.out.css.path}",
+        "bundle": true,
+        "exclude": [
+            "fashion"
+        ]
+    },
+    {
+        "path": "css/VSCodeExtJS.css"
+    }],
+
+    "loader":
+    {
+        "cache": false,
+        "cacheParam": "_dc"
+    },
+
+    "production":
+    {
+        "loader":
+        {
+            "cache": "${build.timestamp}"
+        },
+        "cache":
+        {
+            "enable": false
+        },
+        "compressor": {
+            "type": "yui"
+        },
+        "js": [
+        {
+            "path": "app.js",
+            "bundle": true
+        }]
+    },
+
+    "testing":
+    {
+
+    },
+
+    "development":
+    {
+        "watch": 
+        {
+            "delay": 250
+        },
+        "tags": [
+        ],
+        "js": [
+        {
+            "path": "app.js",
+            "bundle": true
+        }]
+    },
+
+    "bootstrap":
+    {
+        "base": "${app.dir}",
+        "manifest": "generatedFiles/${build.id}.json",
+        "microloader": "generatedFiles/bootstrap.js",
+        "css": "generatedFiles/bootstrap.css"
+    },
+
+    "output":
+    {
+        "base": "${workspace.build.dir}/${build.environment}/${app.name}",
+        "page": "index.html",
+        "manifest": "generatedFiles/${build.id}.json",
+        "js": "generatedFiles/${build.id}/app.js",
+        "resources":
+        {
+            "path": "./${build.id}/resources",
+            "images": "./${build.id}/resources/images",
+            "shared": "./resources",
+            "toolkit": "${toolkit.name}/resources",
+            "base": "."
+        },
+        "deltas":
+        {
+            "enable": false
+        },
+        "appCache":
+        {
+            "enable": false
+        }
+    },
+
+    "cache":
+    {
+        "enable": false,
+        "deltas": false
+    },
+
+    "resource": {
+        "paths": ""
+    },
+
+    "resources": [
+    {
+        "path": "resources",
+        "output": "shared"
+    }],
+
+    "ignore": [
+        "(^|/)CVS(/?$|/.*?$)",
+        "(^|/)XCF(/?$|/.*?$)",
+        "nav.xcf",
+        "Readme.md",
+        "readme.txt",
+        "readme.important.txt",
+        ".cvsignore",
+        "[a-zA-Z_0-9 ].mp4",
+        "[a-zA-Z_0-9 ].mpg",
+        "[a-zA-Z_0-9 ].mpeg"
+    ],
+
+    "archivePath": "archive",
+    "id": "f2a7aed3-4d2a-9be2-c59a-019af73cb7b1"
+}

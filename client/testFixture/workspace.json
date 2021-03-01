@@ -1,0 +1,15 @@
+{
+    "frameworks":
+    {
+        "ext": "extjs"
+    },
+    "build":
+    {
+        "dir": "${workspace.dir}/build"
+    },
+    "packages":
+    {
+        "dir": "${workspace.dir}/node_modules/@spmeesseman/extjs-pkg",
+        "extract": "${workspace.dir}/packages/remote"
+    }
+}
