@@ -47,9 +47,8 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     initFsStorage(context);
 
     //
-    // Register VSCode Language Providers, i.e. Hover providers, completion providers, etc
+    // Start the server
     //
-    registerProviders(context);
     await run(context);
 
     //
@@ -77,6 +76,11 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     //
     extjsLangMgr = new ExtjsLanguageManager(new ServerRequest(client));
     disposables = await extjsLangMgr.initialize(context);
+
+    //
+    // Register VSCode Language Providers, i.e. Hover providers, completion providers, etc
+    //
+    registerProviders(context);
 
     return {
         extjsLangMgr,
