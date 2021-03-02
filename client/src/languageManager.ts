@@ -901,15 +901,31 @@ class ExtjsLanguageManager
     }
 
 
-    private processConfigChange(e: ConfigurationChangeEvent)
+    private async processConfigChange(e: ConfigurationChangeEvent)
     {
-        // if (e.affectsConfiguration("extjsLangSvr.debug") || e.affectsConfiguration("extjsLangSvr.debugLevel")) // ||
-        //     // e.affectsConfiguration("extjsLangSvr.intellisenseIncludeDeprecated") || e.affectsConfiguration("extjsLangSvr.intellisenseIncludePrivate")) {
-        // {   //
-        //     // TODO - process config changes
-        //     //
-        //     log.write("Process settings change", 1);
-        // }
+        if (e.affectsConfiguration("extjsLangSvr.ignoreErrors"))
+        {
+            this.reIndexTaskId = undefined;
+            const document = window.activeTextEditor?.document,
+                  fsPath = document?.uri.fsPath,
+                  ns = this.getNamespace(document);
+            if (document && fsPath)
+            {   //
+                // Clear
+                //
+                this.handleDeleFile(fsPath);
+                //
+                // Index the file
+                //
+                const components = await this.indexFile(fsPath, ns, document);
+                //
+                // Validate document
+                //
+                if (components && components.length > 0) {
+                    this.validateDocument(document, ns);
+                }
+            }
+        }
     }
 
 
