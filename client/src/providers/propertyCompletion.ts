@@ -86,17 +86,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         let cmp: IComponent | IMethod | IProperty | IConfig | undefined;
         switch (kind)
         {
-            case CompletionItemKind.Function:
             case CompletionItemKind.Method:
                 cmp = this.getMethodCmp(property, cmpClass);
                 break;
             case CompletionItemKind.Property:
                 cmp = this.getPropertyCmp(property, cmpClass);
                 break;
-            case CompletionItemKind.Class:
+            default: // class
                 cmp = extjsLangMgr.getComponent(cmpClass, true);
-                break;
-            default:
                 break;
         }
 
