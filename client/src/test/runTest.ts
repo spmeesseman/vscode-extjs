@@ -17,7 +17,7 @@ async function main()
         // Passed to --extensionTestsPath
         //
         const extensionTestsPath = path.resolve(__dirname, "../../../dist/client/test/suite/index");
-        const extensionTestsWsPath = path.resolve(__dirname, "../../../dist/client/test/extjs");
+        const extensionTestsWsPath = path.resolve(__dirname, "../../testFixture");
         //
         // Download VS Code, unzip it and run the integration test
         //

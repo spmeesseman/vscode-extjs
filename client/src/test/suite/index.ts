@@ -73,7 +73,7 @@ export async function run(): Promise<void>
     //
     const mocha = new Mocha({
         ui: "tdd", // the TDD UI is being used in extension.test.ts (suite, test, etc.)
-        useColors: true, // colored output from test results,
+        color: true, // colored output from test results,
         timeout: 30000, // default timeout: 10 seconds
         retries: 1,
         reporter: "mocha-multi-reporters",
@@ -85,8 +85,6 @@ export async function run(): Promise<void>
             }
         }
     });
-
-    mocha.useColors(true);
 
     //
     // Add all files to the test suite
