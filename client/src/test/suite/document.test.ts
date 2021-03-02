@@ -47,7 +47,7 @@ suite("Document Tests", () =>
 		// Reset debounce to original value b4 changed.  FOr running tests locally, this technically
 		// doesnt matter when the tests are ran in a CI
 		//
-		await vscode.workspace.getConfiguration().update("extjsLangSvr.validationDelay", validationDelay);
+		await vscode.workspace.getConfiguration().update("extjsLangSvr.validationDelay", validationDelay || 1250);
 	});
 
 

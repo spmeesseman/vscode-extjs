@@ -199,6 +199,7 @@
 				},
 				"extjsLangSvr.validationDelay": {
 					"type": "number",
+					"default": 1250,
 					"enum": [
 						250,
 						400,
