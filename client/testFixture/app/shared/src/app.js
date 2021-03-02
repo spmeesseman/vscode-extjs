@@ -79,6 +79,7 @@ CCC
 			hidden: false,
 			disabled: true
 		});
+		const pin = phys.getPinNumber();
 		phys.delete();
 
 		const phys2 = new VSCodeExtJS.common.PhysicianDropdown({
