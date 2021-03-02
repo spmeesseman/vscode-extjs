@@ -617,7 +617,8 @@ class ExtjsLanguageManager
                 // then something might get missed so it's on the user to make sure their paths are
                 // set correctly, in app.json and/or .extjsrc files.
                 //
-                if (d === dir || d.indexOf(dir) !== -1 || dir.indexOf(d) !== -1) {
+                // if (d === dir || d.indexOf(dir) !== -1 || dir.indexOf(d) !== -1) {
+                if (d === dir) {
                     return true;
                 }
             }
