@@ -1,23 +1,43 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation } from "./helper";
+import { configuration } from "../../common/configuration";
 
 
 suite("Diagnostics Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
+	let ignoreErrors: any[] | undefined;
 
 
 	suiteSetup(async () =>
     {
 		await activate(docUri);
+		//
+		// For local dev environment test, make sure the ignore setting is undefined
+		//
+		ignoreErrors = configuration.get<any[]>("ignoreErrors");
+		await configuration.update("ignoreErrors", undefined);
+		//
+		// Wait again for validation (debounce is 250ms)
+		//
+		await waitForValidation();
+	});
+
+
+	suiteTeardown(async () =>
+    {
+		await configuration.update("ignoreErrors", ignoreErrors);
 	});
 
 
 	test("Diagnose uppercase texts", async () =>
 	{
+		//
+		//
+		//
 		await testDiagnostics(docUri, "is all uppercase", [
 			{ message: "CCC is all uppercase.", range: toRange(66, 0, 66, 3), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" }
 		]);

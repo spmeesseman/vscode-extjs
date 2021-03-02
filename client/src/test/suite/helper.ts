@@ -8,7 +8,10 @@ export let editor: vscode.TextEditor;
 export let documentEol: string;
 export let platformEol: string;
 
+
 let activated = false;
+const serverActivationDelay = 2000;
+const invalidationDelay = 2000;
 
 
 /**
@@ -25,7 +28,7 @@ export async function activate(docUri: vscode.Uri)
 			doc = await vscode.workspace.openTextDocument(docUri);
 			editor = await vscode.window.showTextDocument(doc);
 			assert(vscode.window.activeTextEditor, "No active editor");
-			await sleep(2000); // Wait for server activation
+			await sleep(serverActivationDelay); // Wait for server activation
 			activated = true;
 		} catch (e) {
 			console.error(e);
@@ -33,27 +36,26 @@ export async function activate(docUri: vscode.Uri)
 	}
 }
 
-export async function sleep(ms: number)
-{
-	return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 export const getDocPath = (p: string) =>
 {
 	return path.resolve(__dirname, "../../../../client/testFixture", p);
 };
 
+
 export const getDocUri = (p: string) =>
 {
 	return vscode.Uri.file(getDocPath(p));
 };
+
 
 export const getNewDocUri = (p: string) =>
 {
 	return vscode.Uri.file(getDocPath(p)).with({ scheme: "untitled" });
 };
 
-export async function setTestContent(content: string): Promise<boolean>
+
+export async function setDocContent(content: string): Promise<boolean>
 {
 	const all = new vscode.Range(
 		doc.positionAt(0),
@@ -62,12 +64,26 @@ export async function setTestContent(content: string): Promise<boolean>
 	return editor.edit(eb => eb.replace(all, content));
 }
 
+
+export async function sleep(ms: number)
+{
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 export function toRange(sLine: number, sChar: number, eLine: number, eChar: number)
 {
 	const start = new vscode.Position(sLine, sChar);
 	const end = new vscode.Position(eLine, eChar);
 	return new vscode.Range(start, end);
 }
+
+
+export async function waitForValidation()
+{
+	await sleep(invalidationDelay);
+}
+
 
 /*
 test("Enable required testing options", async function()

@@ -1,7 +1,8 @@
 
 import * as vscode from "vscode";
 import { unlinkSync, writeFileSync } from "fs";
-import { getDocUri, getNewDocUri, activate, toRange, sleep, getDocPath } from "./helper";
+import { getDocUri, waitForValidation, activate, toRange, getDocPath } from "./helper";
+import { configuration } from "../../common/configuration";
 
 
 suite("Document Tests", () =>
@@ -9,23 +10,31 @@ suite("Document Tests", () =>
 
 	const docUri = getDocUri("app/shared/src/app.js");
 	const newDocPath = getDocPath("app/shared/src/app2.js");
+	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
     {
 		await activate(docUri);
+		//
+		// Set debounce to minimum for test
+		//
+		validationDelay = configuration.get<number>("validationDelay");
+		await configuration.update("validationDelay", 250); // set to minimum validation delay
+	});
+
+
+	suiteTeardown(async () =>
+    {   //
+		// Reset validation delay setting back to original value
+		//
+		await configuration.update("validationDelay", validationDelay || undefined);
 	});
 
 
 	test("Test edit document", async () =>
 	{
-		const workspaceEdit = new vscode.WorkspaceEdit(),
-		 	  config = vscode.workspace.getConfiguration(),
-			  validationDelay = config.get<number>("extjsLangSvr.validationDelay");
-		//
-		// Set debounce to minimum for test
-		//
-		await config.update("extjsLangSvr.validationDelay", 250); // set to minimum validation delay
+		const workspaceEdit = new vscode.WorkspaceEdit();
 		//
 		// Write document to trigger document change events - re-indexing and validation
 		//
@@ -34,7 +43,7 @@ suite("Document Tests", () =>
 		//
 		// Wait for validation (debounce is 250ms)
 		//
-		await sleep(2000);
+		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the text we just inserted
 		//
@@ -42,12 +51,7 @@ suite("Document Tests", () =>
 		//
 		// Wait again for validation (debounce is 250ms)
 		//
-		await sleep(2000);
-		//
-		// Reset debounce to original value b4 changed.  FOr running tests locally, this technically
-		// doesnt matter when the tests are ran in a CI
-		//
-		await vscode.workspace.getConfiguration().update("extjsLangSvr.validationDelay", validationDelay || 1250);
+		await waitForValidation();
 	});
 
 
@@ -66,7 +70,7 @@ suite("Document Tests", () =>
 		//
 		// Wait
 		//
-		await sleep(2000);
+		await waitForValidation();
 	});
 
 
@@ -76,7 +80,7 @@ suite("Document Tests", () =>
 		//
 		// Wait
 		//
-		await sleep(2000);
+		await waitForValidation();
 	});
 
 });

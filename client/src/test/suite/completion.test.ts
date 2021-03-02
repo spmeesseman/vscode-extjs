@@ -1,18 +1,36 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, sleep, doc, editor, toRange } from "./helper";
+import { getDocUri, activate, waitForValidation } from "./helper";
 
 
 suite("Completion Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
+	let quickSuggest: boolean | undefined;
 
 
 	suiteSetup(async () =>
     {
 		await activate(docUri);
+		const config = vscode.workspace.getConfiguration();
+		quickSuggest = config.get<boolean>("editor.quickSuggestions");
+		await config.update("editor.quickSuggestions", false);
+		//
+		// Wait for validation (debounce is 250ms)
+		//
+		await waitForValidation();
+	});
+
+
+	suiteTeardown(async () =>
+    {
+		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
+		//
+		// Wait for validation (debounce is 250ms)
+		//
+		await waitForValidation();
 	});
 
 
@@ -108,11 +126,6 @@ suite("Completion Tests", () =>
 
 async function testCompletion(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedCompletionList: vscode.CompletionList)
 {
-	const config = vscode.workspace.getConfiguration(),
-		  quickSuggest = config.get<boolean>("editor.quickSuggestions");
-
-	await config.update("editor.quickSuggestions", false);
-
 	const actualCompletionList = (await vscode.commands.executeCommand(
 		"vscode.executeCompletionItemProvider",
 		docUri,
@@ -134,6 +147,4 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	expectedCompletionList.items.forEach((expectedItem, i) => {
 		assert.strictEqual(actualCompletionList.items.filter(item => (item.label === expectedItem.label || item.insertText === expectedItem.label) && item.kind === expectedItem.kind).length, 1, expectedItem.label + " not found");
 	});
-
-	await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
 }
