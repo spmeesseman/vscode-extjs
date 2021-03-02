@@ -10,7 +10,15 @@ import { getDocUri, activate } from "./helper";
 
 suite("Hover Tests", () =>
 {
+
 	const docUri = getDocUri("app/shared/src/app.js");
+
+
+	suiteSetup(async () =>
+    {
+		await activate(docUri);
+	});
+
 
 	test("Test classes", async () =>
 	{
@@ -20,17 +28,20 @@ suite("Hover Tests", () =>
 		await testHover(docUri, new vscode.Position(74, 23), "VSCodeExtJS.common.PhysicianDropdown");
 	});
 
+
 	test("Test class methods", async () =>
 	{
 		await testHover(docUri, new vscode.Position(71, 28), "VSCodeExtJS.AppUtilities.alertError");
 		await testHover(docUri, new vscode.Position(74, 40), "VSCodeExtJS.common.PhysicianDropdown.create");
 	});
 
+
 	test("Test aliases", async () =>
 	{
 		await testHover(docUri, new vscode.Position(72, 4), "AppUtils");
 		await testHover(docUri, new vscode.Position(72, 12), "AppUtils.alertError");
 	});
+
 
 	test("Test configs", async () =>
 	{
@@ -39,6 +50,7 @@ suite("Hover Tests", () =>
 		await testHover(docUri, new vscode.Position(69, 20), "getTest");
 		await testHover(docUri, new vscode.Position(70, 8), "setTest");
 	});
+
 
 	test("Test local variables", async () =>
 	{
@@ -51,8 +63,6 @@ suite("Hover Tests", () =>
 
 async function testHover(docUri: vscode.Uri, position: vscode.Position, commentString: string)
 {
-	await activate(docUri);
-
 	const actualHoverList = (await vscode.commands.executeCommand(
 		"vscode.executeHoverProvider",
 		docUri,

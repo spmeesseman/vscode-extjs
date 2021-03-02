@@ -1,7 +1,3 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
 
 import * as vscode from "vscode";
 import * as assert from "assert";
@@ -10,7 +6,15 @@ import { getDocUri, activate, sleep, doc, editor, toRange } from "./helper";
 
 suite("Completion Tests", () =>
 {
+
 	const docUri = getDocUri("app/shared/src/app.js");
+
+
+	suiteSetup(async () =>
+    {
+		await activate(docUri);
+	});
+
 
 	test("Inline property start", async () =>
 	{
@@ -23,6 +27,7 @@ suite("Completion Tests", () =>
 			]
 		});
 	});
+
 
 	test("This methods", async () =>
 	{
@@ -38,6 +43,7 @@ suite("Completion Tests", () =>
 			]
 		});
 	});
+
 
 	test("Local inherited methods", async () =>
 	{
@@ -55,6 +61,7 @@ suite("Completion Tests", () =>
 		});
 	});
 
+
 	test("Local methods", async () =>
 	{
 		//
@@ -69,6 +76,7 @@ suite("Completion Tests", () =>
 			]
 		});
 	});
+
 
 	test("Sub-classes", async () =>
 	{
@@ -94,13 +102,12 @@ suite("Completion Tests", () =>
 			]
 		});
 	});
+
 });
 
 
 async function testCompletion(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedCompletionList: vscode.CompletionList)
 {
-	await activate(docUri);
-
 	const config = vscode.workspace.getConfiguration(),
 		  quickSuggest = config.get<boolean>("editor.quickSuggestions");
 

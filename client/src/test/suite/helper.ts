@@ -1,7 +1,3 @@
-/* --------------------------------------------------------------------------------------------
- * Copyright (c) Microsoft Corporation. All rights reserved.
- * Licensed under the MIT License. See License.txt in the project root for license information.
- * ------------------------------------------------------------------------------------------ */
 
 import * as vscode from "vscode";
 import * as path from "path";
@@ -50,6 +46,11 @@ export const getDocPath = (p: string) =>
 export const getDocUri = (p: string) =>
 {
 	return vscode.Uri.file(getDocPath(p));
+};
+
+export const getNewDocUri = (p: string) =>
+{
+	return vscode.Uri.file(getDocPath(p)).with({ scheme: "untitled" });
 };
 
 export async function setTestContent(content: string): Promise<boolean>

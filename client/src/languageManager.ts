@@ -928,7 +928,7 @@ class ExtjsLanguageManager
             {
                 this.reIndexTaskId = undefined;
                 const fsPath = textDocument.uri.fsPath,
-                        ns = this.getNamespace(textDocument);
+                      ns = this.getNamespace(textDocument);
                 //
                 // Clear
                 //

@@ -6,7 +6,15 @@ import { getDocUri, activate, toRange } from "./helper";
 
 suite("Diagnostics Tests", () =>
 {
+
 	const docUri = getDocUri("app/shared/src/app.js");
+
+
+	suiteSetup(async () =>
+    {
+		await activate(docUri);
+	});
+
 
 	test("Diagnose uppercase texts", async () =>
 	{
@@ -14,6 +22,7 @@ suite("Diagnostics Tests", () =>
 			{ message: "CCC is all uppercase.", range: toRange(66, 0, 66, 3), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" }
 		]);
 	});
+
 
 	test("Diagnose xtypes", async () =>
 	{
@@ -28,8 +37,6 @@ suite("Diagnostics Tests", () =>
 
 async function testDiagnostics(docUri: vscode.Uri, msgFilter: string, expectedDiagnostics: vscode.Diagnostic[])
 {
-	await activate(docUri);
-
 	const actualDiagnostics = vscode.languages.getDiagnostics(docUri).filter(item => item.message.indexOf(msgFilter) !== -1);
 
 	assert.strictEqual(actualDiagnostics.length, expectedDiagnostics.length, "Expected # of diagnostics not found: " + msgFilter);
