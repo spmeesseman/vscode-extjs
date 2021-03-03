@@ -12,7 +12,7 @@ class SyntaxCodeActionProvider implements CodeActionProvider
     {
         const actions: CodeAction[] = [];
 
-        if (context.only?.value !== CodeActionKind.QuickFix.value) {
+        if (context.only && context.only?.value !== CodeActionKind.QuickFix.value) {
             return actions;
         }
 
@@ -30,7 +30,7 @@ class SyntaxCodeActionProvider implements CodeActionProvider
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {
-                        title: "Ignore errors of this type",
+                        title: "Ignore errors of this type (file)",
                         command: "vscode-extjs:ignoreError",
                         arguments: [ ErrorCode.syntaxAllCaps, document.uri.fsPath ]
                     }
@@ -40,7 +40,7 @@ class SyntaxCodeActionProvider implements CodeActionProvider
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {
-                        title: "Ignore errors of this type",
+                        title: "Ignore errors of this type (global)",
                         command: "vscode-extjs:ignoreError",
                         arguments: [ ErrorCode.syntaxAllCaps ]
                     }
@@ -60,7 +60,7 @@ class SyntaxCodeActionProvider implements CodeActionProvider
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {
-                        title: "Convert to camel case",
+                        title: "Convert to lower case",
                         command: "vscode-extjs:replaceText",
                         arguments: [ text.toLowerCase(), range ]
                     }
