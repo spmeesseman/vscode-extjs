@@ -31,13 +31,6 @@ class ServerRequest
     {
         return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify({ path, nameSpace, text }));
     }
-
-
-    private fsPathToUriPath(path: string)
-    {
-        const uri = Uri.parse(path);
-        return "file:///" + (uri.scheme ? uri.scheme + "%3A" : "") + uri.path.replace(/\\/g, "/"); // win32 compat;
-    }
 }
 
 export default ServerRequest;
