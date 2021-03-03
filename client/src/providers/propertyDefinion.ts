@@ -46,7 +46,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
             //
             //     MyApp.common.Utilities
             //
-            lineText = lineText.replace(/^[\w\W][^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
+            lineText = lineText.replace(/^[^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
             //
             // Set the property to the last piece of the class name.  We want the effect that clicking
             // anywhere within the string references th  entore component class, not just the "part" that
