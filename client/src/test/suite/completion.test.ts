@@ -2,6 +2,7 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, waitForValidation } from "./helper";
+import { assertTSConstructSignatureDeclaration } from "@babel/types";
 
 
 suite("Completion Tests", () =>
@@ -110,6 +111,16 @@ suite("Completion Tests", () =>
 		});
 
 		//
+		// Line 72
+		// VSCodeExtJS.AppUtilities.*
+		//
+		await testCompletion(docUri, new vscode.Position(71, 27), ".", {
+			items: [
+				{ label: "alertError", kind: vscode.CompletionItemKind.Method }
+			]
+		});
+
+		//
 		// Line 75-76
 		// VSCodeExtJS.common.*
 		//
@@ -117,6 +128,20 @@ suite("Completion Tests", () =>
 			items: [
 				{ label: "PhysicianDropdown", kind: vscode.CompletionItemKind.Class },
 				{ label: "UserDropdown", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+	});
+
+
+	test("Sub-class methods", async () =>
+	{
+		//
+		// Line 72
+		// VSCodeExtJS.AppUtilities.*
+		//
+		await testCompletion(docUri, new vscode.Position(71, 27), ".", {
+			items: [
+				{ label: "alertError", kind: vscode.CompletionItemKind.Method }
 			]
 		});
 	});
