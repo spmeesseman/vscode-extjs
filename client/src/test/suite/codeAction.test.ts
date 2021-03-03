@@ -5,7 +5,7 @@ import { getDocUri, activate, toRange } from "./helper";
 import { ErrorCode, utils } from "../../../../common";
 
 
-suite("Definition Tests", () =>
+suite("Code Action Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
