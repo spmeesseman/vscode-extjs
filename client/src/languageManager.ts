@@ -276,10 +276,11 @@ class ExtjsLanguageManager
             else if (cmpType === ComponentType.Property) {
                 return this.propertyToComponentClassMapping[property];
             }
-            else if (cmpType === (ComponentType.Property | ComponentType.Config)) {
-                if (this.propertyToComponentClassMapping[property]) {
-                    return this.propertyToComponentClassMapping[property];
-                }
+            // else if (cmpType & (ComponentType.Property | ComponentType.Config)) {
+            else if (cmpType === ComponentType.Config) {
+                // if (this.propertyToComponentClassMapping[property]) {
+                //     return this.propertyToComponentClassMapping[property];
+                // }
                 return this.configToComponentClassMapping[property];
             }
             else {

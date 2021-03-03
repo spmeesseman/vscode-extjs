@@ -119,6 +119,19 @@ class PropertyDefinitionProvider implements DefinitionProvider
                         cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText, thisPath);
                     }
                 }
+                else
+                {
+                    if (cmpType === ComponentType.Property)
+                    {
+                        const cfgCls = extjsLangMgr.getComponentClass(property, ComponentType.Config);
+                        if (cfgCls)
+                        {
+                            log.write("   look for config", 2);
+                            cmpType = ComponentType.Config;
+                            cmpClass = cfgCls;
+                        }
+                    }
+                }
             }
 
             if (cmpClass)
