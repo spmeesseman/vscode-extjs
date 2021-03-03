@@ -138,6 +138,53 @@ suite("Definition Tests", () =>
 		}]);
 	});
 
+
+	test("String literals", async () =>
+	{
+		//
+		// Line 78
+		// Ext.create("VSCodeExtJS.common.PhysicianDropdown"...
+		//
+		await testDefinition(docUri, new vscode.Position(77, 28), [
+        {
+            uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+            range: toRange(0, 0, 0, 0)
+        }]);
+		await testDefinition(docUri, new vscode.Position(77, 40), [
+		{
+			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+			range: toRange(0, 0, 0, 0)
+		}]);
+		await testDefinition(docUri, new vscode.Position(77, 48), [
+		{
+			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+			range: toRange(0, 0, 0, 0)
+		}]);
+		//
+		// Lines 9-13
+		// requires: [
+		//     'VSCodeExtJS.AppUtilities',
+		//     'VSCodeExtJS.common.PatientDropdown',
+		//     'VSCodeExtJS.common.PhysicianDropdown'
+		// ]
+		//
+		await testDefinition(docUri, new vscode.Position(9, 16), [
+		{
+			uri: getDocUri("app/shared/src/AppUtilities.js"),
+			range: toRange(0, 0, 0, 0)
+		}]);
+		await testDefinition(docUri, new vscode.Position(10, 16), [
+		{
+			uri: getDocUri("app/classic/src/common/PatientDropdown.js"),
+			range: toRange(0, 0, 0, 0)
+		}]);
+		await testDefinition(docUri, new vscode.Position(10, 25), [
+		{
+			uri: getDocUri("app/classic/src/common/PatientDropdown.js"),
+			range: toRange(0, 0, 0, 0)
+		}]);
+	});
+
 });
 
 
