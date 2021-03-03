@@ -18,33 +18,33 @@ suite("Definition Tests", () =>
 	});
 
 
-	test("Local inherited methods", async () =>
+	test("Variable instance inherited methods", async () =>
 	{
 		//
 		// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
 		// Line 83
-		// phys.*
+		// phys.delete(), inherited method from UserDropdown
 		//
 		// await testDefinition(docUri, new vscode.Position(82, 7), [
-        // {
-        //     uri: vscode.Uri.file(""),
-        //     range: toRange(0, 0, 0, 0)
-        // }]);
+		// {
+		// 	uri: vscode.Uri.file("app/classic/src/common/UserDropdown.js"),
+		// 	range: toRange(0, 0, 0, 0)
+		// }]);
 	});
 
 
-	test("Local methods", async () =>
+	test("Variable instance methods", async () =>
 	{
 		//
-		// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
-		// Line 83
-		// phys.*
+		// const pin = phys.getPinNumber();
+		// Line 82
+		// phys.getPinNumber(), local method
 		//
-		// await testDefinition(docUri, new vscode.Position(82, 7), [
-        // {
-        //     uri: vscode.Uri.file(""),
-        //     range: toRange(0, 0, 0, 0)
-        // }]);
+		await testDefinition(docUri, new vscode.Position(81, 20), [
+        {
+            uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+            range: toRange(33, 1, 36, 2)
+        }]);
 	});
 
 
@@ -80,7 +80,7 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(71, 27), [
 		{
 			uri: getDocUri("app/shared/src/AppUtilities.js"),
-			range: toRange(63, 4, 66, 5)
+			range: toRange(62, 4, 65, 5)
 		}]);
 		//
 		// app.js Line 75
@@ -104,6 +104,38 @@ suite("Definition Tests", () =>
         {
             uri: getDocUri("app/shared/src/AppUtilities.js"),
             range: toRange(0, 0, 0, 0)
+        }]);
+	});
+
+
+	test("Configs and Properties", async () =>
+	{
+		//
+		// Line 68
+		// console.log(this.test);
+		//
+		await testDefinition(docUri, new vscode.Position(67, 21), [
+		{
+			uri: getDocUri("app/shared/src/app.js"),
+			range: toRange(27, 2, 27, 12)
+		}]);
+		//
+		// Line 69
+		// console.log(this.test3);
+		//
+		await testDefinition(docUri, new vscode.Position(68, 21), [
+		{
+			uri: getDocUri("app/shared/src/app.js"),
+			range: toRange(18, 1, 18, 5)
+		}]);
+		//
+		// Line 70 getter/setter
+		// console.log(this.getTest());
+		//
+		await testDefinition(docUri, new vscode.Position(69, 21), [
+        {
+            uri: getDocUri("app/shared/src/app.js"),
+            range: toRange(27, 2, 27, 6)
         }]);
 	});
 
@@ -198,12 +230,37 @@ async function testDefinition(docUri: vscode.Uri, position: vscode.Position, exp
 
 	assert.ok(actualDefinitions.length >= expectedDefinitions.length);
 
+	// console.log("####################################");
+	// console.log("Actual");
+	// console.log("####################################");
+	// actualDefinitions.forEach((d) => {
+	// 	console.log("***********************");
+	// 	console.log(d.uri.path);
+	// 	console.log("***********************");
+	// 	console.log(d.range.start.line);
+	// 	console.log(d.range.start.character);
+	// 	console.log(d.range.end.line);
+	// 	console.log(d.range.end.character);
+	// });
+	// console.log("####################################");
+	// console.log("Expected");
+	// console.log("####################################");
+	// expectedDefinitions.forEach((d) => {
+	// 	console.log("***********************");
+	// 	console.log(d.uri.path);
+	// 	console.log("***********************");
+	// 	console.log(d.range.start.line);
+	// 	console.log(d.range.start.character);
+	// 	console.log(d.range.end.line);
+	// 	console.log(d.range.end.character);
+	// });
+
 	expectedDefinitions.forEach((expectedDefinition) => {
 
 		assert.strictEqual(
             actualDefinitions.filter(item => item.uri.path === expectedDefinition.uri.path &&
 				                             item.range.start.line === expectedDefinition.range.start.line).length,
-            1, expectedDefinition.uri.fsPath + " definition error"
+            1, expectedDefinition.uri.path + " definition error"
         );
 	});
 }
