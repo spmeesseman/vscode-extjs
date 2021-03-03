@@ -58,6 +58,14 @@ suite("Hover Tests", () =>
 		await testHover(docUri, new vscode.Position(82, 3), "phys");
 	});
 
+
+	test("Test xtypes", async () =>
+	{
+		await testHover(docUri, new vscode.Position(33, 11), "physiciandropdown");
+		await testHover(docUri, new vscode.Position(39, 11), "userdropdown");
+		await testHover(docUri, new vscode.Position(45, 3), "component");
+	});
+
 });
 
 
