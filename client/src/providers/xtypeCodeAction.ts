@@ -12,7 +12,7 @@ class XtypeCodeActionProvider implements CodeActionProvider
     {
         const actions: CodeAction[] = [];
 
-        if (context.only?.value !== CodeActionKind.QuickFix.value) {
+        if (context.only && context.only?.value !== CodeActionKind.QuickFix.value) {
             return actions;
         }
 
@@ -67,7 +67,7 @@ class XtypeCodeActionProvider implements CodeActionProvider
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {
-                        title: "Fix the 'requires' array for invalid xtypes",
+                        title: "Fix the 'requires' array for all declared xtypes",
                         command: "vscode-extjs:ensureRequire"
                     }
                 }]);
