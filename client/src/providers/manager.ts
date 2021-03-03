@@ -9,7 +9,6 @@ import registerPropertyCompletionProvider from "./propertyCompletion";
 import registerPropertyDefinitionProvider from "./propertyDefinion";
 import registerMethodSignatureProvider from "./methodSignature";
 import registerSyntaxCodeActionProvider from "./syntaxCodeAction";
-import registerSymbolProvider from "./symbol";
 import { extjsLangMgr } from "../extension";
 
 
@@ -30,22 +29,5 @@ export function registerProviders(context: ExtensionContext)
         registerSyntaxCodeActionProvider
     ];
 
-    const delayedRegisters: Register[] = [
-        registerSymbolProvider
-    ];
-
-    const _regSymbolProvider = ((context: ExtensionContext) => {
-        setTimeout(() => {
-            if (!extjsLangMgr.isBusy())
-            {
-                delayedRegisters.forEach(register => register(context));
-            }
-            else {
-                _regSymbolProvider(context);
-            }
-        }, 250);
-    });
-
     registers.forEach(register => register(context));
-    _regSymbolProvider(context);
 }
