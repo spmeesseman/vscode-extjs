@@ -27,16 +27,15 @@ class ServerRequest
         return this.client.sendRequest<string | undefined>("getExtJsComponent", text);
     }
 
-    async validateExtJsFile(fsPath: string, nameSpace: string, text: string): Promise<Diagnostic[]>
+    async validateExtJsFile(path: string, nameSpace: string, text: string): Promise<Diagnostic[]>
     {
-        const uriPath = this.fsPathToUriPath(fsPath);
-        return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify({ uriPath, nameSpace, text }));
+        return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify({ path, nameSpace, text }));
     }
 
 
-    private fsPathToUriPath(fsPath: string)
+    private fsPathToUriPath(path: string)
     {
-        const uri = Uri.parse(fsPath);
+        const uri = Uri.parse(path);
         return "file:///" + (uri.scheme ? uri.scheme + "%3A" : "") + uri.path.replace(/\\/g, "/"); // win32 compat;
     }
 }

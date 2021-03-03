@@ -90,17 +90,17 @@ export async function validateExtJsDocument(textDocument: TextDocument, connecti
  *
  * Validates indexed component related items w/ interaction from the client
  *
- * @param options.uriPath VSCode TextDOcument object
+ * @param options.fsPath File path
  * @param options.nameSpace ExtJs file namespace
- * @param options.text VSCode TextDOcument object
+ * @param options.text Fle text
  * @param connection Client connection object
  * @param diagRelatedInfoCapability Specifies if the client has diagnostic related information capability
  */
 export async function validateExtJsFile(options: any, connection: Connection, diagRelatedInfoCapability: boolean)
 {
-	const components = await parseExtJsFile(options.uriPath, options.text);
+	const components = await parseExtJsFile(options.path, options.text);
 	const diagnostics: Diagnostic[] = [];
-	const textObj = TextDocument.create(options.uriPath, "javascript", 2, options.text);
+	const textObj = TextDocument.create(options.path, "javascript", 2, options.text);
 
 	log.methodStart("validate extjs file text", 1, "", true);
 

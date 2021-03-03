@@ -78,9 +78,7 @@ class ExtjsLanguageManager
         // TODO - check / test file delete
         //
         let cmpClass: string | undefined;
-        const // uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
-              // wsf = workspace.getWorkspaceFolder(Uri.parse(`file://${uriPath}`));
-              wsf = workspace.getWorkspaceFolder(Uri.parse(fsPath));
+        const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
 
         log.write("get component by fs path", 1);
         log.value("   path", fsPath, 2);
@@ -595,11 +593,11 @@ class ExtjsLanguageManager
 
     private getStorageKey(fsPath: string)
     {
-        const wsf = workspace.getWorkspaceFolder(Uri.parse(clientUtils.getUriPath(fsPath)));
+        const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
         if (wsf) {
             return fsPath.replace(wsf.uri.fsPath, "");
         }
-        return Uri.parse(fsPath).path;
+        return Uri.file(fsPath).path;
     }
 
 
@@ -1060,7 +1058,7 @@ class ExtjsLanguageManager
             if (!utils.isExtJsFile(text)) {
                 return;
             }
-            await this.serverRequest.validateExtJsFile(textDocument.uri.fsPath, nameSpace, text);
+            await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
         }
     }
 

@@ -35,8 +35,7 @@ class XtypeDefinitionProvider implements DefinitionProvider
                         start = new Position(pObject.start?.line, pObject.start?.column);
                         end = new Position(pObject.end?.line, pObject.end?.column);
                     }
-                    const uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
-                          uri = Uri.parse(`file://${uriPath}`),
+                    const uri = Uri.file(fsPath),
                           range = new Range(start, end);
                     log.write("open definition file", 1);
                     log.value("   component class", componentClass, 2);
