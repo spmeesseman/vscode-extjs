@@ -156,6 +156,14 @@ class ExtjsLanguageManager
 
     getComponent(componentClass: string, checkAlias?: boolean, fsPath?: string): IComponent | undefined
     {
+        if (fsPath && componentClass === "this")
+        {
+            componentClass = this.getClassFromFile(fsPath) || "this";
+            if (componentClass === "this") {
+                return undefined;
+            }
+        }
+
         let component = this.componentClassToComponentsMapping[componentClass];
 
         log.write("get component by class", 1);
@@ -252,7 +260,7 @@ class ExtjsLanguageManager
      *
      * @returns {String}
      */
-    getComponentClass(property: string, cmpType?: ComponentType, txt?: string): string | undefined
+    getComponentClass(property: string, cmpType?: ComponentType, txt?: string, fsPath?: string): string | undefined
     {
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
@@ -328,6 +336,17 @@ class ExtjsLanguageManager
         if (aliasClass = this.widgetToComponentClassMapping[cmpClass])
         {
             cmpClass = aliasClass;
+        }
+
+        //
+        // Instances
+        //
+        if (fsPath && !this.getComponent(cmpClass, true))
+        {
+            const instance = this.getComponentInstance(cmpClass, fsPath);
+            if (instance) {
+                cmpClass = instance.componentClass;
+            }
         }
 
         log.blank(1);

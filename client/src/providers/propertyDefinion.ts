@@ -1,10 +1,11 @@
 
 import {
     CancellationToken, DefinitionProvider, ExtensionContext, languages, Location,
-    LocationLink, Position, ProviderResult, Range, TextDocument, Uri,
+    LocationLink, Position, ProviderResult, Range, TextDocument, Uri, window
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
+import { toVscodePosition } from "../common/clientUtils";
 import { utils, ComponentType } from "../../../common";
 
 
@@ -83,6 +84,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
         if (cmpType !== ComponentType.None)
         {
             let cmpClass: string | undefined;
+            const thisPath = window.activeTextEditor?.document?.uri.fsPath;
 
             log.write("provide definition", 1);
             log.value("   property", property, 2);
@@ -94,7 +96,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
             }
             else
             {
-                cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText);
+                cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText, thisPath);
                 if (!cmpClass)
                 {   //
                     // If this is a method, check for getter/setter for a config property...
@@ -105,7 +107,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                         property = utils.lowerCaseFirstChar(property.substring(3));
                         cmpType = ComponentType.Config;
                         log.value("      config name", property, 2);
-                        cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText);
+                        cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText, thisPath);
                     }
                     //
                     // If this is a property, check for a config property...
@@ -114,7 +116,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                     {
                         log.write("   property not found, look for config", 2);
                         cmpType = ComponentType.Config;
-                        cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText);
+                        cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText, thisPath);
                     }
                 }
             }
@@ -132,18 +134,22 @@ class PropertyDefinitionProvider implements DefinitionProvider
                                                                                   extjsLangMgr.getProperty(cmpClass, property));
                     if (cmpType === ComponentType.Method && (property.startsWith("get") || property.startsWith("set")))
                     {
-                        property = utils.lowerCaseFirstChar(property.substring(3));
-                        cmpType = ComponentType.Config;
-                        pObject = extjsLangMgr.getConfig(cmpClass, property);
-                        log.value("      config name", property, 2);
+                        const cProperty = utils.lowerCaseFirstChar(property.substring(3)),
+                              cObject = cProperty ? extjsLangMgr.getConfig(cmpClass, cProperty) : undefined;
+                        if (cObject) {
+                            cmpType = ComponentType.Config;
+                            pObject = cObject;
+                            property = cProperty;
+                            log.value("      config name", property, 2);
+                        }
                     }
                     if (pObject)
                     {
                         log.write("   setting position", 2);
                         log.value("      start line", pObject.start?.line, 3);
                         log.value("      end line", pObject.end?.line, 3);
-                        start = new Position(pObject.start?.line, pObject.start?.column);
-                        end = new Position(pObject.end?.line, pObject.end?.column);
+                        start = toVscodePosition(pObject.start);
+                        end = toVscodePosition(pObject.end);
                     }
                     const uri = Uri.file(fsPath),
                           range = new Range(start, end);
