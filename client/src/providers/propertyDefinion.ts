@@ -94,7 +94,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
             }
             else
             {
-                cmpClass = extjsLangMgr.getComponentClass(property, cmpType);
+                cmpClass = extjsLangMgr.getComponentClass(property, cmpType, lineText);
                 if (!cmpClass)
                 {   //
                     // If this is a method, check for getter/setter for a config property...
@@ -138,8 +138,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                         start = new Position(pObject.start?.line, pObject.start?.column);
                         end = new Position(pObject.end?.line, pObject.end?.column);
                     }
-                    const uriPath = Uri.parse(fsPath).path.replace(/\\/g, "/"), // win32 compat
-                          uri = Uri.parse(`file://${uriPath}`),
+                    const uri = Uri.file(fsPath),
                           range = new Range(start, end);
                     log.value("   fsPath", uri.fsPath, 2);
                     log.write("   open definition file", 1);
