@@ -190,7 +190,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             const widgets = parseClassDefProperties(propertyAlias);
                             componentInfo.widgets.push(...widgets[0]); // xtype array
                             componentInfo.widgets.push(...widgets[1]); // alias array
-                            componentInfo.aliases.push(...widgets[1]); // alias array
                         }
 
                         if (isObjectProperty(propertyXtype))
@@ -231,11 +230,11 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         }
                         logProperties("methods", componentInfo.methods);
 
-                        if (componentInfo.xtypes)
-                        {
-                            componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo.componentClass));
-                        }
+                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo.componentClass));
                         logProperties("xtypes", componentInfo.xtypes);
+
+                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo.componentClass, "alias"));
+                        logProperties("aliases", componentInfo.aliases);
                     }
 
                     log.methodDone("parse extjs file", 1, "", true);
@@ -709,7 +708,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
 }
 
 
-function parseXTypes(objEx: ObjectExpression, text: string, componentClass: string): IXtype[]
+function parseXTypes(objEx: ObjectExpression, text: string, componentClass: string, nodeName = "xtype"): IXtype[]
 {
     const xType: IXtype[] = [];
     const line = objEx.loc!.start.line - 1;
@@ -734,39 +733,58 @@ function parseXTypes(objEx: ObjectExpression, text: string, componentClass: stri
     const _ast = parse(subText);
     traverse(_ast,
     {
-        ObjectProperty(_path) {
+        ObjectProperty(_path)
+        {
             const _node = _path.node;
             const valueNode = _node.value;
+
             if (!isIdentifier(_node.key)) {
                 return;
             }
-            if (_node.key.name !== "xtype") {
+
+            if (_node.key.name !== nodeName) {
                 return;
             }
-            if (!isStringLiteral(valueNode)) {
+
+            if (!isStringLiteral(valueNode) && !isArrayExpression(valueNode)) {
                 return;
             }
 
-            const start = valueNode.loc!.start;
-            const end = valueNode.loc!.end;
+            const _add = ((v: StringLiteral) =>
+            {
+                const start = v.loc!.start;
+                const end = v.loc!.end;
 
-            if (start.line === 1) {
-                start.column += + column - 2;
-            }
-            if (end.line === 1) {
-                end.column += + column - 2;
-            }
-            start.line += line;
-            end.line += line;
+                if (start.line === 1) {
+                    start.column += + column - 2;
+                }
+                if (end.line === 1) {
+                    end.column += + column - 2;
+                }
+                start.line += line;
+                end.line += line;
 
-            log.write("   push xtype " + valueNode.value, 3);
+                log.write("   push xtype " + v.value, 3);
 
-            xType.push({
-                name: valueNode.value,
-                start,
-                end,
-                componentClass
+                xType.push({
+                    name: v.value,
+                    start,
+                    end,
+                    componentClass
+                });
             });
+
+            if (isStringLiteral(valueNode)) {
+                _add(valueNode);
+            }
+            else
+            {
+                valueNode.elements.forEach(it => {
+                    if (isStringLiteral(it)) {
+                        _add(it);
+                    }
+                });
+            }
         }
     });
 

@@ -30,10 +30,15 @@ class XtypeDefinitionProvider implements DefinitionProvider
                 {
                     let start = new Position(0, 0),
                         end = new Position(0, 0);
-                    const pObject = extjsLangMgr.getXType(componentClass, xtype);
+                    const pObject = extjsLangMgr.getXType(componentClass, xtype),
+                          pObject2 = extjsLangMgr.getAlias(componentClass, xtype);
                     if (pObject) {
                         start = new Position(pObject.start?.line, pObject.start?.column);
                         end = new Position(pObject.end?.line, pObject.end?.column);
+                    }
+                    if (pObject2 && start.line === 0 && start.character === 0) {
+                        start = new Position(pObject2.start?.line, pObject2.start?.column);
+                        end = new Position(pObject2.end?.line, pObject2.end?.column);
                     }
                     const uri = Uri.file(fsPath),
                           range = new Range(start, end);

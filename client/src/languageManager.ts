@@ -10,7 +10,7 @@ import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType } from  "../../common";
+import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType } from  "../../common";
 import * as log from "./common/log";
 import * as clientUtils from "./common/clientUtils";
 import { CommentParser } from "./common/commentParser";
@@ -43,7 +43,7 @@ class ExtjsLanguageManager
     private componentClassToMethodsMapping: { [componentClass: string]: IMethod[] | undefined } = {};
     private componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
     private componentClassToFilesMapping: { [componentClass: string]: string | undefined } = {};
-    private componentClassToAliasesMapping: { [componentClass: string]: string[] | undefined } = {};
+    private componentClassToAliasesMapping: { [componentClass: string]: IAlias[] | undefined } = {};
 
 
     constructor(serverRequest: ServerRequest)
@@ -51,6 +51,27 @@ class ExtjsLanguageManager
         this.serverRequest = serverRequest;
         this.commentParser = new CommentParser();
         this.configParser = new ConfigParser();
+    }
+
+
+    getAlias(cmp: string, alias: string): IXtype | undefined
+    {
+        const aliases = this.componentClassToAliasesMapping[cmp];
+        log.write("get config by component class", 1);
+        log.value("   component class", cmp, 2);
+        log.value("   alias", alias, 2);
+        if (aliases) {
+            for (let c = 0; c < aliases.length; c++) {
+                if (aliases[c].name.replace("widget.", "") === alias) {
+                    log.write("   found config", 3);
+                    log.value("      name", aliases[c].name, 4);
+                    log.value("      start", aliases[c].start.line + ", " + aliases[c].start.column, 4);
+                    log.value("      end", aliases[c].end.line + ", " + aliases[c].end.column, 4);
+                    return aliases[c];
+                }
+            }
+        }
+        return undefined;
     }
 
 
@@ -64,7 +85,7 @@ class ExtjsLanguageManager
             if (cls && alias)
             {
                 for (const a of alias) {
-                    aliases.push(a);
+                    aliases.push(a.name);
                 }
             }
         });

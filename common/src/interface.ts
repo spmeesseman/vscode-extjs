@@ -27,9 +27,12 @@ export interface IExtJsBase
 }
 
 
+export interface IAlias extends IExtJsBase {}
+
+
 export interface IComponent extends IExtJsBase
 {
-    aliases: string[];
+    aliases: IAlias[];
     baseNameSpace: string;
     configs: IConfig[];
     deprecated?: boolean;
