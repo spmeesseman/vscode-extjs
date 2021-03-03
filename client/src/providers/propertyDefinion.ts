@@ -99,7 +99,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
                 {   //
                     // If this is a method, check for getter/setter for a config property...
                     //
-                    if (cmpType === ComponentType.Method && property.startsWith("get") || property.startsWith("set"))
+                    if (cmpType === ComponentType.Method && (property.startsWith("get") || property.startsWith("set")))
                     {
                         log.write("   method not found, look for getter/setter config", 2);
                         property = utils.lowerCaseFirstChar(property.substring(3));
@@ -127,9 +127,16 @@ class PropertyDefinitionProvider implements DefinitionProvider
                 {
                     let start = new Position(0, 0),
                         end = new Position(0, 0);
-                    const pObject = cmpType === ComponentType.Method ? extjsLangMgr.getMethod(cmpClass, property) :
-                                                    (cmpType === ComponentType.Config ? extjsLangMgr.getConfig(cmpClass, property) :
-                                                                                        extjsLangMgr.getProperty(cmpClass, property));
+                    let pObject = cmpType === ComponentType.Method ? extjsLangMgr.getMethod(cmpClass, property) :
+                                              (cmpType === ComponentType.Config ? extjsLangMgr.getConfig(cmpClass, property) :
+                                                                                  extjsLangMgr.getProperty(cmpClass, property));
+                    if (cmpType === ComponentType.Method && (property.startsWith("get") || property.startsWith("set")))
+                    {
+                        property = utils.lowerCaseFirstChar(property.substring(3));
+                        cmpType = ComponentType.Config;
+                        pObject = extjsLangMgr.getConfig(cmpClass, property);
+                        log.value("      config name", property, 2);
+                    }
                     if (pObject)
                     {
                         log.write("   setting position", 2);
