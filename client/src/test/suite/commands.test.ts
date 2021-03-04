@@ -15,11 +15,19 @@ suite("Command Tests", () =>
 
 	const docUri = getDocUri("app/shared/src/app.js");
 	let validationDelay: number | undefined;
+	let logEnabled: boolean | undefined;
 
 
 	suiteSetup(async () =>
     {
 		await activate(docUri);
+		//
+		// Doing some config updates in these tests anyway, so enable logging for coverage
+		// of the common/log module.  No need to set a log level, if this is local dev testing
+		// then whatever is set already is fine, default is fine
+		//
+		logEnabled = configuration.get<boolean>("debugClient");
+		await configuration.update("debugClient", true);
 		//
 		// Set debounce to minimum for test
 		//
@@ -31,6 +39,7 @@ suite("Command Tests", () =>
 	suiteTeardown(async () =>
     {
 		await configuration.update("validationDelay", validationDelay || undefined);
+		await configuration.update("debugClient", logEnabled);
 	});
 
 
