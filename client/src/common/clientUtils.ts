@@ -1,7 +1,6 @@
 
-import { Range, Position, Uri, Location, workspace, WorkspaceFolder } from "vscode";
-import { IPosition } from "../../../common";
-import * as path from "path";
+import { Range, Position, Uri, Location, window, TextDocument } from "vscode";
+import { IPosition, ComponentType, utils } from "../../../common";
 
 
 export function getUriPath(fsPath: string)
@@ -21,6 +20,7 @@ export function toVscodePosition(position: IPosition)
     const { line, column } = position;
     return new Position(line - 1, column);
 }
+
 
 export function toIPosition(position: Position, lineText: string): IPosition
 {

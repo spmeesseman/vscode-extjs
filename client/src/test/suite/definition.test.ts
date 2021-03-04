@@ -1,9 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, toRange } from "./helper";
-import { assertTSConstructSignatureDeclaration } from "@babel/types";
-import { toVscodeRange } from "../../common/clientUtils";
+import { getDocUri, activate, toRange } from "./helper";
 
 
 suite("Definition Tests", () =>
