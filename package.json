@@ -36,6 +36,7 @@
 	},
 	"scripts": {
 		"clean": "rimraf dist && npm run coverage-clean",
+		"clean_ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs",
 		"build-webpack": "npm run clean && npm run build-common && npm run webpack-build",
 		"build-common": "tsc -p ./common",
 		"build-tsc": "npm run clean && npm run build-common && npm run tsc-build",
