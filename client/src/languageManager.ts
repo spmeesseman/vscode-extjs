@@ -1,20 +1,25 @@
 
-import * as fs from "fs";
-import * as json5 from "json5";
 import * as path from "path";
 import {
-    Disposable, ExtensionContext, MarkdownString , Progress, TextDocumentChangeEvent,
+    Disposable, ExtensionContext, Progress, TextDocumentChangeEvent, Range, Position,
     ProgressLocation, TextDocument, TextEditor, window, workspace, Uri, FileDeleteEvent, ConfigurationChangeEvent
 } from "vscode";
 import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType } from  "../../common";
+import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable } from  "../../common";
 import * as log from "./common/log";
-import * as clientUtils from "./common/clientUtils";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
+
+
+export interface ILineProperties
+{
+    property?: string;
+    cmpClass?: string;
+    cmpType?: ComponentType;
+}
 
 
 class ExtjsLanguageManager
@@ -33,6 +38,8 @@ class ExtjsLanguageManager
     private propertyToComponentClassMapping: { [method: string]: string | undefined } = {};
     private xtypeToComponentClassMapping: { [method: string]: string | undefined } = {};
     private fileToComponentClassMapping: { [fsPath: string]: string | undefined } = {};
+    private variablesToComponentClassMapping: { [variable: string]: IComponent | undefined } = {};
+    private variablesToMethodMapping: { [variable: string]: IMethod | undefined } = {};
 
     private componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
     private componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
@@ -44,6 +51,8 @@ class ExtjsLanguageManager
     private componentClassToComponentsMapping: { [componentClass: string]: IComponent | undefined } = {};
     private componentClassToFilesMapping: { [componentClass: string]: string | undefined } = {};
     private componentClassToAliasesMapping: { [componentClass: string]: IAlias[] | undefined } = {};
+    private componentClassToVariablesMapping: { [componentClass: string]: IVariable[] | undefined } = {};
+    private methodToVariablesMapping: { [componentClass: string]: IVariable[] | undefined } = {};
 
 
     constructor(serverRequest: ServerRequest)
@@ -433,6 +442,144 @@ class ExtjsLanguageManager
     }
 
 
+    getLineProperties(document: TextDocument, position: Position, logPad = ""): ILineProperties
+    {
+        let cmpType: ComponentType = ComponentType.None;
+        const range = document.getWordRangeAtPosition(position);
+        if (range === undefined) {
+            return {};
+        }
+
+        const line = position.line,
+                nextLine = document.lineAt(line + 1);
+        let lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start))
+                                .trim().replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
+            property = document.getText(range);
+
+        log.methodStart("get line properties", 1, logPad);
+
+        if (property === "this")
+        {
+            // TODO - this definition
+        }
+
+        //
+        // Class string literals
+        // Match string literal class, e.g.:
+        //
+        //     Ext.create("Ext.data.Connection", {
+        //     Ext.create("Ext.panel.Panel", {
+        //     requires: [ "MyApp.common.Utilities" ]
+        //
+        if (lineText.match(new RegExp(`["']{1}[\\w.]*.${property}[\\w.]*["']{1}`)) ||
+            lineText.match(new RegExp(`["']{1}[\\w.]*${property}.[\\w.]*["']{1}`)))
+        {
+            cmpType = ComponentType.Class;
+            //
+            // Strip off everything outside the quotes to get our full class name, i.e.
+            //
+            //     MyApp.common.Utilities
+            //
+            lineText = lineText.replace(/^[^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
+            //
+            // Set the property to the last piece of the class name.  We want the effect that clicking
+            // anywhere within the string references th  entore component class, not just the "part" that
+            // gets looked at when doing a goto def for a non-quoted class variable/path
+            //
+            const strParts = lineText.split(".");
+            property = strParts[strParts.length - 1];
+        }
+        //
+        // Methods
+        // Match function/method signature type, e.g.
+        //
+        //     testFn();
+        //
+        else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
+        {
+            cmpType = ComponentType.Method;
+        }
+        //
+        // Properties / configs
+        //
+        else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
+        {
+            cmpType = ComponentType.Property;
+        }
+        //
+        // Classes (non string literal)
+        //
+        else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
+        {
+            cmpType = ComponentType.Class;
+        }
+
+        let cmpClass: string | undefined;
+        const thisPath = window.activeTextEditor?.document?.uri.fsPath;
+
+        log.value("   property", property, 2, logPad);
+        log.value("   component type", cmpType, 2, logPad);
+
+        if (cmpType === ComponentType.Class)
+        {
+            cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
+            //
+            // Check for "instance" type
+            //
+            const cls = this.variablesToComponentClassMapping[property];
+            if (cls) {
+                const variable = this.componentClassToVariablesMapping[cls.name]?.find(v => v.name === property);
+                if (variable) {
+                    cmpClass = variable.componentClass;
+                }
+            }
+        }
+        else
+        {
+            cmpClass = this.getComponentClass(property, cmpType, lineText, thisPath);
+            if (!cmpClass)
+            {   //
+                // If this is a method, check for getter/setter for a config property...
+                //
+                if (cmpType === ComponentType.Method && (property.startsWith("get") || property.startsWith("set")))
+                {
+                    log.write("   method not found, look for getter/setter config", 2, logPad);
+                    property = utils.lowerCaseFirstChar(property.substring(3));
+                    cmpType = ComponentType.Config;
+                    log.value("      config name", property, 2, logPad);
+                    cmpClass = this.getComponentClass(property, cmpType, lineText, thisPath);
+                }
+                //
+                // If this is a property, check for a config property...
+                //
+                else if (cmpType === ComponentType.Property)
+                {
+                    log.write("   property not found, look for config", 2, logPad);
+                    cmpType = ComponentType.Config;
+                    cmpClass = this.getComponentClass(property, cmpType, lineText, thisPath);
+                }
+            }
+            else
+            {
+                if (cmpType === ComponentType.Property)
+                {
+                    const cfgCls = this.getComponentClass(property, ComponentType.Config);
+                    if (cfgCls)
+                    {
+                        log.write("   look for config", 2, logPad);
+                        cmpType = ComponentType.Config;
+                        cmpClass = cfgCls;
+                    }
+                }
+            }
+        }
+
+        log.value("   component class", cmpClass, 2, logPad);
+
+        return { cmpClass, cmpType, property };
+    }
+
+
     getProperty(cmp: string, property: string): IProperty | undefined
     {
         const properties = this.componentClassToPropertiesMapping[cmp];
@@ -561,6 +708,9 @@ class ExtjsLanguageManager
 
                 component.methods.forEach((method) => {
                     delete this.methodToComponentClassMapping[method.name];
+                    method.variables?.forEach((v) => {
+                        delete this.variablesToComponentClassMapping[v.name];
+                    });
                 });
 
                 // component.privates.forEach((private) => {
@@ -588,6 +738,8 @@ class ExtjsLanguageManager
             delete this.componentClassToPropertiesMapping[componentClass];
             delete this.componentClassToMethodsMapping[componentClass];
             delete this.componentClassToComponentsMapping[componentClass];
+            delete this.componentClassToVariablesMapping[componentClass];
+            delete this.methodToVariablesMapping[componentClass];
         }
     }
 
@@ -898,6 +1050,21 @@ class ExtjsLanguageManager
                         }
                     }
                 }
+                if (method.variables)
+                {
+                    const varMapping = this.componentClassToVariablesMapping[componentClass];
+                    if (!varMapping) {
+                        this.componentClassToVariablesMapping[componentClass] = [ ...method.variables ];
+                    }
+                    else {
+                        varMapping.push(...method.variables);
+                    }
+                    for (const v of method.variables)
+                    {
+                        this.variablesToComponentClassMapping[v.name] = cmp;
+                        this.variablesToMethodMapping[v.name] = method;
+                    }
+                }
             });
 
             //
@@ -928,9 +1095,7 @@ class ExtjsLanguageManager
         // Update local storage
         //
         if (project) {
-            if (!storedComponents) {
-                await fsStorage?.update(project, storageKey, JSON.stringify(components));
-            }
+            await fsStorage?.update(project, storageKey, JSON.stringify(components));
             await storage?.update(storageKey + "_TIMESTAMP", new Date());
         }
 

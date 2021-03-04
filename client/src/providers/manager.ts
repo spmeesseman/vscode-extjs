@@ -9,7 +9,7 @@ import registerPropertyCompletionProvider from "./propertyCompletion";
 import registerPropertyDefinitionProvider from "./propertyDefinion";
 import registerMethodSignatureProvider from "./methodSignature";
 import registerSyntaxCodeActionProvider from "./syntaxCodeAction";
-import { extjsLangMgr } from "../extension";
+import registerTypeDefinitionProvider from "./typeDefinition";
 
 
 export type Register = (context: ExtensionContext) => void;
@@ -26,7 +26,8 @@ export function registerProviders(context: ExtensionContext)
         registerPropertyCompletionProvider,
         registerPropertyDefinitionProvider,
         registerMethodSignatureProvider,
-        registerSyntaxCodeActionProvider
+        registerSyntaxCodeActionProvider,
+        registerTypeDefinitionProvider
     ];
 
     registers.forEach(register => register(context));
