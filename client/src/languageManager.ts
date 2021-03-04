@@ -102,37 +102,6 @@ class ExtjsLanguageManager
     }
 
 
-    getClassFromPath(fsPath: string)
-    {
-        //
-        // TODO - check / test file delete
-        //
-        let cmpClass: string | undefined;
-        const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
-
-        log.write("get component by fs path", 1);
-        log.value("   path", fsPath, 2);
-
-        for (const conf of this.config)
-        {
-            if (conf.classpath.includes(fsPath))
-            {
-                if (wsf) {
-                    fsPath = fsPath.replace(wsf.uri.fsPath, "");
-                }
-
-                fsPath = fsPath.replace(new RegExp(`^${path.sep}*${conf.classpath}${path.sep}*`), "");
-                fsPath = fsPath.replace(/\..+$/, "");
-                cmpClass = conf.name + "." + fsPath.split(path.sep).join(".");
-                break;
-            }
-        }
-
-        log.value("   component class", cmpClass, 2);
-        return cmpClass;
-    }
-
-
     /**
      * @method getNamespaceFromFile
      *
@@ -688,10 +657,10 @@ class ExtjsLanguageManager
 
     private handleDeleFile(fsPath: string)
     {
-        const componentClass = this.getClassFromPath(fsPath);
+        const componentClass = this.getClassFromFile(fsPath);
         if (componentClass)
         {
-            log.write("handle file depetion", 1);
+            log.write("handle file deletion", 1);
             log.value("   path", fsPath, 2);
             log.value("   component class", componentClass, 2);
 
@@ -710,6 +679,7 @@ class ExtjsLanguageManager
                     delete this.methodToComponentClassMapping[method.name];
                     method.variables?.forEach((v) => {
                         delete this.variablesToComponentClassMapping[v.name];
+                        delete this.variablesToMethodMapping[v.name];
                     });
                 });
 
@@ -867,7 +837,7 @@ class ExtjsLanguageManager
                         // Index this file
                         //
                         try {
-                            await this.indexFile(uri.fsPath, conf.name, uri, "   ");
+                            await this.indexFile(uri.fsPath, conf.name, uri, false, "   ");
                         }
                         catch (e) {
                             log.error(e.toString());
@@ -918,10 +888,10 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, project: string, document: TextDocument | Uri, logPad = ""): Promise<IComponent[] | false | undefined>
+    async indexFile(fsPath: string, project: string, document: TextDocument | Uri, forceAstIndexing = false, logPad = ""): Promise<IComponent[] | false | undefined>
     {
         const storageKey = this.getStorageKey(fsPath),
-              storedComponents = fsStorage?.get(project, storageKey),
+              storedComponents = !forceAstIndexing ? fsStorage?.get(project, storageKey) : undefined,
               storedTimestamp = storage?.get<Date>(storageKey + "_TIMESTAMP");
         let components: IComponent[] | undefined;
 
@@ -934,6 +904,7 @@ class ExtjsLanguageManager
 
         log.methodStart("indexing " + fsPath, 2, logPad, true, [
             [ "project", project ],
+            [ "force ast re-indexing", forceAstIndexing ],
             [ "stored timestamp", storedTimestamp ]
         ]);
 
@@ -1156,12 +1127,12 @@ class ExtjsLanguageManager
                 //
                 // Index the file
                 //
-                const components = await this.indexFile(textDocument.uri.fsPath, ns, textDocument);
+                const components = await this.indexFile(textDocument.uri.fsPath, ns, textDocument, true);
                 //
                 // Validate document
                 //
                 if (components && components.length > 0) {
-                    this.validateDocument(textDocument, ns);
+                    await this.validateDocument(textDocument, ns);
                 }
             }, debounceMs);
         }
