@@ -8,7 +8,7 @@ import {
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
-    isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression,
+    isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration
 } from "@babel/types";
 
@@ -603,14 +603,35 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
 
             const dec = node.declarations[0];
 
-            if (!isVariableDeclarator(dec) || !isIdentifier(dec.id) || !isCallExpression(dec.init)) {
+            if (!isVariableDeclarator(dec) || !isIdentifier(dec.id)) {
                 return;
             }
 
+            // const varName = dec.id.name;
+            // const callee = dec.init.callee;
+            // const args = dec.init.arguments;
+            // let callerCls = "";
+
             const varName = dec.id.name;
-            const callee = dec.init.callee;
-            const args = dec.init.arguments;
-            let callerCls = "";
+            let isNewExp = false,
+                callee,
+                args,
+                callerCls = "";
+
+            if (isNewExpression(dec.init))
+            {
+                callee = dec.init.callee;
+                args = dec.init.arguments;
+                isNewExp = true;
+            }
+            else if (isCallExpression(dec.init))
+            {
+                callee = dec.init.callee;
+                args = dec.init.arguments;
+            }
+            else {
+                return;
+            }
 
             if (isMemberExpression(callee))
             {
@@ -660,7 +681,8 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                 }
             }
 
-            if (!isMemberExpression(callee) || !isIdentifier(callee.property) || callee.property.name !== "create" || !callerCls)
+            if (!isMemberExpression(callee) || !isIdentifier(callee.property) ||
+                (callee.property.name !== "create" && !isNewExp) || !callerCls)
             {
                 // if (!isStringLiteral(args[0]) || args[0].value !== "this") {
                     return;
@@ -670,20 +692,26 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
             let value = "";
             const isFramework = callerCls === "Ext";
 
-            if (isFramework || callerCls.startsWith("VSCodeExtJS"))
+            if (isFramework)
             {
-                if (isFramework)
-                {
-                    if (!isStringLiteral(args[0])) {
-                        return;
-                    }
-                    else {
-                        value = args[0].value;
-                    }
+                if (!isStringLiteral(args[0])) {
+                    return;
                 }
                 else {
-                    value = callerCls;
+                    value = args[0].value;
                 }
+            }
+            else {
+                value = callerCls;
+            }
+
+            //
+            // In the case of "new" keyword, the calle property is the last part of the class name.
+            // Whereas other scenario is "full_classname".create, where "create" is the callee property.
+            //
+            if (isNewExp)
+            {
+                value += ("." + callee.property.name);
             }
 
             if (value)
