@@ -16,34 +16,34 @@ suite("Definition Tests", () =>
 	});
 
 
-	test("Variable instance inherited methods", async () =>
-	{
-		//
-		// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
-		// Line 83
-		// phys.delete(), inherited method from UserDropdown
-		//
-		// await testDefinition(docUri, new vscode.Position(82, 7), [
-		// {
-		// 	uri: vscode.Uri.file("app/classic/src/common/UserDropdown.js"),
-		// 	range: toRange(0, 0, 0, 0)
-		// }]);
-	});
+	// test("Variable instance inherited methods", async () =>
+	// {
+	// 	//
+	// 	// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
+	// 	// Line 83
+	// 	// phys.delete(), inherited method from UserDropdown
+	// 	//
+	// 	// await testDefinition(docUri, new vscode.Position(82, 7), [
+	// 	// {
+	// 	// 	uri: vscode.Uri.file("app/classic/src/common/UserDropdown.js"),
+	// 	// 	range: toRange(0, 0, 0, 0)
+	// 	// }]);
+	// });
 
 
-	test("Variable instance methods", async () =>
-	{
-		//
-		// const pin = phys.getPinNumber();
-		// Line 82
-		// phys.getPinNumber(), local method
-		//
-		await testDefinition(docUri, new vscode.Position(81, 20), [
-        {
-            uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-            range: toRange(33, 1, 36, 2)
-        }]);
-	});
+	// test("Variable instance methods", async () =>
+	// {
+	// 	//
+	// 	// const pin = phys.getPinNumber();
+	// 	// Line 82
+	// 	// phys.getPinNumber(), local method
+	// 	//
+	// 	// await testDefinition(docUri, new vscode.Position(81, 20), [
+    //     // {
+    //     //     uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+    //     //     range: toRange(33, 1, 36, 2)
+    //     // }]);
+	// });
 
 
     test("Classes", async () =>

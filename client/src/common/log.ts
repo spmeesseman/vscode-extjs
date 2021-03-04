@@ -11,12 +11,6 @@ let logOutputChannel: OutputChannel | undefined;
 
 export function initLog(settingGrpName: string, dispName: string, context?: ExtensionContext, showLog?: boolean)
 {
-    function showLogOutput(show?: boolean)
-    {
-        if (logOutputChannel && show) {
-            logOutputChannel.show();
-        }
-    }
     //
     // Set up a log in the Output window
     //
@@ -40,10 +34,6 @@ function isLoggingEnabled()
 
 export function write(msg: string, level?: number, logPad = "")
 {
-    if (msg === null || msg === undefined) {
-        return;
-    }
-
     if (isLoggingEnabled())
     {
         const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + logPad + msg;
@@ -156,4 +146,17 @@ export function setWriteToConsole(set: boolean, level = 2)
 {
     writeToConsole = set;
     writeToConsoleLevel = level;
+}
+
+
+export function showLogOutput(show?: boolean)
+{
+    if (logOutputChannel) {
+        if (show) {
+            logOutputChannel.show();
+        }
+        else {
+            logOutputChannel.hide();
+        }
+    }
 }
