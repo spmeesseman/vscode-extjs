@@ -12,6 +12,7 @@ export enum VariableType
     _any,
     _arr,
     _boolean,
+    _class,
     _number,
     _object,
     _string

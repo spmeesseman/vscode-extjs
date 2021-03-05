@@ -8,7 +8,7 @@ import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable } from  "../../common";
+import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable, IExtJsBase } from  "../../common";
 import * as log from "./common/log";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
@@ -132,7 +132,7 @@ class ExtjsLanguageManager
     }
 
 
-    getComponent(componentClass: string, checkAlias?: boolean, fsPath?: string): IComponent | undefined
+    getComponent(componentClass: string, position?: Position, checkAlias?: boolean, fsPath?: string): IComponent | undefined
     {
         if (fsPath && componentClass === "this")
         {
@@ -166,7 +166,7 @@ class ExtjsLanguageManager
 
         if (!component && fsPath)
         {
-            component = this.getComponentInstance(componentClass, fsPath);
+            component = this.getComponentInstance(componentClass, position || new Position(0, 0), fsPath);
             if (component) {
                 log.write("   found instanced component", 3);
                 log.value("      namespace", component.nameSpace, 4);
@@ -238,7 +238,7 @@ class ExtjsLanguageManager
      *
      * @returns {String}
      */
-    getComponentClass(property: string, cmpType?: ComponentType, txt?: string, fsPath?: string): string | undefined
+    getComponentClass(property: string, position?: Position, cmpType?: ComponentType, txt?: string, fsPath?: string): string | undefined
     {
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
@@ -320,9 +320,9 @@ class ExtjsLanguageManager
         //
         // Instances
         //
-        if (fsPath && !this.getComponent(cmpClass, true))
+        if (fsPath && !this.getComponent(cmpClass, position, true))
         {
-            const instance = this.getComponentInstance(cmpClass, fsPath);
+            const instance = this.getComponentInstance(cmpClass, position || new Position(0, 0), fsPath);
             if (instance) {
                 cmpClass = instance.componentClass;
             }
@@ -334,7 +334,7 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentInstance(property: string, fsPath: string)
+    getComponentInstance(property: string, position: Position, fsPath: string)
     {
          //
         // Check instance properties
@@ -350,6 +350,25 @@ class ExtjsLanguageManager
             return;
         }
 
+        const _check = ((vars: IExtJsBase[] | undefined) =>
+        {
+            if (vars)
+            {
+                for (const v of vars)
+                {
+                    if (v.name === property)
+                    {
+                        const instanceCmp = this.getComponent(v.componentClass) || this.getComponentByAlias(v.componentClass);
+                        if (instanceCmp && instanceCmp.markdown)
+                        {
+                            log.value("provide instance class hover info", property, 1);
+                            return instanceCmp;
+                        }
+                    }
+                }
+            }
+        });
+
         for (const variable of cmp.privates)
         {
             // TODO - property hover - check private sec
@@ -362,20 +381,12 @@ class ExtjsLanguageManager
 
         for (const method of cmp.methods)
         {
-            if (method.variables)
-            {
-                for (const variable of method.variables)
-                {
-                    if (variable.name === property)
-                    {
-                        const instanceCmp = this.getComponent(variable.componentClass) || this.getComponentByAlias(variable.componentClass);
-                        if (instanceCmp && instanceCmp.markdown)
-                        {
-                            log.value("provide instance class hover info", property, 1);
-                            return instanceCmp;
-                        }
-                    }
-                }
+            const cmp = _check(method.variables);
+            if (!cmp) {
+                _check(method.params);
+            }
+            if (cmp) {
+                return cmp;
             }
         }
     }
@@ -505,7 +516,7 @@ class ExtjsLanguageManager
         }
         else
         {
-            cmpClass = this.getComponentClass(property, cmpType, lineText, thisPath);
+            cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
             if (!cmpClass)
             {   //
                 // If this is a method, check for getter/setter for a config property...
@@ -516,7 +527,7 @@ class ExtjsLanguageManager
                     property = utils.lowerCaseFirstChar(property.substring(3));
                     cmpType = ComponentType.Config;
                     log.value("      config name", property, 2, logPad);
-                    cmpClass = this.getComponentClass(property, cmpType, lineText, thisPath);
+                    cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
                 }
                 //
                 // If this is a property, check for a config property...
@@ -525,14 +536,14 @@ class ExtjsLanguageManager
                 {
                     log.write("   property not found, look for config", 2, logPad);
                     cmpType = ComponentType.Config;
-                    cmpClass = this.getComponentClass(property, cmpType, lineText, thisPath);
+                    cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
                 }
             }
             else
             {
                 if (cmpType === ComponentType.Property)
                 {
-                    const cfgCls = this.getComponentClass(property, ComponentType.Config);
+                    const cfgCls = this.getComponentClass(property, position, ComponentType.Config);
                     if (cfgCls)
                     {
                         log.write("   look for config", 2, logPad);

@@ -6,7 +6,7 @@ import {
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
 import { configuration } from "../common/configuration";
-import { IComponent, IConfig, IMethod, IProperty, utils } from "../../../common";
+import { IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils } from "../../../common";
 
 
 
@@ -41,13 +41,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // classpath that lead the classname, in this case we ant to add 'MyApp' as a completion item
         //
         if (!lineText.includes(".")) {
-            completionItems.push(...this.getInlineCompletionItems(lineText));
+            completionItems.push(...this.getInlineCompletionItems(lineText, position));
             return completionItems;
         }
 
         log.methodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
 
-        completionItems.push(...this.getCompletionItems(lineText, fnText, document.uri.fsPath, addedItems));
+        completionItems.push(...this.getCompletionItems(lineText, fnText, position, document.uri.fsPath, addedItems));
 
         // completionItems.push({
         //     label: "Ext.create",
@@ -75,7 +75,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    createCompletionItem(property: string, cmpClass: string, kind: CompletionItemKind): CompletionItem[]
+    createCompletionItem(property: string, cmpClass: string, kind: CompletionItemKind, position: Position): CompletionItem[]
     {
         const propCompletion: CompletionItem[] = [];
 
@@ -93,7 +93,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 cmp = this.getPropertyCmp(property, cmpClass);
                 break;
             default: // class
-                cmp = extjsLangMgr.getComponent(cmpClass, true);
+                cmp = extjsLangMgr.getComponent(cmpClass, position, true);
                 break;
         }
 
@@ -226,7 +226,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      * @param fsPath The filesystem path to the JavasSript class file.
      * @param addedItems Array holding item labels already added in this request.
      */
-    private getCompletionItems(lineText: string, fnText: string | undefined, fsPath: string, addedItems: string[]): CompletionItem[]
+    private getCompletionItems(lineText: string, fnText: string | undefined, position: Position, fsPath: string, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [],
               lineCls = lineText?.substring(0, lineText.lastIndexOf(".")).trim();
@@ -234,7 +234,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const _pushItems = ((cmp?: IComponent) =>
         {
             if (!cmp) { return; }
-            completionItems.push(...this.getCmpCompletionItems(cmp, addedItems));
+            completionItems.push(...this.getCmpCompletionItems(cmp, position, addedItems));
             //
             // Traverse up the inheritance tree, checking the 'extend' property and if
             // it exists, we include public class properties in the Intellisense
@@ -257,7 +257,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             const thisCls = extjsLangMgr.getClassFromFile(fsPath);
             if (thisCls) {
-                _pushItems(extjsLangMgr.getComponent(thisCls, true, fsPath));
+                _pushItems(extjsLangMgr.getComponent(thisCls, position, true, fsPath));
             }
             return completionItems;
         }
@@ -265,7 +265,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Create the completion items, including items in extended classes
         //
-        let component = extjsLangMgr.getComponent(lineCls, true);
+        let component = extjsLangMgr.getComponent(lineCls, position, true);
         if (component)
         {   //
             // Push component items, i.e. methods, properties, and configs
@@ -286,7 +286,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //         common
             //         etc...
             //
-            completionItems.push(...this.getChildClsCompletionItems(component.componentClass, addedItems));
+            completionItems.push(...this.getChildClsCompletionItems(component.componentClass, position, addedItems));
         }
         else {
             log.write("   try sub-component tree", 3);
@@ -298,7 +298,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     if (!addedItems.includes(sf)) {
                         log.value("   add sub-component", sf, 4);
-                        completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, CompletionItemKind.Class));
+                        completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, CompletionItemKind.Class, position));
                         addedItems.push(sf);
                     }
                 }
@@ -309,10 +309,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 component = extjsLangMgr.getComponentByFile(fsPath);
                 if (component && fnText)
                 {
-                    _pushItems(...this.getLocalInstanceComponents(fnText, lineCls, fsPath, component));
+                    _pushItems(...this.getLocalInstanceComponents(fnText, lineCls, position, fsPath, component));
                 }
                 else {
-                    completionItems.push(...this.getClsCompletionItems(lineText, lineCls, addedItems));
+                    completionItems.push(...this.getClsCompletionItems(lineText, lineCls, position, addedItems));
                 }
             }
         }
@@ -321,7 +321,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getClsCompletionItems(lineText: string, cls: string, addedItems: string[]): CompletionItem[]
+    private getClsCompletionItems(lineText: string, cls: string, position: Position, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [],
               clsParts = cls.split(".");
@@ -349,7 +349,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             if (addedItems.indexOf(cCls) === -1)
             {
                 const lastProp = cCls.indexOf(".") !== -1 ? cCls.substring(cCls.indexOf(".") + 1) : cCls;
-                completionItems.push(...this.createCompletionItem(lastProp, cls, CompletionItemKind.Class));
+                completionItems.push(...this.createCompletionItem(lastProp, cls, CompletionItemKind.Class, position));
                 addedItems.push(cCls);
                 log.blank(1);
                 log.write("      added dot completion class item", 3);
@@ -381,7 +381,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      *
      * @returns {CompletionItem[]}
      */
-    private getChildClsCompletionItems(componentClass: string, addedItems: string[]): CompletionItem[]
+    private getChildClsCompletionItems(componentClass: string, position: Position, addedItems: string[]): CompletionItem[]
     {
         const cmps = extjsLangMgr.getComponentNames(),
               cmpClsParts = componentClass.split("."),
@@ -407,7 +407,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
                 if (cCls && addedItems.indexOf(cCls) === -1)
                 {
-                    completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class));
+                    completionItems.push(...this.createCompletionItem(cCls, cls, CompletionItemKind.Class, position));
                     addedItems.push(cCls);
 
                     log.blank(1);
@@ -421,7 +421,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getCmpCompletionItems(component: IComponent, addedItems: string[]): CompletionItem[]
+    private getCmpCompletionItems(component: IComponent, position: Position, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [];
 
@@ -429,7 +429,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Method));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Method, position));
                 addedItems.push(c.name);
 
                 log.blank(1);
@@ -442,7 +442,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Property));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Property, position));
                 addedItems.push(c.name);
 
                 log.blank(1);
@@ -455,7 +455,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Property));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, CompletionItemKind.Property, position));
                 addedItems.push(c.name);
 
                 log.blank(1);
@@ -472,7 +472,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getInlineCompletionItems(lineText: string): CompletionItem[]
+    private getInlineCompletionItems(lineText: string, position: Position): CompletionItem[]
     {
         const addedItems: string[] = [],
               completionItems: CompletionItem[] = [],
@@ -486,7 +486,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 const cCls = cls.split(".")[0];
                 if (addedItems.indexOf(cCls) === -1)
                 {
-                    const cItems = this.createCompletionItem(cCls, cCls, CompletionItemKind.Class);
+                    const cItems = this.createCompletionItem(cCls, cCls, CompletionItemKind.Class, position);
                     if (cItems.length > 0) {
                         completionItems.push(...cItems);
                         addedItems.push(cCls);
@@ -505,24 +505,29 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getLocalInstanceComponents(fnText: string, lineCls: string, fsPath: string, component: IComponent): IComponent[]
+    private getLocalInstanceComponents(fnText: string, lineCls: string, position: Position, fsPath: string, component: IComponent): IComponent[]
     {
         const components: IComponent[] = [];
+        const _add = ((a: IExtJsBase[] | undefined) =>
+        {
+            if (!a) { return; }
+            for (const p of a)
+            {
+                if (p.name === lineCls) {
+                    const lCmp = extjsLangMgr.getComponentInstance(lineCls, position, fsPath);
+                    if (lCmp){
+                        components.push(lCmp);
+                    }
+                    break;
+                }
+            }
+        });
         for (const m of component.methods)
         {
             if (m.name === fnText)
             {
-                if (!m.variables) { continue; }
-                for (const p of m.variables)
-                {
-                    if (p.name === lineCls) {
-                        const lCmp = extjsLangMgr.getComponentInstance(lineCls, fsPath);
-                        if (lCmp){
-                            components.push(lCmp);
-                        }
-                        break;
-                    }
-                }
+                _add(m.variables);
+                _add(m.params);
                 break;
             }
         }
