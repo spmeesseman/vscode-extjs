@@ -453,19 +453,22 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             {
                 const doc = getComments(m.leadingComments),
                       params = parseParams(m, propertyName, text, componentClass);
+                //
+                // Look into the method comments, see if we can extract type information about the parameters
+                //
                 if (doc && params.length)
                 {
                     for (const p of params)
                     {
-                        const paramDoc = doc.match(new RegExp(`@param\\s*(\\{\\w+\\})*\\s*${p.name}[^\\r\\n]*`));
+                        const paramDoc = doc.match(new RegExp(`@param\\s*(\\{[\\w\\.]+\\})*\\s*${p.name}[^\\r\\n]*`));
                         if (paramDoc)
                         {
                             // p.doc = "@param " + paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
                             p.doc = paramDoc[0].trim();
                             if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
                             {
-                                const type = paramDoc[1].replace(/[\{\}]/g, "").toLowerCase();
-                                switch (type)
+                                p.componentClass = paramDoc[1].replace(/[\{\}]/g, "");
+                                switch (p.componentClass.toLowerCase())
                                 {
                                     case "bool":
                                     case "boolean":
@@ -482,7 +485,13 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                                         p.type = VariableType._string;
                                         break;
                                     default:
-                                        p.type = VariableType._any;
+                                        if (p.componentClass === "*") {
+                                            p.componentClass = "any";
+                                            p.type = VariableType._any;
+                                        }
+                                        else {
+                                            p.type = VariableType._class;
+                                        }
                                         break;
                                 }
                             }
