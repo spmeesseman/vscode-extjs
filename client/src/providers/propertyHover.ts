@@ -65,7 +65,7 @@ class DocHoverProvider implements HoverProvider
         //
         // Properties / configs
         //
-        else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
+        else if (lineText.match(new RegExp(`\\.${property}\\s*[;\\)]+\\s*$`)))
         {
             const cmpClass = extjsLangMgr.getComponentClass(property, position, ComponentType.Config | ComponentType.Property, lineText);
             if (cmpClass)
@@ -94,7 +94,7 @@ class DocHoverProvider implements HoverProvider
             const pIdx = lineText.indexOf(property),
                   lineCls = lineText?.substring(0, pIdx + property.length).trim()
                                      .replace(/[\s\w]+=[\s]*(new)*\s*/, "");
-            let cmp = extjsLangMgr.getComponent(lineCls) || extjsLangMgr.getComponentByAlias(lineCls);
+            let cmp = extjsLangMgr.getComponent(lineCls, position, true);
 
             if (cmp && cmp.markdown)
             {
