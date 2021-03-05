@@ -58,10 +58,11 @@ Ext.define('VSCodeExtJS',
 
 	/**
 	 * Test fn description
-	 * @param {*} a Test a
-	 * @param {*} b Test b
+	 * @param {String} a Test a
+	 * @param {VSCodeExtJS.common.PhysicianDropdown} b Test b
+	 * @param {*} c Test c
 	 */
-	testFn2: function(a, b)
+	testFn2: function(a, b, c)
 	{
 		testFn(1, 2);
 CCC
@@ -86,14 +87,34 @@ CCC
 			hidden: false,
 			disabled: true
 		});
-		phys2.save();
+		phys2.save(a);
 
 		const phys3 = VSCodeExtJS.common.PhysicianDropdown.create({
 			hidden: false,
 			disabled: true
 		});
-		phys3.load();
+		phys3.load(b);
         
+	},
+
+	/**
+	 * Test fn3 description
+	 * @param {String} a Test3 a
+	 * @param {Boolean} b Test3 b
+	 */
+	testFn3: function(a, b)
+	{
+		const me = this,
+		      test = me.getTest();
+        
+		me.testFn2();
+		this.testFn();
+
+		const grid = Ext.create("Ext.grid.Panel", {
+			hidden: false,
+			disabled: true
+		});
+		grid.show();
 	} 
 
 });
