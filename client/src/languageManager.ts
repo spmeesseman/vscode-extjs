@@ -8,10 +8,11 @@ import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable, IExtJsBase } from  "../../common";
+import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable, VariableType } from  "../../common";
 import * as log from "./common/log";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
+import { toVscodeRange, toVscodePosition } from "./common/clientUtils";
 
 
 export interface ILineProperties
@@ -164,9 +165,12 @@ class ExtjsLanguageManager
             }
         }
 
-        if (!component && fsPath)
+        //
+        // Variable/parameters - instance vars
+        //
+        if (!component && fsPath && position)
         {
-            component = this.getComponentInstance(componentClass, position || new Position(0, 0), fsPath);
+            component = this.getComponentInstance(componentClass, position, fsPath);
             if (component) {
                 log.write("   found instanced component", 3);
                 log.value("      namespace", component.nameSpace, 4);
@@ -303,18 +307,20 @@ class ExtjsLanguageManager
 
         cmpClass = cmpClass.substring(cutAt).replace(/[^\w.]+/g, "").trim();
 
-        if (!cmpClass || cmpClass === "this")
+        if (cmpClass === "this")
         {
-            cmpClass = "VSCodeExtJS"; // TODO set main class name somewhere for reference
+            if (fsPath) {
+                cmpClass = this.getComponentByFile(fsPath)?.componentClass || "";
+            }
         }
-
-        //
-        // Check aliases/alternate class names
-        //
-        let aliasClass: string | undefined;
-        if (aliasClass = this.widgetToComponentClassMapping[cmpClass])
-        {
-            cmpClass = aliasClass;
+        else //
+        {   // Check aliases/alternate class names
+            //
+            let aliasClass: string | undefined;
+            if (aliasClass = this.widgetToComponentClassMapping[cmpClass])
+            {
+                cmpClass = aliasClass;
+            }
         }
 
         //
@@ -334,40 +340,17 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentInstance(property: string, position: Position, fsPath: string)
+    getComponentInstance(property: string, position: Position, fsPath: string): IComponent | undefined
     {
-         //
-        // Check instance properties
-        //
-
         const thisCls = this.getClassFromFile(fsPath);
         if (!thisCls) {
             return;
         }
 
-        const cmp = this.getComponent(thisCls) || this.getComponentByAlias(thisCls);
+        const cmp = this.getComponent(thisCls, undefined, true);
         if (!cmp) {
             return;
         }
-
-        const _check = ((vars: IExtJsBase[] | undefined) =>
-        {
-            if (vars)
-            {
-                for (const v of vars)
-                {
-                    if (v.name === property)
-                    {
-                        const instanceCmp = this.getComponent(v.componentClass) || this.getComponentByAlias(v.componentClass);
-                        if (instanceCmp && instanceCmp.markdown)
-                        {
-                            log.value("provide instance class hover info", property, 1);
-                            return instanceCmp;
-                        }
-                    }
-                }
-            }
-        });
 
         for (const variable of cmp.privates)
         {
@@ -381,12 +364,18 @@ class ExtjsLanguageManager
 
         for (const method of cmp.methods)
         {
-            const cmp = _check(method.variables);
-            if (!cmp) {
-                _check(method.params);
-            }
-            if (cmp) {
-                return cmp;
+            if (this.isPositionInRange(position, toVscodeRange(method.start, method.end)))
+            {
+                let variable = method.variables?.find(v => v.name === property);
+                if (!variable) {
+                    variable = method.params?.find(v => v.name === property);
+                    if (variable?.type !== VariableType._class) {
+                        variable = undefined;
+                    }
+                }
+                if (variable) {
+                    return this.getComponent(variable.componentClass, position, true);
+                }
             }
         }
     }
@@ -398,9 +387,12 @@ class ExtjsLanguageManager
         log.write("get config by component class", 1);
         log.value("   component class", cmp, 2);
         log.value("   config", property, 2);
-        if (configs) {
-            for (let c = 0; c < configs.length; c++) {
-                if (configs[c].name === property) {
+        if (configs)
+        {
+            for (let c = 0; c < configs.length; c++)
+            {
+                if (configs[c].name === property)
+                {
                     log.write("   found config", 3);
                     log.value("      name", configs[c].name, 4);
                     log.value("      start", configs[c].start.line + ", " + configs[c].start.column, 4);
@@ -431,7 +423,7 @@ class ExtjsLanguageManager
         }
 
         const line = position.line,
-                nextLine = document.lineAt(line + 1);
+              nextLine = document.lineAt(line + 1);
         let lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start))
                                 .trim().replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
             property = document.getText(range);
@@ -753,6 +745,23 @@ class ExtjsLanguageManager
     isBusy()
     {
         return this.isIndexing;
+    }
+
+
+    private isPositionInRange(position: Position, range: Range)
+    {
+        if (position.line > range.start.line && position.line < range.end.line) {
+            return true;
+        }
+        else if (position.line === range.start.line)
+        {
+            return position.character >= range.start.character;
+        }
+        else if (position.line === range.end.line)
+        {
+            return position.character <= range.end.character;
+        }
+        return false;
     }
 
 
