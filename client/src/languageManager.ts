@@ -230,6 +230,30 @@ class ExtjsLanguageManager
     }
 
 
+    getMappedClass(property: string, cmpType: ComponentType)
+    {
+        if (!cmpType || cmpType === ComponentType.Widget) {
+            return this.widgetToComponentClassMapping[property];
+        }
+        else if (cmpType === ComponentType.Method) {
+            return this.methodToComponentClassMapping[property];
+        }
+        else if (cmpType === ComponentType.Property) {
+            return this.propertyToComponentClassMapping[property];
+        }
+        // else if (cmpType & (ComponentType.Property | ComponentType.Config)) {
+        else if (cmpType === ComponentType.Config) {
+            // if (this.propertyToComponentClassMapping[property]) {
+            //     return this.propertyToComponentClassMapping[property];
+            // }
+            return this.configToComponentClassMapping[property];
+        }
+        else {
+            return undefined;
+        }
+    }
+
+
     /**
      * @method getComponentClass
      *
@@ -237,38 +261,19 @@ class ExtjsLanguageManager
      * Note that xtypes/aliases must be unique within an application for this /**
      * to work properly every time.
      *
+     * @private
+     *
      * @param {String} property Property name, i.e. an xtype, alias, or widget aliased string
-     * @param {String} txt The complete line of text the property is found in
+     * @param {Position} position The position of `property` in the document
+     * @param {String} lineText The complete line of text the property is found in
+     * @param {String} fsPath File system path
      *
      * @returns {String}
      */
-    getComponentClass(property: string, position?: Position, cmpType?: ComponentType, txt?: string, fsPath?: string): string | undefined
+    private getComponentClass(property: string, position: Position | undefined, lineText: string, fsPath: string | undefined): string | undefined
     {
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
-
-        if (!txt)
-        {
-            if (!cmpType || cmpType === ComponentType.Widget) {
-                return this.widgetToComponentClassMapping[property];
-            }
-            else if (cmpType === ComponentType.Method) {
-                return this.methodToComponentClassMapping[property];
-            }
-            else if (cmpType === ComponentType.Property) {
-                return this.propertyToComponentClassMapping[property];
-            }
-            // else if (cmpType & (ComponentType.Property | ComponentType.Config)) {
-            else if (cmpType === ComponentType.Config) {
-                // if (this.propertyToComponentClassMapping[property]) {
-                //     return this.propertyToComponentClassMapping[property];
-                // }
-                return this.configToComponentClassMapping[property];
-            }
-            else {
-                return undefined;
-            }
-        }
 
         //
         // Get class name prependature to hovered property
@@ -280,7 +285,7 @@ class ExtjsLanguageManager
         //     Ext.form.field.
         //     MyApp.view.myview.
         //
-        cmpClassPre = txt.substring(0, txt.indexOf(property));
+        cmpClassPre = lineText.substring(0, lineText.indexOf(property));
         cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
 
         //
@@ -414,6 +419,15 @@ class ExtjsLanguageManager
     }
 
 
+    /**
+     * @method getLineProperties
+     *
+     * Get line properties by document position
+     *
+     * @param document The TextDocument instance
+     * @param position The position in the document to extract line properties for
+     * @param logPad Padding to prepend to any logging
+     */
     getLineProperties(document: TextDocument, position: Position, logPad = ""): ILineProperties
     {
         let cmpType: ComponentType = ComponentType.None;
@@ -433,16 +447,13 @@ class ExtjsLanguageManager
         }
 
         //
+        // Old regex's from first implementation, leave for now for reference
+        //
         // Methods
-        //
         // if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
-        //
         // Properties / configs
-        //
         // else if (lineText.match(new RegExp(`\\.${property}\\s*[;\\)]+\\s*$`)))
-        //
         // Classes
-        //
         // else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
 
         //
@@ -526,7 +537,7 @@ class ExtjsLanguageManager
         }
         else if (cmpType === ComponentType.Method)
         {
-            cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
+            cmpClass = this.getComponentClass(property, position, lineText, thisPath);
             if (!cmpClass && utils.isGetterSetter(property))
             {   //
                 // A config property:
@@ -545,26 +556,26 @@ class ExtjsLanguageManager
                 property = utils.lowerCaseFirstChar(property.substring(3));
                 cmpType = ComponentType.Config;
                 log.value("      config name", property, 2, logPad);
-                cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
+                cmpClass = this.getComponentClass(property, position, lineText, thisPath);
             }
         }
         else // property / config / variable / parameter
         {
             const cmp = this.getComponentInstance(property, position, document.uri.fsPath);
-            cmpClass = cmp?.componentClass || this.getComponentClass(property, position, cmpType, lineText, thisPath);
+            cmpClass = cmp?.componentClass || this.getComponentClass(property, position, lineText, thisPath);
             if (!cmpClass)
             {   //
                 // If this is a property, check for a config property...
                 //
                 log.write("   property not found, look for config", 2, logPad);
                 cmpType = ComponentType.Config;
-                cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
+                cmpClass = this.getComponentClass(property, position, lineText, thisPath);
             }
             else
             {
                 if (cmpType === ComponentType.Property)
                 {
-                    const cfgCls = this.getComponentClass(property, position, ComponentType.Config);
+                    const cfgCls = this.getMappedClass(property, ComponentType.Config);
                     if (cfgCls)
                     {
                         log.write("   look for config", 2, logPad);

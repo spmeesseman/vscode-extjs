@@ -4,6 +4,7 @@ import {
     ProviderResult, Range, TextDocument
 } from "vscode";
 import { extjsLangMgr } from "../extension";
+import { ComponentType } from "../../../common";
 
 
 class XtypeHoverProvider implements HoverProvider
@@ -21,7 +22,7 @@ class XtypeHoverProvider implements HoverProvider
 
         if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
         {
-            const cmpClass = extjsLangMgr.getComponentClass(xtype);
+            const cmpClass = extjsLangMgr.getMappedClass(xtype, ComponentType.Widget);
             if (cmpClass) {
                 return new Hover(`* **class**: ${cmpClass} \n* **xtype**: ${xtype}`);
             }
