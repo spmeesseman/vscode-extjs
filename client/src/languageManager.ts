@@ -434,16 +434,24 @@ class ExtjsLanguageManager
         const range = document.getWordRangeAtPosition(position) || new Range(position, new Position(0, 0));
 
         const line = position.line,
-              nextLine = document.lineAt(line + 1);
-        let lineText = document.getText(new Range(new Position(line, 0), nextLine.range.start))
-                                .trim().replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
+              nextLine = document.lineAt(line + 1),
+              allLineText = document.getText(new Range(new Position(line, 0), nextLine.range.start)).trim();
+        let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
             property = document.getText(range);
 
         log.methodStart("get line properties", 1, logPad);
 
+        //
+        // Handle "this"
+        // TODO - handle 'this' for non-controller function with local this
+        //
         if (property === "this")
         {
-            // TODO - this definition
+            return {
+                cmpClass: this.getComponentByFile(document.uri.fsPath)?.componentClass,
+                cmpType: ComponentType.Class,
+                property
+            };
         }
 
         //
@@ -487,15 +495,21 @@ class ExtjsLanguageManager
         // Match function/method signature type, e.g.
         //
         //     testFn();
+        //     testFn2(a, b);
+        //     testFn2(a, { x: 0, y: 1});
         //
         else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
         {
             cmpType = ComponentType.Method;
         }
         //
-        // Properties / configs / variables / parameters
+        // Properties / configs / variables / parameters, e.g.:
         //
-        else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
+        //     property.getSomething();
+        //     const property = this;
+        //
+        else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]{1}\\s*$`)) ||
+                 allLineText.match(new RegExp(`\\s*(const|var|let)\\s*${property}\\s*=\\s*[ \\W\\w\\{]*\\s*[,;]{1}\\s*$`)))
         {
             cmpType = ComponentType.Property;
         }
