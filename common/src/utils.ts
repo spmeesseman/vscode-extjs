@@ -36,7 +36,9 @@ export function isGetterSetter(method: string): boolean
 
 
 export function isNeedRequire(componentClass: string | undefined)
-{
+{   //
+    // TODO - this unwantingly excludes user classes beginning with Ext.* i.e. Ext.ux
+    //
     if (!componentClass || componentClass.startsWith("Ext.")) {
         return false;
     }

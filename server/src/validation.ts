@@ -2,7 +2,7 @@
 import { Connection, Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, componentClassToWidgetsMapping, widgetToComponentClassMapping } from "./syntaxTree";
-import { IPosition, IRequires, utils, ErrorCode } from "../../common";
+import { IPosition, IComponent, utils, ErrorCode } from "../../common";
 import { globalSettings } from "./server";
 import * as log from "./log";
 
@@ -118,7 +118,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		if (globalSettings.validateXTypes)
 		{
 			for (const xtype of cmp.xtypes) {
-				validateXtype(xtype.name, cmp.requires, toVscodeRange(xtype.start, xtype.end), diagRelatedInfoCapability, textObj, diagnostics);
+				validateXtype(xtype.name, cmp, toVscodeRange(xtype.start, xtype.end), diagRelatedInfoCapability, textObj, diagnostics);
 			}
 		}
 
@@ -176,12 +176,14 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 }
 
 
-function validateXtype(xtype: string, cmpRequires: IRequires | undefined, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
+	const cmpRequires = cmp.requires,
+		  thisWidgetCls = widgetToComponentClassMapping[xtype];
 	//
 	// First check to make sure we have the widget/xtype/alias indexed
 	//
-	if (!widgetToComponentClassMapping[xtype])
+	if (!thisWidgetCls)
 	{
 		const diagnostic: Diagnostic = {
 			severity: DiagnosticSeverity.Error,
@@ -239,16 +241,33 @@ function validateXtype(xtype: string, cmpRequires: IRequires | undefined, range:
 		}
 	}
 
-	if (utils.isNeedRequire(widgetToComponentClassMapping[xtype]))
+	if (utils.isNeedRequire(thisWidgetCls))
 	{
 		const requires = [];
+		let requiredXtypes: string[] = [];
+		let thisXType: string | undefined;
 		requires.push(...(cmpRequires?.value || []));
-		const requiredXtypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
-			previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
-			return previousValue;
-		}, []);
 
-		if (!requiredXtypes.includes(xtype))
+		if (requires.length > 0)
+		{
+			requiredXtypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
+				if (currentCmpClass !== thisWidgetCls) {
+					previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
+				}
+				else {
+					thisXType = xtype;
+				}
+				return previousValue;
+			}, []);
+		}
+		else // ignore if this is the defined xtype of the component itself
+		{
+			if (thisWidgetCls === cmp.componentClass) {
+				requiredXtypes.push(xtype);
+			}
+		}
+
+		if (!requiredXtypes.includes(xtype) && xtype !== thisXType)
 		{
 			const diagnostic: Diagnostic = {
 				severity: DiagnosticSeverity.Warning,
