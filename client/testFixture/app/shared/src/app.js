@@ -60,9 +60,8 @@ Ext.define('VSCodeExtJS',
 	 * Test fn description
 	 * @param {String} a Test a
 	 * @param {VSCodeExtJS.common.PhysicianDropdown} b Test b
-	 * @param {*} c Test c
 	 */
-	testFn2: function(a, b, c)
+	testFn2: function(a, b)
 	{
 		testFn(1, 2);
 CCC
