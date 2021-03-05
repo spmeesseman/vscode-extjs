@@ -9,7 +9,8 @@ import {
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
-    isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration
+    isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
+    isThisExpression, isAwaitExpression
 } from "@babel/types";
 
 
@@ -452,58 +453,13 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             if (propertyName)
             {
                 const doc = getComments(m.leadingComments),
-                      params = parseParams(m, propertyName, text, componentClass);
-                //
-                // Look into the method comments, see if we can extract type information about the parameters
-                //
-                if (doc && params.length)
-                {
-                    for (const p of params)
-                    {
-                        const paramDoc = doc.match(new RegExp(`@param\\s*(\\{[\\w\\.]+\\})*\\s*${p.name}[^\\r\\n]*`));
-                        if (paramDoc)
-                        {
-                            // p.doc = "@param " + paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
-                            p.doc = paramDoc[0].trim();
-                            if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
-                            {
-                                p.componentClass = paramDoc[1].replace(/[\{\}]/g, "");
-                                switch (p.componentClass.toLowerCase())
-                                {
-                                    case "bool":
-                                    case "boolean":
-                                        p.type = VariableType._boolean;
-                                        break;
-                                    case "int":
-                                    case "number":
-                                        p.type = VariableType._number;
-                                        break;
-                                    case "object":
-                                        p.type = VariableType._object;
-                                        break;
-                                    case "string":
-                                        p.type = VariableType._string;
-                                        break;
-                                    default:
-                                        if (p.componentClass === "*") {
-                                            p.componentClass = "any";
-                                            p.type = VariableType._any;
-                                        }
-                                        else {
-                                            p.type = VariableType._class;
-                                        }
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                }
+                      params = parseParams(m, propertyName, text, componentClass, doc);
                 methods.push({
                     doc, params,
                     name: propertyName,
                     start: m.loc!.start,
                     end: m.loc!.end,
-                    variables: parseVariables(m, propertyName, text),
+                    variables: parseVariables(m, propertyName, text, componentClass),
                     since: getSince(doc),
                     private: doc?.includes("@private"),
                     deprecated: doc?.includes("@deprecated"),
@@ -560,7 +516,7 @@ function parseRequires(propertyRequires: ObjectProperty)
 }
 
 
-function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, componentClass: string): IParameter[]
+function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, doc: string): IParameter[]
 {
     const params: IParameter[] = [];
     if (!text || !methodName) {
@@ -582,8 +538,55 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
                     declaration: DeclarationType.var,
                     start: p.loc!.start,
                     end: p.loc!.end,
-                    methodName, componentClass
+                    methodName,
+                    componentClass: parentCls
                 });
+            }
+        }
+    }
+
+    //
+    // Look into the method comments, see if we can extract type information about the parameters
+    //
+    if (doc && params.length)
+    {
+        for (const p of params)
+        {
+            const paramDoc = doc.match(new RegExp(`@param\\s*(\\{[\\w\\.]+\\})*\\s*${p.name}[^\\r\\n]*`));
+            if (paramDoc)
+            {
+                // p.doc = "@param " + paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
+                p.doc = paramDoc[0].trim();
+                if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
+                {
+                    p.componentClass = paramDoc[1].replace(/[\{\}]/g, "");
+                    switch (p.componentClass.toLowerCase())
+                    {
+                        case "bool":
+                        case "boolean":
+                            p.type = VariableType._boolean;
+                            break;
+                        case "int":
+                        case "number":
+                            p.type = VariableType._number;
+                            break;
+                        case "object":
+                            p.type = VariableType._object;
+                            break;
+                        case "string":
+                            p.type = VariableType._string;
+                            break;
+                        default:
+                            if (p.componentClass === "*") {
+                                p.componentClass = "any";
+                                p.type = VariableType._any;
+                            }
+                            else {
+                                p.type = VariableType._class;
+                            }
+                            break;
+                    }
+                }
             }
         }
     }
@@ -592,12 +595,19 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
 }
 
 
-function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined): IVariable[]
+function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string): IVariable[]
 {
     const variables: IVariable[] = [];
     if (!text || !methodName) {
         return variables;
     }
+
+    const _add = ((v: IVariable) => {
+        log.value("added variable", v.name, 5);
+        log.value("   method", v.methodName, 5);
+        log.value("   instance cls", v.componentClass, 5);
+        variables.push(v);
+    });
 
     const ast = getMethodAst(objEx, methodName, text);
     traverse(ast,
@@ -616,11 +626,6 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                 return;
             }
 
-            // const varName = dec.id.name;
-            // const callee = dec.init.callee;
-            // const args = dec.init.arguments;
-            // let callerCls = "";
-
             const varName = dec.id.name;
             let isNewExp = false,
                 callee,
@@ -638,10 +643,32 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                 callee = dec.init.callee;
                 args = dec.init.arguments;
             }
+            else if (isThisExpression(dec.init))
+            {
+                _add({
+                    name: varName,
+                    declaration: DeclarationType[node.kind],
+                    start: node.declarations[0].loc!.start,
+                    end: node.declarations[0].loc!.end,
+                    componentClass: parentCls,
+                    methodName
+                });
+                return;
+            }
+            else if (isAwaitExpression(dec.init))
+            {
+                // TODO !!
+                return;
+            }
             else {
                 return;
             }
 
+            //
+            // Member expression example:
+            //
+            //     VSCodeExtJS.common.PhysicianDropdown.create
+            //
             if (isMemberExpression(callee))
             {
                 if (!isIdentifier(callee.object))
@@ -690,54 +717,52 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                 }
             }
 
+            //
+            // Filter unsupported properties
+            //
             if (!isMemberExpression(callee) || !isIdentifier(callee.property) ||
                 (callee.property.name !== "create" && !isNewExp) || !callerCls)
             {
-                // if (!isStringLiteral(args[0]) || args[0].value !== "this") {
-                    return;
-                // }
+                return;
             }
 
-            let value = "";
+            //
+            // Get instance component class
+            //
+            let instCls = "";
             const isFramework = callerCls === "Ext";
-
             if (isFramework)
             {
                 if (!isStringLiteral(args[0])) {
                     return;
                 }
                 else {
-                    value = args[0].value;
+                    instCls = args[0].value;
                 }
             }
             else {
-                value = callerCls;
+                instCls = callerCls;
             }
-
             //
             // In the case of "new" keyword, the calle property is the last part of the class name.
             // Whereas other scenario is "full_classname".create, where "create" is the callee property.
             //
             if (isNewExp)
             {
-                value += ("." + callee.property.name);
+                instCls += ("." + callee.property.name);
             }
 
-            if (value)
-            {
-                log.value("added variable", varName, 5);
-                log.value("   method", methodName, 5);
-                log.value("   instance cls", value, 5);
-
-                variables.push({
-                    name: varName,
-                    declaration: DeclarationType[node.kind],
-                    start: node.declarations[0].loc!.start,
-                    end: node.declarations[0].loc!.end,
-                    componentClass: value,
-                    methodName
-                });
-            }
+            //
+            // Add thr variable to the component's IVariables array
+            //
+            _add({
+                name: varName,
+                declaration: DeclarationType[node.kind],
+                start: node.declarations[0].loc!.start,
+                end: node.declarations[0].loc!.end,
+                componentClass: instCls,
+                methodName
+            });
         }
     });
 
