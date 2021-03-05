@@ -417,10 +417,7 @@ class ExtjsLanguageManager
     getLineProperties(document: TextDocument, position: Position, logPad = ""): ILineProperties
     {
         let cmpType: ComponentType = ComponentType.None;
-        const range = document.getWordRangeAtPosition(position);
-        if (range === undefined) {
-            return {};
-        }
+        const range = document.getWordRangeAtPosition(position) || new Range(position, new Position(0, 0));
 
         const line = position.line,
               nextLine = document.lineAt(line + 1);
@@ -434,6 +431,19 @@ class ExtjsLanguageManager
         {
             // TODO - this definition
         }
+
+        //
+        // Methods
+        //
+        // if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
+        //
+        // Properties / configs
+        //
+        // else if (lineText.match(new RegExp(`\\.${property}\\s*[;\\)]+\\s*$`)))
+        //
+        // Classes
+        //
+        // else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
 
         //
         // Class string literals
@@ -472,7 +482,7 @@ class ExtjsLanguageManager
             cmpType = ComponentType.Method;
         }
         //
-        // Properties / configs
+        // Properties / configs / variables / parameters
         //
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]+\\s*$`)))
         {
@@ -495,41 +505,60 @@ class ExtjsLanguageManager
         if (cmpType === ComponentType.Class)
         {
             cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
-            //
-            // Check for "instance" type
-            //
-            const cls = this.variablesToComponentClassMapping[property];
-            if (cls) {
-                const variable = this.componentClassToVariablesMapping[cls.name]?.find(v => v.name === property);
-                if (variable) {
-                    cmpClass = variable.componentClass;
+            // if (!this.getComponent(cmpClass, undefined, true))
+            // {   //
+                // Check for "instance" type
+                //
+                const cls = this.variablesToComponentClassMapping[property];
+                if (cls) {
+                    const variable = this.componentClassToVariablesMapping[cls.name]?.find(v => v.name === property);
+                    cmpClass = variable?.componentClass;
                 }
-            }
+                else {
+                    let cmp = this.getComponent(property, position, true);
+                    if (!cmp) {
+                        cmp = this.getComponentInstance(property, position, document.uri.fsPath);
+                    }
+                    if (cmp) {
+                        cmpClass = cmp.componentClass;
+                    }
+                }
         }
-        else
+        else if (cmpType === ComponentType.Method)
         {
             cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
+            if (!cmpClass && utils.isGetterSetter(property))
+            {   //
+                // A config property:
+                //
+                //     user: null
+                //
+                // Will have the folloiwng getter/setter created by the framework if not defined
+                // on the object:
+                //
+                //     getUser()
+                //     setUser(value)
+                //
+                // Check for these config methods, see if they exist for this property
+                //
+                log.write("   method not found, look for getter/setter config", 2, logPad);
+                property = utils.lowerCaseFirstChar(property.substring(3));
+                cmpType = ComponentType.Config;
+                log.value("      config name", property, 2, logPad);
+                cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
+            }
+        }
+        else // property / config / variable / parameter
+        {
+            const cmp = this.getComponentInstance(property, position, document.uri.fsPath);
+            cmpClass = cmp?.componentClass || this.getComponentClass(property, position, cmpType, lineText, thisPath);
             if (!cmpClass)
             {   //
-                // If this is a method, check for getter/setter for a config property...
-                //
-                if (cmpType === ComponentType.Method && (property.startsWith("get") || property.startsWith("set")))
-                {
-                    log.write("   method not found, look for getter/setter config", 2, logPad);
-                    property = utils.lowerCaseFirstChar(property.substring(3));
-                    cmpType = ComponentType.Config;
-                    log.value("      config name", property, 2, logPad);
-                    cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
-                }
-                //
                 // If this is a property, check for a config property...
                 //
-                else if (cmpType === ComponentType.Property)
-                {
-                    log.write("   property not found, look for config", 2, logPad);
-                    cmpType = ComponentType.Config;
-                    cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
-                }
+                log.write("   property not found, look for config", 2, logPad);
+                cmpType = ComponentType.Config;
+                cmpClass = this.getComponentClass(property, position, cmpType, lineText, thisPath);
             }
             else
             {
