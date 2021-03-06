@@ -14,17 +14,17 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
     {
         log.methodStart("provide type definition", 1);
 
-        const { cmpClass, cmpType, property } = extjsLangMgr.getLineProperties(document, position, "   ");
+        const { cmpClass, cmpType, property, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
 
-        if (property && cmpClass && cmpType === ComponentType.Property)
+        if (property && cmpClass && (cmpType === ComponentType.Property || cmpType === ComponentType.Class))
         {
             log.value("   component class", cmpClass, 2);
             const fsPath = extjsLangMgr.getFilePath(cmpClass);
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),
-                      { start, end } = extjsLangMgr.getPropertyPosition(property, ComponentType.Property, cmpClass, "   "),
-                      range = new Range(start, end);
+                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, "   "),
+                      range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
                 log.write("   open type definition file", 1);
                 log.write("provide type definition complete", 1);

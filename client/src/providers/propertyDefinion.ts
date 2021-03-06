@@ -24,22 +24,8 @@ class PropertyDefinitionProvider implements DefinitionProvider
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),
-                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, "   ");
-                let range = new Range(start, end);
-                //
-                // If the position is within the range of the goto definition, the provided definition will be
-                // ignored by VSCode.  For example, consider the base class `VSCodeExtJS`, and the following
-                // method call in one of it's own methods:
-                //
-                //     VSCodeExtJS.common.UserDropdown.create();
-                //
-                // The range of `VSCodeExtJS` is within class itself, so just reset the range to just be the
-                // start position.  In this case the property 'VSCodeExtJS` is equal to the class 'VSCodeExtJS'.
-                //
-                if (thisClass === property && isPositionInRange(position, range))
-                {
-                    range = new Range(start, start);
-                }
+                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, "   "),
+                      range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 //
                 // Provide a `Location` object to VSCode
                 //
