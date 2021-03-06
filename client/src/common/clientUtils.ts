@@ -1,6 +1,35 @@
 
-import { Range, Position, Uri, Location } from "vscode";
-import { IPosition } from "../../../common";
+import { Range, Position, Uri, Location, window } from "vscode";
+import { IExtJsBase, IPosition, IComponent } from "../../../common";
+
+
+export function isPositionInRange(position: Position, range: Range)
+{
+    if (position.line > range.start.line && position.line < range.end.line) {
+        return true;
+    }
+    else if (position.line === range.start.line)
+    {
+        return position.character >= range.start.character;
+    }
+    else if (position.line === range.end.line)
+    {
+        return position.character <= range.end.character;
+    }
+    return false;
+}
+
+
+export function isPositionInMethod(position: Position, component: IComponent)
+{
+    for (const method of component.methods)
+    {
+        if (isPositionInRange(position, toVscodeRange(method.start, method.end))) {
+            return true;
+        }
+    }
+    return false;
+}
 
 
 // export function toIPosition(position: Position, lineText: string): IPosition

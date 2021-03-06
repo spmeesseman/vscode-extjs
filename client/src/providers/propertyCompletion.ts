@@ -5,6 +5,7 @@ import {
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
+import { isPositionInMethod, isPositionInObject } from "../common/clientUtils";
 import { configuration } from "../common/configuration";
 import { IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils } from "../../../common";
 
@@ -477,29 +478,34 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const addedItems: string[] = [],
               completionItems: CompletionItem[] = [],
               cmps = extjsLangMgr.getComponentNames(),
-              aliases = extjsLangMgr.getAliasNames();
+              aliases = extjsLangMgr.getAliasNames(),
+              thisPath = window.activeTextEditor?.document?.uri.fsPath,
+              thisCmp = thisPath ? extjsLangMgr.getComponentByFile(thisPath) : undefined;
 
-        const _add = ((cls: string) =>
+        if (thisCmp && isPositionInMethod(position, thisCmp))
         {
-            if (cls)
+            const _add = ((cls: string) =>
             {
-                const cCls = cls.split(".")[0];
-                if (addedItems.indexOf(cCls) === -1)
+                if (cls)
                 {
-                    const cItems = this.createCompletionItem(cCls, cCls, CompletionItemKind.Class, position);
-                    if (cItems.length > 0) {
-                        completionItems.push(...cItems);
-                        addedItems.push(cCls);
+                    const cCls = cls.split(".")[0];
+                    if (addedItems.indexOf(cCls) === -1)
+                    {
+                        const cItems = this.createCompletionItem(cCls, cCls, CompletionItemKind.Class, position);
+                        if (cItems.length > 0) {
+                            completionItems.push(...cItems);
+                            addedItems.push(cCls);
+                        }
+                        log.blank(3);
+                        log.write("      added inline completion item", 3);
+                        log.value("         item", cCls, 3);
                     }
-                    log.blank(3);
-                    log.write("      added inline completion item", 3);
-                    log.value("         item", cCls, 3);
                 }
-            }
-        });
+            });
 
-        for (const c of cmps) { _add(c); }
-        for (const a of aliases) { _add(a); }
+            for (const c of cmps) { _add(c); }
+            for (const a of aliases) { _add(a); }
+        }
 
         return completionItems;
     }
