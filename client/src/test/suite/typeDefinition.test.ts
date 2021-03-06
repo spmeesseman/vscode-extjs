@@ -26,7 +26,7 @@ suite("Type Definition Tests", () =>
 		await testTypeDefinition(docUri, new vscode.Position(82, 3), [
         {
             uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-            range: toRange(0, 0, 0, 0)
+            range: toRange(6, 0, 55, 2)
         }]);
 		//
 		// const phys2 = new VSCodeExtJS.common.PhysicianDropdown(...
@@ -36,7 +36,7 @@ suite("Type Definition Tests", () =>
 		await testTypeDefinition(docUri, new vscode.Position(88, 3), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(6, 0, 55, 2)
 		}]);
 		//
 		// const phys3 = VSCodeExtJS.common.PhysicianDropdown.create(...
@@ -46,7 +46,7 @@ suite("Type Definition Tests", () =>
 		await testTypeDefinition(docUri, new vscode.Position(94, 3), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(6, 0, 55, 2)
 		}]);
 	});
 

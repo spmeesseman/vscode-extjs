@@ -49,22 +49,13 @@ suite("Definition Tests", () =>
     test("Classes", async () =>
     {
 		//
-		// Line 75-76
-		// VSCodeExtJS
-		//
-		await testDefinition(docUri, new vscode.Position(74, 3), [
-		{
-			uri: getDocUri("app/shared/src/app.js"),
-			range: toRange(0, 0, 0, 0)
-		}]);
-		//
 		// app.js Line 75
 		// PhysicianDropdown
 		//
 		await testDefinition(docUri, new vscode.Position(74, 22), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(6, 0, 55, 2)
 		}]);
     });
 
@@ -92,17 +83,42 @@ suite("Definition Tests", () =>
 	});
 
 
-	test("Sub-classes", async () =>
+	test("Sub classes", async () =>
 	{
 		//
 		// Line 72
-		// VSCodeExtJS.AppUtilities
+		// VSCodeExtJS."AppUtilities".alertError
 		//
 		await testDefinition(docUri, new vscode.Position(71, 15), [
         {
             uri: getDocUri("app/shared/src/AppUtilities.js"),
-            range: toRange(0, 0, 0, 0)
+            range: toRange(7, 0, 67, 2)
         }]);
+	});
+
+
+	test("Base classes", async () =>
+	{
+		//
+		// Line 72
+		// "VSCodeExtJS".AppUtilities.alertError
+		// Needs to use only start position for range in the case where the position is within
+		// the component itself's range
+		//
+		await testDefinition(docUri, new vscode.Position(71, 3), [
+        {
+            uri: getDocUri("app/shared/src/app.js"),
+            range: toRange(5, 0, 5, 0)
+        }]);
+		//
+		// Line 75-76
+		// VSCodeExtJS
+		//
+		await testDefinition(docUri, new vscode.Position(74, 3), [
+		{
+			uri: getDocUri("app/shared/src/app.js"),
+			range: toRange(5, 0, 5, 0)
+		}]);
 	});
 
 
@@ -178,17 +194,17 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(77, 28), [
         {
             uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-            range: toRange(0, 0, 0, 0)
+            range: toRange(6, 0, 55, 2)
         }]);
 		await testDefinition(docUri, new vscode.Position(77, 40), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(6, 0, 55, 2)
 		}]);
 		await testDefinition(docUri, new vscode.Position(77, 48), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(6, 0, 55, 2)
 		}]);
 		//
 		// Lines 9-13
@@ -201,17 +217,17 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(9, 16), [
 		{
 			uri: getDocUri("app/shared/src/AppUtilities.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(7, 0, 67, 2)
 		}]);
 		await testDefinition(docUri, new vscode.Position(10, 16), [
 		{
 			uri: getDocUri("app/classic/src/common/PatientDropdown.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(0, 0, 4, 2)
 		}]);
 		await testDefinition(docUri, new vscode.Position(10, 25), [
 		{
 			uri: getDocUri("app/classic/src/common/PatientDropdown.js"),
-			range: toRange(0, 0, 0, 0)
+			range: toRange(0, 0, 4, 2)
 		}]);
 	});
 
