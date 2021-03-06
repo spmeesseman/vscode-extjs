@@ -266,6 +266,21 @@ function getComments(comments: readonly Comment[] | null)
 }
 
 
+function getReturns(doc?: string)
+{
+    let returns: string | undefined;
+    if (doc?.includes("@since"))
+    {
+        const matches = doc.match(/@return[s](.+)/i);
+        if (matches && matches[1])
+        {
+            returns = matches[1];
+        }
+    }
+    return returns;
+}
+
+
 function getSince(doc?: string)
 {
     let since: string | undefined;
@@ -460,6 +475,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     start: m.loc!.start,
                     end: m.loc!.end,
                     variables: parseVariables(m, propertyName, text, componentClass),
+                    returns: getReturns(doc),
                     since: getSince(doc),
                     private: doc?.includes("@private"),
                     deprecated: doc?.includes("@deprecated"),

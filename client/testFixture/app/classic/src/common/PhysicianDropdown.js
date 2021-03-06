@@ -19,10 +19,12 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 	 * Test old get pin # description
 	 *
 	 * @deprecated Use getPinNumber()
+	 *
+	 * @returns {String} Pin #
 	 */
 	getPin: function()
 	{
-		console.log("test load physician");
+		return "1111";
 	},
 
 	/**
@@ -30,10 +32,11 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 	 *
 	 * Test get pin # description
 	 * @since 1.0.0
+	 * @returns {String} Pin #
 	 */
 	getPinNumber: function()
 	{
-		console.log("test load physician");
+		return "1111";
 	},
 
 	/**
@@ -43,10 +46,11 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 	 * 
 	 * @since 1.0.0
 	 * @private
+	 * @returns {String} Pin #
 	 */
 	getPinNumberInternal: function()
 	{
-		console.log("test load physician");
+		return "1212";
 	}
 
 });

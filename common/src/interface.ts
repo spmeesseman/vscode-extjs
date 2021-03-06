@@ -106,6 +106,7 @@ export interface IMethod extends IProperty
 {
     params?: IParameter[];
     variables?: IVariable[];
+    returns: any;
 }
 
 
