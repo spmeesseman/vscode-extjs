@@ -15,7 +15,9 @@ export const initFsStorage = (context: ExtensionContext) =>
 
 class Storage
 {
+
     private baseStoragePath: string | undefined;
+
 
     constructor(storagePath: string)
     {
@@ -28,6 +30,7 @@ class Storage
 
     public get(project: string, key: string, defaultValue?: string): string | undefined
     {
+        let value: string | undefined = defaultValue;
         if (project && key)
         {
             const projectDir = this.checkProjectDir(project);
@@ -35,15 +38,15 @@ class Storage
                 try {
                     const dataFile = path.join(projectDir, key);
                     if (fs.statSync(dataFile)) {
-                        return fs.readFileSync(dataFile).toString();
+                        value = fs.readFileSync(dataFile).toString();
                     }
-                    return defaultValue;
                 }
                 catch {}
             }
         }
-        return undefined;
+        return value;
     }
+
 
     public async update(project: string, key: string, value: string)
     {
@@ -60,8 +63,10 @@ class Storage
         }
     }
 
+
     private checkProjectDir(project: string): string | boolean
     {
+        let storagePath: string | boolean = false;
         if (this.baseStoragePath && project)
         {
             const projectStoragePath = path.join(this.baseStoragePath, project);
@@ -72,30 +77,32 @@ class Storage
                         recursive: true
                     });
                 }
-                return projectStoragePath;
+                storagePath = projectStoragePath;
             }
             catch {}
         }
-        return false;
+        return storagePath;
     }
 
 
     private checkKeyPath(key: string)
     {
+        let keyPath: string | boolean = false;
         if (key)
         {
-            const keyPath = path.dirname(key);
+            const dKeyPath = path.dirname(key);
             try {
-                if (!fs.existsSync(keyPath))
+                if (!fs.existsSync(dKeyPath))
                 {
-                    fs.mkdirSync(keyPath, {
+                    fs.mkdirSync(dKeyPath, {
                         recursive: true
                     });
                 }
-                return keyPath;
+                keyPath = dKeyPath;
             }
             catch {}
         }
-        return false;
+        return keyPath;
     }
+
 }
