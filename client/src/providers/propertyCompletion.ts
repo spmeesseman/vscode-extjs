@@ -312,51 +312,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     _pushItems(...this.getLocalInstanceComponents(fnText, lineCls, position, fsPath, component));
                 }
-                else {
-                    completionItems.push(...this.getClsCompletionItems(lineText, lineCls, position, addedItems));
-                }
             }
-        }
-
-        return completionItems;
-    }
-
-
-    private getClsCompletionItems(lineText: string, cls: string, position: Position, addedItems: string[]): CompletionItem[]
-    {
-        const completionItems: CompletionItem[] = [],
-              clsParts = cls.split(".");
-        let cCls = "",
-            rtnNextPart = false;
-
-        for (const clsPart of clsParts)
-        {
-            if (cCls) {
-                cCls += ".";
-            }
-            cCls += clsPart;
-
-            if (!rtnNextPart)
-            {
-                if (!lineText.endsWith(cCls + ".")) {
-                    continue;
-                }
-                else {
-                    rtnNextPart = true;
-                    continue;
-                }
-            }
-
-            if (addedItems.indexOf(cCls) === -1)
-            {
-                const lastProp = cCls.indexOf(".") !== -1 ? cCls.substring(cCls.indexOf(".") + 1) : cCls;
-                completionItems.push(...this.createCompletionItem(lastProp, cls, CompletionItemKind.Class, position));
-                addedItems.push(cCls);
-                log.blank(1);
-                log.write("      added dot completion class item", 3);
-                log.value("         item", cCls, 3);
-            }
-            break;
         }
 
         return completionItems;
@@ -482,7 +438,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               thisPath = window.activeTextEditor?.document?.uri.fsPath,
               thisCmp = thisPath ? extjsLangMgr.getComponentByFile(thisPath) : undefined;
 
-        if (thisCmp && isPositionInMethod(position, thisCmp))
+        if (thisCmp && isPositionInMethod(position, thisCmp) && !isPositionInObject(position, thisCmp))
         {
             const _add = ((cls: string) =>
             {

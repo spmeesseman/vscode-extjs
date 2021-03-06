@@ -20,28 +20,27 @@ class MethodSignatureProvider implements SignatureHelpProvider
         //
         //    "editor.quickSuggestions": false
         //
-        if (!lineText || !lineText.includes("(") || lineText.endsWith(")")) {
-            return undefined;
+        if (lineText && lineText.includes("(") && !lineText.endsWith(")"))
+        {
+            log.methodStart("provide method signature", 2, "", true, [["line text", lineText]]);
+
+            //
+            // Create signature information
+            //
+            sigHelp.signatures = [ this.getSignatureInfo(lineText) ];
+
+            //
+            // Set the current parameter index
+            //
+            let commaIdx = lineText.indexOf(",");
+            sigHelp.activeParameter = 0;
+            while (commaIdx !== -1) {
+                ++sigHelp.activeParameter;
+                commaIdx = lineText.indexOf(",", commaIdx + 1);
+            }
+
+            log.methodDone("provide method signature", 2, "", true);
         }
-
-        log.methodStart("provide method signature", 2, "", true, [["line text", lineText]]);
-
-		//
-		// Create signature information
-		//
-		sigHelp.signatures = [ this.getSignatureInfo(lineText) ];
-
-		//
-		// Set the current parameter index
-		//
-		let commaIdx = lineText.indexOf(",");
-		sigHelp.activeParameter = 0;
-		while (commaIdx !== -1) {
-			++sigHelp.activeParameter;
-			commaIdx = lineText.indexOf(",", commaIdx + 1);
-		}
-
-        log.methodDone("provide method signature", 2, "", true);
 
         return sigHelp;
     }

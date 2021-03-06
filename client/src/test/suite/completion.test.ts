@@ -37,6 +37,9 @@ suite("Completion Tests", () =>
 
 	test("Inline property start", async () =>
 	{
+		//
+		// Inside function
+		//
 		await testCompletion(docUri, new vscode.Position(95, 8), "", {
 			items: [
 				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
@@ -44,6 +47,23 @@ suite("Completion Tests", () =>
 				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
 				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 			]
+		});
+
+		//
+		// Inside function - beginning of line
+		//
+		await testCompletion(docUri, new vscode.Position(95, 1), "", {
+			items: [
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
+				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+
+		//
+		// Outside function 0 results
+		//
+		await testCompletion(docUri, new vscode.Position(97, 0), "", {
+			items: []
 		});
 	});
 

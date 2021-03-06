@@ -32,6 +32,21 @@ export function isPositionInMethod(position: Position, component: IComponent)
 }
 
 
+export function isPositionInObject(position: Position, component: IComponent)
+{
+    for (const p of component.properties)
+    {
+
+    }
+
+    for (const method of component.methods)
+    {
+
+    }
+    return false;
+}
+
+
 // export function toIPosition(position: Position, lineText: string): IPosition
 // {
 //     const { line, character } = position;
@@ -67,7 +82,7 @@ export function toVscodeRange(start: IPosition, end: IPosition)
 }
 
 
-export function toVscodeLocation(start: IPosition, end: IPosition, uri: Uri)
-{
-    return new Location(uri, new Range(toVscodePosition(start), toVscodePosition(end)));
-}
+// export function toVscodeLocation(start: IPosition, end: IPosition, uri: Uri)
+// {
+//     return new Location(uri, new Range(toVscodePosition(start), toVscodePosition(end)));
+// }

@@ -18,59 +18,59 @@ class XtypeCodeActionProvider implements CodeActionProvider
 
         for (const d of context.diagnostics)
         {
-            if (d.source !== "vscode-extjs") {
-                continue;
-            }
-            if (d.code === ErrorCode.xtypeNotFound && d.relatedInformation)
+            if (d.source === "vscode-extjs")
             {
-                for (const info of d.relatedInformation)
+                if (d.code === ErrorCode.xtypeNotFound && d.relatedInformation)
                 {
-                    const matches = info.message.match(/Did you mean: ([A-Z0-9]+)/i);
-                    if (matches)
+                    for (const info of d.relatedInformation)
                     {
-                        const suggestions = matches[1].replace(/ /g, "").split(","),
-                            addSuggest = [];
-                        for (const suggestion of suggestions)
+                        const matches = info.message.match(/Did you mean: ([A-Z0-9]+)/i);
+                        if (matches)
                         {
-                            addSuggest.push({
-                                title: "Replace declared xtype with '" + suggestion + "'",
-                                isPreferred: true,
-                                kind: CodeActionKind.QuickFix,
-                                command: {
+                            const suggestions = matches[1].replace(/ /g, "").split(","),
+                                addSuggest = [];
+                            for (const suggestion of suggestions)
+                            {
+                                addSuggest.push({
                                     title: "Replace declared xtype with '" + suggestion + "'",
-                                    command: "vscode-extjs:replaceText",
-                                    arguments: [ '"' + suggestion + '"', range ]
-                                }
-                            });
-                        }
-                        if (addSuggest.length > 0) {
-                            actions.push(...addSuggest);
+                                    isPreferred: true,
+                                    kind: CodeActionKind.QuickFix,
+                                    command: {
+                                        title: "Replace declared xtype with '" + suggestion + "'",
+                                        command: "vscode-extjs:replaceText",
+                                        arguments: [ '"' + suggestion + '"', range ]
+                                    }
+                                });
+                            }
+                            if (addSuggest.length > 0) {
+                                actions.push(...addSuggest);
+                            }
                         }
                     }
                 }
-            }
-            else if (d.code === ErrorCode.xtypeNoRequires)
-            {
-                actions.push(...[
+                else if (d.code === ErrorCode.xtypeNoRequires)
                 {
-                    title: "Fix the 'requires' array for this declared xtype",
-                    isPreferred: true,
-                    kind: CodeActionKind.QuickFix,
-                    command: {
+                    actions.push(...[
+                    {
                         title: "Fix the 'requires' array for this declared xtype",
-                        command: "vscode-extjs:ensureRequire",
-                        arguments: [ document.getText(range).replace(/["']/g, "") ]
-                    }
-                },
-                {
-                    title: "Fix the 'requires' array for all declared xtypes",
-                    isPreferred: true,
-                    kind: CodeActionKind.QuickFix,
-                    command: {
+                        isPreferred: true,
+                        kind: CodeActionKind.QuickFix,
+                        command: {
+                            title: "Fix the 'requires' array for this declared xtype",
+                            command: "vscode-extjs:ensureRequire",
+                            arguments: [ document.getText(range).replace(/["']/g, "") ]
+                        }
+                    },
+                    {
                         title: "Fix the 'requires' array for all declared xtypes",
-                        command: "vscode-extjs:ensureRequire"
-                    }
-                }]);
+                        isPreferred: true,
+                        kind: CodeActionKind.QuickFix,
+                        command: {
+                            title: "Fix the 'requires' array for all declared xtypes",
+                            command: "vscode-extjs:ensureRequire"
+                        }
+                    }]);
+                }
             }
         }
 

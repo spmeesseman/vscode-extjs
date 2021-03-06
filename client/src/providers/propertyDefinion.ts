@@ -43,20 +43,13 @@ class PropertyDefinitionProvider implements DefinitionProvider
                 //
                 // Provide a `Location` object to VSCode
                 //
-                log.value("   fsPath", uri.fsPath, 2);
-                log.write("   open definition file", 1);
-                log.write("provide definition complete", 1);
+                log.methodDone("provide definition", 1, "", false, [["fsPath", uri.fsPath ]]);
                 return {
                     uri,
                     range
                 };
             }
-            else {
-                log.write("   fs path not found", 1);
-            }
         }
-
-        log.methodDone("provide definition complete", 1);
     }
 }
 
