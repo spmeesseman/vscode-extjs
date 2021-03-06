@@ -69,8 +69,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //     command: { command: "editor.action.triggerSuggest", title: "Re-trigger completions..." }
         // });
 
-        log.value("   # of added items", completionItems.length, 3);
-        log.methodDone("provide dot completion items", 2, "", true);
+        log.methodDone("provide dot completion items", 2, "", true, [["# of added items", completionItems.length]]);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }

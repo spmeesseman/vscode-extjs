@@ -9,71 +9,53 @@ import { EOL } from "os";
 
 export async function ensureRequires(xtype: string | undefined)
 {
-	const document = window.activeTextEditor?.document;
-	if (!document) {
-		return;
-	}
-
-	const fsPath = document.uri.fsPath,
-		  ns = extjsLangMgr.getNamespaceFromFile(fsPath);
-
-	if (!ns) {
-		window.showErrorMessage("Could not find base namespace");
-		return;
-	}
-
-	const components = await extjsLangMgr.indexFile(fsPath, ns, document),
+	const document = window.activeTextEditor?.document,
+		  fsPath = document?.uri.fsPath,
+		  ns = fsPath ? extjsLangMgr.getNamespaceFromFile(fsPath) : undefined,
+		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, document) : undefined,
 		  workspaceEdit = new WorkspaceEdit();
 
-	if (!components) {
-		window.showErrorMessage("Could not find component syntax tree");
-		return;
-	}
-
-	for (const component of components)
+	if (document && components)
 	{
-		if (!component.requires) {
-			continue;
-		}
-
-		const componentClasses = new Set<string>();
-
-		for (const x of component.xtypes)
+		for (const component of components)
 		{
-			const c = extjsLangMgr.getMappedClass(x.name, ComponentType.Widget);
-			if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
-				componentClasses.add(c);
-			}
-		}
-
-		if (componentClasses.size > 0)
-		{
-			let pad = "";
-			const range = toVscodeRange(component.requires.start, component.requires.end),
-			      lineText = document.lineAt(range.start.line).text.substr(0, range.start.character);
-
-			for (let i = 0; i < lineText.length; i++)
+			if (component.requires)
 			{
-				if (lineText[i] === " " || lineText[i] === "\t") {
-					pad += lineText[i];
+				const componentClasses = new Set<string>();
+
+				for (const x of component.xtypes)
+				{
+					const c = extjsLangMgr.getMappedClass(x.name, ComponentType.Widget);
+					if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
+						componentClasses.add(c);
+					}
 				}
-				else {
-					break;
+
+				if (componentClasses.size > 0)
+				{
+					let pad = "";
+					const range = toVscodeRange(component.requires.start, component.requires.end),
+						lineText = document.lineAt(range.start.line).text.substr(0, range.start.character);
+
+					for (let i = 0; i < lineText.length && (lineText[i] === " " || lineText[i] === "\t"); i++)
+					{
+						pad += lineText[i];
+					}
+
+					const _requires = component.requires.value
+						.filter((it: string) => utils.isNeedRequire(it))
+						.concat(Array.from(componentClasses))
+						.sort();
+
+					const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
+											.replace(/\[/, "[" + EOL + pad + "    ")
+											.replace(/,/g, "," + EOL + pad + "    ")
+											.replace(/\]/, EOL + pad + "]");
+
+					workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
+					workspace.applyEdit(workspaceEdit);
 				}
 			}
-
-			const _requires = component.requires.value
-				  .filter((it: string) => utils.isNeedRequire(it))
-				  .concat(Array.from(componentClasses))
-				  .sort();
-
-			const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
-									   .replace(/\[/, "[" + EOL + pad + "    ")
-									   .replace(/,/g, "," + EOL + pad + "    ")
-									   .replace(/\]/, EOL + pad + "]");
-
-			workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
-			workspace.applyEdit(workspaceEdit);
 		}
 	}
 }
