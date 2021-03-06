@@ -12,13 +12,14 @@ import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, 
 import * as log from "./common/log";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
-import { toVscodeRange, toVscodePosition } from "./common/clientUtils";
+import { toVscodeRange, toVscodePosition, isPositionInRange } from "./common/clientUtils";
 
 
 export interface ILineProperties
 {
     property?: string;
     cmpClass?: string;
+    thisClass?: string;
     cmpType?: ComponentType;
 }
 
@@ -380,7 +381,7 @@ class ExtjsLanguageManager
 
         for (const method of cmp.methods)
         {
-            if (this.isPositionInRange(position, toVscodeRange(method.start, method.end)))
+            if (isPositionInRange(position, toVscodeRange(method.start, method.end)))
             {
                 let variable = method.variables?.find(v => v.name === property);
                 if (!variable) {
@@ -439,14 +440,15 @@ class ExtjsLanguageManager
      * @param position The position in the document to extract line properties for
      * @param logPad Padding to prepend to any logging
      */
-    getLineProperties(document: TextDocument, position: Position, logPad = ""): ILineProperties
+    getLineProperties(document: TextDocument, position: Position, readThisCls: boolean, logPad = ""): ILineProperties
     {
         let cmpType: ComponentType = ComponentType.None;
         const range = document.getWordRangeAtPosition(position) || new Range(position, new Position(0, 0));
 
         const line = position.line,
               nextLine = document.lineAt(line + 1),
-              allLineText = document.getText(new Range(new Position(line, 0), nextLine.range.start)).trim();
+              allLineText = document.getText(new Range(new Position(line, 0), nextLine.range.start)).trim(),
+              thisClass = readThisCls ? this.getComponentByFile(document.uri.fsPath)?.componentClass : undefined;
         let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
             property = document.getText(range);
 
@@ -459,7 +461,8 @@ class ExtjsLanguageManager
         if (property === "this")
         {
             return {
-                cmpClass: this.getComponentByFile(document.uri.fsPath)?.componentClass,
+                thisClass,
+                cmpClass: thisClass,
                 cmpType: ComponentType.Class,
                 property
             };
@@ -618,7 +621,7 @@ class ExtjsLanguageManager
 
         log.value("   component class", cmpClass, 2, logPad);
 
-        return { cmpClass, cmpType, property };
+        return { cmpClass, cmpType, property, thisClass };
     }
 
 
@@ -866,23 +869,6 @@ class ExtjsLanguageManager
     isBusy()
     {
         return this.isIndexing;
-    }
-
-
-    private isPositionInRange(position: Position, range: Range)
-    {
-        if (position.line > range.start.line && position.line < range.end.line) {
-            return true;
-        }
-        else if (position.line === range.start.line)
-        {
-            return position.character >= range.start.character;
-        }
-        else if (position.line === range.end.line)
-        {
-            return position.character <= range.end.character;
-        }
-        return false;
     }
 
 
