@@ -440,17 +440,17 @@ class ExtjsLanguageManager
      * @param position The position in the document to extract line properties for
      * @param logPad Padding to prepend to any logging
      */
-    getLineProperties(document: TextDocument, position: Position, readThisCls: boolean, logPad = ""): ILineProperties
+    getLineProperties(document: TextDocument, position: Position, logPad = ""): ILineProperties
     {
-        let cmpType: ComponentType = ComponentType.None;
-        const range = document.getWordRangeAtPosition(position) || new Range(position, new Position(0, 0));
-
         const line = position.line,
               nextLine = document.lineAt(line + 1),
               allLineText = document.getText(new Range(new Position(line, 0), nextLine.range.start)).trim(),
-              thisClass = readThisCls ? this.getComponentByFile(document.uri.fsPath)?.componentClass : undefined;
+              thisClass = this.getComponentByFile(document.uri.fsPath)?.componentClass,
+              range = document.getWordRangeAtPosition(position) || new Range(position, new Position(0, 0));
+
         let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
-            property = document.getText(range);
+            property = document.getText(range),
+            cmpType: ComponentType = ComponentType.None;
 
         log.methodStart("get line properties", 1, logPad);
 
@@ -517,18 +517,29 @@ class ExtjsLanguageManager
             cmpType = ComponentType.Method;
         }
         //
-        // Properties / configs / variables / parameters, e.g.:
+        // Properties / configs / variables / parameters / class expressions, e.g.:
         //
         //     property.getSomething();
         //     const property = this;
         //
+        // Also catches 'class' type hover on a full path class method call for example:
+        //
+        //     VSCodeExtJS.common.UserDropdown.create();
+        //
+        // Hovering over 'VSCodeExtJS' should yield 'class' type.
+        //
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]{1,2}\\s*$`)) ||
-                 allLineText.match(new RegExp(`\\s*(const|var|let)\\s*${property}\\s*=\\s*[ \\W\\w\\{]*\\s*[,;]{1}\\s*$`)))
+                 allLineText.match(new RegExp(`(\\s*(const|var|let){0,1}\\s+|^)${property}\\s*[=.]{1}\\s*[ \\W\\w\\{\\(]*\\s*$`)))
         {
-            cmpType = ComponentType.Property;
+            if (!this.getComponentByAlias(property) && !this.getComponent(property)) {
+                cmpType = ComponentType.Property;
+            }
+            else {
+                cmpType = ComponentType.Class;
+            }
         }
         //
-        // Classes (non string literal)
+        // Classes and property class instances (non string literal)
         //
         else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
         {

@@ -15,7 +15,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
     {
         log.methodStart("provide definition", 1);
 
-        const { cmpType, property, cmpClass, thisClass } = extjsLangMgr.getLineProperties(document, position, true, "   ");
+        const { cmpType, property, cmpClass, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
 
         if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
         {

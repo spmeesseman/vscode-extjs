@@ -11,7 +11,7 @@ class DocHoverProvider implements HoverProvider
 {
     provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover>
     {
-        const { cmpType, property, cmpClass } = extjsLangMgr.getLineProperties(document, position, false, "   ");
+        const { cmpType, property, cmpClass } = extjsLangMgr.getLineProperties(document, position, "   ");
 
         if (property && cmpClass)
         {
