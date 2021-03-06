@@ -564,7 +564,11 @@ class ExtjsLanguageManager
         {
             cmpClass = this.getComponentClass(property, position, lineText, thisPath);
             if (cmpClass)
-            {
+            {   //
+                // getComponentClass() will return the file class if this is a config getter/setter, so
+                // check the methods mapping to see if it exists on the main component or not.  If it doesnt
+                // then check if its a config property getter/setter fn
+                //
                 const classHasMethod = !!this.componentClassToMethodsMapping[cmpClass]?.find(x => x.name === property);
                 if (!classHasMethod && utils.isGetterSetter(property))
                 {   //
@@ -588,7 +592,7 @@ class ExtjsLanguageManager
                 }
             }
         }
-        else // property / config / variable / parameter
+        else // ComponentType.Property / ComponentType.Config | variable / parameter
         {
             const cmp = this.getComponentInstance(property, position, document.uri.fsPath);
             cmpClass = cmp?.componentClass || this.getComponentClass(property, position, lineText, thisPath);
@@ -600,17 +604,14 @@ class ExtjsLanguageManager
                 cmpType = ComponentType.Config;
                 cmpClass = this.getComponentClass(property, position, lineText, thisPath);
             }
-            else
+            else if (cmpType === ComponentType.Property)
             {
-                if (cmpType === ComponentType.Property)
+                const cfgCls = this.getMappedClass(property, ComponentType.Config);
+                if (cfgCls)
                 {
-                    const cfgCls = this.getMappedClass(property, ComponentType.Config);
-                    if (cfgCls)
-                    {
-                        log.write("   look for config", 2, logPad);
-                        cmpType = ComponentType.Config;
-                        cmpClass = cfgCls;
-                    }
+                    log.write("   look for config", 2, logPad);
+                    cmpType = ComponentType.Config;
+                    cmpClass = cfgCls;
                 }
             }
         }
