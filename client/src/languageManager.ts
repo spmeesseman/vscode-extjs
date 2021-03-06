@@ -285,7 +285,18 @@ class ExtjsLanguageManager
         //     Ext.form.field.
         //     MyApp.view.myview.
         //
-        cmpClassPre = lineText.substring(0, lineText.indexOf(property));
+        const pIdx = lineText.indexOf(property);
+        cmpClassPre = lineText.substring(0, pIdx);
+        //
+        // If property is within a function expression, e.g.:
+        //
+        //     console.log(VSCodeExtJS.common.UserDropdown.proparty);
+        //
+        // Trim off characters up to and inclusing the 1st '('
+        //
+        if (cmpClassPre.indexOf("(") < pIdx) {
+            // cmpClassPre = lineText.substring(cmpClassPre.indexOf("(") + 1);
+        }
         cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
 
         //
@@ -508,7 +519,7 @@ class ExtjsLanguageManager
         //     property.getSomething();
         //     const property = this;
         //
-        else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]{1}\\s*$`)) ||
+        else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]{1,2}\\s*$`)) ||
                  allLineText.match(new RegExp(`\\s*(const|var|let)\\s*${property}\\s*=\\s*[ \\W\\w\\{]*\\s*[,;]{1}\\s*$`)))
         {
             cmpType = ComponentType.Property;
@@ -552,25 +563,29 @@ class ExtjsLanguageManager
         else if (cmpType === ComponentType.Method)
         {
             cmpClass = this.getComponentClass(property, position, lineText, thisPath);
-            if (!cmpClass && utils.isGetterSetter(property))
-            {   //
-                // A config property:
-                //
-                //     user: null
-                //
-                // Will have the folloiwng getter/setter created by the framework if not defined
-                // on the object:
-                //
-                //     getUser()
-                //     setUser(value)
-                //
-                // Check for these config methods, see if they exist for this property
-                //
-                log.write("   method not found, look for getter/setter config", 2, logPad);
-                property = utils.lowerCaseFirstChar(property.substring(3));
-                cmpType = ComponentType.Config;
-                log.value("      config name", property, 2, logPad);
-                cmpClass = this.getComponentClass(property, position, lineText, thisPath);
+            if (cmpClass)
+            {
+                const classHasMethod = !!this.componentClassToMethodsMapping[cmpClass]?.find(x => x.name === property);
+                if (!classHasMethod && utils.isGetterSetter(property))
+                {   //
+                    // A config property:
+                    //
+                    //     user: null
+                    //
+                    // Will have the folloiwng getter/setter created by the framework if not defined
+                    // on the object:
+                    //
+                    //     getUser()
+                    //     setUser(value)
+                    //
+                    // Check for these config methods, see if they exist for this property
+                    //
+                    log.write("   method not found, look for getter/setter config", 2, logPad);
+                    property = utils.lowerCaseFirstChar(property.substring(3));
+                    cmpType = ComponentType.Config;
+                    log.value("      config name", property, 2, logPad);
+                    // cmpClass = this.getComponentClass(property, position, lineText, thisPath);
+                }
             }
         }
         else // property / config / variable / parameter
