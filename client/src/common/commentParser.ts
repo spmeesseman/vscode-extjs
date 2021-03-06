@@ -144,7 +144,7 @@ export class CommentParser
         let textLine = line.trim();
         textLine = this.italic(textLine, false, true);
         log.value("      insert deprecated line", textLine, 5);
-        markdown.appendMarkdown(textLine);
+        markdown.appendMarkdown(MarkdownChars.NewLine + textLine);
     }
 
 
@@ -159,7 +159,7 @@ export class CommentParser
             cfgLine = line.trim();
         }
         log.value("      insert object line", cfgLine, 5);
-        markdown.appendMarkdown(cfgLine);
+        markdown.appendMarkdown(MarkdownChars.NewLine + cfgLine);
     }
 
 
@@ -306,6 +306,24 @@ export class CommentParser
     }
 
 
+    private handleSinceLine(line: string, markdown: MarkdownString)
+    {
+        let textLine = line.trim();
+        const lineParts = line.trim().split(" ");
+        textLine = this.italic(lineParts[0], false, true);
+        if (lineParts.length > 1)
+        {
+            lineParts.shift();
+            if (!lineParts[0].startsWith("v") && !lineParts[0].startsWith("V")) {
+                lineParts[0] = "v" + lineParts[0];
+            }
+            textLine += lineParts.join(" ");
+            log.value("      insert since line", textLine, 5);
+            markdown.appendMarkdown(MarkdownChars.NewLine + textLine);
+        }
+    }
+
+
     private handleTagLine(line: string, markdown: MarkdownString)
     {
         let textLine = line.trim();
@@ -334,7 +352,7 @@ export class CommentParser
         });
         }
         log.value("      insert text line", textLine, 5);
-        markdown.appendMarkdown(textLine);
+        markdown.appendMarkdown(MarkdownChars.NewLine + textLine);
     }
 
 
@@ -498,6 +516,10 @@ export class CommentParser
             else if (mode === MarkdownStringMode.Deprecated)
             {
                 this.handleDeprecatedLine(line, markdown);
+            }
+            else if (mode === MarkdownStringMode.Since)
+            {
+                this.handleSinceLine(line, markdown);
             }
             else if (mode === MarkdownStringMode.Singleton)
             {
