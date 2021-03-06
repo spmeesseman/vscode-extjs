@@ -142,8 +142,8 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             configs: [],
                             statics: [],
                             privates: [],
-                            end: { line: 0, column: 1 }, // TODO - set end position on class file cmp
-                            start: { line: 0, column: 1 }
+                            start: path.node.loc!.start,
+                            end: path.node.loc!.end
                         };
 
                         if (isExpressionStatement(path.container)) {

@@ -8,7 +8,7 @@ import ServerRequest from "./common/ServerRequest";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable, VariableType } from  "../../common";
+import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable, VariableType, IExtJsBase } from  "../../common";
 import * as log from "./common/log";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
@@ -619,6 +619,57 @@ class ExtjsLanguageManager
         log.value("   component class", cmpClass, 2, logPad);
 
         return { cmpClass, cmpType, property };
+    }
+
+
+    getPropertyPosition(property: string, cmpType: ComponentType, componentClass: string, logPad = "")
+    {
+        let start = new Position(0, 0),
+            end = new Position(0, 0);
+
+        let pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property) :
+                                        (cmpType === ComponentType.Config ? this.getConfig(componentClass, property) :
+                                                                            this.getProperty(componentClass, property));
+
+        const _setPosition = ((o: IExtJsBase) =>
+        {
+            if (o.start && o.end)
+            {
+                log.write("setting position", 2, logPad);
+                log.value("   start line", o.start?.line, 3, logPad);
+                log.value("   end line", o.end?.line, 3, logPad);
+                start = toVscodePosition(o.start);
+                end = toVscodePosition(o.end);
+            }
+        });
+
+        if (cmpType === ComponentType.Method && (property.startsWith("get") || property.startsWith("set")))
+        {
+            const cProperty = utils.lowerCaseFirstChar(property.substring(3)),
+                    cObject = cProperty ? this.getConfig(componentClass, cProperty) : undefined;
+            if (cObject) {
+                cmpType = ComponentType.Config;
+                pObject = cObject;
+                property = cProperty;
+                log.value("config name", property, 2, logPad);
+            }
+        }
+
+        if (pObject)
+        {
+            _setPosition(pObject);
+        }
+        else //
+        {   // In the case where there are multipl classes defined in one file, get the main
+            // component file and search for the class position in the case where it is not 0,0
+            //
+            const mainCmp = this.getComponent(componentClass);
+            if (mainCmp) {
+                _setPosition(mainCmp);
+            }
+        }
+
+        return { start, end };
     }
 
 
