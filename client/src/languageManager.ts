@@ -370,8 +370,12 @@ class ExtjsLanguageManager
     getComponentInstance(property: string, position: Position, fsPath: string): IComponent | IPrimitive | undefined
     {
         const thisCls = this.getClassFromFile(fsPath);
+
         if (!thisCls) {
             return;
+        }
+        else if (property === "this") {
+            return this.getComponent(thisCls, position, true, fsPath);
         }
 
         const cmp = this.getComponent(thisCls, undefined, true);
