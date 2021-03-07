@@ -54,15 +54,15 @@ suite("Hover Tests", () =>
 
 	test("Test local variables", async () =>
 	{
-		await testHover(docUri, new vscode.Position(81, 15), "phys");
-		await testHover(docUri, new vscode.Position(82, 3), "phys");
+		await testHover(docUri, new vscode.Position(81, 15), "{VSCodeExtJS.common.PhysicianDropdown}");
+		await testHover(docUri, new vscode.Position(82, 3), "{VSCodeExtJS.common.PhysicianDropdown}");
 	});
 
 
 	test("Test this keywords", async () =>
 	{
-		await testHover(docUri, new vscode.Position(108, 3), "me");
-		await testHover(docUri, new vscode.Position(109, 3), "this");
+		await testHover(docUri, new vscode.Position(108, 3), "{VSCodeExtJS}");
+		await testHover(docUri, new vscode.Position(109, 3), "{VSCodeExtJS}");
 	});
 
 
@@ -91,7 +91,7 @@ async function testHover(docUri: vscode.Uri, position: vscode.Position, commentS
 	{
 		for (const c of (hover.contents as vscode.MarkdownString[]))
 		{
-			if (c.value.toString().indexOf("@") !== -1) {
+			if (c.value.toString().indexOf("@") !== -1 || c.value.toString().indexOf(commentString) !== -1) {
 				hasTag = true;
 				break;
 			}
