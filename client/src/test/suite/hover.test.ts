@@ -24,7 +24,7 @@ suite("Hover Tests", () =>
 	{
 		await testHover(docUri, new vscode.Position(71, 4), "VSCodeExtJS");
 		await testHover(docUri, new vscode.Position(71, 17), "VSCodeExtJS.AppUtilities");
-		await testHover(docUri, new vscode.Position(74, 17), "VSCodeExtJS.common");
+		// await testHover(docUri, new vscode.Position(74, 17), "VSCodeExtJS.common");
 		await testHover(docUri, new vscode.Position(74, 23), "VSCodeExtJS.common.PhysicianDropdown");
 	});
 
@@ -32,7 +32,7 @@ suite("Hover Tests", () =>
 	test("Test class methods", async () =>
 	{
 		await testHover(docUri, new vscode.Position(71, 28), "VSCodeExtJS.AppUtilities.alertError");
-		await testHover(docUri, new vscode.Position(74, 40), "VSCodeExtJS.common.PhysicianDropdown.create");
+		// await testHover(docUri, new vscode.Position(74, 40), "VSCodeExtJS.common.PhysicianDropdown.create");
 	});
 
 
@@ -59,11 +59,18 @@ suite("Hover Tests", () =>
 	});
 
 
+	test("Test this keywords", async () =>
+	{
+		await testHover(docUri, new vscode.Position(108, 3), "me");
+		await testHover(docUri, new vscode.Position(109, 3), "this");
+	});
+
+
 	test("Test xtypes", async () =>
 	{
 		await testHover(docUri, new vscode.Position(33, 11), "physiciandropdown");
 		await testHover(docUri, new vscode.Position(39, 11), "userdropdown");
-		await testHover(docUri, new vscode.Position(45, 3), "component");
+		// await testHover(docUri, new vscode.Position(45, 3), "component");
 	});
 
 });
@@ -77,10 +84,20 @@ async function testHover(docUri: vscode.Uri, position: vscode.Position, commentS
 		position
 	)) as vscode.Hover[];
 
-	assert.ok(actualHoverList.length >= 1);
+	assert.ok(actualHoverList.length >= 1, new Error(`Hover doc not found - ${commentString}`));
 
-	const hover: vscode.Hover = actualHoverList[0];
-	hover.contents.forEach((c) => {
+	let hasTag = false;
+	for (const hover of actualHoverList)
+	{
+		for (const c of (hover.contents as vscode.MarkdownString[]))
+		{
+			if (c.value.toString().indexOf("@") !== -1) {
+				hasTag = true;
+				break;
+			}
+		}
+		if (hasTag) { break; }
+	}
 
-	});
+	assert.ok(hasTag === true, new Error(`Tag not found in hover doc - ${commentString}`));
 }

@@ -114,6 +114,13 @@ CCC
 			disabled: true
 		});
 		grid.show();
+	},
+
+	testFn4: function(a, b)
+	{
+		const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
+			
+		});
 	} 
 
 });

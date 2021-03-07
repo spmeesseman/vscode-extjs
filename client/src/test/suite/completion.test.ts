@@ -166,6 +166,27 @@ suite("Completion Tests", () =>
 		});
 	});
 
+
+	test("Full xtype lines", async () =>
+	{
+		//
+		// Line 121-124
+		// const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
+		//
+		// });
+		//
+		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
+			items: [
+				{ label: "xtype: component", kind: vscode.CompletionItemKind.Property },
+				{ label: "xtype: grid", kind: vscode.CompletionItemKind.Property },
+				{ label: "xtype: gridpanel", kind: vscode.CompletionItemKind.Property },
+				{ label: "xtype: patientdropdown", kind: vscode.CompletionItemKind.Property },
+				{ label: "xtype: physiciandropdown", kind: vscode.CompletionItemKind.Property },
+				{ label: "xtype: userdropdown", kind: vscode.CompletionItemKind.Property }
+			]
+		});
+	});
+
 });
 
 
@@ -190,6 +211,9 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	assert.ok(actualCompletionList.items.length >= expectedCompletionList.items.length);
 
 	expectedCompletionList.items.forEach((expectedItem, i) => {
-		assert.strictEqual(actualCompletionList.items.filter(item => (item.label === expectedItem.label || item.insertText === expectedItem.label) && item.kind === expectedItem.kind).length, 1, expectedItem.label + " not found");
+		assert.strictEqual(actualCompletionList.items.filter(
+			item => (item.label === expectedItem.label || item.insertText === expectedItem.label) && item.kind === expectedItem.kind).length,
+			1, expectedItem.label + " not found"
+		);
 	});
 }
