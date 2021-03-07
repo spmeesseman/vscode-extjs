@@ -1,11 +1,10 @@
 
 import {
     CancellationToken, DefinitionProvider, ExtensionContext, languages, Location,
-    LocationLink, Position, ProviderResult, Range, TextDocument, Uri
+    LocationLink, Position, ProviderResult, TextDocument, Uri
 } from "vscode";
 import { extjsLangMgr } from "../extension";
-import { ComponentType, utils } from "../../../common";
-import { isPositionInRange } from "../common/clientUtils";
+import { ComponentType } from "../../../common";
 import * as log from "../common/log";
 
 

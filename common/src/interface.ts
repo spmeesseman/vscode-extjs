@@ -29,12 +29,10 @@ export enum VariableType
     _string
 }
 
-export interface IExtJsBase
+export interface IExtJsBase extends IRange
 {
     componentClass: string;
     name: string;
-    start: IPosition;
-    end: IPosition;
     fsPath?: string;
 }
 
@@ -46,6 +44,8 @@ export interface IComponent extends IExtJsBase
 {
     aliases: IAlias[];
     baseNameSpace: string;
+    bodyStart: IPosition;
+    bodyEnd: IPosition;
     configs: IConfig[];
     deprecated?: boolean;
     doc?: string;
@@ -54,6 +54,7 @@ export interface IComponent extends IExtJsBase
     markdown?: any;
     methods: IMethod[];
     nameSpace: string;
+    objectRanges: IRange[];
     private?: boolean;
     privates: (IProperty | IMethod)[];
     properties: IProperty[];
@@ -104,8 +105,11 @@ export interface IConfig extends IProperty
 
 export interface IMethod extends IProperty
 {
-    params?: IParameter[];
-    variables?: IVariable[];
+    bodyStart: IPosition;
+    bodyEnd: IPosition;
+    objectRanges: IRange[];
+    params: IParameter[];
+    variables: IVariable[];
     returns: any;
 }
 
@@ -134,6 +138,13 @@ export interface IProperty extends IExtJsBase
     private?: boolean;
     deprecated?: boolean;
     since?: string;
+}
+
+
+export interface IRange
+{
+    start: IPosition;
+    end: IPosition;
 }
 
 

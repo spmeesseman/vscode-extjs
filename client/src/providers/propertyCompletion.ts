@@ -5,7 +5,7 @@ import {
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
-import { isPositionInMethod, isPositionInObject } from "../common/clientUtils";
+import { getMethodByPosition, isPositionInObject } from "../common/clientUtils";
 import { configuration } from "../common/configuration";
 import { IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils } from "../../../common";
 
@@ -437,7 +437,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               thisPath = window.activeTextEditor?.document?.uri.fsPath,
               thisCmp = thisPath ? extjsLangMgr.getComponentByFile(thisPath) : undefined;
 
-        if (thisCmp && isPositionInMethod(position, thisCmp) && !isPositionInObject(position, thisCmp))
+        if (thisCmp && getMethodByPosition(position, thisCmp) && !isPositionInObject(position, thisCmp))
         {
             const _add = ((cls: string) =>
             {

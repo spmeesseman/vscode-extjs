@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType
+    DeclarationType, IParameter, utils, VariableType, IRange
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
@@ -138,12 +138,15 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             aliases: [],
                             widgets: [],
                             methods: [],
+                            objectRanges: [],
                             properties: [],
                             configs: [],
                             statics: [],
                             privates: [],
                             start: path.node.loc!.start,
-                            end: path.node.loc!.end
+                            end: path.node.loc!.end,
+                            bodyStart: args[1].loc!.start,
+                            bodyEnd: args[1].loc!.end
                         };
 
                         if (isExpressionStatement(path.container)) {
@@ -167,6 +170,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         const propertyExtend = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "extend");
                         const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
+                        const propertyObjects = args[1].properties.filter(p => isObjectProperty(p) && !isFunctionExpression(p.value));
 
                         if (isObjectProperty(propertyExtend))
                         {
@@ -224,6 +228,16 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass));
                         }
                         logProperties("properties", componentInfo.properties);
+
+                        if (propertyObjects && propertyObjects.length)
+                        {
+                            propertyObjects.forEach((o) => {
+                                componentInfo.objectRanges.push({
+                                    start: o.loc!.start,
+                                    end: o.loc!.end
+                                });
+                            });
+                        }
 
                         if (propertyMethod && propertyMethod.length)
                         {
@@ -464,7 +478,52 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
     {
         if (isFunctionExpression(m.value))
         {
+            const objectRanges: IRange[] = [],
+                  propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p));
+            if (propertyObjects && propertyObjects.length)
+            {
+                propertyObjects.forEach((o) =>
+                {
+                    if (isVariableDeclaration(o))
+                    {
+                        for (const d of o.declarations)
+                        {
+                            if (isCallExpression(d.init))
+                            {
+                                for (const a of d.init.arguments)
+                                {
+                                    if (isObjectExpression(a))
+                                    {
+                                        objectRanges.push({
+                                            start: a.loc!.start,
+                                            end: a.loc!.end
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (isExpressionStatement(o) && isCallExpression(o.expression))
+                    {
+                        for (const a of o.expression.arguments)
+                        {
+                            if (isObjectExpression(a))
+                            {
+                                objectRanges.push({
+                                    start: a.loc!.start,
+                                    end: a.loc!.end
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
+            if (propertyName === "testFn2")
+            {
+                console.log("l");
+            }
             if (propertyName)
             {
                 const doc = getComments(m.leadingComments),
@@ -479,7 +538,10 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     since: getSince(doc),
                     private: doc?.includes("@private"),
                     deprecated: doc?.includes("@deprecated"),
-                    componentClass
+                    componentClass,
+                    objectRanges,
+                    bodyStart: m.value.loc!.start,
+                    bodyEnd: m.value.loc!.end
                 });
             }
         }
