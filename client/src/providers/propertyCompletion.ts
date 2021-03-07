@@ -161,7 +161,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Show  `since` properties if not deprecated
         //
-        if (cmp?.since && !cmp?.deprecated)
+        if (cmp?.since && !cmp.deprecated)
         {
             completionItem.insertText = property;
             completionItem.label = completionItem.label + ` (since ${cmp.since})`;
@@ -185,8 +185,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             propCompletion.push(new CompletionItem(cmp.getter, CompletionItemKind.Method));
             propCompletion.push(new CompletionItem(cmp.setter, CompletionItemKind.Method));
-            propCompletion[1].documentation = cmp?.markdown;
-            propCompletion[2].documentation = cmp?.markdown;
+            propCompletion[1].documentation = cmp.markdown;
+            propCompletion[2].documentation = cmp.markdown;
         }
 
         return cmp || kind === CompletionItemKind.Class ? propCompletion : [];
