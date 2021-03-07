@@ -664,7 +664,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 }
 
 
-function registerPropertyCompletionProvider(context: ExtensionContext)
+function registerCompletionProvider(context: ExtensionContext)
 {
     const triggerChars = [
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
@@ -678,4 +678,4 @@ function registerPropertyCompletionProvider(context: ExtensionContext)
 }
 
 
-export default registerPropertyCompletionProvider;
+export default registerCompletionProvider;

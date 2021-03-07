@@ -8,7 +8,7 @@ import { ComponentType } from "../../../common";
 import * as log from "../common/log";
 
 
-class PropertyDefinitionProvider implements DefinitionProvider
+class ExtJsDefinitionProvider implements DefinitionProvider
 {
     provideDefinition(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Location | Location[] | LocationLink[]>
     {
@@ -43,7 +43,7 @@ class PropertyDefinitionProvider implements DefinitionProvider
 }
 
 
-export default function registerPropertyDefinitionProvider(context: ExtensionContext)
+export default function registerDefinitionProvider(context: ExtensionContext)
 {
-    context.subscriptions.push(languages.registerDefinitionProvider("javascript", new PropertyDefinitionProvider()));
+    context.subscriptions.push(languages.registerDefinitionProvider("javascript", new ExtJsDefinitionProvider()));
 }

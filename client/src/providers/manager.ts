@@ -4,9 +4,9 @@ import registerXtypeCodeActionProvider from "./xtypeCodeAction";
 import registerXtypeCompletionProvider from "./xtypeCompletion";
 import registerXtypeDefinitionProvider from "./xtypeDefinion";
 import registerXtypeHoverProvider from "./xtypeHover";
-import registerPropertyHoverProvider from "./propertyHover";
-import registerPropertyCompletionProvider from "./propertyCompletion";
-import registerPropertyDefinitionProvider from "./propertyDefinion";
+import registerHoverProvider from "./hover";
+import registerCompletionProvider from "./completion";
+import registerDefinitionProvider from "./definition";
 import registerMethodSignatureProvider from "./methodSignature";
 import registerSyntaxCodeActionProvider from "./syntaxCodeAction";
 import registerTypeDefinitionProvider from "./typeDefinition";
@@ -22,9 +22,9 @@ export function registerProviders(context: ExtensionContext)
         registerXtypeDefinitionProvider,
         registerXtypeCodeActionProvider,
         registerXtypeCompletionProvider,
-        registerPropertyHoverProvider,
-        registerPropertyCompletionProvider,
-        registerPropertyDefinitionProvider,
+        registerHoverProvider,
+        registerCompletionProvider,
+        registerDefinitionProvider,
         registerMethodSignatureProvider,
         registerSyntaxCodeActionProvider,
         registerTypeDefinitionProvider

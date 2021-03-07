@@ -7,7 +7,7 @@ import * as log from "../common/log";
 import { ComponentType } from "../../../common";
 import { extjsLangMgr } from "../extension";
 
-class DocHoverProvider implements HoverProvider
+class ExtJsHoverProvider implements HoverProvider
 {
     provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover>
     {
@@ -66,7 +66,7 @@ class DocHoverProvider implements HoverProvider
 }
 
 
-export default function registerPropertyHoverProvider(context: ExtensionContext)
+export default function registerHoverProvider(context: ExtensionContext)
 {
-    context.subscriptions.push(languages.registerHoverProvider("javascript", new DocHoverProvider()));
+    context.subscriptions.push(languages.registerHoverProvider("javascript", new ExtJsHoverProvider()));
 }
