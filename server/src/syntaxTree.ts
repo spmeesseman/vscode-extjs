@@ -540,7 +540,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     name: propertyName,
                     start: m.loc!.start,
                     end: m.loc!.end,
-                    variables: parseVariables(m, propertyName, text, componentClass, m.value.loc?.start.line || 0),
+                    variables: parseVariables(m, propertyName, text, componentClass, (m.value.loc?.start.line || 1) - 1),
                     returns: getReturns(doc),
                     since: getSince(doc),
                     private: doc?.includes("@private"),
