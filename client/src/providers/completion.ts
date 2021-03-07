@@ -93,7 +93,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 cmp = this.getPropertyCmp(property, cmpClass);
                 break;
             default: // class
-                cmp = extjsLangMgr.getComponent(cmpClass, position, true);
+                cmp = extjsLangMgr.getComponent(cmpClass, true);
                 break;
         }
 
@@ -271,7 +271,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             const thisCls = extjsLangMgr.getClassFromFile(fsPath);
             if (thisCls) {
-                _pushItems(extjsLangMgr.getComponent(thisCls, position, true, fsPath));
+                _pushItems(extjsLangMgr.getComponent(thisCls, true));
             }
             return completionItems;
         }
@@ -279,7 +279,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Create the completion items, including items in extended classes
         //
-        let component = extjsLangMgr.getComponent(lineCls, position, true);
+        let component = extjsLangMgr.getComponent(lineCls, true);
         if (component)
         {   //
             // Push component items, i.e. methods, properties, and configs

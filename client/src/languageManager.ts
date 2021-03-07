@@ -145,16 +145,8 @@ class ExtjsLanguageManager
     }
 
 
-    getComponent(componentClass: string, position?: Position, checkAlias?: boolean, fsPath?: string): IComponent | undefined
+    getComponent(componentClass: string, checkAlias?: boolean): IComponent | undefined
     {
-        if (fsPath && componentClass === "this")
-        {
-            componentClass = this.getClassFromFile(fsPath) || "this";
-            if (componentClass === "this") {
-                return undefined;
-            }
-        }
-
         let component = this.componentClassToComponentsMapping[componentClass];
 
         log.write("get component by class", 1);
@@ -174,20 +166,6 @@ class ExtjsLanguageManager
                 log.write("   found aliased component", 3);
                 log.value("      namespace", component.nameSpace, 4);
                 log.value("      base namespace", component.baseNameSpace, 4);
-            }
-        }
-
-        //
-        // Variable/parameters - instance vars
-        //
-        if (!component && fsPath && position)
-        {
-            const icomponent = this.getComponentInstance(componentClass, position, fsPath);
-            if (isComponent(icomponent)) {
-                log.write("   found instanced component", 3);
-                log.value("      namespace", icomponent.nameSpace, 4);
-                log.value("      base namespace", icomponent.baseNameSpace, 4);
-                component = icomponent;
             }
         }
 
@@ -355,7 +333,7 @@ class ExtjsLanguageManager
         //
         // Instances
         //
-        if (fsPath && !this.getComponent(cmpClass, position, true))
+        if (fsPath && !this.getComponent(cmpClass, true))
         {
             const instance = this.getComponentInstance(cmpClass, position || new Position(0, 0), fsPath);
             if (isComponent(instance)) {
@@ -377,10 +355,10 @@ class ExtjsLanguageManager
             return;
         }
         else if (property === "this") {
-            return this.getComponent(thisCls, position, true, fsPath);
+            return this.getComponent(thisCls, true);
         }
 
-        const cmp = this.getComponent(thisCls, undefined, true);
+        const cmp = this.getComponent(thisCls, true);
         if (!cmp) {
             return;
         }
@@ -407,7 +385,7 @@ class ExtjsLanguageManager
                     }
                 }
                 if (variable) {
-                    const cmp = this.getComponent(variable.componentClass, position, true);
+                    const cmp = this.getComponent(variable.componentClass, true);
                     if (cmp) {
                         return cmp;
                     }
@@ -589,7 +567,7 @@ class ExtjsLanguageManager
                 cmpClass = variable?.componentClass;
             }
             else {
-                let cmp = this.getComponent(property, position, true);
+                let cmp = this.getComponent(property, true);
                 if (cmp) {
                     cmpClass = cmp.componentClass;
                 }
