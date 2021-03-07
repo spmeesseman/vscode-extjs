@@ -37,10 +37,11 @@ class ExtJsHoverProvider implements HoverProvider
                     }
                     else {
                         let cmp = extjsLangMgr.getComponentInstance(property, position, document.uri.fsPath);
-                        if (isComponent(cmp) && cmp.markdown)
+                        if (isComponent(cmp)) // && cmp.markdown)
                         {
                             log.value("provide class instance hover info", property, 1);
-                            return new Hover(cmp.markdown);
+                            // return new Hover(cmp.markdown);
+                            return new Hover(new MarkdownString().appendCodeblock(`{${cmp.componentClass}} Class`));
                         }
                         else if (thisClass && callee && isPrimitive(cmp))
                         {   //
