@@ -462,8 +462,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               isInObject = thisCmp ? isPositionInObject(position, thisCmp) : undefined,
               method = thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
 
+        //
+        // A helper function to add items to the completion list that will be provided to VSCode
+        //
         const _add = ((cls: string, basic: boolean, kind: CompletionItemKind, doc?: string) =>
-        {
+        {   //
+            // 'basic' means just add the completion item w/o all the checks.  this is for cases of
+            // configs, properties within an object.
+            //
             if (cls)
             {
                 const cCls = cls.split(".")[0];
@@ -471,8 +477,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     const cItems = !basic ? this.createCompletionItem(cCls, cCls, kind, position) :
                                             [ new CompletionItem(cCls, kind) ];
+                    //
+                    // Add the completion item(s) to the completion item array that will be provided to
+                    // the VSCode engine
+                    //
                     if (cItems.length > 0)
-                    {
+                    {   //
+                        // Add doc and commit character here for basic mode
+                        //
                         if (basic) {
                             cItems.forEach((i) => {
                                 i.documentation = doc;
@@ -491,6 +503,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         });
 
+        //
+        // A helper function for adding configs and properties of a class to the completion item list
+        // that will be provided to VSCode.
+        //
         const _addProps = ((cmp: IComponent | undefined) =>
         {
             cmp?.configs.forEach((c: IConfig) =>
@@ -505,8 +521,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             });
         });
 
+        //
+        // Depending on the current position, provide the complation items...
+        //
         if (thisCmp && method && !isInObject)
-        {
+        {   //
+            // We're in a function, and not within an object expression
+            //
             for (const c of cmps) { _add(c, false, CompletionItemKind.Class); }
             for (const a of aliases) { _add(a, false, CompletionItemKind.Class); }
             for (const p of method.params) { _add(p.name, false, CompletionItemKind.Property); }
@@ -520,18 +541,28 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         }
         else if (isInObject)
-        {
+        {   //
+            // We're within an object expression, we provide configs and properties to the
+            // completion items list here
+            //
             _add("xtype", true, CompletionItemKind.Property);
             //
-            // Inside of an object expression, we display possible configs as the completion items
-            // First, find the class that the expression is being applied to
+            // First, find the class that the expression is being applied to, which contains the
+            // base configs and properties that we want, we'll also traverse up the inheritance tree
+            // to add the configs and properties of each component up to the base
             //
             if (method)
-            {
+            {   //
+                // Loop the object expression ranges in this method, ensure the current position is
+                // within one of these ranges.  The configs/props only get displayed when the current
+                // position is within an object expression.
+                //
                 for (const oRange of method.objectRanges)
                 {
                     if (isPositionInRange(position, toVscodeRange(oRange.start, oRange.end)))
-                    {
+                    {   //
+                        // Method variable parameter object expressions
+                        //
                         method.variables.forEach((v) =>
                         {
                             if (isPositionInRange(position, toVscodeRange(v.start, v.end)))
@@ -551,10 +582,16 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                                 }
                             }
                         });
+                        //
+                        // TODO - other object expression areas != method.varables
+                        //
                         break;
                     }
                 }
             }
+            //
+            // TODO - else !method
+            //
         }
 
         return completionItems;
