@@ -893,19 +893,17 @@ class ExtjsLanguageManager
     }
 
 
-    async initialize(context: ExtensionContext): Promise<Disposable[]>
+    private async initializeInternal()
     {
         this.config = await this.configParser.getConfig();
         if (this.config.length === 0) {
             window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
             return [];
         }
-
         //
         // Do full indexing
         //
         await this.indexingAllWithProgress();
-
         //
         // Validate active js document if there is one
         //
@@ -913,7 +911,12 @@ class ExtjsLanguageManager
         if (activeTextDocument && activeTextDocument.languageId === "javascript") {
             await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
         }
+    }
 
+
+    async initialize(context: ExtensionContext): Promise<Disposable[]>
+    {
+        await this.initializeInternal();
         return this.registerWatchers(context);
     }
 
@@ -1270,7 +1273,7 @@ class ExtjsLanguageManager
     }
 
 
-    private async processConfigChange(e: ConfigurationChangeEvent)
+    private async processSettingsChange(e: ConfigurationChangeEvent)
     {
         if (e.affectsConfiguration("extjsLangSvr.ignoreErrors"))
         {
@@ -1391,12 +1394,14 @@ class ExtjsLanguageManager
         //
         const disposables: Disposable[] = [],
               jsWatcher = workspace.createFileSystemWatcher("**/*.js"),
-              confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
+              confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json}");
 
         //
         // Config watcher
         //
-        disposables.push(confWatcher.onDidChange(async (e) => { this.config = await this.configParser.getConfig(); }, this));
+        disposables.push(confWatcher.onDidChange(async (e) => { await this.initializeInternal(); }, this));
+        disposables.push(confWatcher.onDidDelete(async (e) => { await this.initializeInternal(); }, this));
+        disposables.push(confWatcher.onDidCreate(async (e) => { await this.initializeInternal(); }, this));
 
         //
         // Open document text change
@@ -1422,7 +1427,7 @@ class ExtjsLanguageManager
         //
         // Register configurations/settings change watcher
         //
-        disposables.push(workspace.onDidChangeConfiguration(async (e) => { await this.processConfigChange(e); }, this));
+        disposables.push(workspace.onDidChangeConfiguration(async (e) => { await this.processSettingsChange(e); }, this));
 
         context.subscriptions.push(...disposables);
         return disposables;
