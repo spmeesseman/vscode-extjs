@@ -6,7 +6,7 @@ import {
 import * as log from "../common/log";
 import { extjsLangMgr } from "../extension";
 import { configuration } from "../common/configuration";
-import { IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils } from "../../../common";
+import { DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils, VariableType } from "../../../common";
 import { getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange } from "../common/clientUtils";
 
 
@@ -130,7 +130,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // For methods/functions, we want the trigger character to be "(", otherwise, "."
         //
-        if (kind === CompletionItemKind.Method || kind === CompletionItemKind.Function)
+        if (kind === CompletionItemKind.Method)
         {
             completionItem.commitCharacters = [ "(" ];
         }
@@ -248,6 +248,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 lineCls = lineCls.substring(lineCls.indexOf(",") + 1).trim();
             }
+        }
+        if (lineCls.includes("="))
+        {
+            lineCls = lineCls.substring(lineCls.indexOf("=") + 1).trim();
         }
 
         const _pushItems = ((cmp?: IComponent) =>
@@ -467,11 +471,16 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     const cItems = !basic ? this.createCompletionItem(cCls, cCls, kind, position) :
                                             [ new CompletionItem(cCls, kind) ];
-                    if (basic && cItems.length > 0)
+                    if (cItems.length > 0)
                     {
-                        cItems.forEach((i) => {
-                            i.documentation = doc;
-                        });
+                        if (basic) {
+                            cItems.forEach((i) => {
+                                i.documentation = doc;
+                                if (kind === CompletionItemKind.Constant || kind === CompletionItemKind.Variable) {
+                                    i.commitCharacters = [ "." ];
+                                }
+                            });
+                        }
                         completionItems.push(...cItems);
                         addedItems.push(cCls);
                     }
@@ -500,6 +509,15 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             for (const c of cmps) { _add(c, false, CompletionItemKind.Class); }
             for (const a of aliases) { _add(a, false, CompletionItemKind.Class); }
+            for (const p of method.params) { _add(p.name, false, CompletionItemKind.Property); }
+            for (const v of method.variables) {
+                if (v.declaration === DeclarationType.const) {
+                    _add(v.name, true, CompletionItemKind.Constant);
+                }
+                else {
+                    _add(v.name, true, CompletionItemKind.Variable);
+                }
+            }
         }
         else if (isInObject)
         {
