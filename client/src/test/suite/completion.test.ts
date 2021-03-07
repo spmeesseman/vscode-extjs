@@ -66,6 +66,20 @@ suite("Completion Tests", () =>
 		await testCompletion(docUri, new vscode.Position(97, 0), "", {
 			items: []
 		});
+
+		//
+		// Inside object
+		// Line 124-126
+		// const phys = Ext.create('VSCodeExtJS.common.PhysicianDropdown', {
+		//
+		// });
+		//
+		await testCompletion(docUri, new vscode.Position(124, 3), "", {
+			items: [
+				{ label: "userName", kind: vscode.CompletionItemKind.Property },
+				{ label: "readOnly (property)", kind: vscode.CompletionItemKind.Property }
+			]
+		});
 	});
 
 
@@ -191,7 +205,7 @@ suite("Completion Tests", () =>
 	test("Full xtype lines", async () =>
 	{
 		//
-		// Line 121-124
+		// Line 121-123
 		// const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
 		//
 		// });
