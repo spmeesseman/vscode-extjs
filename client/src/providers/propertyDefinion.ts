@@ -12,6 +12,8 @@ class PropertyDefinitionProvider implements DefinitionProvider
 {
     provideDefinition(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Location | Location[] | LocationLink[]>
     {
+        let location: Location | undefined;
+
         log.methodStart("provide definition", 1);
 
         const { cmpType, property, cmpClass, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
@@ -25,16 +27,18 @@ class PropertyDefinitionProvider implements DefinitionProvider
                 const uri = Uri.file(fsPath),
                       { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, "   "),
                       range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
+                log.value("   fsPath", uri.fsPath, 2);
                 //
                 // Provide a `Location` object to VSCode
                 //
-                log.methodDone("provide definition", 1, "", false, [["fsPath", uri.fsPath ]]);
-                return {
+                location = {
                     uri,
                     range
                 };
             }
         }
+        log.methodDone("provide definition", 1);
+        return location;
     }
 }
 

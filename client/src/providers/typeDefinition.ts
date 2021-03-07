@@ -12,6 +12,8 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
 {
     provideTypeDefinition(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Location | Location[] | LocationLink[]>
     {
+        let location: Location | undefined;
+
         log.methodStart("provide type definition", 1);
 
         const { cmpClass, cmpType, property, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
@@ -26,19 +28,18 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
                       { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, "   "),
                       range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
-                log.write("   open type definition file", 1);
-                log.write("provide type definition complete", 1);
-                return {
+                //
+                // Provide a `Location` object to VSCode
+                //
+                location = {
                     uri,
                     range
                 };
             }
-            else {
-                log.write("   fs path not found", 1);
-            }
         }
 
         log.methodDone("provide type definition", 1);
+        return location;
     }
 }
 
