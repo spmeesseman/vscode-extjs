@@ -68,7 +68,7 @@ suite("Document Tests", () =>
             "});\r\n"
         );
 		//
-		// Wait
+		// Wait for validation
 		//
 		await waitForValidation();
 	});
@@ -78,7 +78,7 @@ suite("Document Tests", () =>
 	{
 		unlinkSync(newDocPath);
 		//
-		// Wait
+		// Wait for validation
 		//
 		await waitForValidation();
 	});
