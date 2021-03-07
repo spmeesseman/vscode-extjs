@@ -121,25 +121,27 @@ class ExtjsLanguageManager
      */
     getNamespaceFromFile(fsPath: string, part?: number): string | undefined
     {
+        let ns: string | undefined;
         log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
         const cls = this.fileToComponentClassMapping[fsPath];
         if (cls){
             log.write("   found base class", 3);
-            return cls.split(".")[part ?? 0];
+            ns = cls.split(".")[part ?? 0];
         }
-        return undefined;
+        return ns;
     }
 
 
     getClassFromFile(fsPath: string, logPad = ""): string | undefined
     {
+        let className: string | undefined;
         log.methodStart("get component class by file", 1, logPad, false, [["file", fsPath]]);
         const cls = this.fileToComponentClassMapping[fsPath];
         if (cls) {
             log.write("   found component class", 3, logPad);
-            return cls;
+            className = cls;
         }
-        return undefined;
+        return className;
     }
 
 
@@ -938,17 +940,24 @@ class ExtjsLanguageManager
     }
 
 
-    isBusy()
-    {
-        return this.isIndexing;
-    }
+    // isBusy()
+    // {
+    //     return this.isIndexing;
+    // }
 
 
-    private getNamespace(document: TextDocument | undefined)
+    private getNamespace(document: TextDocument | Uri | undefined)
     {
         if (document)
         {
-            let dir = path.dirname(document.uri.fsPath);
+            let uri: Uri;
+            if (document instanceof Uri) {
+                uri = document;
+            }
+            else {
+                uri = document.uri;
+            }
+            let dir = path.dirname(uri.fsPath);
             while (dir.indexOf(path.sep) !== -1) {
                 const ns = this.dirNamespaceMap.get(dir);
                 if (ns) {
@@ -1358,33 +1367,30 @@ class ExtjsLanguageManager
     }
 
 
-    private processDocumentDelete(e: FileDeleteEvent)
+    private async processDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
     {
-        e.files.forEach(async file =>
-        {
-            this.handleDeleFile(file.fsPath);
-            const activeTextDocument = window.activeTextEditor?.document;
-            if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-                this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-            }
-        });
-    }
-
-
-    private processDocumentOpen(textDocument: TextDocument)
-    {
-        if (textDocument.languageId === "javascript") {
-           this.validateDocument(textDocument, this.getNamespace(textDocument));
+        this.handleDeleFile(uri.fsPath);
+        const activeTextDocument = window.activeTextEditor?.document;
+        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
         }
     }
 
 
-    private processEditorChange(e: TextEditor | undefined)
+    private async processDocumentOpen(textDocument: TextDocument)
+    {
+        if (textDocument.languageId === "javascript") {
+           await this.validateDocument(textDocument, this.getNamespace(textDocument));
+        }
+    }
+
+
+    private async processEditorChange(e: TextEditor | undefined)
     {
         const textDocument = e?.document;
         if (textDocument) {
             if (textDocument.languageId === "javascript") {
-                this.validateDocument(textDocument, this.getNamespace(textDocument));
+                await this.validateDocument(textDocument, this.getNamespace(textDocument));
             }
         }
     }
@@ -1405,35 +1411,40 @@ class ExtjsLanguageManager
         //
         // rc/conf file / app.json
         //
-        const disposables: Disposable[] = [];
+        const disposables: Disposable[] = [],
+              jsWatcher = workspace.createFileSystemWatcher("**/*.js"),
+              confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
 
         //
         // Config watcher
         //
-        const confWatcher = workspace.createFileSystemWatcher("{.extjsrc{.json,},app.json}");
         disposables.push(confWatcher.onDidChange(async (e) => { this.config = await this.configParser.getConfig(); }, this));
 
         //
-        // Open dcument text change
+        // Open document text change
         //
         disposables.push(workspace.onDidChangeTextDocument((e) => { this.processDocumentChange(e); }, this));
         // disposables.push(workspace.onDidChangeTextDocument((e) => this.processDocumentChange));
         //
         // Deletions
         //
-        disposables.push(workspace.onDidDeleteFiles((e) => { this.processDocumentDelete(e); }, this));
+        disposables.push(jsWatcher.onDidDelete(async (e) => { await this.processDocumentDelete(e); }, this));
+        //
+        // Creations
+        //
+        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), e); }, this));
         //
         // Active editor changed
         //
-        disposables.push(window.onDidChangeActiveTextEditor((e) => { this.processEditorChange(e); }, this));
+        disposables.push(window.onDidChangeActiveTextEditor(async (e) => { await this.processEditorChange(e); }, this));
         //
         // Open text document
         //
-        disposables.push(workspace.onDidOpenTextDocument((e) => { this.processDocumentOpen(e); }, this));
+        disposables.push(workspace.onDidOpenTextDocument(async (e) => { await this.processDocumentOpen(e); }, this));
         //
         // Register configurations/settings change watcher
         //
-        disposables.push(workspace.onDidChangeConfiguration((e) => { this.processConfigChange(e); }, this));
+        disposables.push(workspace.onDidChangeConfiguration(async (e) => { await this.processConfigChange(e); }, this));
 
         context.subscriptions.push(...disposables);
         return disposables;

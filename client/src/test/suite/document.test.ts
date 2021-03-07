@@ -65,7 +65,7 @@ suite("Document Tests", () =>
             '    "config":{\r\n' +
             '        "cfg1": "node ./node_modules/vscode/bin/test",\r\n' +
             "    }\r\n" +
-            "}\r\n"
+            "});\r\n"
         );
 		//
 		// Wait
