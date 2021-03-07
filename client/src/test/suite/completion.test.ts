@@ -68,6 +68,21 @@ suite("Completion Tests", () =>
 		});
 
 		//
+		// Inside method calle expression (parameter)
+		// Line 75
+		// VSCodeExtJS.common.PhysicianDropdown.create()
+		// Inside create() i.e. create( ... )
+		//
+		await testCompletion(docUri, new vscode.Position(74, 47), "", {
+			items: [
+				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class },
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
+				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
+				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+
+		//
 		// Inside object
 		// Line 124-126
 		// const phys = Ext.create('VSCodeExtJS.common.PhysicianDropdown', {
