@@ -13,16 +13,21 @@ class XtypeCompletionItemProvider implements CompletionItemProvider
     {
         const completionItems: ProviderResult<CompletionItem[] | CompletionList> = [],
               xtypes = extjsLangMgr.getXtypeNames(),
-              cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath);
+              cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath),
+              addedItems: string[] = [];
 
         if (cmp && isPositionInObject(position, cmp) && getMethodByPosition(position, cmp))
         {
             for (const xtype of xtypes)
             {
-                const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`);
-                xtypeCompletion.insertText = `xtype: "${xtype}",`;
-                xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
-                completionItems.push(xtypeCompletion);
+                if (!addedItems.includes(xtype))
+                {
+                    const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`);
+                    xtypeCompletion.insertText = `xtype: "${xtype}",`;
+                    xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
+                    completionItems.push(xtypeCompletion);
+                    addedItems.push(xtype);
+                }
             }
         }
 
