@@ -10,7 +10,7 @@ import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
-    isThisExpression, isAwaitExpression
+    isThisExpression, isAwaitExpression, SourceLocation
 } from "@babel/types";
 
 
@@ -540,7 +540,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     name: propertyName,
                     start: m.loc!.start,
                     end: m.loc!.end,
-                    variables: parseVariables(m, propertyName, text, componentClass),
+                    variables: parseVariables(m, propertyName, text, componentClass, m.value.loc?.start.line || 0),
                     returns: getReturns(doc),
                     since: getSince(doc),
                     private: doc?.includes("@private"),
@@ -679,17 +679,21 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
 }
 
 
-function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string): IVariable[]
+function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, lineOffset: number): IVariable[]
 {
     const variables: IVariable[] = [];
     if (!text || !methodName) {
         return variables;
     }
 
-    const _add = ((v: IVariable) => {
+    const _add = ((v: IVariable) =>
+    {
         log.value("added variable", v.name, 5);
         log.value("   method", v.methodName, 5);
         log.value("   instance cls", v.componentClass, 5);
+        const start = v.start, end = v.end;
+        start.line += lineOffset;
+        end.line += lineOffset;
         variables.push(v);
     });
 
