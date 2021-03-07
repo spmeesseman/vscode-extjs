@@ -121,6 +121,9 @@ CCC
 		const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
 			
 		});
+		const phys = Ext.create('VSCodeExtJS.common.PhysicianDropdown', {
+			
+		});
 	} 
 
 });
