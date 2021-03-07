@@ -2,6 +2,7 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, waitForValidation } from "./helper";
+import { configuration } from "../../common/configuration";
 import { assertTSConstructSignatureDeclaration } from "@babel/types";
 
 
@@ -101,19 +102,39 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Local methods", async () =>
+	test("Local class instances", async () =>
 	{
+		const incDeprecated = configuration.get<boolean>("intellisenseIncludeDeprecated"),
+			  incPrivate = configuration.get<boolean>("intellisenseIncludePrivate");
 		//
 		// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
 		// Line 83
 		// phys.*
 		//
+		await configuration.update("intellisenseIncludeDeprecated", false);
+		await configuration.update("intellisenseIncludePrivate", false);
+		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
+			items: [
+				{ label: "getPinNumber", kind: vscode.CompletionItemKind.Method }
+			]
+		});
+		await configuration.update("intellisenseIncludeDeprecated", true);
 		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
 			items: [
 				{ label: "getPinNumber", kind: vscode.CompletionItemKind.Method },
 				{ label: "getPin", kind: vscode.CompletionItemKind.Method }
 			]
 		});
+		await configuration.update("intellisenseIncludePrivate", true);
+		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
+			items: [
+				{ label: "getPinNumber", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPin", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPinNumberInternal", kind: vscode.CompletionItemKind.Method }
+			]
+		});
+		await configuration.update("intellisenseIncludeDeprecated", incDeprecated);
+		await configuration.update("intellisenseIncludePrivate", incPrivate);
 	});
 
 
