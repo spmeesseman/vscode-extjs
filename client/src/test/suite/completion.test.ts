@@ -73,12 +73,17 @@ suite("Completion Tests", () =>
 		// VSCodeExtJS.common.PhysicianDropdown.create()
 		// Inside create() i.e. create( ... )
 		//
-		await testCompletion(docUri, new vscode.Position(74, 47), "", {
+		await testCompletion(docUri, new vscode.Position(74, 46), "", {
 			items: [
 				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class },
 				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
 				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 46), "A", {
+			items: [
+				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 
@@ -93,6 +98,11 @@ suite("Completion Tests", () =>
 			items: [
 				{ label: "userName", kind: vscode.CompletionItemKind.Property },
 				{ label: "readOnly (property)", kind: vscode.CompletionItemKind.Property }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(124, 3), "u", {
+			items: [
+				{ label: "userName", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 	});
