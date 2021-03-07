@@ -1,6 +1,6 @@
 
 import { Range, Position, Uri, Location, window } from "vscode";
-import { IExtJsBase, IPosition, IComponent, IMethod } from "../../../common";
+import { IPosition, IComponent, IMethod } from "../../../common";
 
 
 export function isPositionInRange(position: Position, range: Range)

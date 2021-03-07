@@ -1,10 +1,10 @@
 
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
-    ProviderResult, Range, TextDocument
+    ProviderResult, TextDocument
 } from "vscode";
-import { IMethod, IConfig, utils, ComponentType } from "../../../common";
 import * as log from "../common/log";
+import { ComponentType } from "../../../common";
 import { extjsLangMgr } from "../extension";
 
 class DocHoverProvider implements HoverProvider

@@ -1,16 +1,20 @@
 
-import * as path from "path";
 import {
     Disposable, ExtensionContext, Progress, TextDocumentChangeEvent, Range, Position,
-    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri, FileDeleteEvent, ConfigurationChangeEvent
+    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri, FileDeleteEvent,
+    ConfigurationChangeEvent
 } from "vscode";
+import {
+    IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType,
+    IVariable, VariableType, IExtJsBase
+} from  "../../common";
+import * as log from "./common/log";
+import * as path from "path";
 import ServerRequest from "./common/ServerRequest";
 import { EOL } from "os";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType, IVariable, VariableType, IExtJsBase } from  "../../common";
-import * as log from "./common/log";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
 import { toVscodeRange, toVscodePosition, isPositionInRange } from "./common/clientUtils";

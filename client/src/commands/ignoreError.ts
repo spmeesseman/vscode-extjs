@@ -1,5 +1,5 @@
 
-import { commands, ExtensionContext, Range, Uri } from "vscode";
+import { commands, ExtensionContext } from "vscode";
 import { addIgnoreError } from "../common/ignoreError";
 import { extjsLangMgr } from "../extension";
 

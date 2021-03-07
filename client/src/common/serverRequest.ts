@@ -1,6 +1,6 @@
-import { Diagnostic, Range, Position, Uri } from "vscode";
+import { Diagnostic } from "vscode";
 import { LanguageClient } from "vscode-languageclient";
-import { IComponent, IPosition } from "../../../common";
+import { IComponent } from "../../../common";
 
 
 class ServerRequest

@@ -17,9 +17,6 @@ class XtypeCompletionItemProvider implements CompletionItemProvider
 
         if (cmp && isPositionInObject(position, cmp) && getMethodByPosition(position, cmp))
         {
-            // const simpleCompletion = new vscode.CompletionItem('Hello World!');
-            // completionItems.push(simpleCompletion);
-
             for (const xtype of xtypes)
             {
                 const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`);

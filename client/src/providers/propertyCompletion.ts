@@ -3,11 +3,11 @@ import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
     TextDocument, CompletionItemKind, window
 } from "vscode";
-import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
-import { getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange } from "../common/clientUtils";
+import { extjsLangMgr } from "../extension";
 import { configuration } from "../common/configuration";
 import { IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils } from "../../../common";
+import { getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange } from "../common/clientUtils";
 
 
 

@@ -1,7 +1,7 @@
 
 import {
     CancellationToken, TypeDefinitionProvider, ExtensionContext, languages, Location,
-    LocationLink, Position, ProviderResult, Range, TextDocument, Uri
+    LocationLink, Position, ProviderResult, TextDocument, Uri
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";

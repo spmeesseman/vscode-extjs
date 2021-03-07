@@ -1,11 +1,11 @@
 
 import { Uri, workspace } from "vscode";
 import { configuration } from "./configuration";
+import { IConf } from  "../../../common";
+import * as log from "./log";
 import * as fs from "fs";
 import * as json5 from "json5";
 import * as path from "path";
-import { IConf } from  "../../../common";
-import * as log from "./log";
 
 
 export class ConfigParser
