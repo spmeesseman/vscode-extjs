@@ -1440,10 +1440,9 @@ class ExtjsLanguageManager
             if (!nameSpace) {
                 nameSpace = this.getNamespace(textDocument);
             }
-            if (!utils.isExtJsFile(text)) {
-                return;
+            if (utils.isExtJsFile(text)) {
+                await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
             }
-            await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
         }
     }
 
