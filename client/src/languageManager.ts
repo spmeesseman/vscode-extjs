@@ -797,21 +797,22 @@ class ExtjsLanguageManager
     }
 
 
-    getWidgetNames(): string[]
+    getXtypeNames(): string[]
     {
-        const aliases: string[] = [],
-              amap = this.componentClassToWidgetsMapping;
+        const xtypes: string[] = [],
+              xmap = this.componentClassToXTypesMapping;
 
-        Object.entries(amap).forEach(([ cls, widget ]) =>
+        Object.entries(xmap).forEach(([ cls, xtype ]) =>
         {
-            if (cls && widget)
+            if (cls && xtype)
             {
-                for (const a of widget) {
-                    aliases.push(a);
+                for (const x of xtype) {
+                    xtypes.push(x.name);
                 }
             }
         });
-        return aliases;
+
+        return xtypes;
     }
 
 
