@@ -458,7 +458,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               isInObject = thisCmp ? isPositionInObject(position, thisCmp) : undefined,
               method = thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
 
-        const _add = ((cls: string, basic: boolean, kind: CompletionItemKind) =>
+        const _add = ((cls: string, basic: boolean, kind: CompletionItemKind, doc?: string) =>
         {
             if (cls)
             {
@@ -467,7 +467,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     const cItems = !basic ? this.createCompletionItem(cCls, cCls, kind, position) :
                                             [ new CompletionItem(cCls, kind) ];
-                    if (cItems.length > 0) {
+                    if (basic && cItems.length > 0)
+                    {
+                        cItems.forEach((i) => {
+                            i.documentation = doc;
+                        });
                         completionItems.push(...cItems);
                         addedItems.push(cCls);
                     }
@@ -482,12 +486,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             cmp?.configs.forEach((c: IConfig) =>
             {
-                _add(c.name, true, CompletionItemKind.Property);
+                _add(c.name, true, CompletionItemKind.Property, c.markdown);
             });
             cmp?.properties.forEach((p: IProperty) =>
             {
                 if (this.ignoreProps.indexOf(p.name) === -1) {
-                    _add(p.name + " (property)", true, CompletionItemKind.Property);
+                    _add(p.name + " (property)", true, CompletionItemKind.Property, p.markdown);
                 }
             });
         });
