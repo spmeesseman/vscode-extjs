@@ -5,6 +5,7 @@ import {
     ProgressLocation, TextDocument, TextEditor, window, workspace, Uri, FileDeleteEvent, ConfigurationChangeEvent
 } from "vscode";
 import ServerRequest from "./common/ServerRequest";
+import { EOL } from "os";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
@@ -1265,8 +1266,20 @@ class ExtjsLanguageManager
 
     private processDocumentChange(e: TextDocumentChangeEvent)
     {
-        const debounceMs = configuration.get<number>("validationDelay", 1250),
-             textDocument = e.document;
+        let debounceMs = configuration.get<number>("validationDelay", 1250);
+        const textDocument = e.document;
+
+        //
+        // On enter/return key, validate immediately as the line #s for all range definitions
+        // underneath the edit have just shifted by one line
+        //
+        for (const change of e.contentChanges)
+        {
+            if (change.text.includes(EOL)) {
+                debounceMs = 0;
+            }
+        }
+
         if (textDocument.languageId === "javascript")
         {   //
             // Debounce!!

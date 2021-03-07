@@ -499,6 +499,7 @@ function getObjectRanges(m: ObjectProperty): IRange[]
                                 }
                             }
                         }
+                        // TODO - 'Await' expression
                     }
                 }
                 else if (isExpressionStatement(o) && isCallExpression(o.expression))
