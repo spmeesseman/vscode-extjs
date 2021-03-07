@@ -283,7 +283,7 @@ function getComments(comments: readonly Comment[] | null)
 function getReturns(doc?: string)
 {
     let returns: string | undefined;
-    if (doc?.includes("@since"))
+    if (doc?.includes("@return"))
     {
         const matches = doc.match(/@return[s](.+)/i);
         if (matches && matches[1])
@@ -795,6 +795,10 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                         if (isIdentifier(object)) {
                             callerCls = object.name + "." + callerCls;
                         }
+                    }
+                    else if (isThisExpression(object))
+                    {
+                        callerCls = "this";
                     }
                     else {
                         return;
