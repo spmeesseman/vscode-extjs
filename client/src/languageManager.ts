@@ -912,8 +912,16 @@ class ExtjsLanguageManager
 
     private getNamespace(document: TextDocument | undefined)
     {
-        if (document) {
-            return this.dirNamespaceMap.get(path.dirname(document.uri.fsPath)) || "Ext";
+        if (document)
+        {
+            let dir = path.dirname(document.uri.fsPath);
+            while (dir.indexOf(path.sep) !== -1) {
+                const ns = this.dirNamespaceMap.get(dir);
+                if (ns) {
+                    return ns;
+                }
+                dir = path.dirname(dir);
+            }
         }
         return "Ext";
     }
