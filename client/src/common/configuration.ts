@@ -51,24 +51,24 @@ class Configuration
     }
 
 
-    public updateWs(section: string, value: any): Thenable<void>
-    {
-        return workspace.getConfiguration(extensionName).update(section, value, ConfigurationTarget.Workspace);
-    }
+    // public updateWs(section: string, value: any): Thenable<void>
+    // {
+    //     return workspace.getConfiguration(extensionName).update(section, value, ConfigurationTarget.Workspace);
+    // }
 
 
-    public updateWsf(section: string, value: any, uri?: Uri): Thenable<void>
-    {
-        return workspace.getConfiguration(extensionName, uri ? uri : workspace.workspaceFolders ?
-            workspace.workspaceFolders[0].uri : null)
-            .update(section, value, ConfigurationTarget.WorkspaceFolder);
-    }
+    // public updateWsf(section: string, value: any, uri?: Uri): Thenable<void>
+    // {
+    //     return workspace.getConfiguration(extensionName, uri ? uri : workspace.workspaceFolders ?
+    //         workspace.workspaceFolders[0].uri : null)
+    //         .update(section, value, ConfigurationTarget.WorkspaceFolder);
+    // }
 
 
-    public inspect(section: string)
-    {
-        return this.configuration.inspect(section);
-    }
+    // public inspect(section: string)
+    // {
+    //     return this.configuration.inspect(section);
+    // }
 
 }
 

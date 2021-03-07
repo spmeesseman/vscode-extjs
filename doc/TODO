@@ -12,7 +12,7 @@
 	Differentiate between static/singleton methods/props vs. instance
 	Will need to parse Ext.create()s, new, and static.create()
 
-☐ Instance Hover
+✔ Instance Hover @done(21-03-07 17:13)
 	Differentiate between static/singleton methods/props vs. instance
 	Will need to parse Ext.create()s, new, and static.create()
 
@@ -32,7 +32,7 @@
 ✔ Dot Key Selection Intellisense @done(21-02-23 21:20)
 	Same as how keying 'enter' behaves on an Intellisense selection
 
-☐ Go To Type Definition
+✔ Go To Type Definition @done(21-03-07 17:13)
 	Same as Go To Definition?  Except for instance components?
 
 ☐ Go To Implementation
