@@ -6,8 +6,8 @@ import {
 import * as log from "../common/log";
 import { extjsLangMgr } from "../extension";
 import { configuration } from "../common/configuration";
-import { DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils, VariableType } from "../../../common";
-import { getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange } from "../common/clientUtils";
+import { DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils } from "../../../common";
+import { getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange, isComponent } from "../common/clientUtils";
 
 
 
@@ -599,7 +599,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 if (p.name === lineCls) {
                     const lCmp = extjsLangMgr.getComponentInstance(lineCls, position, fsPath);
-                    if (lCmp){
+                    if (isComponent(lCmp)) {
                         components.push(lCmp);
                     }
                     break;

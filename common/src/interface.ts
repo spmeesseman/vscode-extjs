@@ -131,6 +131,12 @@ export interface IPosition
 }
 
 
+export interface IPrimitive extends IExtJsBase
+{
+    type?: VariableType;
+}
+
+
 export interface IProperty extends IExtJsBase
 {
     doc?: string;

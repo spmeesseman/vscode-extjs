@@ -6,7 +6,7 @@ import {
 } from "vscode";
 import {
     IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType,
-    IVariable, VariableType, IExtJsBase
+    IVariable, VariableType, IExtJsBase, IPrimitive
 } from  "../../common";
 import * as log from "./common/log";
 import * as path from "path";
@@ -17,14 +17,18 @@ import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
-import { toVscodeRange, toVscodePosition, isPositionInRange } from "./common/clientUtils";
+import { toVscodeRange, toVscodePosition, isPositionInRange, isComponent } from "./common/clientUtils";
 
 
 export interface ILineProperties
 {
     property?: string;
     cmpClass?: string;
+    cmp?: IComponent;
+    callee?: string;
+    calleeCmp?: IExtJsBase;
     thisClass?: string;
+    thisCmp?: IComponent;
     cmpType?: ComponentType;
 }
 
@@ -176,11 +180,12 @@ class ExtjsLanguageManager
         //
         if (!component && fsPath && position)
         {
-            component = this.getComponentInstance(componentClass, position, fsPath);
-            if (component) {
+            const icomponent = this.getComponentInstance(componentClass, position, fsPath);
+            if (isComponent(icomponent)) {
                 log.write("   found instanced component", 3);
-                log.value("      namespace", component.nameSpace, 4);
-                log.value("      base namespace", component.baseNameSpace, 4);
+                log.value("      namespace", icomponent.nameSpace, 4);
+                log.value("      base namespace", icomponent.baseNameSpace, 4);
+                component = icomponent;
             }
         }
 
@@ -351,7 +356,7 @@ class ExtjsLanguageManager
         if (fsPath && !this.getComponent(cmpClass, position, true))
         {
             const instance = this.getComponentInstance(cmpClass, position || new Position(0, 0), fsPath);
-            if (instance) {
+            if (isComponent(instance)) {
                 cmpClass = instance.componentClass;
             }
         }
@@ -362,7 +367,7 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentInstance(property: string, position: Position, fsPath: string): IComponent | undefined
+    getComponentInstance(property: string, position: Position, fsPath: string): IComponent | IPrimitive | undefined
     {
         const thisCls = this.getClassFromFile(fsPath);
         if (!thisCls) {
@@ -396,7 +401,18 @@ class ExtjsLanguageManager
                     }
                 }
                 if (variable) {
-                    return this.getComponent(variable.componentClass, position, true);
+                    const cmp = this.getComponent(variable.componentClass, position, true);
+                    if (cmp) {
+                        return cmp;
+                    }
+                    else {
+                        return {
+                            name: variable.name,
+                            start: variable.start,
+                            end: variable.end,
+                            componentClass: variable.componentClass
+                        };
+                    }
                 }
             }
         }
@@ -450,7 +466,7 @@ class ExtjsLanguageManager
         const line = position.line,
               nextLine = document.lineAt(line + 1),
               allLineText = document.getText(new Range(new Position(line, 0), nextLine.range.start)).trim(),
-              thisClass = this.getComponentByFile(document.uri.fsPath)?.componentClass,
+              thisCmp = this.getComponentByFile(document.uri.fsPath),
               range = document.getWordRangeAtPosition(position) || new Range(position, position);
 
         let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
@@ -466,8 +482,9 @@ class ExtjsLanguageManager
         if (property === "this")
         {
             return {
-                thisClass,
-                cmpClass: thisClass,
+                thisClass: thisCmp?.componentClass,
+                thisCmp,
+                cmpClass: thisCmp?.componentClass,
                 cmpType: ComponentType.Class,
                 property
             };
@@ -560,24 +577,23 @@ class ExtjsLanguageManager
         if (cmpType === ComponentType.Class)
         {
             cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
-            // if (!this.getComponent(cmpClass, undefined, true))
-            // {   //
-                // Check for "instance" type
-                //
-                const cls = this.variablesToComponentClassMapping[property];
-                if (cls) {
-                    const variable = this.componentClassToVariablesMapping[cls.name]?.find(v => v.name === property);
-                    cmpClass = variable?.componentClass;
+            const cls = this.variablesToComponentClassMapping[property];
+            if (cls) {
+                const variable = this.componentClassToVariablesMapping[cls.name]?.find(v => v.name === property);
+                cmpClass = variable?.componentClass;
+            }
+            else {
+                let cmp = this.getComponent(property, position, true);
+                if (cmp) {
+                    cmpClass = cmp.componentClass;
                 }
                 else {
-                    let cmp = this.getComponent(property, position, true);
-                    if (!cmp) {
-                        cmp = this.getComponentInstance(property, position, document.uri.fsPath);
-                    }
-                    if (cmp) {
-                        cmpClass = cmp.componentClass;
+                    const icmp = this.getComponentInstance(property, position, document.uri.fsPath);
+                    if (isComponent(icmp)) {
+                        cmp = icmp;
                     }
                 }
+            }
         }
         else if (cmpType === ComponentType.Method)
         {
@@ -613,31 +629,45 @@ class ExtjsLanguageManager
         }
         else // ComponentType.Property / ComponentType.Config | variable / parameter
         {
-            const cmp = this.getComponentInstance(property, position, document.uri.fsPath);
+            const cmp = this.getComponentInstance(property, position, document.uri.fsPath),
+                  cfgCls = this.getMappedClass(property, ComponentType.Config);
             cmpClass = cmp?.componentClass || this.getComponentClass(property, position, lineText, thisPath);
             if (!cmpClass)
-            {   //
-                // If this is a property, check for a config property...
-                //
-                log.write("   property not found, look for config", 2, logPad);
-                cmpType = ComponentType.Config;
-                cmpClass = this.getComponentClass(property, position, lineText, thisPath);
-            }
-            else if (cmpType === ComponentType.Property)
             {
-                const cfgCls = this.getMappedClass(property, ComponentType.Config);
-                if (cfgCls)
-                {
-                    log.write("   look for config", 2, logPad);
+                log.write("   property not found, look for config", 2, logPad);
+                cmpType = ComponentType.Property;
+                cmpClass = this.getComponentClass(property, position, lineText, thisPath);
+                if (cfgCls === cmpClass) {
                     cmpType = ComponentType.Config;
-                    cmpClass = cfgCls;
                 }
             }
+            //
+            // If this is a property, check for a config property...
+            //
+            else if (cmpType === ComponentType.Property && cfgCls)
+            {
+                log.write("   property not found, got config", 2, logPad);
+                cmpType = ComponentType.Config;
+                cmpClass = cfgCls;
+            }
+        }
+
+        let callee: string | undefined;
+        if (cmpClass) {
+            callee = lineText.substring(lineText.indexOf(cmpClass) + cmpClass.length)
+                             .replace(/\(.{0,1}\)\s*[;]*/, "").replace(".", "").trim();
         }
 
         log.value("   component class", cmpClass, 2, logPad);
 
-        return { cmpClass, cmpType, property, thisClass };
+        return {
+            cmpClass,
+            cmpType,
+            property,
+            thisCmp,
+            thisClass: thisCmp?.componentClass,
+            callee
+        };
     }
 
 

@@ -71,7 +71,7 @@ CCC
 		this.setTest(1);
 		VSCodeExtJS.AppUtilities.alertError("This is a test");
 		AppUtils.alertError("This is a test");
-
+		const str = this.testFn5();
 		VSCodeExtJS.common.PhysicianDropdown.create();
 		VSCodeExtJS.common.UserDropdown.create();
         
@@ -124,6 +124,16 @@ CCC
 		const phys = Ext.create('VSCodeExtJS.common.PhysicianDropdown', {
 			
 		});
-	} 
+	},
+
+	/**
+	 * @method testFn5
+	 * Test fn3 description
+	 * @returns {String} The string
+	 */
+	testFn5: function()
+	{
+		return "string";
+	}
 
 });

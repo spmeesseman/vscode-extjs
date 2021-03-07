@@ -1,6 +1,12 @@
 
-import { Range, Position, Uri, Location, window } from "vscode";
-import { IPosition, IComponent, IMethod } from "../../../common";
+import { Range, Position } from "vscode";
+import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive } from "../../../common";
+
+
+export function isComponent(object: IExtJsBase| undefined): object is IComponent
+{
+    return object !== undefined && "baseNameSpace" in object;
+}
 
 
 export function isPositionInRange(position: Position, range: Range)
@@ -17,6 +23,12 @@ export function isPositionInRange(position: Position, range: Range)
         return position.character <= range.end.character;
     }
     return false;
+}
+
+
+export function isPrimitive(object: any): object is IPrimitive
+{
+    return object !== undefined && !isComponent(object) && !("declaration" in object);
 }
 
 
