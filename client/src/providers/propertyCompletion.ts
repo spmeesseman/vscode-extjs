@@ -30,17 +30,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               range = document.getWordRangeAtPosition(position),
               text = range ? document.getText(range) : "";
         //
-        // Check for "." since VSCode 24/7 Intellisense will trigger every character no matter what
-        // the trigger char(s) is for this provider.  24/7 Intellisense can be turned off in settings.json:
-        //
-        //    "editor.quickSuggestions": false
-        //
-
-        if (!lineText) {
-            return undefined;
-        }
-
-        //
         // The `getInlineCompletionItems` method handles completion items that lead all other
         // parts of a classpath.  FOr example, the class:
         //
@@ -50,7 +39,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // blank line (or a new statement block), we want to display all possible parts of a
         // classpath that lead the classname, in this case we ant to add 'MyApp' as a completion item
         //
-        if (!lineText.includes(".") || (text && lineText.match(new RegExp(`\\([^.]*[,]{0,1}\\s*${text}\\s*$`)))) {
+        if (!lineText || !lineText.includes(".") ||
+           ((text && lineText.match(new RegExp(`\\([^.]*[,]{0,1}\\s*${text}\\s*$`)) || (!text && lineText.endsWith("(")))))
+        {
             completionItems.push(...this.getInlineCompletionItems(position));
             return completionItems;
         }
