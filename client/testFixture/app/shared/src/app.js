@@ -53,7 +53,7 @@ Ext.define('VSCodeExtJS',
 	 */
 	testFn: function(a, b)
 	{
-		testFn2(1, 2);
+		console.log(1, 2);
 	},
 
 	/**
@@ -63,7 +63,7 @@ Ext.define('VSCodeExtJS',
 	 */
 	testFn2: function(a, b)
 	{
-		testFn(1, 2);
+		this.testFn(1, 2);
 CCC
 		console.log(this.test);
 		console.log(this.test3);

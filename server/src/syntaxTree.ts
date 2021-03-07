@@ -291,7 +291,7 @@ function getReturns(doc?: string)
             returns = matches[1];
         }
     }
-    return returns;
+    return returns?.trim();
 }
 
 
@@ -471,6 +471,57 @@ function parseExtend(propertyExtend: ObjectProperty): string | undefined
 }
 
 
+function getObjectRanges(m: ObjectProperty): IRange[]
+{
+    const objectRanges: IRange[] = [];
+
+    if (isFunctionExpression(m.value))
+    {
+        const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p));
+        if (propertyObjects && propertyObjects.length)
+        {
+            propertyObjects.forEach((o) =>
+            {
+                if (isVariableDeclaration(o))
+                {
+                    for (const d of o.declarations)
+                    {
+                        if (isCallExpression(d.init) || isNewExpression(d.init))
+                        {
+                            for (const a of d.init.arguments)
+                            {
+                                if (isObjectExpression(a))
+                                {
+                                    objectRanges.push({
+                                        start: a.loc!.start,
+                                        end: a.loc!.end
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (isExpressionStatement(o) && isCallExpression(o.expression))
+                {
+                    for (const a of o.expression.arguments)
+                    {
+                        if (isObjectExpression(a))
+                        {
+                            objectRanges.push({
+                                start: a.loc!.start,
+                                end: a.loc!.end
+                            });
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    return objectRanges;
+}
+
+
 function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string): IMethod[]
 {
     const methods: IMethod[] = [];
@@ -478,58 +529,13 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
     {
         if (isFunctionExpression(m.value))
         {
-            const objectRanges: IRange[] = [],
-                  propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p));
-            if (propertyObjects && propertyObjects.length)
-            {
-                propertyObjects.forEach((o) =>
-                {
-                    if (isVariableDeclaration(o))
-                    {
-                        for (const d of o.declarations)
-                        {
-                            if (isCallExpression(d.init))
-                            {
-                                for (const a of d.init.arguments)
-                                {
-                                    if (isObjectExpression(a))
-                                    {
-                                        objectRanges.push({
-                                            start: a.loc!.start,
-                                            end: a.loc!.end
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else if (isExpressionStatement(o) && isCallExpression(o.expression))
-                    {
-                        for (const a of o.expression.arguments)
-                        {
-                            if (isObjectExpression(a))
-                            {
-                                objectRanges.push({
-                                    start: a.loc!.start,
-                                    end: a.loc!.end
-                                });
-                            }
-                        }
-                    }
-                });
-            }
-
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName === "testFn2")
-            {
-                console.log("l");
-            }
             if (propertyName)
             {
                 const doc = getComments(m.leadingComments),
                       params = parseParams(m, propertyName, text, componentClass, doc);
                 methods.push({
-                    doc, params,
+                    componentClass, doc, params,
                     name: propertyName,
                     start: m.loc!.start,
                     end: m.loc!.end,
@@ -538,8 +544,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     since: getSince(doc),
                     private: doc?.includes("@private"),
                     deprecated: doc?.includes("@deprecated"),
-                    componentClass,
-                    objectRanges,
+                    objectRanges: getObjectRanges(m),
                     bodyStart: m.value.loc!.start,
                     bodyEnd: m.value.loc!.end
                 });
