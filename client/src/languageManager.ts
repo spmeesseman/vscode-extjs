@@ -447,7 +447,7 @@ class ExtjsLanguageManager
               nextLine = document.lineAt(line + 1),
               allLineText = document.getText(new Range(new Position(line, 0), nextLine.range.start)).trim(),
               thisClass = this.getComponentByFile(document.uri.fsPath)?.componentClass,
-              range = document.getWordRangeAtPosition(position) || new Range(position, new Position(0, 0));
+              range = document.getWordRangeAtPosition(position) || new Range(position, position);
 
         let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
             property = document.getText(range),

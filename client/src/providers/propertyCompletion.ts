@@ -19,7 +19,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const addedItems: string[] = [],
               lineText = document.lineAt(position).text.substr(0, position.character),
               fnText = this.getFunctionName(document, position),
-              completionItems: CompletionItem[] = [];
+              completionItems: CompletionItem[] = [],
+              range = document.getWordRangeAtPosition(position),
+              text = range ? document.getText(range) : "";
         //
         // Check for "." since VSCode 24/7 Intellisense will trigger every character no matter what
         // the trigger char(s) is for this provider.  24/7 Intellisense can be turned off in settings.json:
@@ -41,14 +43,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // blank line (or a new statement block), we want to display all possible parts of a
         // classpath that lead the classname, in this case we ant to add 'MyApp' as a completion item
         //
-        if (!lineText.includes(".")) {
+        if (!lineText.includes(".") || (text && lineText.match(new RegExp(`\\([^.]*[,]{0,1}\\s*${text}\\s*$`)))) {
             completionItems.push(...this.getInlineCompletionItems(lineText, position));
             return completionItems;
         }
 
         log.methodStart("provide dot completion items", 2, "", true, [["line text", lineText]]);
 
-        completionItems.push(...this.getCompletionItems(lineText, fnText, position, document.uri.fsPath, addedItems));
+        completionItems.push(...this.getCompletionItems(lineText, fnText, position, document, addedItems));
 
         // completionItems.push({
         //     label: "Ext.create",
@@ -226,10 +228,20 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      * @param fsPath The filesystem path to the JavasSript class file.
      * @param addedItems Array holding item labels already added in this request.
      */
-    private getCompletionItems(lineText: string, fnText: string | undefined, position: Position, fsPath: string, addedItems: string[]): CompletionItem[]
+    private getCompletionItems(lineText: string, fnText: string | undefined, position: Position, document: TextDocument, addedItems: string[]): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [],
-              lineCls = lineText?.substring(0, lineText.lastIndexOf(".")).trim();
+              fsPath = document.uri.fsPath;
+        let lineCls = lineText?.substring(0, lineText.lastIndexOf(".")).trim();
+
+        if (lineCls.includes("("))
+        {
+            lineCls = lineCls.substring(lineCls.indexOf("(") + 1).trim();
+            if (lineCls.includes(","))
+            {
+                lineCls = lineCls.substring(lineCls.indexOf(",") + 1).trim();
+            }
+        }
 
         const _pushItems = ((cmp?: IComponent) =>
         {
