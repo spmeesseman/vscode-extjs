@@ -808,8 +808,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
             //
             // Filter unsupported properties
             //
-            if (!isMemberExpression(callee) || !isIdentifier(callee.property) ||
-                (callee.property.name !== "create" && !isNewExp) || !callerCls)
+            if (!isMemberExpression(callee) || !isIdentifier(callee.property) || !callerCls)
             {
                 return;
             }
@@ -817,7 +816,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
             //
             // Get instance component class
             //
-            let instCls = "";
+            let instCls = "Primitive";
             const isFramework = callerCls === "Ext";
             if (isFramework)
             {
