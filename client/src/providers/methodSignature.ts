@@ -11,8 +11,18 @@ class MethodSignatureProvider implements SignatureHelpProvider
 {
 	provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelp>
 	{
-        const lineText = document.lineAt(position).text.substr(0, position.character),
-			  sigHelp = new SignatureHelp();
+        const sigHelp = new SignatureHelp();
+        let lineText = document.lineAt(position).text.substr(0, position.character),
+            pLoc = lineText.lastIndexOf("(");
+
+        if (pLoc !== -1)
+        {
+            pLoc = lineText.lastIndexOf("(", pLoc - 1);
+            if (pLoc !== -1)
+            {
+                lineText = lineText.substring(pLoc + 1);
+            }
+        }
 
         //
         // Check for "(" since VSCode 24/7 Intellisense will trigger every character no matter what
