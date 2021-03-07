@@ -660,9 +660,9 @@ class ExtjsLanguageManager
         let start = new Position(0, 0),
             end = new Position(0, 0);
 
-        let pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property) :
-                                        (cmpType === ComponentType.Config ? this.getConfig(componentClass, property) :
-                                                                            this.getProperty(componentClass, property));
+        const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property) :
+                                      (cmpType === ComponentType.Config ? this.getConfig(componentClass, property) :
+                                                                          this.getProperty(componentClass, property));
 
         const _setPosition = ((o: IExtJsBase) =>
         {
@@ -675,18 +675,6 @@ class ExtjsLanguageManager
                 end = toVscodePosition(o.end);
             }
         });
-
-        if (cmpType === ComponentType.Method && (property.startsWith("get") || property.startsWith("set")))
-        {
-            const cProperty = utils.lowerCaseFirstChar(property.substring(3)),
-                    cObject = cProperty ? this.getConfig(componentClass, cProperty) : undefined;
-            if (cObject) {
-                cmpType = ComponentType.Config;
-                pObject = cObject;
-                property = cProperty;
-                log.value("config name", property, 2, logPad);
-            }
-        }
 
         if (pObject)
         {
@@ -708,6 +696,7 @@ class ExtjsLanguageManager
 
     getProperty(cmp: string, property: string): IProperty | undefined
     {
+        let prop: IProperty | undefined;
         const properties = this.componentClassToPropertiesMapping[cmp];
         log.write("get property by component class", 1);
         log.value("   component class", cmp, 2);
@@ -719,11 +708,12 @@ class ExtjsLanguageManager
                     log.value("      name", properties[c].name, 4);
                     log.value("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, 4);
                     log.value("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, 4);
-                    return properties[c];
+                    prop = properties[c];
+                    break;
                 }
             }
         }
-        return undefined;
+        return prop;
     }
 
 
@@ -750,10 +740,13 @@ class ExtjsLanguageManager
 
     getMethod(cmp: string, property: string): IMethod| undefined
     {
+        let method: IMethod | undefined;
         const methods = this.componentClassToMethodsMapping[cmp];
+
         log.write("get config by method", 1);
         log.value("   component class", cmp, 2);
         log.value("   property", property, 2);
+
         if (methods)
         {
             for (let c = 0; c < methods.length; c++)
@@ -763,11 +756,13 @@ class ExtjsLanguageManager
                     log.value("      name", methods[c].name, 4);
                     log.value("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, 4);
                     log.value("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, 4);
-                    return methods[c];
+                    method = methods[c];
+                    break;
                 }
             }
         }
-        return undefined;
+
+        return method;
     }
 
 
@@ -796,10 +791,13 @@ class ExtjsLanguageManager
 
     getXType(cmp: string, xtype: string): IXtype | undefined
     {
+        let x: IXtype | undefined;
         const xtypes = this.componentClassToXTypesMapping[cmp];
+
         log.write("get config by component class", 1);
         log.value("   component class", cmp, 2);
         log.value("   xtype", xtype, 2);
+
         if (xtypes) {
             for (let c = 0; c < xtypes.length; c++) {
                 if (xtypes[c].name === xtype) {
@@ -807,11 +805,13 @@ class ExtjsLanguageManager
                     log.value("      name", xtypes[c].name, 4);
                     log.value("      start", xtypes[c].start.line + ", " + xtypes[c].start.column, 4);
                     log.value("      end", xtypes[c].end.line + ", " + xtypes[c].end.column, 4);
-                    return xtypes[c];
+                    x = xtypes[c];
+                    break;
                 }
             }
         }
-        return undefined;
+
+        return x;
     }
 
 
