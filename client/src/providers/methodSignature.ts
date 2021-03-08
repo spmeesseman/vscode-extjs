@@ -4,6 +4,7 @@ import {
     TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation
 } from "vscode";
 import { extjsLangMgr } from "../extension";
+import { isComponent } from "../common/clientUtils";
 import * as log from "../common/log";
 
 
@@ -33,22 +34,23 @@ class MethodSignatureProvider implements SignatureHelpProvider
         if (lineText && lineText.includes("(") && !lineText.endsWith(")"))
         {
             log.methodStart("provide method signature", 2, "", true, [["line text", lineText]]);
-
             //
             // Create signature information
             //
-            sigHelp.signatures = [ this.getSignatureInfo(lineText) ];
-
-            //
-            // Set the current parameter index
-            //
-            let commaIdx = lineText.indexOf(",");
-            sigHelp.activeParameter = 0;
-            while (commaIdx !== -1) {
-                ++sigHelp.activeParameter;
-                commaIdx = lineText.indexOf(",", commaIdx + 1);
+            const sigInfo = this.getSignatureInfo(lineText, position, document.uri.fsPath);
+            if (sigInfo)
+            {
+                sigHelp.signatures = [sigInfo];
+                //
+                // Set the current parameter index
+                //
+                let commaIdx = lineText.indexOf(",");
+                sigHelp.activeParameter = 0;
+                while (commaIdx !== -1) {
+                    ++sigHelp.activeParameter;
+                    commaIdx = lineText.indexOf(",", commaIdx + 1);
+                }
             }
-
             log.methodDone("provide method signature", 2, "", true);
         }
 
@@ -56,7 +58,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
     }
 
 
-    getSignatureInfo(lineText: string): SignatureInformation
+    getSignatureInfo(lineText: string, position: Position, fsPath: string): SignatureInformation | undefined
     {
 		let signature = "";
         const params: ParameterInformation[] = [],
@@ -73,9 +75,9 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 cls += m;
             }
             cls = cls.substring(0, cls.length - 1); // remove trailing .
-            const cmp = extjsLangMgr.getComponent(cls) || extjsLangMgr.getComponentByAlias(cls);
+            const cmp = extjsLangMgr.getComponent(cls, true) || extjsLangMgr.getComponentInstance(cls, position, fsPath);
 
-            if (cmp)
+            if (isComponent(cmp))
             {
 				const methodName = lineText.substring(lineText.lastIndexOf(".") + 1, lineText.indexOf("("));
                 for (const m of cmp.methods)
@@ -92,20 +94,22 @@ class MethodSignatureProvider implements SignatureHelpProvider
             }
         }
 
-		//
-		// Build method signature string in the form:
-		//
-		//     param1, param2, param3, ...
-		//
-		params.forEach((p) => {
-			if (signature) {
-				signature += ", ";
-			}
-			signature += p.label;
-		});
-
-		const sigInfo = new SignatureInformation(signature);
-		sigInfo.parameters = params;
+		let sigInfo: SignatureInformation | undefined;
+        if (params.length > 0)
+        {   //
+            // Build method signature string in the form:
+            //
+            //     param1, param2, param3, ...
+            //
+            params.forEach((p) => {
+                if (signature) {
+                    signature += ", ";
+                }
+                signature += p.label;
+            });
+            sigInfo = new SignatureInformation(signature);
+		    sigInfo.parameters = params;
+        }
 
         return sigInfo;
     }
