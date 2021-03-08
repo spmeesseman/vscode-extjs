@@ -1,7 +1,8 @@
 
 import * as path from "path";
+import { workspace } from "vscode";
 import { writeFileSync, renameSync } from "fs";
-import { getDocUri, waitForValidation, activate, getDocPath } from "./helper";
+import { getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange } from "./helper";
 import { configuration } from "../../common/configuration";
 import { storage } from "../../common/storage";
 
@@ -9,7 +10,7 @@ import { storage } from "../../common/storage";
 suite("Config File Tests", () =>
 {
 
-	const docUri = getDocUri("app/shared/src/app.js");
+	const wsJsonUri = getDocUri("workspace.json");
 	const appJsonPath = getDocPath("app.json");
 	const extjsrcPath = getDocPath(".extjsrc.json");
 	let validationDelay: number | undefined;
@@ -17,7 +18,7 @@ suite("Config File Tests", () =>
 
 	suiteSetup(async () =>
     {
-		await activate(docUri);
+		await activate(wsJsonUri);
 		//
 		// Set debounce to minimum for test
 		//
@@ -83,6 +84,33 @@ suite("Config File Tests", () =>
 	test("Test add back app.json", async () =>
 	{
 		renameSync(path.join(path.dirname(appJsonPath), "_app.json"), appJsonPath);
+		//
+		// Wait for validation x3
+		//
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+	});
+
+
+	test("Test open tooling extjs framework location", async () =>
+	{
+		//
+		// Write an open tooling extjs framework location
+		//
+		insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
+		workspace.saveAll();
+		//
+		// Wait for validation x3
+		//
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+		//
+		// Reset
+		//
+		insertDocContent("extjs", toRange(3, 16, 3, 40));
+		workspace.saveAll();
 		//
 		// Wait for validation x3
 		//
