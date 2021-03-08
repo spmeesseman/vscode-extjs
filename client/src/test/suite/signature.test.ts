@@ -89,10 +89,6 @@ suite("Method Signature Tests", () =>
 			signatures: getSigInfo("a, b")
 		});
 		//
-		// Wait for validation (debounce is 250ms)
-		//
-		await waitForValidation();
-		//
 		// Insert a first parameter, and trigger the signature helper again, we should then be
 		// on parameter #2...
 		//
@@ -109,10 +105,6 @@ suite("Method Signature Tests", () =>
 			activeSignature: 0,
 			signatures: getSigInfo("a, b")
 		});
-		//
-		// Wait for validation (debounce is 250ms)
-		//
-		await waitForValidation();
 		//
 		// Remove added text, set document back to initial state
 		//
