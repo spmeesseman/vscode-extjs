@@ -65,6 +65,12 @@ export async function setDocContent(content: string): Promise<boolean>
 }
 
 
+export async function insertDocContent(content: string, range: vscode.Range): Promise<boolean>
+{
+	return editor.edit(eb => eb.replace(range, content));
+}
+
+
 export async function sleep(ms: number)
 {
 	return new Promise(resolve => setTimeout(resolve, ms));
