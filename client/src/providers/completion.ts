@@ -269,11 +269,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (lineText.trim() === "this.")
         {
-            const thisCls = extjsLangMgr.getClassFromFile(fsPath);
-            if (thisCls) {
-                _pushItems(extjsLangMgr.getComponent(thisCls, true));
-            }
-            return completionItems;
+            // const thisCls = extjsLangMgr.getClassFromFile(fsPath);
+            // if (thisCls) {
+            //     _pushItems(extjsLangMgr.getComponent(thisCls, true));
+            // }
+            // return completionItems;
+            // lineCls = extjsLangMgr.getClassFromFile(fsPath) || lineCls;
         }
 
         //
@@ -595,14 +596,23 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const _add = ((a: IExtJsBase[] | undefined) =>
         {
             if (!a) { return; }
-            for (const p of a)
+            if (lineCls !== "this")
             {
-                if (p.name === lineCls) {
-                    const lCmp = extjsLangMgr.getComponentInstance(lineCls, position, fsPath);
-                    if (isComponent(lCmp)) {
-                        components.push(lCmp);
+                for (const p of a)
+                {
+                    if (p.name === lineCls) {
+                        const lCmp = extjsLangMgr.getComponentInstance(lineCls, position, fsPath);
+                        if (isComponent(lCmp)) {
+                            components.push(lCmp);
+                        }
+                        break;
                     }
-                    break;
+                }
+            }
+            else {
+                const lCmp = extjsLangMgr.getComponentInstance(lineCls, position, fsPath);
+                if (isComponent(lCmp)) {
+                    components.push(lCmp);
                 }
             }
         });
