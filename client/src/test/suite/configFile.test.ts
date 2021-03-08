@@ -3,6 +3,7 @@ import * as path from "path";
 import { writeFileSync, renameSync } from "fs";
 import { getDocUri, waitForValidation, activate, getDocPath } from "./helper";
 import { configuration } from "../../common/configuration";
+import { storage } from "../../common/storage";
 
 
 suite("Config File Tests", () =>
@@ -22,6 +23,11 @@ suite("Config File Tests", () =>
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
+		//
+		// Just some additional coverage, as of 3/7/21 this isnt convered but want to leave
+		// in the fn implementation (case with a default value supplied in call to get)
+		//
+		storage?.get<string>("storage_test", "test");
 	});
 
 
