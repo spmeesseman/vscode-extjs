@@ -1398,7 +1398,7 @@ class ExtjsLanguageManager
         //
         const disposables: Disposable[] = [],
               jsWatcher = workspace.createFileSystemWatcher("**/*.js"),
-              confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json}");
+              confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json,workspace.json}");
 
         //
         // Config watcher
