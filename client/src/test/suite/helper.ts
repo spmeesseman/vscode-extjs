@@ -24,15 +24,15 @@ export async function activate(docUri: vscode.Uri)
 	if (!activated)
 	{
 		await ext.activate();
-		try {
-			doc = await vscode.workspace.openTextDocument(docUri);
-			editor = await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-			await sleep(serverActivationDelay); // Wait for server activation
-			activated = true;
-		} catch (e) {
-			console.error(e);
-		}
+		await sleep(serverActivationDelay); // Wait for server activation
+		activated = true;
+	}
+	try {
+		doc = await vscode.workspace.openTextDocument(docUri);
+		editor = await vscode.window.showTextDocument(doc);
+		assert(vscode.window.activeTextEditor, "No active editor");
+	} catch (e) {
+		console.error(e);
 	}
 }
 
