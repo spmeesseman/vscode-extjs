@@ -1308,7 +1308,7 @@ class ExtjsLanguageManager
                 //
                 // Clear
                 //
-                this.handleDeleFile(fsPath);
+                // this.handleDeleFile(fsPath);
                 //
                 // Index the file
                 //
