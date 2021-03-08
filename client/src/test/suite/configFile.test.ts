@@ -1,8 +1,7 @@
 
-import * as vscode from "vscode";
 import * as path from "path";
-import { unlinkSync, writeFileSync, renameSync } from "fs";
-import { getDocUri, waitForValidation, activate, toRange, getDocPath } from "./helper";
+import { writeFileSync, renameSync } from "fs";
+import { getDocUri, waitForValidation, activate, getDocPath } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
