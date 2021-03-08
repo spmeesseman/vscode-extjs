@@ -28,41 +28,6 @@ class Storage
         }
     }
 
-    public get(project: string, key: string, defaultValue?: string): string | undefined
-    {
-        let value: string | undefined = defaultValue;
-        if (project && key)
-        {
-            const projectDir = this.checkProjectDir(project);
-            if (typeof projectDir === "string") {
-                try {
-                    const dataFile = path.join(projectDir, key);
-                    if (fs.statSync(dataFile)) {
-                        value = fs.readFileSync(dataFile).toString();
-                    }
-                }
-                catch {}
-            }
-        }
-        return value;
-    }
-
-
-    public async update(project: string, key: string, value: string)
-    {
-        if (project && key)
-        {
-            const projectDir = this.checkProjectDir(project);
-            if (typeof projectDir === "string")
-            {
-                const keyPath = path.join(projectDir, key);
-                if (this.checkKeyPath(keyPath)) {
-                    fs.writeFileSync(keyPath, value);
-                }
-            }
-        }
-    }
-
 
     private checkProjectDir(project: string): string | boolean
     {
@@ -103,6 +68,52 @@ class Storage
             catch {}
         }
         return keyPath;
+    }
+
+
+    public clear()
+    {
+        if (this.baseStoragePath && fs.existsSync(this.baseStoragePath)) {
+            fs.rmdirSync(this.baseStoragePath, {
+                recursive: true
+            });
+        }
+    }
+
+
+    public get(project: string, key: string, defaultValue?: string): string | undefined
+    {
+        let value: string | undefined = defaultValue;
+        if (project && key)
+        {
+            const projectDir = this.checkProjectDir(project);
+            if (typeof projectDir === "string") {
+                try {
+                    const dataFile = path.join(projectDir, key);
+                    if (fs.statSync(dataFile)) {
+                        value = fs.readFileSync(dataFile).toString();
+                    }
+                }
+                catch {}
+            }
+        }
+        return value;
+    }
+
+
+    public async update(project: string, key: string, value: string)
+    {
+        if (project && key)
+        {
+            const projectDir = this.checkProjectDir(project);
+            if (typeof projectDir === "string")
+            {
+                const keyPath = path.join(projectDir, key);
+                if (this.checkKeyPath(keyPath)) {
+                    fs.writeFileSync(keyPath, value);
+                }
+            }
+        }
     }
 
 }

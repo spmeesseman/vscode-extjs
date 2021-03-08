@@ -35,7 +35,6 @@ export interface ILineProperties
 
 class ExtjsLanguageManager
 {
-    private isIndexing = true;
     private config: IConf[] = [];
     private serverRequest: ServerRequest;
     private reIndexTaskId: NodeJS.Timeout | undefined;
@@ -834,6 +833,40 @@ class ExtjsLanguageManager
     }
 
 
+    private getNamespace(document: TextDocument | Uri | undefined)
+    {
+        if (document)
+        {
+            let uri: Uri;
+            if (document instanceof Uri) {
+                uri = document;
+            }
+            else {
+                uri = document.uri;
+            }
+            let dir = path.dirname(uri.fsPath);
+            while (dir.indexOf(path.sep) !== -1) {
+                const ns = this.dirNamespaceMap.get(dir);
+                if (ns) {
+                    return ns;
+                }
+                dir = path.dirname(dir);
+            }
+        }
+        return "Ext";
+    }
+
+
+    private getStorageKey(fsPath: string)
+    {
+        const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
+        if (wsf) {
+            return fsPath.replace(wsf.uri.fsPath, "");
+        }
+        return Uri.file(fsPath).path;
+    }
+
+
     private handleDeleFile(fsPath: string)
     {
         const componentClass = this.getClassFromFile(fsPath);
@@ -890,74 +923,6 @@ class ExtjsLanguageManager
             delete this.componentClassToVariablesMapping[componentClass];
             delete this.methodToVariablesMapping[componentClass];
         }
-    }
-
-
-    private async initializeInternal()
-    {
-        this.config = await this.configParser.getConfig();
-        if (this.config.length === 0) {
-            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
-            return [];
-        }
-        //
-        // Do full indexing
-        //
-        await this.indexingAllWithProgress();
-        //
-        // Validate active js document if there is one
-        //
-        const activeTextDocument = window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-        }
-    }
-
-
-    async initialize(context: ExtensionContext): Promise<Disposable[]>
-    {
-        await this.initializeInternal();
-        return this.registerWatchers(context);
-    }
-
-
-    // isBusy()
-    // {
-    //     return this.isIndexing;
-    // }
-
-
-    private getNamespace(document: TextDocument | Uri | undefined)
-    {
-        if (document)
-        {
-            let uri: Uri;
-            if (document instanceof Uri) {
-                uri = document;
-            }
-            else {
-                uri = document.uri;
-            }
-            let dir = path.dirname(uri.fsPath);
-            while (dir.indexOf(path.sep) !== -1) {
-                const ns = this.dirNamespaceMap.get(dir);
-                if (ns) {
-                    return ns;
-                }
-                dir = path.dirname(dir);
-            }
-        }
-        return "Ext";
-    }
-
-
-    private getStorageKey(fsPath: string)
-    {
-        const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
-        if (wsf) {
-            return fsPath.replace(wsf.uri.fsPath, "");
-        }
-        return Uri.file(fsPath).path;
     }
 
 
@@ -1075,12 +1040,10 @@ class ExtjsLanguageManager
         },
         async (progress) =>
         {
-            this.isIndexing = true;
             try {
                 await this.indexAll(progress);
             }
             catch {}
-            this.isIndexing = false;
         });
     }
 
@@ -1273,31 +1236,44 @@ class ExtjsLanguageManager
     }
 
 
-    private async processSettingsChange(e: ConfigurationChangeEvent)
+    private async initializeInternal()
     {
-        if (e.affectsConfiguration("extjsLangSvr.ignoreErrors"))
-        {
-            this.reIndexTaskId = undefined;
-            const document = window.activeTextEditor?.document,
-                  fsPath = document?.uri.fsPath,
-                  ns = this.getNamespace(document);
-            if (document && fsPath)
-            {   //
-                // Clear
-                //
-                this.handleDeleFile(fsPath);
-                //
-                // Index the file
-                //
-                const components = await this.indexFile(fsPath, ns, document);
-                //
-                // Validate document
-                //
-                if (components && components.length > 0) {
-                    this.validateDocument(document, ns);
-                }
-            }
+        this.config = await this.configParser.getConfig();
+        if (this.config.length === 0) {
+            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
+            return [];
         }
+        //
+        // Do full indexing
+        //
+        await this.indexingAllWithProgress();
+        //
+        // Validate active js document if there is one
+        //
+        const activeTextDocument = window.activeTextEditor?.document;
+        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        }
+    }
+
+
+    async initialize(context: ExtensionContext): Promise<Disposable[]>
+    {
+        await this.initializeInternal();
+        return this.registerWatchers(context);
+    }
+
+
+    // isBusy()
+    // {
+    //     return this.isIndexing;
+    // }
+
+
+    private async processConfigChange(e: Uri)
+    {
+        fsStorage?.clear();
+        await this.initializeInternal();
     }
 
 
@@ -1377,6 +1353,34 @@ class ExtjsLanguageManager
     }
 
 
+    private async processSettingsChange(e: ConfigurationChangeEvent)
+    {
+        if (e.affectsConfiguration("extjsLangSvr.ignoreErrors"))
+        {
+            this.reIndexTaskId = undefined;
+            const document = window.activeTextEditor?.document,
+                  fsPath = document?.uri.fsPath,
+                  ns = this.getNamespace(document);
+            if (document && fsPath)
+            {   //
+                // Clear
+                //
+                this.handleDeleFile(fsPath);
+                //
+                // Index the file
+                //
+                const components = await this.indexFile(fsPath, ns, document);
+                //
+                // Validate document
+                //
+                if (components && components.length > 0) {
+                    this.validateDocument(document, ns);
+                }
+            }
+        }
+    }
+
+
     /**
      * @method registerWatchers
      *
@@ -1399,9 +1403,9 @@ class ExtjsLanguageManager
         //
         // Config watcher
         //
-        disposables.push(confWatcher.onDidChange(async (e) => { await this.initializeInternal(); }, this));
-        disposables.push(confWatcher.onDidDelete(async (e) => { await this.initializeInternal(); }, this));
-        disposables.push(confWatcher.onDidCreate(async (e) => { await this.initializeInternal(); }, this));
+        disposables.push(confWatcher.onDidChange(async (e) => { await this.processConfigChange(e); }, this));
+        disposables.push(confWatcher.onDidDelete(async (e) => { await this.processConfigChange(e); }, this));
+        disposables.push(confWatcher.onDidCreate(async (e) => { await this.processConfigChange(e); }, this));
 
         //
         // Open document text change
