@@ -7,9 +7,9 @@ Ext.define('VSCodeExtJS',
 {
 
 	requires: [
-		'VSCodeExtJS.AppUtilities',
-		'VSCodeExtJS.common.PatientDropdown',
-		'VSCodeExtJS.common.PhysicianDropdown'
+	    'VSCodeExtJS.AppUtilities',
+	    'VSCodeExtJS.common.PatientDropdown',
+	    'VSCodeExtJS.common.PhysicianDropdown'
 	],
 
 	/**
