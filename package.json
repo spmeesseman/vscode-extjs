@@ -27,8 +27,8 @@
 		"multi-root ready"
 	],
 	"activationEvents": [
-        "*"
-    ],
+		"*"
+	],
 	"main": "./dist/client/extension.js",
 	"galleryBanner": {
 		"color": "#EEEEEE",
@@ -37,9 +37,9 @@
 	"scripts": {
 		"clean-dist": "rimraf dist && npm run coverage-clean",
 		"clean-ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs",
-		"build-webpack": "npm run clean-dist && npm run build-common && npm run webpack-build",
+		"build-webpack": "npm run build-common && npm run webpack-build",
 		"build-common": "tsc -p ./common",
-		"build-tsc": "npm run clean-dist && npm run build-common && npm run tsc-build",
+		"build-tsc": "npm run build-common && npm run tsc-build",
 		"coverage-clean": "rimraf .nyc_output && rimraf coverage",
 		"coverage-open_report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" coverage/index.html",
 		"coverage-full_on": "enable-full-coverage.sh",
@@ -55,9 +55,9 @@
 		"test-run_mocha": "npm run coverage-clean && node ./dist/client/test/runTest.js",
 		"test-dev": "npm run test-before && npm run test-run_mocha && npm run test-after",
 		"test-after": "npm run coverage-full_off",
-		"test-before": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run clean-ast_cache && npm run build-tsc && npm run coverage-full_on",
+		"test-before": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run clean-ast_cache && npm run clean-dist && npm run build-tsc && npm run coverage-full_on",
 		"test-open_report": "npm run coverage-open_report",
-		"vscode:prepublish": "npm run clean-dist && npm run webpack-prod",
+		"vscode:prepublish": "npm run clean-dist && npm run build-common && npm run build-webpack",
 		"tsc-build": "tsc -b ./",
 		"tsc-watch": "npm run clean-dist &&  tsc -b ./ -w",
 		"tsc-watch_common": "tsc -watch -p ./common",
@@ -101,7 +101,7 @@
 		"ts-node": "^9.1.1",
 		"tslint": "^6.1.3",
 		"typescript": "^4.1.5",
-		"vsce": "^1.85.0",
+		"vsce": "^1.85.1",
 		"vscode-test": "^1.5.0",
 		"webpack": "^4.46.0",
 		"webpack-cli": "^3.3.12"
@@ -174,8 +174,8 @@
 				"extjsLangSvr.ignoreErrors": {
 					"type": "array",
 					"items": {
-                        "type": "object"
-                    },
+						"type": "object"
+					},
 					"default": [],
 					"description": "Errors that are excluded from validation, globally or for a document only"
 				},
