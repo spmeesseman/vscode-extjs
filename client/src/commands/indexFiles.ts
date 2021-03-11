@@ -13,7 +13,7 @@ export async function indexFiles()
 function registerIndexFilesCommand(context: ExtensionContext)
 {
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:ensureRequire", async () => { await indexFiles(); })
+        commands.registerCommand("vscode-extjs:indexFiles", async () => { await indexFiles(); })
     );
 }
 
