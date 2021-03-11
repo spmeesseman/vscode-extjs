@@ -851,6 +851,9 @@ class ExtjsLanguageManager
                     return ns;
                 }
                 dir = path.dirname(dir);
+                if (!workspace.getWorkspaceFolder(Uri.file(dir)) || dir.length <= 3) {
+                    break;
+                }
             }
         }
         return "Ext";
@@ -926,11 +929,12 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexAll(progress?: Progress<any>)
+    private async indexAll(progress?: Progress<any>, forceAstIndexing = false)
     {
         const processedDirs: string[] = [],
               cfgPct = this.config && this.config.length ? 100 / this.config.length : 100;
-        let currentCfgIdx = 0;
+        let currentCfgIdx = 0,
+            components: IComponent[] = [];
 
         const _isIndexed = ((dir: string) =>
         {
@@ -954,76 +958,121 @@ class ExtjsLanguageManager
         {
             let currentFileIdx = 0,
                 numFiles = 0,
-                dirs: string[] = [];
+                dirs: string[] = [],
+                increment: number | undefined;
 
-            if (typeof conf.classpath === "string")
-            {
-                dirs = [ conf.classpath ];
-            }
-            else {
-                dirs = conf.classpath;
-            }
+            const storageKey = this.getStorageKey(path.join(conf.baseDir, "components.json")),
+                storedComponents = !forceAstIndexing ? fsStorage?.get(conf.name, storageKey) : undefined;
 
             //
-            // Status bar
+            // Get components for this directory from local storage if exists
             //
-            // const statusBarSpace = window.createStatusBarItem(StatusBarAlignment.Left, -10000);
-            // statusBarSpace.tooltip = "ExtJs Language Server is building the syntax tree";
-            // statusBarSpace.text = getStatusString(0);
-            // statusBarSpace.show();
-
-            for (const dir of dirs)
+            if (storedComponents)
             {
-                if (!_isIndexed(dir))
+                if (!_isIndexed(conf.baseDir))
                 {
-                    const uris = await workspace.findFiles(`${dir}/**/*.js`);
-                    numFiles += uris.length;
-                }
-            }
-
-            const increment = Math.round(1 / numFiles * cfgPct);
-
-            log.blank();
-            log.value("   # of files to index", numFiles, 1);
-
-            for (const dir of dirs)
-            {
-                if (!_isIndexed(dir))
-                {
-                    const uris = await workspace.findFiles(`${dir}/**/*.js`);
-                    for (const uri of uris)
+                    ++currentCfgIdx;
+                    components = JSON.parse(storedComponents);
+                    increment = Math.round(1 / components.length * cfgPct);
+                    components.forEach(async (c: IComponent) =>
                     {
-                        log.blank();
-                        log.value("   Indexing file", uri.fsPath, 1);
-                        //
-                        // Index this file
-                        //
-                        try {
-                            await this.indexFile(uri.fsPath, conf.name, uri, false, "   ");
-                        }
-                        catch (e) {
-                            log.error(e.toString());
-                            break;
-                        }
-                        //
-                        // Report progress
-                        //
-                        const pct = (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / numFiles * (100 / this.config.length));
+                        await this.serverRequest.loadExtJsComponent(JSON.stringify(c));
+                        processedDirs.push(c.fsPath);
+                        this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
                         progress?.report({
                             increment,
-                            message: pct + "%"
+                            message: (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / components.length * (100 / this.config.length)) + "%"
                         });
-                        // statusBarSpace.text = getStatusString(pct);
-                    }
-                    processedDirs.push(dir);
-                    this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
+                    });
+                    await this.processComponents(components, "   ");
+                    progress?.report({
+                        increment,
+                        message: Math.round(currentCfgIdx * cfgPct) + "%"
+                    });
                 }
             }
+            else // index the file via the languge server
+            {
+                if (typeof conf.classpath === "string")
+                {
+                    dirs = [ conf.classpath ];
+                }
+                else {
+                    dirs = conf.classpath;
+                }
 
-            progress?.report({
-                increment,
-                message: Math.round(++currentCfgIdx * cfgPct) + "%"
-            });
+                //
+                // Status bar
+                //
+                // const statusBarSpace = window.createStatusBarItem(StatusBarAlignment.Left, -10000);
+                // statusBarSpace.tooltip = "ExtJs Language Server is building the syntax tree";
+                // statusBarSpace.text = getStatusString(0);
+                // statusBarSpace.show();
+
+                for (const dir of dirs)
+                {
+                    if (!_isIndexed(dir))
+                    {
+                        const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
+                        numFiles += uris.length;
+                    }
+                }
+
+                increment = Math.round(1 / numFiles * cfgPct);
+
+                log.blank();
+                log.value("   # of files to index", numFiles, 1);
+
+                for (const dir of dirs)
+                {
+                    if (!_isIndexed(dir))
+                    {
+                        const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
+                        for (const uri of uris)
+                        {
+                            log.blank();
+                            log.value("   Indexing file", uri.fsPath, 1);
+                            //
+                            // Index this file and process its components
+                            //
+                            try {
+                                const cmps = await this.indexFile(uri.fsPath, conf.name, uri, "   ");
+                                if (cmps) {
+                                    components.push(...cmps);
+                                }
+                            }
+                            catch (e) {
+                                log.error(e.toString());
+                                break;
+                            }
+                            //
+                            // Report progress
+                            //
+                            const pct = (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / numFiles * (100 / this.config.length));
+                            progress?.report({
+                                increment,
+                                message: pct + "%"
+                            });
+                            // statusBarSpace.text = getStatusString(pct);
+                        }
+                        processedDirs.push(dir);
+                        this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
+                    }
+                }
+
+                //
+                // Update local storage
+                //
+                if (components.length > 0) {
+                    await fsStorage?.update(conf.name, storageKey, JSON.stringify(components));
+                    await storage?.update(storageKey + "_TIMESTAMP", new Date());
+                }
+
+                progress?.report({
+                    increment,
+                    message: Math.round(++currentCfgIdx * cfgPct) + "%"
+                });
+            }
         }
 
         log.methodDone("indexing all", 1, "", true);
@@ -1048,48 +1097,103 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, project: string, document: TextDocument | Uri, forceAstIndexing = false, logPad = ""): Promise<IComponent[] | false | undefined>
+    private getAppJsonDir(fsPath: string)
     {
-        const storageKey = this.getStorageKey(fsPath),
-              storedComponents = !forceAstIndexing ? fsStorage?.get(project, storageKey) : undefined,
-              storedTimestamp = storage?.get<Date>(storageKey + "_TIMESTAMP");
-        let components: IComponent[] | undefined;
-
-        //
-        // TODO - Store only set of files from framework, or one per version
-        // i.e. a user can have 5 projects all with the same 7.2 framework local to the project,
-        // we dont want to process or store each copy of the same set of files, only one copy
-        // Will need to use relative path storage keys.
-        //
-
-        log.methodStart("indexing " + fsPath, 2, logPad, true, [
-            [ "project", project ],
-            [ "force ast re-indexing", forceAstIndexing ],
-            [ "stored timestamp", storedTimestamp ]
-        ]);
-
-        //
-        // Get components for this file from the Language Server or local storage if exists
-        //
-        if (!storedComponents)
+        for (const conf of this.config)
         {
-            let text: string | undefined;
-            if (document instanceof Uri) {
-                text = (await workspace.fs.readFile(document)).toString();
+            if (fsPath.indexOf(conf.baseDir) !== -1) {
+                return conf.baseDir;
             }
-            else {
-                text = document.getText();
-            }
-            if (!utils.isExtJsFile(text)) {
-                return false;
-            }
-            components = await this.serverRequest.parseExtJsFile(fsPath, project, text);
+        }
+        return path.dirname(fsPath);
+    }
+
+
+    async indexFile(fsPath: string, project: string, saveToCache: boolean, document: TextDocument | Uri, logPad = ""): Promise<IComponent[] | false | undefined>
+    {
+        log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "project", project ]]);
+
+        //
+        // Get components for this file from the Language Server
+        //
+        let text: string | undefined;
+        if (document instanceof Uri) {
+            text = (await workspace.fs.readFile(document)).toString();
         }
         else {
-            components = JSON.parse(storedComponents);
-            await this.serverRequest.loadExtJsComponent(storedComponents);
+            text = document.getText();
+        }
+        if (!utils.isExtJsFile(text)) {
+            return false;
         }
 
+        const components = await this.serverRequest.parseExtJsFile(fsPath, project, text);
+        await this.processComponents(components, logPad);
+
+        if (components && saveToCache)
+        {
+            const baseDir = this.getAppJsonDir(fsPath),
+                  storageKey = this.getStorageKey(path.join(baseDir, "components.json")),
+                  storedComponents: IComponent[] = JSON.parse(fsStorage?.get(project, storageKey) || "[]");
+
+            for (const component of components)
+            {
+                for (let i = 0; i < storedComponents.length; i++)
+                {
+                    if (storedComponents[i].fsPath === fsPath)
+                    {
+                        storedComponents[i] = component;
+                        break;
+                    }
+                }
+            }
+
+            await fsStorage?.update(project, storageKey, JSON.stringify(components));
+            await storage?.update(storageKey + "_TIMESTAMP", new Date());
+        }
+
+        log.methodDone("indexing " + fsPath, 2, logPad, true);
+
+        return components;
+    }
+
+
+    private async initializeInternal()
+    {
+        this.config = await this.configParser.getConfig();
+        if (this.config.length === 0) {
+            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
+            return [];
+        }
+        //
+        // Do full indexing
+        //
+        await this.indexingAllWithProgress();
+        //
+        // Validate active js document if there is one
+        //
+        const activeTextDocument = window.activeTextEditor?.document;
+        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        }
+    }
+
+
+    async initialize(context: ExtensionContext): Promise<Disposable[]>
+    {
+        await this.initializeInternal();
+        return this.registerWatchers(context);
+    }
+
+
+    // isBusy()
+    // {
+    //     return this.isIndexing;
+    // }
+
+
+    private async processComponents(components: IComponent[] | undefined, logPad = "")
+    {
         //
         // If no commponenst, then bye
         //
@@ -1131,7 +1235,6 @@ class ExtjsLanguageManager
             //
             // Map the component class to the various component types found
             //
-            this.componentClassToFsPathMapping[componentClass] = fsPath;
             this.componentClassToWidgetsMapping[componentClass] = widgets;
             this.componentClassToMethodsMapping[componentClass] = methods;
             this.componentClassToConfigsMapping[componentClass] = configs;
@@ -1142,8 +1245,10 @@ class ExtjsLanguageManager
             //
             // Map the filesystem path <-> component class
             //
-            this.fileToComponentClassMapping[fsPath] = componentClass;
-            this.componentClassToFilesMapping[componentClass] = fsPath;
+            if (cmp.fsPath) {
+                this.fileToComponentClassMapping[cmp.fsPath] = componentClass;
+                this.componentClassToFilesMapping[componentClass] = cmp.fsPath;
+            }
 
             //
             // Map the component class to it's component (it's own definition)
@@ -1221,53 +1326,7 @@ class ExtjsLanguageManager
                 this.xtypeToComponentClassMapping[xtype.name] = componentClass;
             });
         });
-
-        //
-        // Update local storage
-        //
-        if (project) {
-            await fsStorage?.update(project, storageKey, JSON.stringify(components));
-            await storage?.update(storageKey + "_TIMESTAMP", new Date());
-        }
-
-        log.methodDone("indexing " + fsPath, 2, logPad, true);
-
-        return components;
     }
-
-
-    private async initializeInternal()
-    {
-        this.config = await this.configParser.getConfig();
-        if (this.config.length === 0) {
-            window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
-            return [];
-        }
-        //
-        // Do full indexing
-        //
-        await this.indexingAllWithProgress();
-        //
-        // Validate active js document if there is one
-        //
-        const activeTextDocument = window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-        }
-    }
-
-
-    async initialize(context: ExtensionContext): Promise<Disposable[]>
-    {
-        await this.initializeInternal();
-        return this.registerWatchers(context);
-    }
-
-
-    // isBusy()
-    // {
-    //     return this.isIndexing;
-    // }
 
 
     private async processConfigChange(e: Uri)
@@ -1312,7 +1371,7 @@ class ExtjsLanguageManager
                 //
                 // Index the file
                 //
-                const components = await this.indexFile(textDocument.uri.fsPath, ns, textDocument, true);
+                const components = await this.indexFile(textDocument.uri.fsPath, ns, true, textDocument);
                 //
                 // Validate document
                 //
@@ -1369,7 +1428,7 @@ class ExtjsLanguageManager
                 //
                 // Index the file
                 //
-                const components = await this.indexFile(fsPath, ns, document);
+                const components = await this.indexFile(fsPath, ns, false, document);
                 //
                 // Validate document
                 //
@@ -1419,7 +1478,7 @@ class ExtjsLanguageManager
         //
         // Creations
         //
-        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), e); }, this));
+        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
         //
         // Active editor changed
         //
