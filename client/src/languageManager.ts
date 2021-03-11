@@ -112,22 +112,15 @@ class ExtjsLanguageManager
     }
 
 
-    /**
-     * @method getNamespaceFromFile
-     *
-     * @param fsPath Filesystem path to file
-     * @param part Zero-based index of namespace part to return
-     */
-    getNamespaceFromFile(fsPath: string, part?: number): string | undefined
+    private getAppJsonDir(fsPath: string)
     {
-        let ns: string | undefined;
-        log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
-        const cls = this.fileToComponentClassMapping[fsPath];
-        if (cls){
-            log.write("   found base class", 3);
-            ns = cls.split(".")[part ?? 0];
+        for (const conf of this.config)
+        {
+            if (fsPath.indexOf(conf.baseDir) !== -1) {
+                return conf.baseDir;
+            }
         }
-        return ns;
+        return path.dirname(fsPath);
     }
 
 
@@ -654,6 +647,52 @@ class ExtjsLanguageManager
     }
 
 
+    private getNamespace(document: TextDocument | Uri | undefined)
+    {
+        if (document)
+        {
+            let uri: Uri;
+            if (document instanceof Uri) {
+                uri = document;
+            }
+            else {
+                uri = document.uri;
+            }
+            let dir = path.dirname(uri.fsPath);
+            while (dir.indexOf(path.sep) !== -1) {
+                const ns = this.dirNamespaceMap.get(dir);
+                if (ns) {
+                    return ns;
+                }
+                dir = path.dirname(dir);
+                if (!workspace.getWorkspaceFolder(Uri.file(dir)) || dir.length <= 3) {
+                    break;
+                }
+            }
+        }
+        return "Ext";
+    }
+
+
+    /**
+     * @method getNamespaceFromFile
+     *
+     * @param fsPath Filesystem path to file
+     * @param part Zero-based index of namespace part to return
+     */
+    getNamespaceFromFile(fsPath: string, part?: number): string | undefined
+    {
+        let ns: string | undefined;
+        log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
+        const cls = this.fileToComponentClassMapping[fsPath];
+        if (cls){
+            log.write("   found base class", 3);
+            ns = cls.split(".")[part ?? 0];
+        }
+        return ns;
+    }
+
+
     getPropertyPosition(property: string, cmpType: ComponentType, componentClass: string, logPad = "")
     {
         let start = new Position(0, 0),
@@ -833,33 +872,6 @@ class ExtjsLanguageManager
     }
 
 
-    private getNamespace(document: TextDocument | Uri | undefined)
-    {
-        if (document)
-        {
-            let uri: Uri;
-            if (document instanceof Uri) {
-                uri = document;
-            }
-            else {
-                uri = document.uri;
-            }
-            let dir = path.dirname(uri.fsPath);
-            while (dir.indexOf(path.sep) !== -1) {
-                const ns = this.dirNamespaceMap.get(dir);
-                if (ns) {
-                    return ns;
-                }
-                dir = path.dirname(dir);
-                if (!workspace.getWorkspaceFolder(Uri.file(dir)) || dir.length <= 3) {
-                    break;
-                }
-            }
-        }
-        return "Ext";
-    }
-
-
     private getStorageKey(fsPath: string)
     {
         const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
@@ -974,16 +986,16 @@ class ExtjsLanguageManager
                     ++currentCfgIdx;
                     components = JSON.parse(storedComponents);
                     increment = Math.round(1 / components.length * cfgPct);
-                    components.forEach(async (c: IComponent) =>
+                    for (const c of components)
                     {
-                        await this.serverRequest.loadExtJsComponent(JSON.stringify(c));
+                        await this.serverRequest.loadExtJsComponent(JSON.stringify([c]));
                         processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
                         progress?.report({
                             increment,
                             message: (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / components.length * (100 / this.config.length)) + "%"
                         });
-                    });
+                    }
                     await this.processComponents(components, "   ");
                     progress?.report({
                         increment,
@@ -1036,7 +1048,7 @@ class ExtjsLanguageManager
                             // Index this file and process its components
                             //
                             try {
-                                const cmps = await this.indexFile(uri.fsPath, conf.name, true, uri, "   ");
+                                const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, "   ");
                                 if (cmps) {
                                     components.push(...cmps);
                                 }
@@ -1097,18 +1109,6 @@ class ExtjsLanguageManager
     }
 
 
-    private getAppJsonDir(fsPath: string)
-    {
-        for (const conf of this.config)
-        {
-            if (fsPath.indexOf(conf.baseDir) !== -1) {
-                return conf.baseDir;
-            }
-        }
-        return path.dirname(fsPath);
-    }
-
-
     async indexFile(fsPath: string, project: string, saveToCache: boolean, document: TextDocument | Uri, logPad = ""): Promise<IComponent[] | false | undefined>
     {
         log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "project", project ]]);
@@ -1148,7 +1148,7 @@ class ExtjsLanguageManager
                 }
             }
 
-            await fsStorage?.update(project, storageKey, JSON.stringify(components));
+            await fsStorage?.update(project, storageKey, JSON.stringify(storedComponents));
             await storage?.update(storageKey + "_TIMESTAMP", new Date());
         }
 
