@@ -50,6 +50,7 @@ export interface IComponent extends IExtJsBase
     deprecated?: boolean;
     doc?: string;
     extend?: string;
+    fsPath: string;
     isFramework: boolean;
     markdown?: any;
     methods: IMethod[];
@@ -70,6 +71,7 @@ export interface IConf
 {
     archivePath?: string;
     baseDir: string;
+    baseWsDir: string;
     bootstrap?: any;
     builds?: any;
     cache?: any;
