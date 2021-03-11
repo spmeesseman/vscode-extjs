@@ -47,7 +47,6 @@
 		"coverage-publish_to_codecov": "node_modules/.bin/codecov --disable=gcov --disable=detect",
 		"lint": "eslint -c .eslintrc.js --ext .ts ./client/src ./server/src ./common/src",
 		"package": "vsce package",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
 		"publish": "vsce publish",
 		"semantic_release-release": "semantic-release",
 		"semantic_release-release_no_ci": "semantic-release --no-ci",
@@ -130,6 +129,10 @@
 				"command": "vscode-extjs:ignoreError",
 				"title": "vscode-extjs: Ignore Error",
 				"enablement": "none!=none"
+			},
+			{
+				"command": "vscode-extjs:indexFiles",
+				"title": "vscode-extjs: Index Files"
 			}
 		],
 		"configuration": {

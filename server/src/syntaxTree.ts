@@ -131,7 +131,9 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         const componentInfo: IComponent = {
                             name: project || args[0].value,
-                            baseNameSpace, fsPath, isFramework,
+                            baseNameSpace,
+                            fsPath,
+                            isFramework,
                             nameSpace: project || baseNameSpace,
                             componentClass: args[0].value,
                             xtypes: [],

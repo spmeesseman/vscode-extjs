@@ -23,7 +23,7 @@ const config =
 		path: path.resolve(__dirname, 'dist', 'client'),
 		filename: 'extension.js',
 		libraryTarget: 'commonjs',
-		devtoolModuleFilenameTemplate: '../../[resource-path]'
+		devtoolModuleFilenameTemplate: '../[resource-path]'
 	},
 	devtool: 'source-map',
 	externals:
