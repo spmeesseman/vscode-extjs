@@ -1036,7 +1036,7 @@ class ExtjsLanguageManager
                             // Index this file and process its components
                             //
                             try {
-                                const cmps = await this.indexFile(uri.fsPath, conf.name, uri, "   ");
+                                const cmps = await this.indexFile(uri.fsPath, conf.name, true, uri, "   ");
                                 if (cmps) {
                                     components.push(...cmps);
                                 }

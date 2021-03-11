@@ -12,7 +12,7 @@ export async function ensureRequires(xtype: string | undefined)
 	const document = window.activeTextEditor?.document,
 		  fsPath = document?.uri.fsPath,
 		  ns = fsPath ? extjsLangMgr.getNamespaceFromFile(fsPath) : undefined,
-		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, document) : undefined,
+		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, false, document) : undefined,
 		  workspaceEdit = new WorkspaceEdit();
 
 	if (document && components)
