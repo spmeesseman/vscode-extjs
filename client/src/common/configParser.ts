@@ -16,12 +16,14 @@ export class ConfigParser
     async getConfig(): Promise<IConf[]>
     {
         const config: IConf[] = [],
-			  confUris = await workspace.findFiles(".extjsrc{.json,}"),
-              appDotJsonUris = await workspace.findFiles("app.json"),
+			  confUris = await workspace.findFiles("**/.extjsrc{.json,}"),
+              appDotJsonUris = await workspace.findFiles("**/app.json"),
 			  fwDirectory = configuration.get<string>("frameworkDirectory");
         let settingsPaths = configuration.get<string[]|string>("include");
 
-        log.methodStart("initialize confdig", 1, "", true);
+        // workspace.workspaceFolders?.map(folder => folder.uri.path)
+
+        log.methodStart("initialize configurations", 1, "", true);
 
         //
         // Specific directories set directly in user settings, the `include` setting
@@ -39,7 +41,8 @@ export class ConfigParser
                     config.push({
                         classpath: pathParts[1],
                         name: pathParts[0],
-                        baseDir: ""
+                        baseDir: "",
+                        baseWsDir: ""
                     });
                 }
             }
@@ -74,7 +77,8 @@ export class ConfigParser
 			config.push({
 				classpath: fwDirectory.replace("\\", "/"),
 				name: "Ext",
-                baseDir: fwDirectory
+                baseDir: fwDirectory,
+                baseWsDir: fwDirectory
 			});
 		}
 
@@ -101,6 +105,13 @@ export class ConfigParser
     {
         const fileSystemPath = uri.fsPath || uri.path,
               baseDir = path.dirname(uri.fsPath),
+              //
+              // baseWsDir should be the relative path from the workspace folder root to the app.json
+              // file.  The Language Manager will use workspace.findFiles which will require a path
+              // relative to a workspace folder.
+              //
+              baseWsDir = path.dirname(uri.fsPath.replace(workspace.getWorkspaceFolder(uri)?.uri.fsPath || baseDir, ""))
+                              .replace(/\\/g, "/").substring(1), // trim leading path sep
               confs: IConf[] = [],
               conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
         let foundFwDir = false;
@@ -157,7 +168,8 @@ export class ConfigParser
                                     name: "Ext",
                                     // eslint-disable-next-line no-template-curly-in-string
                                     classpath: fwConf.sencha?.classpath?.replace("${package.dir}", fwPath),
-                                    baseDir
+                                    baseDir,
+                                    baseWsDir
                                 };
                                 if (sdkConf.classpath)
                                 {
@@ -177,7 +189,8 @@ export class ConfigParser
 					confs.push({
 						name: "Ext",
 						classpath: wsConf.frameworks.ext,
-                        baseDir
+                        baseDir,
+                        baseWsDir
 					});
                     log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
                 }
@@ -199,6 +212,7 @@ export class ConfigParser
 		if (conf.classpath && conf.name)
         {
             conf.baseDir = baseDir;
+            conf.baseWsDir = baseWsDir;
 			confs.push(conf);
 		}
 
