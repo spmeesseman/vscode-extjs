@@ -1017,7 +1017,7 @@ class ExtjsLanguageManager
 
             progress?.report({
                 increment: 0,
-                message: `: Scanning project ${path.dirname(conf.wsDir)}`
+                message: `: Scanning project ${path.basename(conf.wsDir)}`
             });
 
             const storageKey = this.getStorageKey(path.join(conf.baseDir, "components.json")),
