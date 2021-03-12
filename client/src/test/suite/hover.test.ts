@@ -88,6 +88,11 @@ suite("Hover Tests", () =>
 		await testHover(docUri, new vscode.Position(33, 11), "physiciandropdown");
 		await testHover(docUri, new vscode.Position(39, 11), "userdropdown");
 		// await testHover(docUri, new vscode.Position(45, 3), "component");
+		//
+		// Line 145
+		// let cmp = this.down('physiciandropdown');
+		//
+		await testHover(docUri, new vscode.Position(144, 24), "physiciandropdown");
 	});
 
 });

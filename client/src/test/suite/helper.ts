@@ -17,23 +17,27 @@ const invalidationDelay = 2000;
 /**
  * Activates the spmeesseman.vscode-extjs extension
  */
-export async function activate(docUri: vscode.Uri)
+export async function activate(docUri?: vscode.Uri)
 {
+	let extJsApi = {};
 	const ext = vscode.extensions.getExtension("spmeesseman.vscode-extjs")!;
 	assert(ext, "Could not find extension");
 	if (!activated)
 	{
-		await ext.activate();
+		extJsApi = await ext.activate();
 		await sleep(serverActivationDelay); // Wait for server activation
 		activated = true;
 	}
-	try {
-		doc = await vscode.workspace.openTextDocument(docUri);
-		editor = await vscode.window.showTextDocument(doc);
-		assert(vscode.window.activeTextEditor, "No active editor");
-	} catch (e) {
-		console.error(e);
+	if (docUri) {
+		try {
+			doc = await vscode.workspace.openTextDocument(docUri);
+			editor = await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
 	}
+	return extJsApi;
 }
 
 

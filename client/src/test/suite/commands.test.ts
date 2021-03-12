@@ -44,7 +44,12 @@ suite("Command Tests", () =>
 
 
 	test("Ignore error", async () =>
-	{   //
+	{
+		//
+		// Edge no params shouldexit gracefully w/ no processing
+		//
+		await testCommand("ignoreError");
+		//
 		// For local dev environment test, read the ignoreErrors setting so that it can be restored
 		// when the tests are finished, since "Ignore error" test will set this via vscode command
 		//
@@ -52,7 +57,7 @@ suite("Command Tests", () =>
 		//
 		// File only
 		//
-		testCommand("ignoreError", ErrorCode.syntaxAllCaps, docUri.fsPath);
+		await testCommand("ignoreError", ErrorCode.syntaxAllCaps, docUri.fsPath);
 		//
 		// Wait for validation (debounce is 250ms)
 		//
@@ -60,7 +65,7 @@ suite("Command Tests", () =>
 		//
 		// Global
 		//
-		testCommand("ignoreError", ErrorCode.syntaxAllCaps);
+		await testCommand("ignoreError", ErrorCode.syntaxAllCaps);
 		//
 		// Wait for validation (debounce is 250ms)
 		//
@@ -79,7 +84,7 @@ suite("Command Tests", () =>
 
 	test("Ensure xtype", async () =>
 	{
-		testCommand("ensureRequire", "userdropdown"); //  toRange(39, 9, 39, 23));
+		await testCommand("ensureRequire", "userdropdown"); //  toRange(39, 9, 39, 23));
 		//
 		// Wait for validation (debounce is 250ms)
 		//
@@ -91,6 +96,23 @@ suite("Command Tests", () =>
 		await vscode.commands.executeCommand("vscode-extjs:replaceText", "", toRange(11, 43, 12, 40));
 		//
 		// Wait again for validation (debounce is 250ms)
+		//
+		await waitForValidation();
+	});
+
+
+	test("Replace text no-paramter edge case", async () =>
+	{
+		await testCommand("replaceText", "text");
+		await testCommand("replaceText");
+	});
+
+
+	test("Re-index files", async () =>
+	{
+		await testCommand("indexFiles");
+		//
+		// Wait for validation
 		//
 		await waitForValidation();
 	});

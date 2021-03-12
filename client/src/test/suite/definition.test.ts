@@ -182,6 +182,16 @@ suite("Definition Tests", () =>
 			uri: getDocUri("extjs/ext-all-debug.js"),
 			range: toRange(37965, 8, 37965, 19)
 		}]);
+		// await testHover(docUri, new vscode.Position(45, 3), "component");
+		//
+		// Line 145
+		// let cmp = this.down('physiciandropdown');
+		//
+		await testDefinition(docUri, new vscode.Position(144, 24), [
+		{
+			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+			range: toRange(6, 0, 55, 2)
+		}]);
 	});
 
 

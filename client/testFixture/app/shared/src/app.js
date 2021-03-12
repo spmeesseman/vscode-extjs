@@ -128,12 +128,22 @@ CCC
 
 	/**
 	 * @method testFn5
-	 * Test fn3 description
+	 * Test fn5 description
 	 * @returns {String} The string
 	 */
 	testFn5: function()
 	{
 		return "string";
+	},
+
+	/**
+	 * @method testFn6
+	 * Test fn6 description
+	 */
+	testFn6: function()
+	{
+		let cmp = this.down('physiciandropdown');
+		cmp.load("test");
 	}
 
 });
