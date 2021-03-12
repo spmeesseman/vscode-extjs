@@ -35,6 +35,9 @@ export interface ILineProperties
 
 class ExtjsLanguageManager
 {
+    private isIndexing = false;
+    private isValidating = false;
+
     private config: IConf[] = [];
     private serverRequest: ServerRequest;
     private reIndexTaskId: NodeJS.Timeout | undefined;
@@ -1048,7 +1051,7 @@ class ExtjsLanguageManager
                             // Index this file and process its components
                             //
                             try {
-                                const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, "   ");
+                                const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, false, "   ");
                                 if (cmps) {
                                     components.push(...cmps);
                                 }
@@ -1091,27 +1094,12 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexingAllWithProgress()
-    {
-        await window.withProgress(
-        {
-            location: ProgressLocation.Window,
-            cancellable: false,
-            title: "Indexing ExtJs Files"
-        },
-        async (progress) =>
-        {
-            try {
-                await this.indexAll(progress);
-            }
-            catch {}
-        });
-    }
-
-
-    async indexFile(fsPath: string, project: string, saveToCache: boolean, document: TextDocument | Uri, logPad = ""): Promise<IComponent[] | false | undefined>
+    async indexFile(fsPath: string, project: string, saveToCache: boolean, document: TextDocument | Uri, oneCall = true, logPad = ""): Promise<IComponent[] | false | undefined>
     {
         log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "project", project ]]);
+        if (oneCall) {
+            this.isIndexing = true;
+        }
 
         //
         // Get components for this file from the Language Server
@@ -1152,9 +1140,48 @@ class ExtjsLanguageManager
             await storage?.update(storageKey + "_TIMESTAMP", new Date());
         }
 
+        if (oneCall) {
+            this.isIndexing = false;
+        }
+
         log.methodDone("indexing " + fsPath, 2, logPad, true);
 
         return components;
+    }
+
+
+    /**
+     * @method indexFiles
+     *
+     * Public initializer
+     */
+    async indexFiles()
+    {
+        this.isIndexing = true;
+        //
+        // Do full indexing
+        //
+        await window.withProgress(
+        {
+            location: ProgressLocation.Window,
+            cancellable: false,
+            title: "Indexing ExtJs Files"
+        },
+        async (progress) =>
+        {
+            try {
+                await this.indexAll(progress);
+            }
+            catch {}
+        });
+        //
+        // Validate active js document if there is one
+        //
+        const activeTextDocument = window.activeTextEditor?.document;
+        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        }
+        this.isIndexing = false;
     }
 
 
@@ -1165,17 +1192,7 @@ class ExtjsLanguageManager
             window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
             return [];
         }
-        //
-        // Do full indexing
-        //
-        await this.indexingAllWithProgress();
-        //
-        // Validate active js document if there is one
-        //
-        const activeTextDocument = window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-        }
+        this.indexFiles();
     }
 
 
@@ -1186,10 +1203,10 @@ class ExtjsLanguageManager
     }
 
 
-    // isBusy()
-    // {
-    //     return this.isIndexing;
-    // }
+    isBusy()
+    {
+        return this.isIndexing || this.isValidating;
+    }
 
 
     private async processComponents(components: IComponent[] | undefined, logPad = "")
@@ -1499,6 +1516,7 @@ class ExtjsLanguageManager
 
     async validateDocument(textDocument?: TextDocument, nameSpace?: string)
     {
+        this.isValidating = true;
         if (!textDocument) {
             textDocument = window.activeTextEditor?.document;
         }
@@ -1512,6 +1530,7 @@ class ExtjsLanguageManager
                 await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
             }
         }
+        this.isValidating = false;
     }
 
 }
