@@ -13,12 +13,6 @@ class Configuration
     private _onDidChange = new EventEmitter<ConfigurationChangeEvent>();
 
 
-    get onDidChange(): Event<ConfigurationChangeEvent>
-    {
-        return this._onDidChange.event;
-    }
-
-
     constructor()
     {
         this.configuration = workspace.getConfiguration(extensionName);
@@ -28,14 +22,11 @@ class Configuration
 
     private onConfigurationChanged(event: ConfigurationChangeEvent)
     {
-        if (!event.affectsConfiguration(extensionName))
+        if (event.affectsConfiguration(extensionName))
         {
-            return;
+            this.configuration = workspace.getConfiguration(extensionName);
+            this._onDidChange.fire(event);
         }
-
-        this.configuration = workspace.getConfiguration(extensionName);
-
-        this._onDidChange.fire(event);
     }
 
 
