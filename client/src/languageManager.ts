@@ -448,11 +448,24 @@ class ExtjsLanguageManager
               thisCmp = this.getComponentByFile(document.uri.fsPath),
               range = document.getWordRangeAtPosition(position) || new Range(position, position);
 
-        let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, ""),
+        log.methodStart("get line properties", 1, logPad);
+
+        //
+        // Break line text down up to the property and any calle objects/class instance we need to examine
+        //
+        // Examples:
+        //
+        //     1. const x = new Ext.util.DelayedTask(...)
+        //     2. if (!Util.checkOneSelected(...)) {
+        //
+        // We want it stripped up to the callee of the property we're looking at
+        //
+        //     1. Ext.util.DelayedTask(...)
+        //     2. Util.checkOneSelected(...)) {
+        //
+        let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, "").replace(/[\s\w]*if\s*\(\s*[!]{0,2}/, ""),
             property = document.getText(range),
             cmpType: ComponentType = ComponentType.None;
-
-        log.methodStart("get line properties", 1, logPad);
 
         //
         // Handle "this"
@@ -506,6 +519,30 @@ class ExtjsLanguageManager
             property = strParts[strParts.length - 1];
         }
         //
+        // String literal xtype
+        //
+        else if (lineText.match(new RegExp(`\\.(up|down|next|prev)\\(\\s*["']{1}${property}["']{1}\\s*\\)`)))
+        {
+            cmpType = ComponentType.Class;
+            //
+            // Strip off everything outside the quotes to get our xtype, i.e.
+            //
+            //     grid.up('mypanel')
+            //
+            // We want 'mypanel'
+            //
+            lineText = lineText.replace(/^[^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
+            //
+            // Set the property to the last piece of the xtype's class name.
+            //
+            const xtypeCmp = this.xtypeToComponentClassMapping[lineText];
+            if (xtypeCmp) {
+                const strParts = xtypeCmp.split(".");
+                property = strParts[strParts.length - 1];
+                lineText = xtypeCmp;
+            }
+        }
+        //
         // Methods
         // Match function/method signature type, e.g.
         //
@@ -513,7 +550,7 @@ class ExtjsLanguageManager
         //     testFn2(a, b);
         //     testFn2(a, { x: 0, y: 1});
         //
-        else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*;\\s*$`)))
+        else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
         {
             cmpType = ComponentType.Method;
         }
