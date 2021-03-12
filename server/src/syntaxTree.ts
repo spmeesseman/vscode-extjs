@@ -710,152 +710,158 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                 return;
             }
 
-            const dec = node.declarations[0];
-
-            if (!isVariableDeclarator(dec) || !isIdentifier(dec.id)) {
-                return;
-            }
-
-            const varName = dec.id.name;
-            let isNewExp = false,
-                callee,
-                args,
-                callerCls = "";
-
-            if (isNewExpression(dec.init))
+            for (const dec of node.declarations)
             {
-                callee = dec.init.callee;
-                args = dec.init.arguments;
-                isNewExp = true;
-            }
-            else if (isCallExpression(dec.init))
-            {
-                callee = dec.init.callee;
-                args = dec.init.arguments;
-            }
-            else if (isThisExpression(dec.init))
-            {
+                if (!isVariableDeclarator(dec) || !isIdentifier(dec.id)) {
+                    return;
+                }
+
+                const varName = dec.id.name;
+                let isNewExp = false,
+                    callee,
+                    args,
+                    callerCls = "";
+
+                if (isNewExpression(dec.init))
+                {
+                    callee = dec.init.callee;
+                    args = dec.init.arguments;
+                    isNewExp = true;
+                }
+                else if (isCallExpression(dec.init))
+                {
+                    callee = dec.init.callee;
+                    args = dec.init.arguments;
+                }
+                else if (isThisExpression(dec.init))
+                {
+                    _add({
+                        name: varName,
+                        declaration: DeclarationType[node.kind],
+                        start: node.declarations[0].loc!.start,
+                        end: node.declarations[0].loc!.end,
+                        componentClass: parentCls,
+                        methodName
+                    });
+                    continue;
+                }
+                else if (isAwaitExpression(dec.init))
+                {
+                    // TODO !!
+                    continue;
+                }
+                else {
+                    continue;
+                }
+
+                //
+                // Member expression example:
+                //
+                //     VSCodeExtJS.common.PhysicianDropdown.create
+                //
+                if (isMemberExpression(callee))
+                {
+                    if (!isIdentifier(callee.object))
+                    {   //
+                        // Example:
+                        //
+                        //     VSCodeExtJS.common.PhysicianDropdown.create
+                        //
+                        // The current callee.property is 'create', type 'MemberExpression'.
+                        //
+                        // The current callee.object is 'PhysicianDropdown', type 'MemberExpression'.
+                        //
+                        // Build the fill class name by traversiong down each MemberExpression until the
+                        // Identifier is found, in this example 'VSCodeExtJS'.
+                        //
+                        let object: any = callee.object;
+                        if (isMemberExpression(object) && isIdentifier(object.property))
+                        {
+                            let foundObj = true;
+                            callerCls = object.property.name;
+                            object = object.object;
+                            while (isMemberExpression(object))
+                            {
+                                if (isIdentifier(object.property))
+                                {
+                                    callerCls = object.property.name + "." + callerCls;
+                                    object = object.object;
+                                }
+                                else {
+                                    foundObj = false;
+                                    break;
+                                }
+                            }
+                            if (!foundObj) {
+                                continue;
+                            }
+                            //
+                            // Add the base indetifier to caller cls name, e.g. "VSCodeExtJS" in the comments
+                            // example.  We looped until we found it but it has not been added yet.
+                            //
+                            if (isIdentifier(object)) {
+                                callerCls = object.name + "." + callerCls;
+                            }
+                        }
+                        else if (isThisExpression(object))
+                        {
+                            callerCls = "this";
+                        }
+                        else {
+                            continue;
+                        }
+                    }
+                    else {
+                        callerCls = callee.object.name;
+                    }
+                }
+
+                //
+                // Filter unsupported properties
+                //
+                if (!isMemberExpression(callee) || !isIdentifier(callee.property) || !callerCls)
+                {
+                    continue;
+                }
+
+                //
+                // Get instance component class
+                //
+                let instCls = "Primitive";
+                const isFramework = callerCls === "Ext";
+                if (isFramework)
+                {
+                    if (!isStringLiteral(args[0])) {
+                        continue;
+                    }
+                    else {
+                        instCls = args[0].value;
+                    }
+                }
+                else {
+                    instCls = callerCls;
+                }
+                //
+                // In the case of "new" keyword, the calle property is the last part of the class name.
+                // Whereas other scenario is "full_classname".create, where "create" is the callee property.
+                //
+                if (isNewExp)
+                {
+                    instCls += ("." + callee.property.name);
+                }
+
+                //
+                // Add thr variable to the component's IVariables array
+                //
                 _add({
                     name: varName,
                     declaration: DeclarationType[node.kind],
                     start: node.declarations[0].loc!.start,
                     end: node.declarations[0].loc!.end,
-                    componentClass: parentCls,
+                    componentClass: instCls,
                     methodName
                 });
-                return;
             }
-            else if (isAwaitExpression(dec.init))
-            {
-                // TODO !!
-                return;
-            }
-            else {
-                return;
-            }
-
-            //
-            // Member expression example:
-            //
-            //     VSCodeExtJS.common.PhysicianDropdown.create
-            //
-            if (isMemberExpression(callee))
-            {
-                if (!isIdentifier(callee.object))
-                {   //
-                    // Example:
-                    //
-                    //     VSCodeExtJS.common.PhysicianDropdown.create
-                    //
-                    // The current callee.property is 'create', type 'MemberExpression'.
-                    //
-                    // The current callee.object is 'PhysicianDropdown', type 'MemberExpression'.
-                    //
-                    // Build the fill class name by traversiong down each MemberExpression until the
-                    // Identifier is found, in this example 'VSCodeExtJS'.
-                    //
-                    let object: any = callee.object;
-                    if (isMemberExpression(object) && isIdentifier(object.property))
-                    {
-                        callerCls = object.property.name;
-                        object = object.object;
-                        while (isMemberExpression(object))
-                        {
-                            if (isIdentifier(object.property))
-                            {
-                                callerCls = object.property.name + "." + callerCls;
-                                object = object.object;
-                            }
-                            else {
-                                return;
-                            }
-                        }
-                        //
-                        // Add the base indetifier to caller cls name, e.g. "VSCodeExtJS" in the comments
-                        // example.  We looped until we found it but it has not been added yet.
-                        //
-                        if (isIdentifier(object)) {
-                            callerCls = object.name + "." + callerCls;
-                        }
-                    }
-                    else if (isThisExpression(object))
-                    {
-                        callerCls = "this";
-                    }
-                    else {
-                        return;
-                    }
-                }
-                else {
-                    callerCls = callee.object.name;
-                }
-            }
-
-            //
-            // Filter unsupported properties
-            //
-            if (!isMemberExpression(callee) || !isIdentifier(callee.property) || !callerCls)
-            {
-                return;
-            }
-
-            //
-            // Get instance component class
-            //
-            let instCls = "Primitive";
-            const isFramework = callerCls === "Ext";
-            if (isFramework)
-            {
-                if (!isStringLiteral(args[0])) {
-                    return;
-                }
-                else {
-                    instCls = args[0].value;
-                }
-            }
-            else {
-                instCls = callerCls;
-            }
-            //
-            // In the case of "new" keyword, the calle property is the last part of the class name.
-            // Whereas other scenario is "full_classname".create, where "create" is the callee property.
-            //
-            if (isNewExp)
-            {
-                instCls += ("." + callee.property.name);
-            }
-
-            //
-            // Add thr variable to the component's IVariables array
-            //
-            _add({
-                name: varName,
-                declaration: DeclarationType[node.kind],
-                start: node.declarations[0].loc!.start,
-                end: node.declarations[0].loc!.end,
-                componentClass: instCls,
-                methodName
-            });
         }
     });
 
