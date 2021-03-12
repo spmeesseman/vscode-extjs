@@ -5,15 +5,15 @@ import {
     ExtensionContext
 } from "vscode";
 
-export let fsStorage: Storage | undefined;
+export let fsStorage: FsStorage | undefined;
 
 
 export const initFsStorage = (context: ExtensionContext) =>
 {
-    fsStorage = new Storage(context.globalStoragePath);
+    fsStorage = new FsStorage(context.globalStoragePath);
 };
 
-class Storage
+class FsStorage
 {
 
     private baseStoragePath: string | undefined;
