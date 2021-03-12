@@ -1,16 +1,30 @@
 
 import { rmdirSync } from "fs";
-import { commands, ExtensionContext, StatusBarAlignment, window } from "vscode";
+import { commands, ExtensionContext, StatusBarAlignment, StatusBarItem, window } from "vscode";
 import { extjsLangMgr } from "../extension";
 
 let fsStoragePath: string;
+let statusBarItem: StatusBarItem;
+
+
+export function showReIndexButton(show = true)
+{
+    if (show) {
+        statusBarItem.show();
+    }
+    else {
+        statusBarItem.hide();
+    }
+}
 
 
 export async function indexFiles()
 {
     if (!extjsLangMgr.isBusy())
     {
-        rmdirSync(fsStoragePath);
+        rmdirSync(fsStoragePath, {
+            recursive: true
+        });
         await extjsLangMgr.indexFiles();
     }
 }
@@ -26,11 +40,11 @@ function registerIndexFilesCommand(context: ExtensionContext)
     //
     // Status bar button
     //
-    const statusBarSpace = window.createStatusBarItem(StatusBarAlignment.Left, -10000);
-    statusBarSpace.text = "$(refresh)";
-    statusBarSpace.tooltip = "Re-index all ExtJs files";
-    statusBarSpace.command = "vscode-extjs:indexFiles";
-    statusBarSpace.show();
+    statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, -10000);
+    statusBarItem.text = "$(refresh)";
+    statusBarItem.tooltip = "Re-index all ExtJs files";
+    statusBarItem.command = "vscode-extjs:indexFiles";
+    statusBarItem.show();
 }
 
 

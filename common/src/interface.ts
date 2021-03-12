@@ -95,6 +95,7 @@ export interface IConf
     requires?: string[];
     url?: string;
     version?: string;
+    wsDir: string;
 }
 
 

@@ -42,7 +42,8 @@ export class ConfigParser
                         classpath: pathParts[1],
                         name: pathParts[0],
                         baseDir: "",
-                        baseWsDir: ""
+                        baseWsDir: "",
+                        wsDir: workspace.getWorkspaceFolder(Uri.file(pathParts[1]))?.uri.fsPath || "",
                     });
                 }
             }
@@ -78,7 +79,8 @@ export class ConfigParser
 				classpath: fwDirectory.replace("\\", "/"),
 				name: "Ext",
                 baseDir: fwDirectory,
-                baseWsDir: fwDirectory
+                baseWsDir: fwDirectory,
+                wsDir: workspace.getWorkspaceFolder(Uri.file(fwDirectory))?.uri.fsPath || fwDirectory
 			});
 		}
 
@@ -105,12 +107,13 @@ export class ConfigParser
     {
         const fileSystemPath = uri.fsPath || uri.path,
               baseDir = path.dirname(uri.fsPath),
+              wsDir = workspace.getWorkspaceFolder(uri)?.uri.fsPath || baseDir,
               //
               // baseWsDir should be the relative path from the workspace folder root to the app.json
               // file.  The Language Manager will use workspace.findFiles which will require a path
               // relative to a workspace folder.
               //
-              baseWsDir = path.dirname(uri.fsPath.replace(workspace.getWorkspaceFolder(uri)?.uri.fsPath || baseDir, ""))
+              baseWsDir = path.dirname(uri.fsPath.replace(wsDir || baseDir, ""))
                               .replace(/\\/g, "/").substring(1), // trim leading path sep
               confs: IConf[] = [],
               conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
@@ -169,7 +172,8 @@ export class ConfigParser
                                     // eslint-disable-next-line no-template-curly-in-string
                                     classpath: fwConf.sencha?.classpath?.replace("${package.dir}", fwPath),
                                     baseDir,
-                                    baseWsDir
+                                    baseWsDir,
+                                    wsDir
                                 };
                                 if (sdkConf.classpath)
                                 {
@@ -190,7 +194,8 @@ export class ConfigParser
 						name: "Ext",
 						classpath: wsConf.frameworks.ext,
                         baseDir,
-                        baseWsDir
+                        baseWsDir,
+                        wsDir
 					});
                     log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
                 }
@@ -213,6 +218,7 @@ export class ConfigParser
         {
             conf.baseDir = baseDir;
             conf.baseWsDir = baseWsDir;
+            conf.wsDir = wsDir;
 			confs.push(conf);
 		}
 
@@ -221,10 +227,12 @@ export class ConfigParser
             log.value("   add app.json paths", fileSystemPath, 2);
             log.value("      namespace", confs[0].name, 2);
             log.value("      classpath", confs[0].classpath, 3);
+            log.value("      workspace dir", confs[0].baseWsDir, 3);
 			if (confs.length > 1) {
 				log.write("      framework directory");
 				log.value("         namespace", confs[1].name, 2);
 				log.value("         classpath", confs[1].classpath, 3);
+				log.value("         workspace dir", confs[1].baseWsDir, 3);
 			}
             config.push(...confs);
         }

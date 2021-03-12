@@ -17,6 +17,7 @@ import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
+import { showReIndexButton } from "./commands/indexFiles";
 import { toVscodeRange, toVscodePosition, isPositionInRange, isComponent } from "./common/clientUtils";
 
 
@@ -976,6 +977,11 @@ class ExtjsLanguageManager
                 dirs: string[] = [],
                 increment: number | undefined;
 
+            progress?.report({
+                increment: 0,
+                message: `: Scanning project ${path.dirname(conf.wsDir)}`
+            });
+
             const storageKey = this.getStorageKey(path.join(conf.baseDir, "components.json")),
                 storedComponents = !forceAstIndexing ? fsStorage?.get(conf.name, storageKey) : undefined;
 
@@ -986,7 +992,6 @@ class ExtjsLanguageManager
             {
                 if (!_isIndexed(conf.baseDir))
                 {
-                    ++currentCfgIdx;
                     components = JSON.parse(storedComponents);
                     increment = Math.round(1 / components.length * cfgPct);
                     for (const c of components)
@@ -994,15 +999,16 @@ class ExtjsLanguageManager
                         await this.serverRequest.loadExtJsComponent(JSON.stringify([c]));
                         processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
+                        const pct = (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / components.length * (100 / this.config.length));
                         progress?.report({
                             increment,
-                            message: (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / components.length * (100 / this.config.length)) + "%"
+                            message: ": Indexing " + pct + "%"
                         });
                     }
                     await this.processComponents(components, "   ");
                     progress?.report({
                         increment,
-                        message: Math.round(currentCfgIdx * cfgPct) + "%"
+                        message: Math.round(++currentCfgIdx * cfgPct) + "%"
                     });
                 }
             }
@@ -1066,7 +1072,7 @@ class ExtjsLanguageManager
                             const pct = (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / numFiles * (100 / this.config.length));
                             progress?.report({
                                 increment,
-                                message: pct + "%"
+                                message: ": Indexing " + pct + "%"
                             });
                             // statusBarSpace.text = getStatusString(pct);
                         }
@@ -1085,7 +1091,7 @@ class ExtjsLanguageManager
 
                 progress?.report({
                     increment,
-                    message: Math.round(++currentCfgIdx * cfgPct) + "%"
+                    message: ": Indexing " + Math.round(++currentCfgIdx * cfgPct) + "%"
                 });
             }
         }
@@ -1099,6 +1105,7 @@ class ExtjsLanguageManager
         log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "project", project ]]);
         if (oneCall) {
             this.isIndexing = true;
+            showReIndexButton(false);
         }
 
         //
@@ -1142,6 +1149,7 @@ class ExtjsLanguageManager
 
         if (oneCall) {
             this.isIndexing = false;
+            showReIndexButton(true);
         }
 
         log.methodDone("indexing " + fsPath, 2, logPad, true);
@@ -1158,6 +1166,7 @@ class ExtjsLanguageManager
     async indexFiles()
     {
         this.isIndexing = true;
+        showReIndexButton(false);
         //
         // Do full indexing
         //
@@ -1165,7 +1174,7 @@ class ExtjsLanguageManager
         {
             location: ProgressLocation.Window,
             cancellable: false,
-            title: "Indexing ExtJs Files"
+            title: "ExtJs"
         },
         async (progress) =>
         {
@@ -1182,6 +1191,7 @@ class ExtjsLanguageManager
             await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
         }
         this.isIndexing = false;
+        showReIndexButton(true);
     }
 
 
