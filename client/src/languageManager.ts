@@ -57,7 +57,6 @@ class ExtjsLanguageManager
 
     private componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
     private componentClassToRequiresMapping: { [componentClass: string]: string[] | undefined } = {};
-    private componentClassToFsPathMapping: { [componentClass: string]: string | undefined } = {};
     private componentClassToXTypesMapping: { [componentClass: string]: IXtype[] | undefined } = {};
     private componentClassToConfigsMapping: { [componentClass: string]: IConfig[] | undefined } = {};
     private componentClassToPropertiesMapping: { [componentClass: string]: IProperty[] | undefined } = {};
@@ -425,7 +424,7 @@ class ExtjsLanguageManager
 
     getFilePath(componentClass: string)
     {
-        const fsPath = this.componentClassToFsPathMapping[componentClass];
+        const fsPath = this.componentClassToFilesMapping[componentClass];
         log.write("get fs path by component", 1);
         log.value("   path", fsPath, 2);
         return fsPath;
@@ -931,16 +930,18 @@ class ExtjsLanguageManager
                 });
             }
 
+            delete this.fileToComponentClassMapping[fsPath];
+            delete this.methodToVariablesMapping[componentClass];
+
             delete this.componentClassToWidgetsMapping[componentClass];
             delete this.componentClassToAliasesMapping[componentClass];
-            delete this.componentClassToFsPathMapping[componentClass];
+            delete this.componentClassToFilesMapping[componentClass];
             delete this.componentClassToRequiresMapping[componentClass];
             delete this.componentClassToConfigsMapping[componentClass];
             delete this.componentClassToPropertiesMapping[componentClass];
             delete this.componentClassToMethodsMapping[componentClass];
             delete this.componentClassToComponentsMapping[componentClass];
             delete this.componentClassToVariablesMapping[componentClass];
-            delete this.methodToVariablesMapping[componentClass];
         }
     }
 
