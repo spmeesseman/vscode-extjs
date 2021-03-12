@@ -346,51 +346,51 @@ class ExtjsLanguageManager
     {
         const thisCls = this.getClassFromFile(fsPath);
 
-        if (!thisCls) {
-            return;
-        }
-        else if (property === "this") {
-            return this.getComponent(thisCls, true);
-        }
-
-        const cmp = this.getComponent(thisCls, true);
-        if (!cmp) {
-            return;
-        }
-
-        for (const variable of cmp.privates)
+        if (thisCls)
         {
-            // TODO - property hover - check private sec
-        }
+            const cmp = this.getComponent(thisCls, true);
 
-        for (const variable of cmp.statics)
-        {
-            // TODO - property hover - check static sec
-        }
+            if (property === "this") {
+                return cmp;
+            }
 
-        for (const method of cmp.methods)
-        {
-            if (isPositionInRange(position, toVscodeRange(method.start, method.end)))
+            if (cmp)
             {
-                let variable = method.variables?.find(v => v.name === property);
-                if (!variable) {
-                    variable = method.params?.find(v => v.name === property);
-                    if (variable?.type !== VariableType._class) {
-                        variable = undefined;
-                    }
+                for (const variable of cmp.privates)
+                {
+                    // TODO - property hover - check private sec
                 }
-                if (variable) {
-                    const cmp = this.getComponent(variable.componentClass, true);
-                    if (cmp) {
-                        return cmp;
-                    }
-                    else {
-                        return {
-                            name: variable.name,
-                            start: variable.start,
-                            end: variable.end,
-                            componentClass: variable.componentClass
-                        };
+
+                for (const variable of cmp.statics)
+                {
+                    // TODO - property hover - check static sec
+                }
+
+                for (const method of cmp.methods)
+                {
+                    if (isPositionInRange(position, toVscodeRange(method.start, method.end)))
+                    {
+                        let variable = method.variables?.find(v => v.name === property);
+                        if (!variable) {
+                            variable = method.params?.find(v => v.name === property);
+                            if (variable?.type !== VariableType._class) {
+                                variable = undefined;
+                            }
+                        }
+                        if (variable) {
+                            const cmp = this.getComponent(variable.componentClass, true);
+                            if (cmp) {
+                                return cmp;
+                            }
+                            else {
+                                return {
+                                    name: variable.name,
+                                    start: variable.start,
+                                    end: variable.end,
+                                    componentClass: variable.componentClass
+                                };
+                            }
+                        }
                     }
                 }
             }
@@ -1187,7 +1187,7 @@ class ExtjsLanguageManager
 
         if (oneCall) {
             this.isIndexing = false;
-            showReIndexButton(true);
+            showReIndexButton();
         }
 
         log.methodDone("indexing " + fsPath, 2, logPad, true);
@@ -1229,7 +1229,7 @@ class ExtjsLanguageManager
             await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
         }
         this.isIndexing = false;
-        showReIndexButton(true);
+        showReIndexButton();
     }
 
 
@@ -1240,7 +1240,7 @@ class ExtjsLanguageManager
             window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
             return [];
         }
-        this.indexFiles();
+        await this.indexFiles();
     }
 
 

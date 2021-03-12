@@ -22,48 +22,6 @@ export const componentClassToWidgetsMapping: { [componentClass: string]: string[
 export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
 
 
-export function getExtJsComponent(text: string)
-{
-    const ast = parse(text);
-    let componentName = "";
-
-    //
-    // Construct our syntax tree to be able to serve the goods
-    //
-    traverse(ast,
-    {
-        CallExpression(path)
-        {
-            const callee = path.node.callee,
-                args = path.node.arguments;
-
-            if (callee.type === "MemberExpression")
-            {   //
-                // Check to see if the callee is 'Ext.define', these are our ExtJs classes...
-                //
-                if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
-                {
-                    log.blank(1);
-                    log.write("get extjs component", 1);
-                    //
-                    // Ext.define should be in the form:
-                    //
-                    //     Ext.define('MyApp.view.users.User', { ... });
-                    //
-                    // Check to make sure the callee args are a string for param 1 and an object for param 2
-                    //
-                    if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
-                    {
-                        componentName = args[0].value;
-                    }
-                }
-            }
-        }
-    });
-
-    return componentName;
-}
-
 
 export async function loadExtJsComponent(ast: string | undefined)
 {

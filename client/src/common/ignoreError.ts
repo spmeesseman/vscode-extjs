@@ -11,8 +11,11 @@ if (!ignoreErrors) {
 
 async function addIgnoreError(error: IError)
 {
-	ignoreErrors?.push(error);
-	await configuration?.update("ignoreErrors", ignoreErrors);
+	if (ignoreErrors && configuration)
+	{
+		ignoreErrors.push(error);
+		await configuration.update("ignoreErrors", ignoreErrors);
+	}
 }
 
 

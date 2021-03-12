@@ -57,9 +57,6 @@ export function blank(level?: number)
 
 export function error(msg: string | string[])
 {
-    if (!msg === null || msg === undefined) {
-        return;
-    }
     write("***");
     if (typeof msg === "string") {
         write("*** " + msg);
@@ -75,10 +72,6 @@ export function error(msg: string | string[])
 
 export function methodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: (string|any)[][])
 {
-    if (msg === null || msg === undefined) {
-        return;
-    }
-
     if (isLoggingEnabled())
     {
         const lLevel = level || 1;
@@ -98,10 +91,6 @@ export function methodStart(msg: string, level?: number, logPad = "", doLogBlank
 
 export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: (string|any)[][])
 {
-    if (msg === null || msg === undefined) {
-        return;
-    }
-
     if (isLoggingEnabled())
     {
         const lLevel = level || 1;
