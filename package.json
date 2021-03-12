@@ -27,8 +27,8 @@
 		"multi-root ready"
 	],
 	"activationEvents": [
-		"*"
-	],
+        "*"
+    ],
 	"main": "./dist/client/extension.js",
 	"galleryBanner": {
 		"color": "#EEEEEE",

@@ -33,6 +33,36 @@
 			"preLaunchTask": "npm: tsc-watch"
 		},
 		{
+			"type": "extensionHost",
+			"request": "launch",
+			"name": "Launch Webpack Client (GEMS Fixture)",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceRoot}",
+				"${workspaceRoot}/../GEMS2"
+			],
+			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
+			"stopOnEntry": false,
+            "sourceMaps": true,
+			"preLaunchTask": "npm: webpack-watch"
+		},
+		{
+			"type": "extensionHost",
+			"request": "launch",
+			"name": "Launch TSC Client (GEMS Fixture)",
+			"runtimeExecutable": "${execPath}",
+			"args": [
+				"--disable-extensions",
+				"--extensionDevelopmentPath=${workspaceRoot}",
+				"${workspaceRoot}/../GEMS2"
+			],
+			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
+			"stopOnEntry": false,
+            "sourceMaps": true,
+			"preLaunchTask": "npm: tsc-watch"
+		},
+		{
 			"type": "node",
 			"request": "attach",
 			"name": "Attach to Server",
