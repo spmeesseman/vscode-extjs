@@ -39,7 +39,7 @@ export async function validateExtJsDocument(textDocument: TextDocument, connecti
 {
 	const text = textDocument.getText(),
 		  diagnostics: Diagnostic[] = [];
-
+/*
 	if (!isErrorIgnored(ErrorCode.syntaxAllCaps, textDocument.uri))
 	{
 		const pattern = /\b[A-Z]{2,}\b/g;
@@ -80,7 +80,7 @@ export async function validateExtJsDocument(textDocument: TextDocument, connecti
 			connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 		}
 	}
-
+*/
 	return diagnostics;
 }
 
@@ -204,6 +204,7 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 				// Don''t expect the user to misspell by more than a character or two, so apply
 				// a 2 character threshhold on the length of the strings that we should compare
 				//
+				console.log(widget);
 				if (widget.length < xtype.length - 2 || widget.length > xtype.length + 2) {
 					continue;
 				}
@@ -215,13 +216,17 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 				if (suggestions.length === 5) {
 					break;
 				}
-				if (xtype.match(new RegExp(`${widgetPart1}[\\w]+`))) {
+				if (widget.indexOf(xtype) === 0) {
 					suggestions.push(widget);
-					continue;
+				}
+				else if (xtype.indexOf(widget) === 0) {
+					suggestions.push(widget);
+				}
+				else if (xtype.match(new RegExp(`${widgetPart1}[\\w]+`))) {
+					suggestions.push(widget);
 				}
 				if (xtype.match(new RegExp(`[\\w]+${widgetPart2}`))) {
 					suggestions.push(widget);
-					continue;
 				}
 			}
 

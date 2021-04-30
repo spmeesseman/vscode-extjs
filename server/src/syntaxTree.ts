@@ -122,7 +122,8 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         log.value("   Component", args[0].value, 1);
 
                         const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
-                        const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "alias" || p.key.name === "alternateClassName"));
+                        const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
+                        const propertyAlternateCls = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alternateClassName");
                         const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
                         const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
                         const propertyStatics = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "statics");
@@ -153,6 +154,13 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         if (isObjectProperty(propertyAlias))
                         {
                             const widgets = parseClassDefProperties(propertyAlias);
+                            componentInfo.widgets.push(...widgets[0]); // xtype array
+                            componentInfo.widgets.push(...widgets[1]); // alias array
+                        }
+
+                        if (isObjectProperty(propertyAlternateCls))
+                        {
+                            const widgets = parseClassDefProperties(propertyAlternateCls);
                             componentInfo.widgets.push(...widgets[0]); // xtype array
                             componentInfo.widgets.push(...widgets[1]); // alias array
                         }
