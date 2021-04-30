@@ -32,7 +32,7 @@ suite("Diagnostics Tests", () =>
 		await configuration.update("ignoreErrors", ignoreErrors);
 	});
 
-
+/*
 	test("Diagnose uppercase texts", async () =>
 	{
 		//
@@ -42,7 +42,7 @@ suite("Diagnostics Tests", () =>
 			{ message: "CCC is all uppercase.", range: toRange(66, 0, 66, 3), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" }
 		]);
 	});
-
+*/
 
 	test("Diagnose xtypes", async () =>
 	{

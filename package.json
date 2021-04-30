@@ -44,7 +44,7 @@
 		"coverage-open_report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" coverage/index.html",
 		"coverage-full_on": "enable-full-coverage.sh",
 		"coverage-full_off": "enable-full-coverage.sh --off",
-		"coverage-publish_to_codecov": "node_modules/.bin/codecov --disable=gcov --disable=detect",
+		"coverage-publish_to_codecov": "node_modules/.bin/codecov --disable=gcov --disable=detect --env=CODECOV_TOKEN2",
 		"lint": "eslint -c .eslintrc.js --ext .ts ./client/src ./server/src ./common/src",
 		"package": "vsce package",
 		"publish": "vsce publish",

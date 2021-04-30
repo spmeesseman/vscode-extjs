@@ -16,12 +16,11 @@ suite("Code Action Tests", () =>
 		await activate(docUri);
 	});
 
-
+/*
 	test("Syntax", async () =>
 	{
 		//
-		// Line 34 - app component
-		// physiciandropdown
+		// Line 67 CCC caps text
 		//
 		const range = toRange(66, 0, 66, 3);
 		await testCodeAction(docUri, range, [
@@ -58,7 +57,7 @@ suite("Code Action Tests", () =>
 			}
         }]);
 	});
-
+*/
 	test("Requires for xtypes", async () =>
 	{
 		//
