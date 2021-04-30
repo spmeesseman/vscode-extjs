@@ -253,7 +253,13 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 		let thisXType: string | undefined;
 		requires.push(...(cmpRequires?.value || []));
 
-		if (requires.length > 0)
+		//
+		// Ignore if this is the defined xtype of the component itself
+		//
+		if (thisWidgetCls === cmp.componentClass) {
+			requiredXtypes.push(xtype);
+		}
+		else if (requires.length > 0)
 		{
 			requiredXtypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
 				if (currentCmpClass !== thisWidgetCls) {
@@ -264,12 +270,6 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 				}
 				return previousValue;
 			}, []);
-		}
-		else // ignore if this is the defined xtype of the component itself
-		{
-			if (thisWidgetCls === cmp.componentClass) {
-				requiredXtypes.push(xtype);
-			}
 		}
 
 		if (!requiredXtypes.includes(xtype) && xtype !== thisXType)
