@@ -36,6 +36,7 @@
     - [Rate It - Leave Some Stars](#rate-it---leave-some-stars)
   - [Other Code Extensions by spmeesseman](#other-code-extensions-by-spmeesseman)
   - [Donations](#donations)
+  - [TODO](#todo)
 
 ## Description
 
@@ -228,3 +229,12 @@ Please rate your experience with stars... [like five of them ;)](https://marketp
 ## Donations
 
 If my work and this extension has made your life easier, consider a [donation](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=YWZXT3KE2L4BA&item_name=extjs&currency_code=USD).  All donations go straight to the *Single Dad ATM*.
+
+## TODO
+
+- Intellisense should be disabled in comments within a method (if not in a methid, is fine)
+- goto definition for jsdoc parameter types (surrounded with{})
+- If jsdoc isnt present for an overridden method, then check for parent method jsdoc
+- Handle the @inheritdoc tag
+- Handle links in jsdoc
+- If there's a jsdoc hover popup, the QUickFix diloag doesnt display, jsdoc popup overrides it somehow?
