@@ -238,3 +238,6 @@ If my work and this extension has made your life easier, consider a [donation](h
 - Handle the @inheritdoc tag
 - Handle links in jsdoc
 - If there's a jsdoc hover popup, the QUickFix diloag doesnt display, jsdoc popup overrides it somehow?
+- The "% done" status label is showing a ton of decimal l=places i.e. xx.3333333333333333333333% complete
+- the 'fix requires' feature doesnt work if there's no existing requires block.  it should add one if not there.
+- When Sencha Cmd is building, the indexer goes nuts, is it the build dir?
