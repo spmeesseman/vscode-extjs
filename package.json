@@ -27,8 +27,8 @@
 		"multi-root ready"
 	],
 	"activationEvents": [
-        "*"
-    ],
+		"*"
+	],
 	"main": "./dist/client/extension.js",
 	"galleryBanner": {
 		"color": "#EEEEEE",
@@ -76,7 +76,7 @@
 		"@types/node": "^13.13.41",
 		"@types/vscode": "^1.44.0",
 		"@typescript-eslint/eslint-plugin": "^2.34.0",
-		"@typescript-eslint/eslint-plugin-tslint": "^4.15.0",
+		"@typescript-eslint/eslint-plugin-tslint": "^4.28.0",
 		"@typescript-eslint/parser": "^2.34.0",
 		"codecov": "^3.8.1",
 		"conventional-changelog-spm": "^1.2.5",
