@@ -1,0 +1,22 @@
+{
+    "projectName":        "vscode-extjs",
+    "branch":             "master",
+    "bugs":               "https://github.com/spmeesseman/vscode-extjs/issues",
+    "buildCommand":       "npm run build",
+    "changelogFile":      "CHANGELOG.md",
+    "deployCommand":      "vsce publish",
+    "dryRunVcRevert":     "Y",
+    "githubRelease":      "Y",
+    "githubAssets":       "CHANGELOG.md",
+    "githubUser":         "spmeesseman",
+    "npmRelease":         "Y",
+    "postBuildCommand":   "npm run test --silent",
+    "preCommitCommand":   [],
+    "postCommitCommand":  [],
+    "postReleaseCommand": "npm run coverage-codecov-publish",
+    "repo":               "https://github.com/spmeesseman/vscode-extjs.git",
+    "repoType":           "git",
+    "testEmailRecip":     "spmeesseman@gmail.com",
+    "textEditor":         "notepad",
+    "vcWebPath":          "https://github.com/spmeesseman/vscode-extjs"
+}
