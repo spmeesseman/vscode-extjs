@@ -1,6 +1,6 @@
 {
 	"name": "vscode-extjs",
-	"version": "0.0.14",
+	"version": "0.0.15",
 	"displayName": "ExtJs Language Server",
 	"author": "Scott Meesseman",
 	"description": "Language Server for ExtJS since they cant write one on their own that works",
