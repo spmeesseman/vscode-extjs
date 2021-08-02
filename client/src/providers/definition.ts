@@ -14,19 +14,19 @@ class ExtJsDefinitionProvider implements DefinitionProvider
     {
         let location: Location | undefined;
 
-        log.methodStart("provide definition", 1);
+        log.methodStart("provide definition", 1, "", true);
 
         const { cmpType, property, cmpClass, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
-        const ns = cmpClass ? extjsLangMgr.getNamespaceFromClass(cmpClass) : undefined;
+        const ns = cmpClass ? extjsLangMgr.getNamespaceFromFile(document.uri.fsPath) : undefined;
 
         if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
         {
             log.value("   component class", cmpClass, 2);
-            const fsPath = extjsLangMgr.getFilePath(cmpClass);
+            const fsPath = extjsLangMgr.getFilePath(cmpClass, "   ");
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),
-                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, "   "),
+                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, ns, "   "),
                       range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
                 //

@@ -1,7 +1,5 @@
 # ExtJs Language Server - Intellisense, Code Completion, and More
 
-## NOT YET RELEASED!!  DO NOT INSTALL
-
 [![authors](https://img.shields.io/badge/authors-scott%20meesseman-6F02B5.svg?logo=visual%20studio%20code)](https://www.littlesm.com)
 [![Installs](https://vsmarketplacebadge.apphb.com/installs-short/spmeesseman.vscode-extjs.svg)](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-extjs)
 [![Downloads](https://vsmarketplacebadge.apphb.com/downloads-short/spmeesseman.vscode-extjs.svg)](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-extjs)
@@ -14,10 +12,11 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs)
 [![app-publisher](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-app--publisher-e10000.svg)](https://github.com/perryjohnsoninc/app-publisher)
 
+_**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 60-70% done.  The extension is stable, and at the point where it is helping with development, but, there will be bugs and there may be cases within source code where Intellisense doesn't seem to work, cases that have not been come across in usage testing.  Version 1.0.0 will be released once determined bug free*.
+
 ## Table of Contents
 
 - [ExtJs Language Server - Intellisense, Code Completion, and More](#extjs-language-server---intellisense-code-completion-and-more)
-  - [NOT YET RELEASED!!  DO NOT INSTALL](#not-yet-released--do-not-install)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
   - [Configuration](#configuration)
@@ -49,8 +48,6 @@ ExtJs Intellisense and Language Server, because Sencha can't.
 - Method Parameter Validation
 - XType Validation and Completion (Credits to Original Author **qzsiniong**)
 - Method and Class Validation
-
-_**IMPORTANT NOTE**_: This extension is a work in progress, ~ 50-60% done on all the functionality I'd like to complete.  Please don;t go nuts o the bug reporting, again thisis **incomplete**, but, still good enough to get benefit from using.
 
 ## Configuration
 
