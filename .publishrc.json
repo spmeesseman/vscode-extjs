@@ -5,7 +5,7 @@
         "npm run build-webpack"
     ],
     "changelogFile":      "CHANGELOG.md",
-    "deployCommand":      "vsce publish",
+    "deployCommand":      "npx vsce publish",
     "distReleasePathSrc": "install\\dist",
     "githubRelease":      "Y",
     "githubUser":         "spmeesseman",
