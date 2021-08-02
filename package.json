@@ -3,7 +3,7 @@
 	"version": "0.0.15",
 	"displayName": "ExtJs Language Server",
 	"author": "Scott Meesseman",
-	"description": "Language Server for ExtJS since they cant write one on their own that works",
+	"description": "ExtJS intellisense, code completion, and more",
 	"icon": "res/icon.png",
 	"engines": {
 		"vscode": "^1.44.0"
