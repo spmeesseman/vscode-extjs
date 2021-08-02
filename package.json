@@ -1,6 +1,6 @@
 {
 	"name": "vscode-extjs",
-	"version": "0.0.11",
+	"version": "0.0.13",
 	"displayName": "ExtJs Language Server",
 	"author": "Scott Meesseman",
 	"description": "Language Server for ExtJS since they cant write one on their own that works",
@@ -96,7 +96,7 @@
 		"ts-node": "^9.1.1",
 		"tslint": "^6.1.3",
 		"typescript": "^4.1.5",
-		"vsce": "^1.85.1",
+		"vsce": "^1.96.1",
 		"vscode-test": "^1.5.0",
 		"webpack": "^4.46.0",
 		"webpack-cli": "^3.3.12"
@@ -160,36 +160,36 @@
 					"description": "Set debug verbosity (1 - Low / 5 - High)."
 				},
 				"extjsLangSvr.exclude": {
-                    "type": [
-                        "string",
-                        "array"
-                    ],
-                    "items": {
-                        "type": "string"
-                    },
-                    "default": [
-                        "**/.vscode-test/**",
-                        "**/bin/**",
-                        "**/build/**",
-                        "**/CompiledOutput/**",
-                        "**/dist/**",
-                        "**/doc/**",
-                        "**/out/**",
-                        "**/output/**",
-                        "**/packages/**",
-                        "**/release/**",
-                        "**/releases/**",
-                        "**/samples/**",
-                        "**/sdks/**",
-                        "**/static/**",
-                        "**/target/**",
-                        "**/test/**",
-                        "**/third_party/**",
-                        "**/vendor/**",
-                        "**/work/**"
-                    ],
-                    "description": "Paths (glob) to exclude / ignore"
-                },
+					"type": [
+						"string",
+						"array"
+					],
+					"items": {
+						"type": "string"
+					},
+					"default": [
+						"**/.vscode-test/**",
+						"**/bin/**",
+						"**/build/**",
+						"**/CompiledOutput/**",
+						"**/dist/**",
+						"**/doc/**",
+						"**/out/**",
+						"**/output/**",
+						"**/packages/**",
+						"**/release/**",
+						"**/releases/**",
+						"**/samples/**",
+						"**/sdks/**",
+						"**/static/**",
+						"**/target/**",
+						"**/test/**",
+						"**/third_party/**",
+						"**/vendor/**",
+						"**/work/**"
+					],
+					"description": "Paths (glob) to exclude / ignore"
+				},
 				"extjsLangSvr.include": {
 					"type": [
 						"string",
