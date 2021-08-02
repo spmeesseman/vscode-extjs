@@ -144,6 +144,11 @@ CCC
 	{
 		let cmp = this.down('physiciandropdown');
 		cmp.load("test");
+	},
+
+	testFn7: function()
+	{
+		me.test3 = AppUtils.alertError("test");
 	}
 
 });

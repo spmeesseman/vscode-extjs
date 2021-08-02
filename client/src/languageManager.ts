@@ -147,8 +147,7 @@ class ExtjsLanguageManager
     {
         let component = this.componentClassToComponentsMapping[componentClass];
 
-        log.write("get component by class", 1);
-        log.value("   component class", componentClass, 2);
+        log.methodStart("get component by class", 1, "   ", false, [["component class", componentClass]]);
 
         if (component)
         {
@@ -264,6 +263,8 @@ class ExtjsLanguageManager
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
 
+        log.methodStart("get component class", 1);
+
         //
         // Get class name prependature to hovered property
         //
@@ -286,8 +287,11 @@ class ExtjsLanguageManager
         if (cmpClassPre.indexOf("(") < pIdx) {
             // cmpClassPre = lineText.substring(cmpClassPre.indexOf("(") + 1);
         }
-        cmpClassPreIdx = cmpClassPre.lastIndexOf(" ") + 1;
-
+        cmpClassPreIdx = cmpClassPre.lastIndexOf("=");
+        if (cmpClassPreIdx === -1) {
+            cmpClassPreIdx = cmpClassPre.lastIndexOf(" ");
+        }
+        cmpClassPreIdx++;
         //
         // Remove the trailing '.' for the component name
         //
@@ -339,8 +343,7 @@ class ExtjsLanguageManager
             }
         }
 
-        log.blank(1);
-        log.value("class", cmpClass, 1);
+        log.methodDone("get component class", 1, "", false, [["class", cmpClass]]);
         return cmpClass;
     }
 
@@ -466,7 +469,7 @@ class ExtjsLanguageManager
         //     1. Ext.util.DelayedTask(...)
         //     2. Util.checkOneSelected(...)) {
         //
-        let lineText = allLineText.replace(/[\s\w]+=[\s]*(new)*\s*/, "").replace(/[\s\w]*if\s*\(\s*[!]{0,2}/, ""),
+        let lineText = allLineText.replace(/[\s\w.\[\]]+=[\s]*(new)*\s*/, "").replace(/[\s\w]*if\s*\(\s*[!]{0,2}/, ""),
             property = document.getText(range),
             cmpType: ComponentType = ComponentType.None;
 
@@ -726,7 +729,7 @@ class ExtjsLanguageManager
     getNamespaceFromFile(fsPath: string, part?: number): string | undefined
     {
         let ns: string | undefined;
-        log.methodStart("get component class by file", 1, "   ", false, [["file", fsPath]]);
+        log.methodStart("get namespace from file", 1, "   ", false, [["file", fsPath]]);
         const cls = this.fileToComponentClassMapping[fsPath];
         if (cls){
             log.write("   found base class", 3);
@@ -852,7 +855,7 @@ class ExtjsLanguageManager
         const subComponentNames: string[] = [],
               map = this.componentClassToComponentsMapping;
 
-        log.write("get component by class", 1);
+        log.write("get sub-component names", 1);
         log.value("   component class", componentClass, 2);
 
         Object.keys(map).forEach((cls) =>
