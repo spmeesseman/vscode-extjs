@@ -1,6 +1,6 @@
 {
 	"name": "vscode-extjs",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"displayName": "ExtJs Language Server",
 	"author": "Scott Meesseman",
 	"description": "Language Server for ExtJS since they cant write one on their own that works",
@@ -106,6 +106,7 @@
 		"@babel/traverse": "^7.12.13",
 		"@babel/types": "^7.12.13",
 		"json5": "^2.2.0",
+		"minimatch": "^3.0.4",
 		"vscode-languageclient": "^6.1.4",
 		"vscode-languageserver": "^6.1.1",
 		"vscode-languageserver-textdocument": "^1.0.1"
@@ -158,6 +159,37 @@
 					"default": 1,
 					"description": "Set debug verbosity (1 - Low / 5 - High)."
 				},
+				"taskExplorer.exclude": {
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "**/.vscode-test/**",
+                        "**/bin/**",
+                        "**/build/**",
+                        "**/CompiledOutput/**",
+                        "**/dist/**",
+                        "**/doc/**",
+                        "**/out/**",
+                        "**/output/**",
+                        "**/packages/**",
+                        "**/release/**",
+                        "**/releases/**",
+                        "**/samples/**",
+                        "**/sdks/**",
+                        "**/static/**",
+                        "**/target/**",
+                        "**/test/**",
+                        "**/third_party/**",
+                        "**/vendor/**",
+                        "**/work/**"
+                    ],
+                    "description": "Paths (glob) to exclude / ignore"
+                },
 				"extjsLangSvr.include": {
 					"type": [
 						"string",

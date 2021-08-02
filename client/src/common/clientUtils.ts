@@ -1,11 +1,39 @@
 
+import minimatch from "minimatch";
 import { Range, Position } from "vscode";
 import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive } from "../../../common";
+import { configuration } from "./configuration";
 
 
 export function isComponent(object: IExtJsBase| undefined): object is IComponent
 {
     return object !== undefined && "baseNameSpace" in object;
+}
+
+
+export function isExcluded(uriPath: string, logPad = "")
+{
+    function testForExclusionPattern(path: string, pattern: string): boolean
+    {
+        return minimatch(path, pattern, { dot: true, nocase: true });
+    }
+
+    const exclude = configuration.get<string | string[]>("exclude");
+    if (exclude)
+    {
+        if (Array.isArray(exclude))
+        {
+            for (const pattern of exclude) {
+                if (testForExclusionPattern(uriPath, pattern)) {
+                    return true;
+                }
+            }
+        }
+        else {
+            return testForExclusionPattern(uriPath, exclude);
+        }
+    }
+    return false;
 }
 
 

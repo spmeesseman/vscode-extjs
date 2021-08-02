@@ -8,6 +8,10 @@ import {
     IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType,
     IVariable, VariableType, IExtJsBase, IPrimitive
 } from  "../../common";
+
+import {
+    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded
+} from "./common/clientUtils";
 import * as log from "./common/log";
 import * as path from "path";
 import ServerRequest from "./common/ServerRequest";
@@ -18,7 +22,6 @@ import { configuration } from "./common/configuration";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
-import { toVscodeRange, toVscodePosition, isPositionInRange, isComponent } from "./common/clientUtils";
 
 
 export interface ILineProperties
@@ -1037,7 +1040,7 @@ class ExtjsLanguageManager
                         await this.serverRequest.loadExtJsComponent(JSON.stringify([c]));
                         processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
-                        const pct = (cfgPct * currentCfgIdx) + Math.round(++currentFileIdx / components.length * (100 / this.config.length));
+                        const pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
                         progress?.report({
                             increment,
                             message: ": Indexing " + pct + "%"
@@ -1140,6 +1143,10 @@ class ExtjsLanguageManager
 
     async indexFile(fsPath: string, project: string, saveToCache: boolean, document: TextDocument | Uri, oneCall = true, logPad = ""): Promise<IComponent[] | false | undefined>
     {
+        if (isExcluded(Uri.file(fsPath).path)) {
+            return;
+        }
+
         log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "project", project ]]);
         if (oneCall) {
             this.isIndexing = true;
