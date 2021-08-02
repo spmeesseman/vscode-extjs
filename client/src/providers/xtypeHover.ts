@@ -20,9 +20,13 @@ class XtypeHoverProvider implements HoverProvider
 
             if (new RegExp(`xtype\\s*:\\s*(['"])${xtype}\\1$`).test(text))
             {
-                const cmpClass = extjsLangMgr.getMappedClass(xtype, ComponentType.Widget);
-                if (cmpClass) {
-                    return new Hover(`* **class**: ${cmpClass} \n* **xtype**: ${xtype}`);
+                const ns = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath);
+                if (ns)
+                {
+                    const cmpClass = extjsLangMgr.getMappedClass(xtype, ns, ComponentType.Widget);
+                    if (cmpClass) {
+                        return new Hover(`* **class**: ${cmpClass} \n* **xtype**: ${xtype}`);
+                    }
                 }
             }
         }

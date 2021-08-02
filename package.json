@@ -1,6 +1,6 @@
 {
 	"name": "vscode-extjs",
-	"version": "0.0.2",
+	"version": "0.0.11",
 	"displayName": "ExtJs Language Server",
 	"author": "Scott Meesseman",
 	"description": "Language Server for ExtJS since they cant write one on their own that works",
@@ -159,7 +159,7 @@
 					"default": 1,
 					"description": "Set debug verbosity (1 - Low / 5 - High)."
 				},
-				"taskExplorer.exclude": {
+				"extjsLangSvr.exclude": {
                     "type": [
                         "string",
                         "array"

@@ -1,5 +1,5 @@
 
-import minimatch from "minimatch";
+import * as minimatch from "minimatch";
 import { Range, Position } from "vscode";
 import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive } from "../../../common";
 import { configuration } from "./configuration";

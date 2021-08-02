@@ -69,13 +69,17 @@ class MethodSignatureProvider implements SignatureHelpProvider
 		//
         if (matches)
         {
+            let ns = extjsLangMgr.getNamespaceFromFile(fsPath);
             let cls = "";
             for (const m of matches)
             {
                 cls += m;
             }
             cls = cls.substring(0, cls.length - 1); // remove trailing .
-            const cmp = extjsLangMgr.getComponent(cls, true) || extjsLangMgr.getComponentInstance(cls, position, fsPath);
+            if (!ns) {
+                ns = cls;
+            }
+            const cmp = extjsLangMgr.getComponent(cls, ns, true) || extjsLangMgr.getComponentInstance(cls, ns, position, fsPath);
 
             if (isComponent(cmp))
             {

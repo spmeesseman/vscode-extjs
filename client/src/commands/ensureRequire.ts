@@ -25,7 +25,7 @@ export async function ensureRequires(xtype: string | undefined)
 
 				for (const x of component.xtypes)
 				{
-					const c = extjsLangMgr.getMappedClass(x.name, ComponentType.Widget);
+					const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, ComponentType.Widget);
 					if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
 						componentClasses.add(c);
 					}

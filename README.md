@@ -29,7 +29,6 @@
       - [Required Configuration Property - `classpath`](#required-configuration-property---classpath)
   - [Versus the Sencha Extension](#versus-the-sencha-extension)
   - [ESLint](#eslint)
-  - [Sencha ESLint Plugin](#sencha-eslint-plugin)
   - [Caching](#caching)
   - [Thank You](#thank-you)
   - [Feedback & Contributing](#feedback--contributing)
@@ -40,8 +39,10 @@
 
 ## Description
 
-ExtJs Intellisense and Language Server, additional functionality that the Sencha extnsion doesn't (can't?) provide for a multi-root workspace:
+ExtJs Intellisense and Language Server, because Sencha can't.
 
+- Supports multi-root workspace
+- Automatic parsing, no manual configuration needed
 - Method, Config, and Property JSDoc/Comments Hover
 - Code Completion Intellisense with Inline JSDoc/Comments
 - Method Signature Intellisense with Inline JSDoc/Comments
@@ -49,11 +50,13 @@ ExtJs Intellisense and Language Server, additional functionality that the Sencha
 - XType Validation and Completion (Credits to Original Author **qzsiniong**)
 - Method and Class Validation
 
+_**IMPORTANT NOTE**_: This extension is a work in progress, ~ 50-60% done on all the functionality I'd like to complete.  Please don;t go nuts o the bug reporting, again thisis **incomplete**, but, still good enough to get benefit from using.
+
 ## Configuration
 
 Assuming a standard JavaScript linter is already in place, the ExtJs Language Server attempts to provide the missing functionality that a standard JavaScript Language Server cannot handle due to the nature of the ExtJS class definitions, which are basically just one function expression per class file as far as a standard JavaScript parser is concerned.
 
-A standard linter used in most all JavaScript projects is [ESLint](https://github.com/eslint/eslint), some quick install details can be found in the [section below](#eslint).  You should also use the [Sencha ESLint Plugin](#sencha-eslint-plugin) in your ExtJS projects.
+A standard linter used in most all JavaScript projects is [ESLint](https://github.com/eslint/eslint), some quick install details can be found in the [section below](#eslint).  Don't use the *Sencha ESLint Plugin* for linting in your ExtJS projects, it's garbage and will slow everything down like nothing I've ever seen.
 
 This language server looks at your entire workspace, whether single or multi root, and locates ExtJS files in one of three ways, or any combination thereof:
 
@@ -174,29 +177,7 @@ Linting is dynamic as you edit files.  But also create a task in package.json fo
         "lint": "eslint -c .eslintrc.json --ext .js ./app"
     }
 
-You should also install and use the [Sencha ESLint Plugin](#sencha-eslint-plugin).
-
-## Sencha ESLint Plugin
-
-For additional component definition coverage, install the ExtJS ESLint PLugin from Sencha.  Run the following command from the root project directory containing the package.json file
-
-    npm install --save-dev @sencha/eslint-plugin-extjs
-
-**Or** install globally:
-
-    npm install -g @sencha/eslint-plugin-extjs
-
-To configure ESLint to use the Sencha plugin, add the following to the ESLint configuration file (*.eslint.js/json*):
-
-    "plugins": [
-        ...existing plugins...
-        "@sencha/extjs"
-    ],
-
-    "extends": [
-        ...existing extends...
-        "plugin:@sencha/extjs/recommended"
-    ]
+**NOTE**: Do not use the *Sencha ESLint Plugin* for linting, it's garbage and will slow everything down like nothing I've ever seen.
 
 ## Caching
 
