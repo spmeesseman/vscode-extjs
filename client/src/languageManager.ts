@@ -1552,8 +1552,11 @@ class ExtjsLanguageManager
 
     private async processConfigChange(e: Uri)
     {
-        fsStorage?.clear();
-        await this.initializeInternal();
+        const action = await window.showInformationMessage("Config file modified, re-index all files?", "Yes", "No");
+        if (action === "Yes") {
+            fsStorage?.clear();
+            await this.initializeInternal();
+        }
     }
 
 
@@ -1683,38 +1686,33 @@ class ExtjsLanguageManager
         //
         // Build watcher glob from classpaths
         //
-        const watcherGlobs = [];
+        const classPaths = [];
         for (const c of this.config)
         {
             if (typeof(c.classpath) === "string" || c.classpath instanceof String)
             {
                 log.write(`      Adding classpath ${c.classpath}`, 3);
-                // watcherGlobs.push("**/" + c.classpath.replace("\\", "/") + "/*.js");
-                // watcherGlobs.push(c.classpath.replace("\\", "/") + "/*.js");
-                watcherGlobs.push(c.classpath.replace("\\", "/"));
+                classPaths.push(c.classpath.replace("\\", "/"));
             }
             else {
                 for (const cp of c.classpath) {
                     log.write(`      Adding classpath ${cp}`, 3);
-                    // watcherGlobs.push("**/" + cp.replace("\\", "/") + "/*.js");
-                    // watcherGlobs.push(cp.replace("\\", "/") + "/*.js");
-                    watcherGlobs.push(cp.replace("\\", "/"));
+                    classPaths.push(cp.replace("\\", "/"));
                 }
             }
         }
-        if (watcherGlobs.length === 0) {
-            watcherGlobs.push("**/*.js");
+        if (classPaths.length === 0) {
+            classPaths.push("**/*.js");
         }
 
-        log.value("   file watcher globs", watcherGlobs.join (" | "), 2);
-        log.write(`**/{${watcherGlobs.join(",")}}/**/*.js`);
+        log.value("   file watcher globs", classPaths.join (" | "), 2);
+        log.write(`**/{${classPaths.join(",")}}/**/*.js`);
 
         //
         // rc/conf file / app.json
         //
         const disposables: Disposable[] = [],
-              jsWatcher = workspace.createFileSystemWatcher(`**/{${watcherGlobs.join(",")}}/**/*.js`),
-              // jsWatcher = workspace.createFileSystemWatcher(`{${watcherGlobs.join(",")}}`),
+              jsWatcher = workspace.createFileSystemWatcher(`**/{${classPaths.join(",")}}/**/*.js`),
               confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json,workspace.json}");
 
         //
