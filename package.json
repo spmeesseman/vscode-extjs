@@ -1,251 +1,251 @@
 {
-	"name": "vscode-extjs",
-	"version": "0.0.16",
-	"displayName": "ExtJs Language Server",
-	"author": "Scott Meesseman",
-	"description": "ExtJS intellisense, code completion, and more",
-	"icon": "res/icon.png",
-	"engines": {
-		"vscode": "^1.44.0"
-	},
-	"publisher": "spmeesseman",
-	"license": "MIT",
-	"homepage": "https://github.com/spmeesseman/vscode-extjs/blob/master/README.md",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/spmeesseman/vscode-extjs.git"
-	},
-	"bugs": {
-		"url": "https://github.com/spmeesseman/vscode-extjs/issues"
-	},
-	"categories": [
-		"Other"
-	],
-	"keywords": [
-		"extjs",
-		"sencha",
-		"multi-root ready"
-	],
-	"activationEvents": [
-		"*"
-	],
-	"main": "./dist/client/extension.js",
-	"galleryBanner": {
-		"color": "#EEEEEE",
-		"theme": "light"
-	},
-	"scripts": {
-		"clean-dist": "rimraf dist && npm run coverage-clean",
-		"clean-ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs",
-		"build-webpack": "npm run build-common && npm run webpack-build",
-		"build-common": "tsc -p ./common",
-		"build-tsc": "npm run build-common && npm run tsc-build",
-		"coverage-clean": "rimraf .nyc_output && rimraf coverage",
-		"coverage-open_report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" coverage/index.html",
-		"coverage-full_on": "enable-full-coverage.sh",
-		"coverage-full_off": "enable-full-coverage.sh --off",
-		"coverage-publish_to_codecov": "node_modules/.bin/codecov --disable=gcov --disable=detect --env=CODECOV_TOKEN2",
-		"lint": "eslint -c .eslintrc.js --ext .ts ./client/src ./server/src ./common/src",
-		"package": "vsce package",
-		"publish": "vsce publish",
-		"semantic_release-release": "semantic-release",
-		"semantic_release-release_no_ci": "semantic-release --no-ci",
-		"semantic_release-release_dry": "semantic-release --dry-run",
-		"test-run_mocha": "npm run coverage-clean && node ./dist/client/test/runTest.js",
-		"test-dev": "npm run test-before && npm run test-run_mocha && npm run test-after",
-		"test-after": "npm run coverage-full_off",
-		"test-before": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run clean-ast_cache && npm run clean-dist && npm run build-tsc && npm run coverage-full_on",
-		"test-open_report": "npm run coverage-open_report",
-		"vscode:prepublish": "npm run clean-dist && npm run build-common && npm run build-webpack",
-		"tsc-build": "tsc -b ./",
-		"tsc-watch": "npm run clean-dist &&  tsc -b ./ -w",
-		"tsc-watch_common": "tsc -watch -p ./common",
-		"webpack-watch": "npm run clean-dist && webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js --config ./webpack.config.server.js",
-		"webpack-build": "npm run webpack-build:client && npm run webpack-build:server",
-		"webpack-build:client": "webpack --mode production --config ./webpack.config.client.js",
-		"webpack-build:server": "webpack --mode production --config ./webpack.config.server.js",
-		"webpack-watch:client": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js",
-		"webpack-watch:server": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.server.js"
-	},
-	"devDependencies": {
-		"@istanbuljs/nyc-config-typescript": "^1.0.1",
-		"@types/babel__traverse": "^7.11.0",
-		"@types/glob": "^7.1.3",
-		"@types/json5": "0.0.30",
-		"@types/mocha": "^7.0.2",
-		"@types/node": "^13.13.41",
-		"@types/vscode": "^1.44.0",
-		"@typescript-eslint/eslint-plugin": "^2.34.0",
-		"@typescript-eslint/eslint-plugin-tslint": "^4.28.0",
-		"@typescript-eslint/parser": "^2.34.0",
-		"codecov": "^3.8.1",
-		"eslint": "^7.20.0",
-		"eslint-plugin-import": "^2.22.1",
-		"eslint-plugin-jsdoc": "^31.6.1",
-		"eslint-plugin-no-null": "^1.0.2",
-		"eslint-plugin-prefer-arrow": "^1.2.3",
-		"glob": "^7.1.6",
-		"mocha": "^7.2.0",
-		"mocha-junit-reporter": "^2.0.0",
-		"mocha-multi-reporters": "^1.5.1",
-		"nyc": "^15.1.0",
-		"rimraf": "^3.0.2",
-		"semver": "^7.3.4",
-		"source-map-support": "^0.5.19",
-		"ts-loader": "^7.0.5",
-		"ts-node": "^9.1.1",
-		"tslint": "^6.1.3",
-		"typescript": "^4.1.5",
-		"vsce": "^1.96.1",
-		"vscode-test": "^1.5.0",
-		"webpack": "^4.46.0",
-		"webpack-cli": "^3.3.12"
-	},
-	"dependencies": {
-		"@babel/parser": "^7.12.16",
-		"@babel/traverse": "^7.12.13",
-		"@babel/types": "^7.12.13",
-		"json5": "^2.2.0",
-		"minimatch": "^3.0.4",
-		"vscode-languageclient": "^6.1.4",
-		"vscode-languageserver": "^6.1.1",
-		"vscode-languageserver-textdocument": "^1.0.1"
-	},
-	"contributes": {
-		"commands": [
-			{
-				"command": "vscode-extjs:ensureRequire",
-				"title": "vscode-extjs: Ensure Requires for XTypes"
-			},
-			{
-				"command": "vscode-extjs:replaceText",
-				"title": "vscode-extjs: Replace Text",
-				"enablement": "none!=none"
-			},
-			{
-				"command": "vscode-extjs:ignoreError",
-				"title": "vscode-extjs: Ignore Error",
-				"enablement": "none!=none"
-			},
-			{
-				"command": "vscode-extjs:indexFiles",
-				"title": "vscode-extjs: Index Files"
-			}
-		],
-		"configuration": {
-			"id": "extjsLangSvr",
-			"type": "object",
-			"title": "ExtJs Language Server",
-			"properties": {
-				"extjsLangSvr.debugClient": {
-					"type": "boolean",
-					"default": false,
-					"description": "Turn on client logging."
-				},
-				"extjsLangSvr.debugServer": {
-					"type": "boolean",
-					"default": false,
-					"description": "Turn on server logging."
-				},
-				"extjsLangSvr.debugLevel": {
-					"type": "number",
-					"enum": [
-						1,
-						2,
-						3,
-						4,
-						5
-					],
-					"default": 1,
-					"description": "Set debug verbosity (1 - Low / 5 - High)."
-				},
-				"extjsLangSvr.exclude": {
-					"type": [
-						"string",
-						"array"
-					],
-					"items": {
-						"type": "string"
-					},
-					"default": [
-						"**/.vscode-test/**",
-						"**/bin/**",
-						"**/build/**",
-						"**/CompiledOutput/**",
-						"**/dist/**",
-						"**/doc/**",
-						"**/out/**",
-						"**/output/**",
-						"**/packages/**",
-						"**/release/**",
-						"**/releases/**",
-						"**/samples/**",
-						"**/sdks/**",
-						"**/static/**",
-						"**/target/**",
-						"**/test/**",
-						"**/third_party/**",
-						"**/vendor/**",
-						"**/work/**"
-					],
-					"description": "Paths (glob) to exclude / ignore"
-				},
-				"extjsLangSvr.include": {
-					"type": [
-						"string",
-						"array"
-					],
-					"items": {
-						"type": "string"
-					},
-					"default": [],
-					"title": "Include",
-					"description": "Directories to search when indexing ExtJs files"
-				},
-				"extjsLangSvr.ignoreErrors": {
-					"type": "array",
-					"items": {
-						"type": "object"
-					},
-					"default": [],
-					"description": "Errors that are excluded from validation, globally or for a document only"
-				},
-				"extjsLangSvr.intellisenseIncludeDeprecated": {
-					"type": "boolean",
-					"default": true,
-					"description": "Include deprecated methods, properties, and configs in Intellisense.  Note these properties will be tagged"
-				},
-				"extjsLangSvr.intellisenseIncludePrivate": {
-					"type": "boolean",
-					"default": false,
-					"description": "Include private methods, properties, and configs in Intellisense"
-				},
-				"extjsLangSvr.frameworkDirectory": {
-					"type": "string",
-					"description": "Directory to the ExtJS Framework.  If not specified, the fist frammework directory found by the Syntax Parser will be used."
-				},
-				"extjsLangSvr.validateXTypes": {
-					"type": "boolean",
-					"default": true,
-					"description": "Validate that all required classes are included in the 'requires' array for all xtype references found"
-				},
-				"extjsLangSvr.validationDelay": {
-					"type": "number",
-					"default": 1250,
-					"enum": [
-						250,
-						400,
-						500,
-						750,
-						1000,
-						1250,
-						1500,
-						1750,
-						2000
-					],
-					"description": "The time (in ms) to allow between keystrokes before validation is triggered."
-				}
-			}
-		}
-	}
+    "name": "vscode-extjs",
+    "version": "0.1.0",
+    "displayName": "ExtJs Language Server",
+    "author": "Scott Meesseman",
+    "description": "ExtJS intellisense, code completion, and more",
+    "icon": "res/icon.png",
+    "engines": {
+        "vscode": "^1.44.0"
+    },
+    "publisher": "spmeesseman",
+    "license": "MIT",
+    "homepage": "https://github.com/spmeesseman/vscode-extjs/blob/master/README.md",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/spmeesseman/vscode-extjs.git"
+    },
+    "bugs": {
+        "url": "https://github.com/spmeesseman/vscode-extjs/issues"
+    },
+    "categories": [
+        "Other"
+    ],
+    "keywords": [
+        "extjs",
+        "sencha",
+        "multi-root ready"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./dist/client/extension.js",
+    "galleryBanner": {
+        "color": "#EEEEEE",
+        "theme": "light"
+    },
+    "scripts": {
+        "clean-dist": "rimraf dist && npm run coverage-clean",
+        "clean-ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs",
+        "build-webpack": "npm run build-common && npm run webpack-build",
+        "build-common": "tsc -p ./common",
+        "build-tsc": "npm run build-common && npm run tsc-build",
+        "coverage-clean": "rimraf .nyc_output && rimraf coverage",
+        "coverage-open_report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" coverage/index.html",
+        "coverage-full_on": "enable-full-coverage.sh",
+        "coverage-full_off": "enable-full-coverage.sh --off",
+        "coverage-publish_to_codecov": "node_modules/.bin/codecov --disable=gcov --disable=detect --env=CODECOV_TOKEN2",
+        "lint": "eslint -c .eslintrc.js --ext .ts ./client/src ./server/src ./common/src",
+        "package": "vsce package",
+        "publish": "vsce publish",
+        "semantic_release-release": "semantic-release",
+        "semantic_release-release_no_ci": "semantic-release --no-ci",
+        "semantic_release-release_dry": "semantic-release --dry-run",
+        "test-run_mocha": "npm run coverage-clean && node ./dist/client/test/runTest.js",
+        "test-dev": "npm run test-before && npm run test-run_mocha && npm run test-after",
+        "test-after": "npm run coverage-full_off",
+        "test-before": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run clean-ast_cache && npm run clean-dist && npm run build-tsc && npm run coverage-full_on",
+        "test-open_report": "npm run coverage-open_report",
+        "vscode:prepublish": "npm run clean-dist && npm run build-common && npm run build-webpack",
+        "tsc-build": "tsc -b ./",
+        "tsc-watch": "npm run clean-dist &&  tsc -b ./ -w",
+        "tsc-watch_common": "tsc -watch -p ./common",
+        "webpack-watch": "npm run clean-dist && webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js --config ./webpack.config.server.js",
+        "webpack-build": "npm run webpack-build:client && npm run webpack-build:server",
+        "webpack-build:client": "webpack --mode production --config ./webpack.config.client.js",
+        "webpack-build:server": "webpack --mode production --config ./webpack.config.server.js",
+        "webpack-watch:client": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.client.js",
+        "webpack-watch:server": "webpack -w --info-verbosity verbose --mode development --config ./webpack.config.server.js"
+    },
+    "devDependencies": {
+        "@istanbuljs/nyc-config-typescript": "^1.0.1",
+        "@types/babel__traverse": "^7.11.0",
+        "@types/glob": "^7.1.3",
+        "@types/json5": "0.0.30",
+        "@types/mocha": "^7.0.2",
+        "@types/node": "^13.13.41",
+        "@types/vscode": "^1.44.0",
+        "@typescript-eslint/eslint-plugin": "^2.34.0",
+        "@typescript-eslint/eslint-plugin-tslint": "^4.28.0",
+        "@typescript-eslint/parser": "^2.34.0",
+        "codecov": "^3.8.1",
+        "eslint": "^7.20.0",
+        "eslint-plugin-import": "^2.22.1",
+        "eslint-plugin-jsdoc": "^31.6.1",
+        "eslint-plugin-no-null": "^1.0.2",
+        "eslint-plugin-prefer-arrow": "^1.2.3",
+        "glob": "^7.1.6",
+        "mocha": "^7.2.0",
+        "mocha-junit-reporter": "^2.0.0",
+        "mocha-multi-reporters": "^1.5.1",
+        "nyc": "^15.1.0",
+        "rimraf": "^3.0.2",
+        "semver": "^7.3.4",
+        "source-map-support": "^0.5.19",
+        "ts-loader": "^7.0.5",
+        "ts-node": "^9.1.1",
+        "tslint": "^6.1.3",
+        "typescript": "^4.1.5",
+        "vsce": "^1.96.1",
+        "vscode-test": "^1.5.0",
+        "webpack": "^4.46.0",
+        "webpack-cli": "^3.3.12"
+    },
+    "dependencies": {
+        "@babel/parser": "^7.12.16",
+        "@babel/traverse": "^7.12.13",
+        "@babel/types": "^7.12.13",
+        "json5": "^2.2.0",
+        "minimatch": "^3.0.4",
+        "vscode-languageclient": "^6.1.4",
+        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver-textdocument": "^1.0.1"
+    },
+    "contributes": {
+        "commands": [
+            {
+                "command": "vscode-extjs:ensureRequire",
+                "title": "vscode-extjs: Ensure Requires for XTypes"
+            },
+            {
+                "command": "vscode-extjs:replaceText",
+                "title": "vscode-extjs: Replace Text",
+                "enablement": "none!=none"
+            },
+            {
+                "command": "vscode-extjs:ignoreError",
+                "title": "vscode-extjs: Ignore Error",
+                "enablement": "none!=none"
+            },
+            {
+                "command": "vscode-extjs:indexFiles",
+                "title": "vscode-extjs: Index Files"
+            }
+        ],
+        "configuration": {
+            "id": "extjsLangSvr",
+            "type": "object",
+            "title": "ExtJs Language Server",
+            "properties": {
+                "extjsLangSvr.debugClient": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Turn on client logging."
+                },
+                "extjsLangSvr.debugServer": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Turn on server logging."
+                },
+                "extjsLangSvr.debugLevel": {
+                    "type": "number",
+                    "enum": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                    ],
+                    "default": 1,
+                    "description": "Set debug verbosity (1 - Low / 5 - High)."
+                },
+                "extjsLangSvr.exclude": {
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "**/.vscode-test/**",
+                        "**/bin/**",
+                        "**/build/**",
+                        "**/CompiledOutput/**",
+                        "**/dist/**",
+                        "**/doc/**",
+                        "**/out/**",
+                        "**/output/**",
+                        "**/packages/**",
+                        "**/release/**",
+                        "**/releases/**",
+                        "**/samples/**",
+                        "**/sdks/**",
+                        "**/static/**",
+                        "**/target/**",
+                        "**/test/**",
+                        "**/third_party/**",
+                        "**/vendor/**",
+                        "**/work/**"
+                    ],
+                    "description": "Paths (glob) to exclude / ignore"
+                },
+                "extjsLangSvr.include": {
+                    "type": [
+                        "string",
+                        "array"
+                    ],
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [],
+                    "title": "Include",
+                    "description": "Directories to search when indexing ExtJs files"
+                },
+                "extjsLangSvr.ignoreErrors": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    },
+                    "default": [],
+                    "description": "Errors that are excluded from validation, globally or for a document only"
+                },
+                "extjsLangSvr.intellisenseIncludeDeprecated": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Include deprecated methods, properties, and configs in Intellisense.  Note these properties will be tagged"
+                },
+                "extjsLangSvr.intellisenseIncludePrivate": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Include private methods, properties, and configs in Intellisense"
+                },
+                "extjsLangSvr.frameworkDirectory": {
+                    "type": "string",
+                    "description": "Directory to the ExtJS Framework.  If not specified, the fist frammework directory found by the Syntax Parser will be used."
+                },
+                "extjsLangSvr.validateXTypes": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Validate that all required classes are included in the 'requires' array for all xtype references found"
+                },
+                "extjsLangSvr.validationDelay": {
+                    "type": "number",
+                    "default": 1250,
+                    "enum": [
+                        250,
+                        400,
+                        500,
+                        750,
+                        1000,
+                        1250,
+                        1500,
+                        1750,
+                        2000
+                    ],
+                    "description": "The time (in ms) to allow between keystrokes before validation is triggered."
+                }
+            }
+        }
+    }
 }
