@@ -1207,11 +1207,36 @@ class ExtjsLanguageManager
     {
         log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "project", project ]]);
 
-        if (isExcluded(Uri.file(fsPath).path)) {
+        const uriFile = Uri.file(fsPath),
+              wsPath = workspace.getWorkspaceFolder(uriFile)?.uri.fsPath;
+
+        //
+        // Exclude configured build dir from workspace.json
+        //
+        for (const c of this.config) {
+            if (c.buildDir && wsPath) {
+                const buildUriPath = Uri.file(path.join(wsPath, c.buildDir)).path;
+                if (uriFile.path.includes(buildUriPath)) {
+                    log.write(logPad + "Excluded by workspace.json build path");
+                    return;
+                }
+            }
+        }
+
+        //
+        // Exclude Application/workspace/user configured paths
+        // Paths must be glob pattern e.g. **/src/**
+        //
+        if (isExcluded(uriFile.path)) {
             log.write(logPad + "Excluded by configured exclude path(s)");
             return;
         }
 
+        //
+        // Set 'indexing' flag, hide toolbar indexing button
+        // The 'oneCall' flag is set when the indexing is being done on the active document only
+        // For bulk indexing, this is handled by caller
+        //
         if (oneCall) {
             this.isIndexing = true;
             showReIndexButton(false);
@@ -1256,6 +1281,11 @@ class ExtjsLanguageManager
             await storage?.update(storageKey + "_TIMESTAMP", new Date());
         }
 
+        //
+        // Unset 'indexing' flag, unhide toolbar indexing button
+        // The 'oneCall' flag is set when the indexing is being done on the active document only
+        // For bulk indexing, this is handled by caller
+        //
         if (oneCall) {
             this.isIndexing = false;
             showReIndexButton();
@@ -1527,7 +1557,13 @@ class ExtjsLanguageManager
     }
 
 
-    private processDocumentChange(e: TextDocumentChangeEvent)
+    private async processDocumentChange(e: Uri)
+    {
+        await this.indexFile(e.fsPath, this.getNamespace(e), true, e);
+    }
+
+
+    private processOpenDocumentChange(e: TextDocumentChangeEvent)
     {
         let debounceMs = configuration.get<number>("validationDelay", 1250);
         const textDocument = e.document;
@@ -1553,8 +1589,7 @@ class ExtjsLanguageManager
             this.reIndexTaskId = setTimeout(async () =>
             {
                 this.reIndexTaskId = undefined;
-                const fsPath = textDocument.uri.fsPath,
-                      ns = this.getNamespace(textDocument);
+                const ns = this.getNamespace(textDocument);
                 //
                 // Clear
                 //
@@ -1643,11 +1678,43 @@ class ExtjsLanguageManager
      */
     private registerWatchers(context: ExtensionContext): Disposable[]
     {
+        log.methodStart("Register file watchers", 1, "", true);
+        log.write("   Build file watcher glob", 2);
+        //
+        // Build watcher glob from classpaths
+        //
+        const watcherGlobs = [];
+        for (const c of this.config)
+        {
+            if (typeof(c.classpath) === "string" || c.classpath instanceof String)
+            {
+                log.write(`      Adding classpath ${c.classpath}`, 3);
+                // watcherGlobs.push("**/" + c.classpath.replace("\\", "/") + "/*.js");
+                // watcherGlobs.push(c.classpath.replace("\\", "/") + "/*.js");
+                watcherGlobs.push(c.classpath.replace("\\", "/"));
+            }
+            else {
+                for (const cp of c.classpath) {
+                    log.write(`      Adding classpath ${cp}`, 3);
+                    // watcherGlobs.push("**/" + cp.replace("\\", "/") + "/*.js");
+                    // watcherGlobs.push(cp.replace("\\", "/") + "/*.js");
+                    watcherGlobs.push(cp.replace("\\", "/"));
+                }
+            }
+        }
+        if (watcherGlobs.length === 0) {
+            watcherGlobs.push("**/*.js");
+        }
+
+        log.value("   file watcher globs", watcherGlobs.join (" | "), 2);
+        log.write(`**/{${watcherGlobs.join(",")}}/**/*.js`);
+
         //
         // rc/conf file / app.json
         //
         const disposables: Disposable[] = [],
-              jsWatcher = workspace.createFileSystemWatcher("**/*.js"),
+              jsWatcher = workspace.createFileSystemWatcher(`**/{${watcherGlobs.join(",")}}/**/*.js`),
+              // jsWatcher = workspace.createFileSystemWatcher(`{${watcherGlobs.join(",")}}`),
               confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json,workspace.json}");
 
         //
@@ -1660,16 +1727,14 @@ class ExtjsLanguageManager
         //
         // Open document text change
         //
-        disposables.push(workspace.onDidChangeTextDocument((e) => { this.processDocumentChange(e); }, this));
+        disposables.push(workspace.onDidChangeTextDocument((e) => { this.processOpenDocumentChange(e); }, this));
         // disposables.push(workspace.onDidChangeTextDocument((e) => this.processDocumentChange));
         //
-        // Deletions
+        // Javascript watchers
         //
-        disposables.push(jsWatcher.onDidDelete(async (e) => { await this.processDocumentDelete(e); }, this));
-        //
-        // Creations
-        //
+        disposables.push(jsWatcher.onDidChange(async (e) => { await this.processDocumentChange(e); }, this));
         disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
+        disposables.push(jsWatcher.onDidDelete(async (e) => { await this.processDocumentDelete(e); }, this));
         //
         // Active editor changed
         //
@@ -1684,6 +1749,8 @@ class ExtjsLanguageManager
         disposables.push(workspace.onDidChangeConfiguration(async (e) => { await this.processSettingsChange(e); }, this));
 
         context.subscriptions.push(...disposables);
+
+        log.methodDone("Register file watchers", 1);
         return disposables;
     }
 
