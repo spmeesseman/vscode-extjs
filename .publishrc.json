@@ -6,10 +6,8 @@
     ],
     "changelogFile":      "CHANGELOG.md",
     "deployCommand":      "npx vsce publish",
-    "distReleasePathSrc": "install\\dist",
     "githubRelease":      "Y",
     "githubUser":         "spmeesseman",
-    "githubChglogEdit":   "N",
     "githubAssets":       [
         "CHANGELOG.md|Changelog File",
         "vscode-extjs-$(VERSION).vsix|VSIX Installer"
@@ -20,9 +18,10 @@
     "postGithubRelease":   [
         "npx rimraf *.vsix"
     ],
+    "promptVersion":      "Y",
     "repo":               "https://github.com/spmeesseman/vscode-extjs.git",
     "repoType":           "git",
     "skipChangelogEdits": "N",
-    "skipVersionEdits":   "Y",
+    "skipVersionEdits":   "N",
     "vcWebPath":          "https://github.com/spmeesseman/vscode-extjs"
 }
