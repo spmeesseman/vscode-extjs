@@ -43,6 +43,7 @@ export class ConfigParser
                         name: pathParts[0],
                         baseDir: "",
                         baseWsDir: "",
+                        buildDir: "",
                         wsDir: workspace.getWorkspaceFolder(Uri.file(pathParts[1]))?.uri.fsPath || "",
                     });
                 }
@@ -80,6 +81,7 @@ export class ConfigParser
 				name: "Ext",
                 baseDir: fwDirectory,
                 baseWsDir: fwDirectory,
+                buildDir: "",
                 wsDir: workspace.getWorkspaceFolder(Uri.file(fwDirectory))?.uri.fsPath || fwDirectory
 			});
 		}
@@ -156,6 +158,7 @@ export class ConfigParser
                 // the ext-core package.  Read package.json in framework directory.  If found, this is an
                 // open tooling project
                 //
+                const buildDir = wsConf.build ? wsConf.build.dir.replace(/\$\{workspace.dir\}[/\\]{1}/, "") : undefined;
                 const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
                 if (fs.existsSync(fwJsonFsPath))
                 {
@@ -173,6 +176,7 @@ export class ConfigParser
                                     classpath: fwConf.sencha?.classpath?.replace("${package.dir}", fwPath),
                                     baseDir,
                                     baseWsDir,
+                                    buildDir,
                                     wsDir
                                 };
                                 if (sdkConf.classpath)
@@ -195,6 +199,7 @@ export class ConfigParser
 						classpath: wsConf.frameworks.ext,
                         baseDir,
                         baseWsDir,
+                        buildDir,
                         wsDir
 					});
                     log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);

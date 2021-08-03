@@ -73,6 +73,7 @@ export interface IConf
     baseDir: string;
     baseWsDir: string;
     bootstrap?: any;
+    buildDir: string | undefined;
     builds?: any;
     cache?: any;
     classic?: any;
