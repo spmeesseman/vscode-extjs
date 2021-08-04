@@ -20,14 +20,14 @@ _**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 60-70% done.  The
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
   - [Configuration](#configuration)
-    - [The app.json ExtJs Project File](#the-appjson-extjs-project-file)
-    - [The .extjsrc.json Configuration File](#the-extjsrcjson-configuration-file)
-    - [The include Setting](#the-include-setting)
-    - [Required Configuration Properties](#required-configuration-properties)
-      - [Required Configuration Property - `name`](#required-configuration-property---name)
-      - [Required Configuration Property - `classpath`](#required-configuration-property---classpath)
-  - [Versus the Sencha Extension](#versus-the-sencha-extension)
-  - [ESLint](#eslint)
+    - [Configuration - The app.json ExtJs Project File](#configuration---the-appjson-extjs-project-file)
+    - [Configuration - The .extjsrc.json Configuration File](#configuration---the-extjsrcjson-configuration-file)
+    - [Configuration - The include Setting](#configuration---the-include-setting)
+    - [Configuration - Required Configuration Properties](#configuration---required-configuration-properties)
+      - [Configuration - Required Configuration Property - `name`](#configuration---required-configuration-property---name)
+      - [Configuration - Required Configuration Property - `classpath`](#configuration---required-configuration-property---classpath)
+  - [Compared to Sencha Extension](#compared-to-sencha-extension)
+  - [ESLint Tips](#eslint-tips)
   - [Caching](#caching)
   - [Thank You](#thank-you)
   - [Feedback & Contributing](#feedback--contributing)
@@ -38,7 +38,7 @@ _**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 60-70% done.  The
 
 ## Description
 
-ExtJs Intellisense and Language Server, because Sencha can't.
+The ExtJs Language Server provides most Intellisense and other language features that cannot be parsed by a normal JavaScript parser, due to the nature of the Ext.define implementation.
 
 - Supports multi-root workspace
 - Automatic parsing, no manual configuration needed
@@ -49,11 +49,13 @@ ExtJs Intellisense and Language Server, because Sencha can't.
 - XType Validation and Completion (Credits to Original Author **qzsiniong**)
 - Method and Class Validation
 
+See the section [Compared to Sencha Extension](#compared-to-sencha-extension) for a detailed feature list.
+
 ## Configuration
 
-Assuming a standard JavaScript linter is already in place, the ExtJs Language Server attempts to provide the missing functionality that a standard JavaScript Language Server cannot handle due to the nature of the ExtJS class definitions, which are basically just one function expression per class file as far as a standard JavaScript parser is concerned.
+Assuming a standard JavaScript linter is already in place, the ExtJs Language Server attempts to provide the missing functionality that a standard JavaScript Language Server cannot handle due to the nature of the ExtJS class definitions (Ext.define), which are basically just one function expression per class file as far as a standard JavaScript parser is concerned.
 
-A standard linter used in most all JavaScript projects is [ESLint](https://github.com/eslint/eslint), some quick install details can be found in the [section below](#eslint).  Don't use the *Sencha ESLint Plugin* for linting in your ExtJS projects, it's garbage and will slow everything down like nothing I've ever seen.
+A standard linter used in most all JavaScript projects is [ESLint](https://github.com/eslint/eslint), some quick install details can be found in the [section below](#eslint-tips).  Don't use the *Sencha ESLint Plugin* for linting in your ExtJS projects, it's garbage and will slow everything down like nothing I've ever seen.
 
 This language server looks at your entire workspace, whether single or multi root, and locates ExtJS files in one of three ways, or any combination thereof:
 
@@ -61,11 +63,11 @@ This language server looks at your entire workspace, whether single or multi roo
 2. .extjsrc.json
 3. settings.json / VSCode Settings
 
-### The app.json ExtJs Project File
+### Configuration - The app.json ExtJs Project File
 
 The **app.json** file is a part of all Sencha Cmd and Sencha ext-gen generated Open Tooling projects.  If an **app.json** file is located, the namespaces and classpaths are extracted and added to indexing.  If a corresponding **workspace.json** file is located in the same directory as an **app.json** file, classpaths are extracted from the *packages.dir* property and added to indexing.  The *packages.dir* property should be a comma delimited string of package paths included in the application classpath, these normally specify the paths to the packages included in the *requires* array property of the **app.json** file.
 
-### The .extjsrc.json Configuration File
+### Configuration - The .extjsrc.json Configuration File
 
 The **.extjsrc.json** / **.extjsrc** file is a custom file that can be placed into any directory.  If an **.extjsrc** file is located, the namespace and classpaths are extracted and added to indexing.
 
@@ -74,7 +76,7 @@ The **.extjsrc** file can contain any of the defined properties of a Sencha ExtJ
 1. name
 2. classpath
 
-### The include Setting
+### Configuration - The include Setting
 
 The **include** path(s) can be set to a string or an array of strings of additional paths to be indexed.  These strings must be in the form:
 
@@ -82,11 +84,11 @@ The **include** path(s) can be set to a string or an array of strings of additio
 
 The `NAME` part represents the `name` field [described below](#required-configuration-property---name).  The `RELATIVE_DIRECTORY` is a directory that is *relative* to the workspace folders and represents the `classpath` field [described below](#required-configuration-property---classpath).
 
-### Required Configuration Properties
+### Configuration - Required Configuration Properties
 
 Whether or not an [app.json](#the-appjson-extjs-project-file), [.extjsrc.json](#the-extjsrcjson-configuration-file), or [include](#the-include-setting) path is used, there are two required properties that must be present for any of the cofiguration types.  For **include** paths, see the [section above](#the-include-setting) describing how to specify both of these properties in the Settings entries.  These twp properties are `name` and `classpath`...
 
-#### Required Configuration Property - `name`
+#### Configuration - Required Configuration Property - `name`
 
 The `name` is a string specifying the project name, or main project namespace.  FOr example, if your ExtJS files are defined like:
 
@@ -95,7 +97,7 @@ The `name` is a string specifying the project name, or main project namespace.  
 
 Then the default namespace / project name, in most cases, would be "VSCodeExtJS".  This field corresponds to the `name` property of an [app.json](#the-appjson-extjs-project-file) file.
 
-#### Required Configuration Property - `classpath`
+#### Configuration - Required Configuration Property - `classpath`
 
 The `classpath` is a string, or an array of strings, of where the ExtJS JavaScript files can be located.  This field corresponds to the `classpath` property of an [app.json](#the-appjson-extjs-project-file) file.
 
@@ -103,40 +105,37 @@ Note that classpaths defined in `toolkit` object properties in [app.json](#the-a
 
 That's it, ExtJS Languge Server should start indexing your files once a valid configuration file has been found.
 
-## Versus the Sencha Extension
+## Compared to Sencha Extension
 
 This extension is unable to perform the app/workspace commands using Sencha Cmd that the Sencha extension provides.
 
-Aside from that, the ExtJs Language Server provides everything else it is capable of (and of course more):
-
-1. `Intellisense` and `Code Completion` for class members and local controller variables created with Ext.create.
-2. `Go To Definition` for classes and class string literals.
-3. Static configuration file for specifying project name and classpaths to parse.
-
-And, in addition:
+Aside from that, the ExtJs Language Server provides everything else it is capable of and more:
 
 1. Free :)
-2. `Multi-Root Workspace` Support.
-3. `Intellisense` with Full `JSDoc`.
-4. Method Signature / inline parameter helper with `JsDoc`.
-5. `Hover JsDoc` for all classes, methods, properties, configs, xtypes and class string literals.
-6. Static vs. Instance `Intellisense`.
-7. `Go To Definition` for xtype string literals (credits to [qzsiniong](#thank-you)).
-8. `Go To Type Definition` for variables.
-9. `XType validation` and `requires` field checking (credits to [qzsiniong](#thank-you)).
-10. Command Pallette command for fixing invalidated xtype declarations (credits to [qzsiniong](#thank-you)).
-11. Diagnostic `Quick Fix` and Command Pallette command for fixing invalidated xtype declarations.
-12. Parses [app.json](#the-appjson-extjs-project-file), *workspace.json*, and *package.json* files for `auto-import of classpaths`, including dependencies.
-13. Turn on/off the inclusion of deprecated class members into `Intellisense` directly in VSCode Settings.
-14. Turn on/off the inclusion of private class members into `Intellisense` directly in VSCode Settings.
-15. Configure specific classpaths for Indexing directly in VSCode Settings.
-16. `@since`, `@deprecated`, and `@private` `JsDoc` tags and `Intellisense` tags.
-17. Parsing performance is slightly slower the first time the extensionl loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
-18. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
-19. Configurable validation timeout useful for slower systems.
-20. Miscellaneous custom validations.
+2. Intellisense and Code Completion for class members and local controller variables created with Ext.create.
+3. Go To Definition for classes and class string literals.
+4. Static configuration file for specifying project name and classpaths to parse.
+5. Multi-Root Workspace Support.
+6. Intellisense with Full JSDoc.
+7. Method Signature / inline parameter helper with JsDoc.
+8. Hover JsDoc for all classes, methods, properties, configs, xtypes and class string literals.
+9. Static vs. Instance Intellisense.
+10. Go To Definition for xtype string literals (credits to [qzsiniong](#thank-you)).
+11. Go To Type Definition for variables.
+12. XType validation and requires field checking (credits to [qzsiniong](#thank-you)).
+13. Command Pallette command for fixing invalidated xtype declarations (credits to [qzsiniong](#thank-you)).
+14. Diagnostic Quick Fix and Command Pallette command for fixing invalidated xtype declarations.
+15. Parses [app.json](#the-appjson-extjs-project-file), *workspace.json*, and *package.json* files for auto-import of classpaths, including dependencies.
+16. Turn on/off the inclusion of deprecated class members into Intellisense directly in VSCode Settings.
+17. Turn on/off the inclusion of private class members into Intellisense directly in VSCode Settings.
+18. Configure specific classpaths for Indexing directly in VSCode Settings.
+19. @since, @deprecated, and @private JsDoc tags and Intellisense tags.
+20. Parsing performance is slightly slower the first time the extensionl loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
+21. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
+22. Configurable validation timeout useful for slower systems.
+23. Miscellaneous custom validations.
 
-## ESLint
+## ESLint Tips
 
 Always use [ESLint](https://github.com/eslint/eslint) for JavaScript/TypeScript projects.  It is **GREAT**.  To install ESLint to a project, run the following command from the root project directory containing the package.json file:
 
@@ -210,12 +209,11 @@ If my work and this extension has made your life easier, consider a [donation](h
 
 ## TODO
 
-- Intellisense should be disabled in comments within a method (if not in a methid, is fine)
+- Intellisense should be disabled in comments within a method (if not in a method, is working fine)
 - goto definition for jsdoc parameter types (surrounded with{})
 - If jsdoc isnt present for an overridden method, then check for parent method jsdoc
 - Handle the @inheritdoc tag
 - Handle links in jsdoc
-- If there's a jsdoc hover popup, the QUickFix diloag doesnt display, jsdoc popup overrides it somehow?
-- The "% done" status label is showing a ton of decimal l=places i.e. xx.3333333333333333333333% complete
+- If there's a jsdoc hover popup, the QuickFix diloag doesnt display, jsdoc popup overrides it somehow?
 - the 'fix requires' feature doesnt work if there's no existing requires block.  it should add one if not there.
-- When Sencha Cmd is building, the indexer goes nuts, is it the build dir?
+- Configs and variable cache mappingss need to be separated by a 3rd dimension (currently only project and namespace)
