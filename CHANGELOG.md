@@ -1,5 +1,15 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.1.1 (August 4th, 2021)
+
+### Documentation
+
+- **Readme:** content update
+
+### Visuals
+
+- update marketplace icon
+
 ## Version 0.1.0 (August 3rd, 2021)
 
 ### Bug Fixes
