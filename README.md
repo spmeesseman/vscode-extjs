@@ -107,7 +107,7 @@ That's it, ExtJS Languge Server should start indexing your files once a valid co
 
 This extension is unable to perform the app/workspace commands using Sencha Cmd that the Sencha extension provides.
 
-Aside from that, the ExtJs Language Server provides everything else it is capable of:
+Aside from that, the ExtJs Language Server provides everything else it is capable of (and of course more):
 
 1. `Intellisense` and `Code Completion` for class members and local controller variables created with Ext.create.
 2. `Go To Definition` for classes and class string literals.
@@ -122,19 +122,19 @@ And, in addition:
 5. `Hover JsDoc` for all classes, methods, properties, configs, xtypes and class string literals.
 6. Static vs. Instance `Intellisense`.
 7. `Go To Definition` for xtype string literals (credits to [qzsiniong](#thank-you)).
-8. `XType validation` and `requires` field checking (credits to [qzsiniong](#thank-you)).
-9. Command Pallette command for fixing invalidated xtype declarations (credits to [qzsiniong](#thank-you)).
-10. Diagnostic `Quick Fix` and Command Pallette command for fixing invalidated xtype declarations.
-11. Parses [app.json](#the-appjson-extjs-project-file), *workspace.json*, and *package.json* files for `auto-import of classpaths`, including dependencies.
-12. Turn on/off the inclusion of deprecated class members into `Intellisense` directly in VSCode Settings.
-13. Turn on/off the inclusion of private class members into `Intellisense` directly in VSCode Settings.
-14. Configure specific classpaths for Indexing directly in VSCode Settings.
-15. `Since`, `Deprecated`, and `Private` `JsDoc` tags and `Intellisense` tags.
-16. Parsing performance is slightly slower the first time the extensionl loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
-17. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
-18. Configurable validation timeout useful for slower systems.
-19. Miscellaneous custom validations.
-20. Doesn't require yet another .sencha directory to be created.
+8. `Go To Type Definition` for variables.
+9. `XType validation` and `requires` field checking (credits to [qzsiniong](#thank-you)).
+10. Command Pallette command for fixing invalidated xtype declarations (credits to [qzsiniong](#thank-you)).
+11. Diagnostic `Quick Fix` and Command Pallette command for fixing invalidated xtype declarations.
+12. Parses [app.json](#the-appjson-extjs-project-file), *workspace.json*, and *package.json* files for `auto-import of classpaths`, including dependencies.
+13. Turn on/off the inclusion of deprecated class members into `Intellisense` directly in VSCode Settings.
+14. Turn on/off the inclusion of private class members into `Intellisense` directly in VSCode Settings.
+15. Configure specific classpaths for Indexing directly in VSCode Settings.
+16. `@since`, `@deprecated`, and `@private` `JsDoc` tags and `Intellisense` tags.
+17. Parsing performance is slightly slower the first time the extensionl loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
+18. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
+19. Configurable validation timeout useful for slower systems.
+20. Miscellaneous custom validations.
 
 ## ESLint
 
@@ -155,7 +155,7 @@ To create a default connfiguration file in a project that does not contain one, 
 
     npx eslint --init
 
-You should now have an [.extjsrc.js](#the-extjsrcjson-configuration-file) file in the directory the command has been ran in.
+You should now have an [.eslint.js](#the-extjsrcjson-configuration-file) file in the directory the command has been ran in.
 
 Add your ExtJS globals to the config file, or any other globals not understood by eslint, primarily *Ext* ad your project namespace:
 
@@ -178,7 +178,7 @@ Linting is dynamic as you edit files.  But also create a task in package.json fo
 
 ## Caching
 
-The first time the extension activates, it will index all ExtJS files found within the workspace.  This could take a while depending on the # of ExtJS projects/files found.  The ExtJS Language Server will cache the syntax tree after the initial build, improving performance by 2-3x over what it is without caching once the initial index is built.
+The first time the extension activates, it will index all ExtJS files found within the workspace.  This could take a while depending on the # of ExtJS projects/files found.  The ExtJS Language Server will cache the syntax tree after the initial build, improving startup performance by > 10x.
 
 ## Thank You
 
