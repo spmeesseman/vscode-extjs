@@ -18,10 +18,10 @@
     "postGithubRelease":   [
         "npx rimraf *.vsix"
     ],
-    "promptVersion":      "Y",
+    "promptVersion":      "N",
     "repo":               "https://github.com/spmeesseman/vscode-extjs.git",
     "repoType":           "git",
     "skipChangelogEdits": "N",
-    "skipVersionEdits":   "N",
+    "skipVersionEdits":   "Y",
     "vcWebPath":          "https://github.com/spmeesseman/vscode-extjs"
 }
