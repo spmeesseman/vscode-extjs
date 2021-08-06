@@ -209,6 +209,7 @@ If my work and this extension has made your life easier, consider a [donation](h
 
 ## TODO
 
+- Intellisense should be disabled in strings
 - Intellisense should be disabled in comments within a method (if not in a method, is working fine)
 - goto definition for jsdoc parameter types (surrounded with{})
 - If jsdoc isnt present for an overridden method, then check for parent method jsdoc
