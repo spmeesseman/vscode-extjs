@@ -87,7 +87,7 @@ The `NAME` part represents the `name` field [described below](#required-configur
 
 ### Configuration - Required Configuration Properties
 
-Whether or not an [app.json](#the-appjson-extjs-project-file), [.extjsrc.json](#the-extjsrcjson-configuration-file), or [include](#the-include-setting) path is used, there are two required properties that must be present for any of the cofiguration types.  For **include** paths, see the [section above](#the-include-setting) describing how to specify both of these properties in the Settings entries.  These twp properties are `name` and `classpath`...
+Whether or not an [app.json](#the-appjson-extjs-project-file), [.extjsrc.json](#the-extjsrcjson-configuration-file), or [include](#the-include-setting) path is used, there are two required properties that must be present for any of the configuration types.  For **include** paths, see the [section above](#the-include-setting) describing how to specify both of these properties in the Settings entries.  These twp properties are `name` and `classpath`...
 
 #### Configuration - Required Configuration Property - `name`
 
@@ -104,7 +104,7 @@ The `classpath` is a string, or an array of strings, of where the ExtJS JavaScri
 
 Note that classpaths defined in `toolkit` object properties in [app.json](#the-appjson-extjs-project-file) will be merged into the main object classpath for indexing.
 
-That's it, ExtJS Languge Server should start indexing your files once a valid configuration file has been found.
+That's it, ExtJS Language Server should start indexing your files once a valid configuration file has been found.
 
 ### Configuration - VScode Quick Suggestions
 
@@ -145,7 +145,7 @@ Aside from that, the ExtJs Language Server provides everything else it is capabl
 17. Turn on/off the inclusion of private class members into Intellisense directly in VSCode Settings.
 18. Configure specific classpaths for Indexing directly in VSCode Settings.
 19. @since, @deprecated, and @private JsDoc tags and Intellisense tags.
-20. Parsing performance is slightly slower the first time the extensionl loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
+20. Parsing performance is slightly slower the first time the extension loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
 21. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
 22. Configurable validation timeout useful for slower systems.
 23. Miscellaneous custom validations.
@@ -165,7 +165,7 @@ A configuration file is required in the root project directory, usually the same
     .eslintrc.js
     .eslintrc.json
 
-To create a default connfiguration file in a project that does not contain one, run the following command from the root project directory containing the *package.json* file:
+To create a default configuration file in a project that does not contain one, run the following command from the root project directory containing the *package.json* file:
 
     npx eslint --init
 
@@ -225,9 +225,9 @@ If my work and this extension has made your life easier, consider a [donation](h
 ## TODO
 
 - goto definition for jsdoc parameter types (surrounded with{})
-- If jsdoc isnt present for an overridden method, then check for parent method jsdoc
+- If jsdoc isn't present for an overridden method, then check for parent method jsdoc
 - Handle the @inheritdoc tag
 - Handle links in jsdoc
-- If there's a jsdoc hover popup, the QuickFix diloag doesnt display, jsdoc popup overrides it somehow?
-- the 'fix requires' feature doesnt work if there's no existing requires block.  it should add one if not there.
-- Configs and variable cache mappingss need to be separated by a 3rd dimension (currently only project and namespace)
+- If there's a jsdoc hover popup, the QuickFix dialog doesn't display, jsdoc popup overrides it somehow?
+- the 'fix requires' feature doesn't work if there's no existing requires block.  it should add one if not there.
+- Configs and variable cache mappings need to be separated by a 3rd dimension (currently only project and namespace)

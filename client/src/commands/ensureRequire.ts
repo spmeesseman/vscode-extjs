@@ -1,8 +1,9 @@
 
 import * as json5 from "json5";
+import * as log from "../common/log";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
-import { ComponentType, utils } from "../../../common";
-import { toVscodeRange } from "../common/clientUtils";
+import { ComponentType, IPosition, utils } from "../../../common";
+import { toVscodePosition, toVscodeRange } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
 
@@ -15,23 +16,31 @@ export async function ensureRequires(xtype: string | undefined)
 		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, false, document) : undefined,
 		  workspaceEdit = new WorkspaceEdit();
 
+	log.methodStart("Command - Ensure requires", 1, "", true, [ [ "fs path", fsPath ] ]);
+
 	if (document && components)
 	{
+		log.write(`   Found ${components.length} components in class`, 2);
+
 		for (const component of components)
 		{
-			if (component.requires)
+			log.write(`   Processing component '${component.name}'`, 3);
+
+			const componentClasses = new Set<string>();
+			for (const x of component.xtypes)
 			{
-				const componentClasses = new Set<string>();
-
-				for (const x of component.xtypes)
-				{
-					const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, ComponentType.Widget);
-					if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
-						componentClasses.add(c);
-					}
+				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, ComponentType.Widget);
+				if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
+					componentClasses.add(c);
 				}
+			}
+			log.value("      # of xtypes to add", componentClasses.size, 3);
 
-				if (componentClasses.size > 0)
+			if (componentClasses.size > 0)
+			{
+				log.value("      has requires", !!component.requires, 3);
+
+				if (component.requires)
 				{
 					let pad = "";
 					const range = toVscodeRange(component.requires.start, component.requires.end),
@@ -55,9 +64,32 @@ export async function ensureRequires(xtype: string | undefined)
 					workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
 					workspace.applyEdit(workspaceEdit);
 				}
+				else
+				{
+					let pad = "    ";
+					const start = component.start;
+					start.line += 2;
+					start.column = 0;
+					const range = toVscodeRange(component.start, component.end),
+						lineText = document.lineAt(range.start.line).text.substr(0, range.start.character);
+
+					for (let i = 0; i < lineText.length && (lineText[i] === " " || lineText[i] === "\t"); i++)
+					{
+						pad += lineText[i];
+					}
+					const requiresBlock = json5.stringify(Array.from(componentClasses))
+											.replace(/\[/, "[" + EOL + pad + "    ")
+											.replace(/,/g, "," + EOL + pad + "    ")
+											.replace(/\]/, EOL + pad + "]," + EOL + EOL);
+
+					workspaceEdit.insert(document.uri, toVscodePosition(start), pad + "requires: " + requiresBlock);
+					workspace.applyEdit(workspaceEdit);
+				}
 			}
 		}
 	}
+
+	log.methodDone("Command - Ensure requires", 1);
 }
 
 
