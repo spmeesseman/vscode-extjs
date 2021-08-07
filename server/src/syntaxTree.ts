@@ -737,7 +737,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                         //
                         // The current callee.object is 'PhysicianDropdown', type 'MemberExpression'.
                         //
-                        // Build the fill class name by traversiong down each MemberExpression until the
+                        // Build the fill class name by traversing down each MemberExpression until the
                         // Identifier is found, in this example 'VSCodeExtJS'.
                         //
                         let object: any = callee.object;
@@ -762,7 +762,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                                 continue;
                             }
                             //
-                            // Add the base indetifier to caller cls name, e.g. "VSCodeExtJS" in the comments
+                            // Add the base identifier to caller cls name, e.g. "VSCodeExtJS" in the comments
                             // example.  We looped until we found it but it has not been added yet.
                             //
                             if (isIdentifier(object)) {
@@ -808,7 +808,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                     instCls = callerCls;
                 }
                 //
-                // In the case of "new" keyword, the calle property is the last part of the class name.
+                // In the case of "new" keyword, the callee property is the last part of the class name.
                 // Whereas other scenario is "full_classname".create, where "create" is the callee property.
                 //
                 if (isNewExp)
@@ -848,7 +848,7 @@ function parseXTypes(objEx: ObjectExpression, text: string, componentClass: stri
     // For example, we want an object in the form to pass to parse():
     //
     //    {
-    //        alias: "myalias",
+    //        alias: "myAlias",
     //        requires: [
     //            "MyApp.view.users.User"
     //        ],
