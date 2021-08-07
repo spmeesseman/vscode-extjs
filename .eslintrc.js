@@ -25,11 +25,11 @@ module.exports = {
         sourceType: "module",
         "ecmaVersion": 6
     },
-    ignorePatterns: ["testFixture", "lib", "*.js", "*.json" ],
+    ignorePatterns: ["**/testFixture/*.js", "lib", "**/*.js", "*.json" ],
     overrides: [
     {
         "files": ["client/**/*.ts", "common/**/*.js", "server/**/*.js"],
-        "excludedFiles": ["testFixture", "lib", "*.js" ]
+        "excludedFiles": ["**/testFixture/*", "lib", "*.js" ]
     }],
     settings: {
     },
