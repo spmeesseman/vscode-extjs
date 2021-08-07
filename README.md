@@ -26,6 +26,7 @@ _**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 60-70% done.  The
     - [Configuration - Required Configuration Properties](#configuration---required-configuration-properties)
       - [Configuration - Required Configuration Property - `name`](#configuration---required-configuration-property---name)
       - [Configuration - Required Configuration Property - `classpath`](#configuration---required-configuration-property---classpath)
+    - [Configuration - VScode Quick Suggestions](#configuration---vscode-quick-suggestions)
   - [Compared to Sencha Extension](#compared-to-sencha-extension)
   - [ESLint Tips](#eslint-tips)
   - [Caching](#caching)
@@ -105,6 +106,20 @@ Note that classpaths defined in `toolkit` object properties in [app.json](#the-a
 
 That's it, ExtJS Languge Server should start indexing your files once a valid configuration file has been found.
 
+### Configuration - VScode Quick Suggestions
+
+In order for inline completion items to work correctly, ensure the VSCode editor setting `quickSuggestions` is enabled.  An appropriate setting could be:
+
+    "editor.quickSuggestions": {
+        "other": true,
+        "comments": false,
+        "strings": false
+    }
+
+Or:
+
+   "editor.quickSuggestions": true
+ 
 ## Compared to Sencha Extension
 
 This extension is unable to perform the app/workspace commands using Sencha Cmd that the Sencha extension provides.
@@ -209,8 +224,6 @@ If my work and this extension has made your life easier, consider a [donation](h
 
 ## TODO
 
-- Intellisense should be disabled in strings
-- Intellisense should be disabled in comments within a method (if not in a method, is working fine)
 - goto definition for jsdoc parameter types (surrounded with{})
 - If jsdoc isnt present for an overridden method, then check for parent method jsdoc
 - Handle the @inheritdoc tag

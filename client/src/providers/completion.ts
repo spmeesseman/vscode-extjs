@@ -32,16 +32,20 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         //
         // The `getInlineCompletionItems` method handles completion items that lead all other
-        // parts of a classpath.  FOr example, the class:
+        // parts of a classpath.  For example, the class:
         //
         //     MyApp.view.users.Users
+        //     fn.call(MyApp.view.users.Users);
         //
         // The `MyApp` part of the class path is of interest, when the user starts typing into a
         // blank line (or a new statement block), we want to display all possible parts of a
-        // classpath that lead the classname, in this case we ant to add 'MyApp' as a completion item
+        // classpath that lead the class name, in this case we ant to add 'MyApp' as a completion item
         //
-        if (!lineText || !lineText.includes(".") ||
-           ((text && lineText.match(new RegExp(`\\([^.]*[,]{0,1}\\s*${text}\\s*$`)) || (!text && lineText.endsWith("(")))))
+        // The `(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)` portion of the regex ignores patterns
+        // that are contains in strings or comments
+        //
+        if (!lineText || !lineText.includes(".") || (!text && lineText.endsWith("(")) ||
+           ((text && lineText.match(new RegExp(`(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}\\s*$`)))))
         {
             completionItems.push(...this.getInlineCompletionItems(position));
             return completionItems;
@@ -59,7 +63,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // });
 
         //
-        // A completion item that retriggers IntelliSense when being accepted, the `command`-property is
+        // A completion item that re-triggers IntelliSense when being accepted, the `command`-property is
         // set which the editor will execute after completion has been inserted. Also, the `insertText`
         // is set so that a space is inserted after `new`
         //
@@ -132,7 +136,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         //
         // Show/hide deprecated properties according to user settings (default true).
-        // If this property is hidden by user preference, this methid exited already above.
+        // If this property is hidden by user preference, this method exited already above.
         //
         if (cmp?.deprecated)
         {
@@ -142,7 +146,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         //
         // Show/hide private properties according to user settings (default false)
-        // If this property is hidden by user preference, this methid exited already above.
+        // If this property is hidden by user preference, this method exited already above.
         //
         if (cmp?.private)
         {
@@ -221,10 +225,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      * @method getCompletionItems
      *
      * @param lineText The complete text of the line of the current trigger position.
-     * @param fnText The outer function name of the funtion that contains the reference to this property,
+     * @param fnText The outer function name of the function that contains the reference to this property,
      * if this property is found within a controller method.  Used for local property (relative to the
      * outer function) inspection only.
-     * @param fsPath The filesystem path to the JavasSript class file.
+     * @param fsPath The filesystem path to the JavasScript class file.
      * @param addedItems Array holding item labels already added in this request.
      */
     private getCompletionItems(lineText: string, fnText: string | undefined, position: Position, document: TextDocument, addedItems: string[]): CompletionItem[]
@@ -301,7 +305,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             //         VSCodeExtJS.
             //
-            //     Any existing classpaths should display in the intellisense:
+            //     Any existing class paths should display in the intellisense:
             //
             //         AppUtilities
             //         common
@@ -354,7 +358,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      *         etc...
      *
      * @param componentClass Component class
-     * @param addedItems Shared provider instance array to avooid duplicate references
+     * @param addedItems Shared provider instance array to avoid duplicate references
      *
      * @returns {CompletionItem[]}
      */
@@ -442,7 +446,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         });
 
         //
-        // TODO - property completion - static and private sctions
+        // TODO - property completion - static and private actions
         //
 
         return completionItems;
@@ -523,7 +527,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         });
 
         //
-        // Depending on the current position, provide the complation items...
+        // Depending on the current position, provide the completion items...
         //
         if (thisCmp && method && !isInObject)
         {   //
@@ -584,7 +588,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                             }
                         });
                         //
-                        // TODO - other object expression areas != method.varables
+                        // TODO - other object expression areas != method.variables
                         //
                         break;
                     }
@@ -647,7 +651,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             //     user: null
             //
-            // Will have the folloiwng getter/setter created by the framework if not defined
+            // Will have the following getter/setter created by the framework if not defined
             // on the object:
             //
             //     getUser()
@@ -658,7 +662,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             if (utils.isGetterSetter(property))
             {   //
                 // Extract the property name from the getter/setter.  Note the actual config
-                // property will be a lower-case-first-leter version of the extracted property
+                // property will be a lower-case-first-letter version of the extracted property
                 //
                 const gsProperty = utils.lowerCaseFirstChar(property.substring(3));
                 cmp = extjsLangMgr.getConfig(cmpClass, gsProperty, nameSpace);
