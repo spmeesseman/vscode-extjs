@@ -1,5 +1,16 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.2.0 (August 7th, 2021)
+
+### Bug Fixes
+
+- the 'fix requires' quick fix doesn't work if there's no existing requires block
+- intellisense should be disabled in strings and comments
+
+### Features
+
+- add 'ignore' options for diagnostic quick fixes
+
 ## Version 0.1.1 (August 4th, 2021)
 
 ### Documentation
