@@ -1497,7 +1497,9 @@ class ExtjsLanguageManager
                         this.variablesToComponentMapping[nameSpace] = {};
                         this.variablesToMethodMapping[nameSpace] = {};
                         this.componentClassToVariablesMapping[nameSpace] = {};
+                        this.methodToVariablesMapping[nameSpace] = {};
                     }
+                    this.methodToVariablesMapping[nameSpace][method.name] = [ ...method.variables ];
                     const varMapping = this.componentClassToVariablesMapping[nameSpace][componentClass];
                     if (!varMapping) {
                         this.componentClassToVariablesMapping[nameSpace][componentClass] = [ ...method.variables ];

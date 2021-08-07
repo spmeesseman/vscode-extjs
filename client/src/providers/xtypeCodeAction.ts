@@ -18,6 +18,37 @@ class XtypeCodeActionProvider implements CodeActionProvider
             {
                 if (d.source === "vscode-extjs")
                 {
+                    actions.push(...[{
+                        title: "Ignore errors of this type (this line only)",
+                        isPreferred: true,
+                        kind: CodeActionKind.QuickFix,
+                        command: {
+                            title: "Ignore errors of this type (this line only)",
+                            command: "vscode-extjs:ignoreError",
+                            arguments: [ d.code, document, range ]
+                        }
+                    },
+                    {
+                        title: "Ignore errors of this type (file)",
+                        isPreferred: true,
+                        kind: CodeActionKind.QuickFix,
+                        command: {
+                            title: "Ignore errors of this type (file)",
+                            command: "vscode-extjs:ignoreError",
+                            arguments: [ d.code, document ]
+                        }
+                    },
+                    {
+                        title: "Ignore errors of this type (global)",
+                        isPreferred: true,
+                        kind: CodeActionKind.QuickFix,
+                        command: {
+                            title: "Ignore errors of this type (global)",
+                            command: "vscode-extjs:ignoreError",
+                            arguments: [ d.code ]
+                        }
+                    }]);
+
                     if (d.code === ErrorCode.xtypeNotFound && d.relatedInformation)
                     {
                         for (const info of d.relatedInformation)

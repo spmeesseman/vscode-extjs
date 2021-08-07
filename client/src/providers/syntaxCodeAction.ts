@@ -29,7 +29,7 @@ class SyntaxCodeActionProvider implements CodeActionProvider
                             command: {
                                 title: "Ignore errors of this type (file)",
                                 command: "vscode-extjs:ignoreError",
-                                arguments: [ ErrorCode.syntaxAllCaps, document.uri.fsPath ]
+                                arguments: [ ErrorCode.syntaxAllCaps, document ]
                             }
                         },
                         {
