@@ -229,5 +229,4 @@ If my work and this extension has made your life easier, consider a [donation](h
 - Handle the @inheritdoc tag
 - Handle links in jsdoc
 - If there's a jsdoc hover popup, the QuickFix dialog doesn't display, jsdoc popup overrides it somehow?
-- the 'fix requires' feature doesn't work if there's no existing requires block.  it should add one if not there.
 - Configs and variable cache mappings need to be separated by a 3rd dimension (currently only project and namespace)
