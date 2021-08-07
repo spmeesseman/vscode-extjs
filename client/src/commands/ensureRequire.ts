@@ -66,16 +66,21 @@ export async function ensureRequires(xtype: string | undefined)
 				}
 				else
 				{
-					let pad = "    ";
+					let pad = "";
 					const start = component.start;
 					start.line += 2;
 					start.column = 0;
-					const range = toVscodeRange(component.start, component.end),
-						lineText = document.lineAt(range.start.line).text.substr(0, range.start.character);
-
-					for (let i = 0; i < lineText.length && (lineText[i] === " " || lineText[i] === "\t"); i++)
+					if (component.objectRanges && component.objectRanges.length > 0)
 					{
-						pad += lineText[i];
+						const range = toVscodeRange(component.objectRanges[0].start, component.objectRanges[0].end),
+							lineText = document.lineAt(range.start.line).text.substr(0, range.start.character);
+						for (let i = 0; i < lineText.length && (lineText[i] === " " || lineText[i] === "\t"); i++)
+						{
+							pad += lineText[i];
+						}
+					}
+					else {
+						pad = "    ";
 					}
 					const requiresBlock = json5.stringify(Array.from(componentClasses))
 											.replace(/\[/, "[" + EOL + pad + "    ")
