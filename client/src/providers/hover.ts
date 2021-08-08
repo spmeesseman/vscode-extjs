@@ -1,7 +1,7 @@
 
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
-    ProviderResult, TextDocument, MarkdownString
+    ProviderResult, TextDocument, MarkdownString, Range
 } from "vscode";
 import * as log from "../common/log";
 import { ComponentType } from "../../../common";
@@ -12,19 +12,33 @@ class ExtJsHoverProvider implements HoverProvider
 {
     provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover>
     {
-        log.methodStart("provide hover", 1, "", true, [["file", document.uri.fsPath]]);
+        log.methodStart("provide hover", 2, "", true, [["file", document.uri.fsPath]]);
 
         let hover: Hover | undefined;
         const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath);
         if (!nameSpace) {
+            log.write("   hover disabled due to non extjs file", 2);
             return;
+        }
+
+        const diagnostics = languages.getDiagnostics(document.uri),
+              range = document.getWordRangeAtPosition(position) || new Range(position, position);
+        log.value("   # of diagnostics", diagnostics.length, 2);
+
+        for (const diagnostic of diagnostics)
+        {
+            if (diagnostic.source !== "vscode-extjs" && diagnostic.range.intersection(range))
+            {
+                log.write("   hover disabled due to existing non-extjs diagnostic", 2);
+                return;
+            }
         }
 
         const { cmpType, property, cmpClass, thisClass, callee } = extjsLangMgr.getLineProperties(document, position, "   ");
 
         log.values([
-            ["component class", cmpClass], ["this class", thisClass], ["component type", cmpType],
-            ["property", property], ["namespace", nameSpace], ["callee", callee]
+            ["# of diagnostics", diagnostics.length], ["component class", cmpClass], ["this class", thisClass],
+            ["component type", cmpType], ["property", property], ["namespace", nameSpace], ["callee", callee]
         ], 2, "   ");
 
         if (property && cmpClass && nameSpace)
@@ -33,7 +47,7 @@ class ExtJsHoverProvider implements HoverProvider
             {
                 const method = extjsLangMgr.getMethod(cmpClass, property, nameSpace, "   ");
                 if (method && method.markdown) {
-                    log.value("   provide class hover info", property, 1);
+                    log.value("   provide class hover info", property, 2);
                     hover = new Hover(method.markdown);
                 }
             }
@@ -42,7 +56,7 @@ class ExtJsHoverProvider implements HoverProvider
                 const prop = extjsLangMgr.getProperty(cmpClass, property, nameSpace, "   ");
                 if (prop) {
                     if (prop.markdown) {
-                        log.value("   provide property hover info", property, 1);
+                        log.value("   provide property hover info", property, 2);
                         hover = new Hover(prop.markdown);
                     }
                 }
@@ -50,7 +64,7 @@ class ExtJsHoverProvider implements HoverProvider
                     let cmp = extjsLangMgr.getComponentInstance(property, nameSpace, position, document.uri.fsPath, "   ");
                     if (isComponent(cmp)) // && cmp.markdown)
                     {
-                        log.value("   provide class instance hover info", property, 1);
+                        log.value("   provide class instance hover info", property, 2);
                         // return new Hover(cmp.markdown);
                         hover = new Hover(new MarkdownString().appendCodeblock(`{${cmp.componentClass}} Class`));
                     }
@@ -69,7 +83,7 @@ class ExtJsHoverProvider implements HoverProvider
                         // Get the component instance ('phys'), and then get the method with the name defined
                         // by 'callee' (getPinNumber)...
                         //
-                        log.value("provide primitive instance hover info", property, 1);
+                        log.value("provide primitive instance hover info", property, 2);
                         cmp = extjsLangMgr.getComponentInstance(cmp.componentClass, nameSpace, position, document.uri.fsPath, "   ");
                         if (isComponent(cmp))
                         {
@@ -85,7 +99,7 @@ class ExtJsHoverProvider implements HoverProvider
             {
                 const config = extjsLangMgr.getConfig(cmpClass, property, nameSpace, "   ");
                 if (config && config.markdown) {
-                    log.value("   provide class hover info", property, 1);
+                    log.value("   provide class hover info", property, 2);
                     hover = new Hover(config.markdown);
                 }
             }
@@ -94,13 +108,13 @@ class ExtJsHoverProvider implements HoverProvider
                 const cmp = extjsLangMgr.getComponent(cmpClass, nameSpace, true, "   ");
                 if (cmp && cmp.markdown)
                 {
-                    log.value("   provide class hover info", property, 1);
+                    log.value("   provide class hover info", property, 2);
                     hover = new Hover(cmp.markdown);
                 }
             }
         }
 
-        log.methodDone("provide hover", 1, "", true);
+        log.methodDone("provide hover", 2, "", true);
         return hover;
     }
 
