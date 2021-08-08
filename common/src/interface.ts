@@ -160,9 +160,17 @@ export interface IRange
 
 export interface IRequires
 {
-    value: string[];
+    value: IRequire[];
     start: IPosition;
     end: IPosition;
+}
+
+
+export interface IRequire
+{
+    name: string;
+    start: IPosition | undefined;
+    end: IPosition | undefined;
 }
 
 

@@ -2,7 +2,7 @@
 import * as json5 from "json5";
 import * as log from "../common/log";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
-import { ComponentType, IPosition, utils } from "../../../common";
+import { ComponentType, IPosition, IRequire, utils } from "../../../common";
 import { toVscodePosition, toVscodeRange } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
@@ -52,14 +52,15 @@ export async function ensureRequires(xtype: string | undefined)
 					}
 
 					const _requires = component.requires.value
-						.filter((it: string) => utils.isNeedRequire(it))
-						.concat(Array.from(componentClasses))
-						.sort();
+											   .filter((it: IRequire) => utils.isNeedRequire(it.name))
+											   .map((it: IRequire) => { return it.name; })
+											   .concat(Array.from(componentClasses))
+											   .sort();
 
 					const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
-											.replace(/\[/, "[" + EOL + pad + "    ")
-											.replace(/,/g, "," + EOL + pad + "    ")
-											.replace(/\]/, EOL + pad + "]");
+											   .replace(/\[/, "[" + EOL + pad + "    ")
+											   .replace(/,/g, "," + EOL + pad + "    ")
+											   .replace(/\]/, EOL + pad + "]");
 
 					workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
 					workspace.applyEdit(workspaceEdit);

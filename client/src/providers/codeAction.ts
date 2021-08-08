@@ -1,12 +1,13 @@
 
+import * as log from "../common/log";
 import {
     CancellationToken, CodeActionProvider, ExtensionContext, languages, ProviderResult,
-    TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind
+    TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind, DiagnosticRelatedInformation
 } from "vscode";
 import { ErrorCode } from "../../../common";
 
 
-class XtypeCodeActionProvider implements CodeActionProvider
+class ExtjsCodeActionProvider implements CodeActionProvider
 {
     provideCodeActions(document: TextDocument, range: Range | Selection, context: CodeActionContext, token: CancellationToken): ProviderResult<(Command | CodeAction)[]>
     {
@@ -18,6 +19,10 @@ class XtypeCodeActionProvider implements CodeActionProvider
             {
                 if (d.source === "vscode-extjs")
                 {
+                    if (!d.range.intersection(range) && !range.intersection(d.range)) {
+                        continue;
+                    }
+
                     actions.push(...[{
                         title: "Ignore errors of this type (this line only)",
                         isPreferred: true,
@@ -51,31 +56,7 @@ class XtypeCodeActionProvider implements CodeActionProvider
 
                     if (d.code === ErrorCode.xtypeNotFound && d.relatedInformation)
                     {
-                        for (const info of d.relatedInformation)
-                        {
-                            const matches = info.message.match(/Did you mean: ([A-Z0-9]+)/i);
-                            if (matches)
-                            {
-                                const suggestions = matches[1].replace(/ /g, "").split(","),
-                                    addSuggest = [];
-                                for (const suggestion of suggestions)
-                                {
-                                    addSuggest.push({
-                                        title: "Replace declared xtype with '" + suggestion + "'",
-                                        isPreferred: true,
-                                        kind: CodeActionKind.QuickFix,
-                                        command: {
-                                            title: "Replace declared xtype with '" + suggestion + "'",
-                                            command: "vscode-extjs:replaceText",
-                                            arguments: [ '"' + suggestion + '"', range ]
-                                        }
-                                    });
-                                }
-                                if (addSuggest.length > 0) {
-                                    actions.push(...addSuggest);
-                                }
-                            }
-                        }
+                        addSuggestedActions(d.relatedInformation, "xtype", range, actions);
                     }
                     else if (d.code === ErrorCode.xtypeNoRequires)
                     {
@@ -100,6 +81,10 @@ class XtypeCodeActionProvider implements CodeActionProvider
                             }
                         }]);
                     }
+                    else if (d.code === ErrorCode.classNotFound && d.relatedInformation)
+                    {
+                        addSuggestedActions(d.relatedInformation, "class", range, actions);
+                    }
                 }
             }
         }
@@ -110,9 +95,39 @@ class XtypeCodeActionProvider implements CodeActionProvider
 }
 
 
+function addSuggestedActions(relatedInformation: DiagnosticRelatedInformation[], label: string, range: Range | Selection, actions: CodeAction[])
+{
+    for (const info of relatedInformation)
+    {
+        const matches = info.message.match(/Did you mean: ([A-Z0-9, .-_]+)/i);
+        if (matches)
+        {
+            const suggestions = matches[1].replace(/ /g, "").split(","),
+                addSuggest = [];
+
+
+            for (const suggestion of suggestions)
+            {
+                addSuggest.push({
+                    title: `Replace declared ${label} with '${suggestion}'`,
+                    isPreferred: true,
+                    kind: CodeActionKind.QuickFix,
+                    command: {
+                        title: `Replace declared ${label} with '${suggestion}'`,
+                        command: "vscode-extjs:replaceText",
+                        arguments: [ '"' + suggestion + '"', range ]
+                    }
+                });
+            }
+            actions.push(...addSuggest);
+        }
+    }
+}
+
+
 function registerXtypeCodeActionProvider(context: ExtensionContext)
 {
-    context.subscriptions.push(languages.registerCodeActionsProvider("javascript", new XtypeCodeActionProvider()));
+    context.subscriptions.push(languages.registerCodeActionsProvider("javascript", new ExtjsCodeActionProvider()));
 }
 
 

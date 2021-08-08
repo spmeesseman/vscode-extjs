@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRange
+    DeclarationType, IParameter, utils, VariableType, IRange, IRequire
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
@@ -321,7 +321,7 @@ function isDocObject(object: any): object is (IMethod | IProperty | IConfig)
 }
 
 
-function logProperties(property: string, properties: (IMethod | IProperty | IConfig | IXtype | string)[] | undefined)
+function logProperties(property: string, properties: (IMethod | IProperty | IConfig | IXtype | IRequire | string)[] | undefined)
 {
     if (properties)
     {
@@ -553,13 +553,17 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
 
 function parseRequires(propertyRequires: ObjectProperty)
 {
-    const requires: string[] = [];
+    const requires: IRequire[] = [];
     if (isArrayExpression(propertyRequires.value))
     {
         propertyRequires.value.elements
-            .reduce<string[]>((p, it) => {
+            .reduce<IRequire[]>((p, it) => {
             if (it?.type === "StringLiteral") {
-                p.push(it.value);
+                p.push({
+                    name: it.value,
+                    start: it.loc?.start,
+                    end: it.loc?.end
+                });
             }
             return p;
         }, requires);

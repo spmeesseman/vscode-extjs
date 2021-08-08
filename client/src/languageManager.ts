@@ -6,7 +6,7 @@ import {
 } from "vscode";
 import {
     IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType,
-    IVariable, VariableType, IExtJsBase, IPrimitive
+    IVariable, VariableType, IExtJsBase, IPrimitive, IRequire
 } from  "../../common";
 
 import {
@@ -59,7 +59,7 @@ class ExtjsLanguageManager
     private variablesToMethodMapping: { [nameSpace: string]: { [variable: string]: IMethod | undefined }} = {};
 
     private componentClassToWidgetsMapping: { [nameSpace: string]: { [componentClass: string]: string[] | undefined }} = {};
-    private componentClassToRequiresMapping: { [nameSpace: string]: { [componentClass: string]: string[] | undefined }} = {};
+    private componentClassToRequiresMapping: { [nameSpace: string]: { [componentClass: string]: IRequire[] | undefined }} = {};
     private componentClassToXTypesMapping: { [nameSpace: string]: { [componentClass: string]: IXtype[] | undefined }} = {};
     private componentClassToConfigsMapping: { [nameSpace: string]: { [componentClass: string]: IConfig[] | undefined }} = {};
     private componentClassToPropertiesMapping: { [nameSpace: string]: { [componentClass: string]: IProperty[] | undefined }} = {};

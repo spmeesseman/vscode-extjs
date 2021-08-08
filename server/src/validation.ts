@@ -2,11 +2,10 @@
 import { Connection, Diagnostic, DiagnosticSeverity, Range, DocumentUri } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, componentClassToWidgetsMapping, widgetToComponentClassMapping } from "./syntaxTree";
-import { IPosition, IComponent, utils, ErrorCode, defaultSettings } from "../../common";
+import { IPosition, IComponent, utils, ErrorCode, IRequire } from "../../common";
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
 import * as log from "./log";
-import { Position } from "vscode";
 
 
 function isErrorIgnored(code: number, fsPath: string): boolean
@@ -125,6 +124,11 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		}
 
 		//
+		// Validate requires array
+		//
+		validateRequires(cmp, diagRelatedInfoCapability, textObj, diagnostics);
+
+		//
 		// Validate method variables
 		//
 		for (const method of cmp.methods)
@@ -234,56 +238,11 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 				code: ErrorCode.xtypeNotFound
 			};
 
-			if (diagRelatedInfoCapability)
-			{
-				const suggestions: string[] = [];
-				//
-				// See if some suggestions can be made...
-				//
-				for (const widget in widgetToComponentClassMapping)
-				{   //
-					// Don''t expect the user to misspell by more than a character or two, so apply
-					// a 2 character threshold on the length of the strings that we should compare
-					//
-					if (widget.length < xtype.length - 2 || widget.length > xtype.length + 2) {
-						continue;
-					}
-					const widgetPart1 = widget.substring(0, widget.length / 2),
-						widgetPart2 = widget.substring(widget.length / 2);
-					//
-					// Max 5 suggestions
-					//
-					if (suggestions.length === 5) {
-						break;
-					}
-					if (widget.indexOf(xtype) === 0) {
-						suggestions.push(widget);
-					}
-					else if (xtype.indexOf(widget) === 0) {
-						suggestions.push(widget);
-					}
-					else if (xtype.match(new RegExp(`${widgetPart1}[\\w]+`))) {
-						suggestions.push(widget);
-					}
-					if (xtype.match(new RegExp(`[\\w]+${widgetPart2}`))) {
-						suggestions.push(widget);
-					}
-				}
-
-				if (suggestions.length > 0)
-				{
-					diagnostic.relatedInformation = [
-					{
-						location: {
-							uri: document.uri,
-							range: { ...diagnostic.range }
-						},
-						message: "Did you mean: " + suggestions.join(", ")
-					}];
-				}
-
-				diagnostics.push(diagnostic);
+			if (diagRelatedInfoCapability) {
+				addSuggestions(diagnostic, xtype, document, widgetToComponentClassMapping);
 			}
+
+			diagnostics.push(diagnostic);
 		}
 	}
 
@@ -305,8 +264,8 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 
 		if (!ignore)
 		{
-			const requires = [];
-			let requiredXtypes: string[] = [];
+			const requires = [],
+				  requiredXtypes: string[] = [];
 			let thisXType: string | undefined;
 			requires.push(...(cmpRequires?.value || []));
 
@@ -318,15 +277,16 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 			}
 			else if (requires.length > 0)
 			{
-				requiredXtypes = requires.reduce<string[]>((previousValue, currentCmpClass) => {
-					if (currentCmpClass !== thisWidgetCls) {
-						previousValue.push(...(componentClassToWidgetsMapping[currentCmpClass] || []));
+				const requiredXtypes: string[] = [];
+				for (const require of requires)
+				{
+					if (require.name !== thisWidgetCls) {
+						requiredXtypes.push(...(componentClassToWidgetsMapping[require.name] || []));
 					}
 					else {
 						thisXType = xtype;
 					}
-					return previousValue;
-				}, []);
+				}
 			}
 
 			if (!requiredXtypes.includes(xtype) && xtype !== thisXType)
@@ -338,22 +298,138 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 					source: "vscode-extjs",
 					code: ErrorCode.xtypeNoRequires
 				};
-		/*
-				if (diagRelatedInfoCapability)
-				{
-					diagnostic.relatedInformation = [
-					{
-						location: {
-							uri: document.uri,
-							range: { ...diagnostic.range }
-						},
-						message: xtype
-					}];
-				}
-		*/
 				diagnostics.push(diagnostic);
 			}
 		}
 	}
 
+}
+
+
+function validateRequires(cmp: IComponent, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+{
+	const cmpRequires = cmp.requires,
+		  requires: IRequire[] = [],
+		  fsPath = URI.file(document.uri).fsPath;
+	if (!cmpRequires) {
+		return;
+	}
+
+	requires.push(...(cmpRequires?.value || []));
+
+	//
+	// Check global/file ignore for this error type
+	//
+	if (globalSettings.ignoreErrors && globalSettings.ignoreErrors.length > 0) {
+		for (const iErr of globalSettings.ignoreErrors) {
+			if (iErr.code === ErrorCode.classNotFound) {
+				if (!iErr.fsPath || fsPath === iErr.fsPath) {
+					return;
+				}
+			}
+		}
+	}
+
+	for (const require of requires)
+	{
+		const thisWidgetCls = componentClassToWidgetsMapping[require.name];
+		if (thisWidgetCls) { // if we have a mapping, then no diagnostic
+			continue;
+		}
+		//
+		// Check ignored line (previous line), e.g.:
+		//
+		//     /** vscode-extjs-ignore-3 */
+		//     xtype: 'userdropdown'
+		//
+		const ignoreRange = {
+			start: {
+				line: require.start ? require.start.line - 1 : cmpRequires.start.line - 1,
+				character: 0
+			},
+			end: {
+				line: require.end ? require.end.line - 1 : cmpRequires.end.line - 1,
+				character: 100000
+			}
+		};
+		let ignoreText = document.getText(ignoreRange);
+		if (ignoreText.includes("/** vscode-extjs-ignore-")) {
+			ignoreText = ignoreText.substring(ignoreText.indexOf("/** vscode-extjs-ignore-")).trimEnd();
+		}
+
+		if (ignoreText !== `/** vscode-extjs-ignore-${ErrorCode.xtypeNoRequires} */`)
+		{
+			const range = toVscodeRange(require.start || cmpRequires.start, require.end || cmpRequires.end);
+			const diagnostic: Diagnostic = {
+				severity: DiagnosticSeverity.Error,
+				range,
+				message: "No corresponding class definition found.",
+				source: "vscode-extjs",
+				code: ErrorCode.classNotFound
+			};
+			if (diagRelatedInfoCapability) {
+				addSuggestions(diagnostic, require.name, document, componentClassToWidgetsMapping);
+			}
+			diagnostics.push(diagnostic);
+		}
+	}
+}
+
+
+function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument, mapping: {[cls: string]: (string[]|string) | undefined})
+{
+	const suggestions: string[] = [];
+	//
+	// See if some suggestions can be made...
+	//
+	for (const component in mapping)
+	{   //
+		// Don''t expect the user to misspell by more than a character or two, so apply
+		// a 2 character threshold on the length of the strings that we should compare
+		//
+		if (component.length < text.length - 2 || component.length > text.length + 2) {
+			continue;
+		}
+		const componentPart1 = component.substring(0, component.length / 2),
+				componentPart2 = component.substring(component.length / 2),
+				textPart1 = text.substring(0, text.length / 2),
+				textPart2 = text.substring(text.length / 2);
+
+		if (component.indexOf(text) === 0) {
+			suggestions.push(component);
+		}
+		else if (text.indexOf(component) === 0) {
+			suggestions.push(component);
+		}
+		else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
+			suggestions.push(component);
+		}
+		else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
+			suggestions.push(component);
+		}
+		else if (component.match(new RegExp(`${textPart1}[\\w]+`))) {
+			suggestions.push(component);
+		}
+		else if (component.match(new RegExp(`[\\w]+${textPart2}`))) {
+			suggestions.push(component);
+		}
+		//
+		// Max 5 suggestions
+		//
+		if (suggestions.length >= 5) {
+			break;
+		}
+	}
+
+	if (suggestions.length > 0)
+	{
+		diagnostic.relatedInformation = [
+		{
+			location: {
+				uri: document.uri,
+				range: { ...diagnostic.range }
+			},
+			message: "Did you mean: " + suggestions.join(", ")
+		}];
+	}
 }
