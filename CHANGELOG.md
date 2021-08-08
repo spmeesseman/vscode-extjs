@@ -1,5 +1,15 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.2.1 (August 8th, 2021)
+
+### Bug Fixes
+
+- **Hover Provider:** throws 'Cannot read property nameSpace of undefined' exception in non-ExtJs JavaScript files.
+
+### Documentation
+
+- **Readme:** update todos
+
 ## Version 0.2.0 (August 7th, 2021)
 
 ### Bug Fixes
