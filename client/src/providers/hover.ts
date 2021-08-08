@@ -12,14 +12,20 @@ class ExtJsHoverProvider implements HoverProvider
 {
     provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover>
     {
-        let hover: Hover | undefined;
-        const { cmpType, property, cmpClass, thisCmp, thisClass, callee } = extjsLangMgr.getLineProperties(document, position, "   ");
-        const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath);
+        log.methodStart("provide hover", 1, "", true, [["file", document.uri.fsPath]]);
 
-        log.methodStart("provide hover", 1, "", true, [
+        let hover: Hover | undefined;
+        const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath);
+        if (!nameSpace) {
+            return;
+        }
+
+        const { cmpType, property, cmpClass, thisClass, callee } = extjsLangMgr.getLineProperties(document, position, "   ");
+
+        log.values([
             ["component class", cmpClass], ["this class", thisClass], ["component type", cmpType],
             ["property", property], ["namespace", nameSpace], ["callee", callee]
-        ]);
+        ], 2, "   ");
 
         if (property && cmpClass && nameSpace)
         {

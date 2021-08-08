@@ -81,8 +81,8 @@ export function methodStart(msg: string, level?: number, logPad = "", doLogBlank
         write(logPad + "*start* " + msg, lLevel);
         if (params)
         {
-            for (const [ n, v] of params) {
-                value(logPad + "   " + n, v, lLevel + 1);
+            for (const [ n, v, l ] of params) {
+                value(logPad + "   " + n, v, l || lLevel + 1);
             }
         }
     }
@@ -99,8 +99,8 @@ export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?
         }
         if (params)
         {
-            for (const [ n, v] of params) {
-                value(logPad + "   " + n, v, lLevel + 1);
+            for (const [ n, v, l ] of params) {
+                value(logPad + "   " + n, v, l || lLevel + 1);
             }
         }
         write("*done* " + msg, lLevel, logPad);
@@ -128,6 +128,24 @@ export function value(msg: string, value: any, level?: number, logPad = "")
     }
 
     write(logMsg, level, logPad);
+}
+
+
+export function values(values: (string|any)[][], level?: number, logPad = "", doLogBlank?: boolean)
+{
+    if (isLoggingEnabled())
+    {
+        const lLevel = level || 1;
+        if (doLogBlank === true) {
+            blank(lLevel);
+        }
+        if (values)
+        {
+            for (const [ n, v, l ] of values) {
+                value(logPad + "   " + n, v, l || lLevel + 1);
+            }
+        }
+    }
 }
 
 

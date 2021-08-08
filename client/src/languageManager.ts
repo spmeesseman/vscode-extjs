@@ -284,7 +284,7 @@ class ExtjsLanguageManager
         //     Ext.csi.view.common.
         //     Ext.csi.store.
         //     Ext.form.field.
-        //     MyApp.view.myview.
+        //     MyApp.view.users.
         //
         const pIdx = lineText.indexOf(property);
         cmpClassPre = lineText.substring(0, pIdx);
@@ -479,11 +479,12 @@ class ExtjsLanguageManager
               range = document.getWordRangeAtPosition(position) || new Range(position, position);
 
         log.methodStart("get line properties", 1, logPad, false, [
-            ["namespace", thisCmp.nameSpace], ["component class", thisCmp.componentClass], ["line text (all)", allLineText]
+            ["file", document.uri.fsPath], ["namespace", thisCmp?.nameSpace],
+            ["component class", thisCmp?.componentClass], ["line text (all)", allLineText]
         ]);
 
         //
-        // Break line text down up to the property and any calle objects/class instance we need to examine
+        // Break line text down up to the property and any callee objects/class instance we need to examine
         //
         // Examples:
         //
@@ -500,6 +501,7 @@ class ExtjsLanguageManager
             cmpType: ComponentType = ComponentType.None;
 
         log.value("   trimmed line text", lineText, 2);
+        log.value("   property", property, 2);
 
         //
         // Handle "this"
@@ -547,7 +549,7 @@ class ExtjsLanguageManager
             lineText = lineText.replace(/^[^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
             //
             // Set the property to the last piece of the class name.  We want the effect that clicking
-            // anywhere within the string references th  entore component class, not just the "part" that
+            // anywhere within the string references th  entire component class, not just the "part" that
             // gets looked at when doing a goto def for a non-quoted class variable/path
             //
             const strParts = lineText.split(".");
@@ -562,13 +564,13 @@ class ExtjsLanguageManager
             //
             // Strip off everything outside the quotes to get our xtype, i.e.
             //
-            //     grid.up('mypanel')
+            //     grid.up('panel')
             //
-            // We want 'mypanel'
+            // We want 'panel'
             //
             lineText = lineText.replace(/^[^"']*["']{1}/, "").replace(/["']{1}[\w\W]*$/, "");
             //
-            // Set the property to the last piece of the xtype's class name.
+            // Set the property to the last piece of the xtypes class name.
             //
             const xtypeCmp = this.xtypeToComponentClassMapping[thisCmp.nameSpace][lineText];
             if (xtypeCmp) {
@@ -639,9 +641,9 @@ class ExtjsLanguageManager
                     cmpClass = cmp.componentClass;
                 }
                 else {
-                    const icmp = this.getComponentInstance(property, thisCmp.nameSpace, position, document.uri.fsPath, logPad + "   ");
-                    if (isComponent(icmp)) {
-                        cmp = icmp;
+                    const iCmp = this.getComponentInstance(property, thisCmp.nameSpace, position, document.uri.fsPath, logPad + "   ");
+                    if (isComponent(iCmp)) {
+                        cmp = iCmp;
                     }
                 }
             }
@@ -652,7 +654,7 @@ class ExtjsLanguageManager
             if (cmpClass)
             {   //
                 // getComponentClass() will return the file class if this is a config getter/setter, so
-                // check the methods mapping to see if it exists on the main component or not.  If it doesnt
+                // check the methods mapping to see if it exists on the main component or not.  If it doesn't
                 // then check if its a config property getter/setter fn
                 //
                 const classHasMethod = !!this.componentClassToMethodsMapping[thisCmp.nameSpace][cmpClass]?.find(x => x.name === property);
@@ -662,7 +664,7 @@ class ExtjsLanguageManager
                     //
                     //     user: null
                     //
-                    // Will have the folloiwng getter/setter created by the framework if not defined
+                    // Will have the following getter/setter created by the framework if not defined
                     // on the object:
                     //
                     //     getUser()
@@ -808,7 +810,7 @@ class ExtjsLanguageManager
             _setPosition(pObject);
         }
         else //
-        {   // In the case where there are multipl classes defined in one file, get the main
+        {   // In the case where there are multiple classes defined in one file, get the main
             // component file and search for the class position in the case where it is not 0,0
             //
             const mainCmp = this.getComponent(componentClass, nameSpace, false, logPad + "   ");
@@ -959,9 +961,9 @@ class ExtjsLanguageManager
     getXtypeNames(): string[]
     {
         const xtypes: string[] = [],
-              xmap = this.componentClassToXTypesMapping;
+              xMap = this.componentClassToXTypesMapping;
 
-        Object.values(xmap).forEach((ns) =>
+        Object.values(xMap).forEach((ns) =>
         {
             Object.entries(ns).forEach(([ cls, xtype ]) =>
             {
@@ -1064,7 +1066,7 @@ class ExtjsLanguageManager
         {
             for (const d of processedDirs)
             {   //
-                // Dont process dirs already processed.  If dirs in a user's config overlap eachother
+                // Don't process dirs already processed.  If dirs in a user's config overlap eachother
                 // then something might get missed so it's on the user to make sure their paths are
                 // set correctly, in app.json and/or .extjsrc files.
                 //
@@ -1118,7 +1120,7 @@ class ExtjsLanguageManager
                     });
                 }
             }
-            else // index the file via the languge server
+            else // index the file via the language server
             {
                 if (typeof conf.classpath === "string")
                 {
@@ -1360,7 +1362,7 @@ class ExtjsLanguageManager
 
     private async processComponents(components: IComponent[] | undefined, logPad = "")
     {   //
-        // If no commponenst, then bye
+        // If no components, then bye
         //
         if (!components || components.length === 0) {
             return;
@@ -1369,7 +1371,7 @@ class ExtjsLanguageManager
         log.methodStart("process components", 1, logPad, true, [[ "# of stored components", components.length ]]);
 
         //
-        // Loog the list of components and create component mappings
+        // Log the list of components and create component mappings
         //
         await utils.forEachAsync(components, (cmp: IComponent) =>
         {
@@ -1377,15 +1379,12 @@ class ExtjsLanguageManager
                 componentClass, requires, widgets, xtypes, methods, configs, properties, aliases, nameSpace
             } = cmp;
 
-            log.value("   process component " + componentClass, 2);
-            log.value("      namespace", nameSpace, 3);
-            log.value("      # of widgets", widgets.length, 3);
-            log.value("      # of xtypes", xtypes.length, 3);
-            log.value("      # of methods", methods.length, 3);
-            log.value("      # of configs", configs.length, 3);
-            log.value("      # of properties", properties.length, 3);
-            log.value("      # of aliases", aliases.length, 3);
-
+            log.write("process component " + componentClass, 2, logPad + "   ");
+            log.values([
+                ["namespace", nameSpace], ["# of widgets", widgets.length], ["# of xtypes", xtypes.length],
+                ["# of methods", methods.length], ["# of configs", configs.length], ["# of properties", properties.length],
+                ["# of aliases", aliases.length]
+            ], 3, logPad + "      ");
             //
             // The components documentation.  Defined at the very top of the class file, e.g.:
             //
