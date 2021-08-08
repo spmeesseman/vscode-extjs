@@ -12,7 +12,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs)
 [![app-publisher](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-app--publisher-e10000.svg)](https://github.com/perryjohnsoninc/app-publisher)
 
-_**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 60-70% done.  The extension is stable, and at the point where it is helping with development, but, there will be bugs and there may be cases within source code where Intellisense doesn't seem to work, cases that have not been come across in usage testing.  Version 1.0.0 will be released once determined bug free*.
+_**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The extension is stable, and at the point where it is helping with development, but, there will be bugs and there may be cases within source code where Intellisense doesn't seem to work, cases that have not been come across in usage testing.  Version 1.0.0 will be released once determined bug free*.
 
 ## Table of Contents
 
@@ -224,9 +224,15 @@ If my work and this extension has made your life easier, consider a [donation](h
 
 ## TODO
 
+- config property intellisense within object definition
 - goto definition for jsdoc parameter types (surrounded with{})
 - If jsdoc isn't present for an overridden method, then check for parent method jsdoc
 - Handle the @inheritdoc tag
 - Handle links in jsdoc
 - If there's a jsdoc hover popup, the QuickFix dialog doesn't display, jsdoc popup overrides it somehow?
 - Configs and variable cache mappings need to be separated by a 3rd dimension (currently only project and namespace)
+- diagnostics for invalid paths in requires[]
+- diagnostics for dot notation pretty much same validation as for requires[] but diff in code blocks (warning vs. error)
+- packages not @sencha should have xtype validation.  currently not validated if namespace name begins w Ext
+- goto type definition for store.type
+- diagnostics for store.type
