@@ -12,5 +12,10 @@
     "typescript.tsc.autoDetect": "off",
 	"editor.insertSpaces": false,
 	"tslint.enable": true,
-	"typescript.preferences.quoteStyle": "double"
+    "typescript.preferences.quoteStyle": "double",
+    "cSpell.words": [
+        "extjsrcjson",
+        "qzsiniong",
+        "vslauncher"
+    ]
 }

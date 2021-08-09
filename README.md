@@ -224,15 +224,13 @@ If my work and this extension has made your life easier, consider a [donation](h
 
 ## TODO
 
-- config property intellisense within object definition
 - goto definition for jsdoc parameter types (surrounded with{})
 - If jsdoc isn't present for an overridden method, then check for parent method jsdoc
 - Handle the @inheritdoc tag
 - Handle links in jsdoc
-- If there's a jsdoc hover popup, the QuickFix dialog doesn't display, jsdoc popup overrides it somehow?
 - Configs and variable cache mappings need to be separated by a 3rd dimension (currently only project and namespace)
-- diagnostics for invalid paths in requires[]
 - diagnostics for dot notation pretty much same validation as for requires[] but diff in code blocks (warning vs. error)
 - packages not @sencha should have xtype validation.  currently not validated if namespace name begins w Ext
 - goto type definition for store.type
 - diagnostics for store.type
+- diagnostics (warning) for deprecated property/config/method/class use

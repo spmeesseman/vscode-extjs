@@ -1,8 +1,14 @@
 
 import * as minimatch from "minimatch";
-import { Range, Position } from "vscode";
+import { Range, Position, TextDocument, EndOfLine } from "vscode";
 import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive } from "../../../common";
 import { configuration } from "./configuration";
+
+
+export function documentEol(document: TextDocument)
+{
+    return document.eol === EndOfLine.CRLF ? "\r\n" : "\n";
+}
 
 
 export function isComponent(object: IExtJsBase| undefined): object is IComponent
@@ -71,6 +77,17 @@ export function getMethodByPosition(position: Position, component: IComponent)
         }
     }
     return method;
+}
+
+
+export function getObjectRangeByPosition(position: Position, component: IComponent)
+{
+    for (const o of component.objectRanges)
+    {
+        if (isPositionInRange(position, toVscodeRange(o.start, o.end))) {
+            return o;
+        }
+    }
 }
 
 

@@ -16,7 +16,7 @@ class XtypeCompletionItemProvider implements CompletionItemProvider
               cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath),
               addedItems: string[] = [];
 
-        if (cmp && isPositionInObject(position, cmp) && getMethodByPosition(position, cmp))
+        if (cmp && isPositionInObject(position, cmp)) // && getMethodByPosition(position, cmp))
         {
             for (const xtype of xtypes)
             {
