@@ -224,13 +224,4 @@ If my work and this extension has made your life easier, consider a [donation](h
 
 ## TODO
 
-- goto definition for jsdoc parameter types (surrounded with{})
-- If jsdoc isn't present for an overridden method, then check for parent method jsdoc
-- Handle the @inheritdoc tag
-- Handle links in jsdoc
-- Configs and variable cache mappings need to be separated by a 3rd dimension (currently only project and namespace)
-- diagnostics for dot notation pretty much same validation as for requires[] but diff in code blocks (warning vs. error)
-- packages not @sencha should have xtype validation.  currently not validated if namespace name begins w Ext
-- goto type definition for store.type
-- diagnostics for store.type
-- diagnostics (warning) for deprecated property/config/method/class use
+See the [current TODO List](https://github.com/spmeesseman/vscode-extjs/blob/master/.todo?raw=true).  Tracked using the [TODO+ VSCode Extension](https://marketplace.visualstudio.com/items?itemName=fabiospampinato.vscode-todo-plus).
