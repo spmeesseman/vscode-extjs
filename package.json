@@ -57,7 +57,6 @@
         "test-after": "npm run coverage-full_off",
         "test-before": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run clean-ast_cache && npm run clean-dist && npm run build-tsc && npm run coverage-full_on",
         "test-open_report": "npm run coverage-open_report",
-        "vscode:prepublish": "npm run rebuild-webpack",
         "tsc-build": "tsc -b ./",
         "tsc-rebuild": "npm run clean-dist &&  && npm run tsc-build",
         "tsc-watch": "npm run clean-dist &&  tsc -b ./ -w",

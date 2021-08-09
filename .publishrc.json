@@ -3,7 +3,10 @@
     "branch":             "master",
     "buildCommand":       "npm run build-webpack",
     "changelogFile":      "CHANGELOG.md",
-    "deployCommand":      "npx vsce publish",
+    "deployCommand":      [
+        "npm run webpack-rebuild",
+        "npx vsce publish"
+    ],
     "githubRelease":      "Y",
     "githubUser":         "spmeesseman",
     "githubAssets":       [
