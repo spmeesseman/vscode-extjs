@@ -1,5 +1,16 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.3.0 (August 8th, 2021)
+
+### Bug Fixes
+
+- **Hover Provider:** diagnostic quick fix window provided by other extensions is inaccessible due to being overridden by jsdoc hover
+
+### Features
+
+- **Intellisense:** add object property/config intellisense
+- **Validation:** add requires array validation
+
 ## Version 0.2.1 (August 8th, 2021)
 
 ### Bug Fixes
