@@ -48,6 +48,23 @@
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+		{
+			"label": "Publish to Codecov",
+			"type": "shell",
+			"command": "bash.exe",
+			"args": [
+				"tools/codecov.sh",
+				"-t",
+				"${env:CODECOV_TOKEN}"
+			],
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			}
 		}
 	]
 }
