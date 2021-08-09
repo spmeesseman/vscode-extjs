@@ -18,9 +18,8 @@ const ignoreProperties = [
     "config", "items", "listeners", "requires", "privates", "statics"
 ];
 
-export const componentClassToWidgetsMapping: { [componentClass: string]: string[] | undefined } = {};
-export const widgetToComponentClassMapping: { [widget: string]: string | undefined } = {};
-
+export const widgetToComponentClassMapping: { [nameSpace: string]: { [widget: string]: string | undefined }} = {};
+export const componentClassToWidgetsMapping: { [nameSpace: string]: { [componentClass: string]: string[] | undefined }} = {};
 
 
 export async function loadExtJsComponent(ast: string | undefined)
@@ -30,9 +29,13 @@ export async function loadExtJsComponent(ast: string | undefined)
         const components: IComponent[] = JSON.parse(ast);
         for (const c of components)
         {
-            componentClassToWidgetsMapping[c.componentClass] = c.widgets;
+            if (!widgetToComponentClassMapping[c.nameSpace]) {
+                componentClassToWidgetsMapping[c.nameSpace] = {};
+                widgetToComponentClassMapping[c.nameSpace] = {};
+            }
+            componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = c.widgets;
             c.widgets.forEach((xtype: string) => {
-                widgetToComponentClassMapping[xtype] = c.componentClass;
+                widgetToComponentClassMapping[c.nameSpace][xtype] = c.componentClass;
             });
         }
     }
@@ -228,9 +231,13 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
     for (const c of components)
     {
-        componentClassToWidgetsMapping[c.componentClass] = c.widgets;
+        if (!widgetToComponentClassMapping[c.nameSpace]) {
+            componentClassToWidgetsMapping[c.nameSpace] = {};
+            widgetToComponentClassMapping[c.nameSpace] = {};
+        }
+        componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = c.widgets;
         c.widgets.forEach((xtype: string) => {
-            widgetToComponentClassMapping[xtype] = c.componentClass;
+            widgetToComponentClassMapping[c.nameSpace][xtype] = c.componentClass;
         });
     }
 

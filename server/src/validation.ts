@@ -185,7 +185,7 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
 	const cmpRequires = cmp.requires,
-		  thisWidgetCls = widgetToComponentClassMapping[xtype],
+		  thisWidgetCls = widgetToComponentClassMapping[cmp.nameSpace][xtype] || widgetToComponentClassMapping.Ext[xtype],
 		  fsPath = URI.file(document.uri).fsPath;
 
 	//
@@ -246,7 +246,7 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 		}
 	}
 
-	if (utils.isNeedRequire(thisWidgetCls) && ignoreText !== `/** vscode-extjs-ignore-${ErrorCode.xtypeNoRequires} */`)
+	if (utils.isNeedRequire(thisWidgetCls, componentClassToWidgetsMapping) && ignoreText !== `/** vscode-extjs-ignore-${ErrorCode.xtypeNoRequires} */`)
 	{   //
 		// Check global/file ignore for this error type
 		//
@@ -281,7 +281,7 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 				for (const require of requires)
 				{
 					if (require.name !== thisWidgetCls) {
-						requiredXtypes.push(...(componentClassToWidgetsMapping[require.name] || []));
+						requiredXtypes.push(...(componentClassToWidgetsMapping[cmp.nameSpace][require.name] || componentClassToWidgetsMapping.Ext[require.name] || []));
 					}
 					else {
 						thisXType = xtype;
@@ -332,7 +332,7 @@ function validateRequires(cmp: IComponent, diagRelatedInfoCapability: boolean, d
 
 	for (const require of requires)
 	{
-		const thisWidgetCls = componentClassToWidgetsMapping[require.name];
+		const thisWidgetCls = componentClassToWidgetsMapping[cmp.nameSpace][require.name] || componentClassToWidgetsMapping.Ext[require.name];
 		if (thisWidgetCls) { // if we have a mapping, then no diagnostic
 			continue;
 		}
@@ -376,48 +376,51 @@ function validateRequires(cmp: IComponent, diagRelatedInfoCapability: boolean, d
 }
 
 
-function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument, mapping: {[cls: string]: (string[]|string) | undefined})
+function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument, mapping: { [nameSpace: string]: { [widget: string]:  (string[]|string) | undefined }})
 {
 	const suggestions: string[] = [];
 	//
 	// See if some suggestions can be made...
 	//
-	for (const component in mapping)
-	{   //
-		// Don''t expect the user to misspell by more than a character or two, so apply
-		// a 2 character threshold on the length of the strings that we should compare
-		//
-		if (component.length < text.length - 2 || component.length > text.length + 2) {
-			continue;
-		}
-		const componentPart1 = component.substring(0, component.length / 2),
+	for (const nameSpace in mapping)
+	{
+		for (const component in mapping[nameSpace])
+		{   //
+			// Don''t expect the user to misspell by more than a character or two, so apply
+			// a 2 character threshold on the length of the strings that we should compare
+			//
+			if (component.length < text.length - 2 || component.length > text.length + 2) {
+				continue;
+			}
+			const componentPart1 = component.substring(0, component.length / 2),
 				componentPart2 = component.substring(component.length / 2),
 				textPart1 = text.substring(0, text.length / 2),
 				textPart2 = text.substring(text.length / 2);
 
-		if (component.indexOf(text) === 0) {
-			suggestions.push(component);
-		}
-		else if (text.indexOf(component) === 0) {
-			suggestions.push(component);
-		}
-		else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
-			suggestions.push(component);
-		}
-		else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
-			suggestions.push(component);
-		}
-		else if (component.match(new RegExp(`${textPart1}[\\w]+`))) {
-			suggestions.push(component);
-		}
-		else if (component.match(new RegExp(`[\\w]+${textPart2}`))) {
-			suggestions.push(component);
-		}
-		//
-		// Max 5 suggestions
-		//
-		if (suggestions.length >= 5) {
-			break;
+			if (component.indexOf(text) === 0) {
+				suggestions.push(component);
+			}
+			else if (text.indexOf(component) === 0) {
+				suggestions.push(component);
+			}
+			else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
+				suggestions.push(component);
+			}
+			else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
+				suggestions.push(component);
+			}
+			else if (component.match(new RegExp(`${textPart1}[\\w]+`))) {
+				suggestions.push(component);
+			}
+			else if (component.match(new RegExp(`[\\w]+${textPart2}`))) {
+				suggestions.push(component);
+			}
+			//
+			// Max 5 suggestions
+			//
+			if (suggestions.length >= 5) {
+				break;
+			}
 		}
 	}
 

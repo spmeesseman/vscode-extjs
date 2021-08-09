@@ -150,6 +150,12 @@ class ExtjsLanguageManager
     }
 
 
+    getClsToWidgetMapping()
+    {
+        return this.componentClassToWidgetsMapping;
+    }
+
+
     getComponent(componentClass: string, nameSpace?: string, checkAlias?: boolean, logPad = ""): IComponent | undefined
     {
         log.methodStart("get component", 1, logPad, false, [["component class", componentClass], ["namespace", nameSpace]]);

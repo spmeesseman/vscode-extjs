@@ -35,14 +35,9 @@ export function isGetterSetter(method: string): boolean
 }
 
 
-export function isNeedRequire(componentClass: string | undefined)
-{   //
-    // TODO - this unwantingly excludes user classes beginning with Ext.* i.e. Ext.ux
-    //
-    if (!componentClass || componentClass.startsWith("Ext.")) {
-        return false;
-    }
-    return true;
+export function isNeedRequire(componentClass: string | undefined, mapping: { [nameSpace: string]: { [cls: string]:  (string[]|string) | undefined }})
+{
+    return !(!componentClass || (componentClass.startsWith("Ext.") && mapping.Ext[componentClass]));
 }
 
 

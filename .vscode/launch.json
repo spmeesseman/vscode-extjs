@@ -9,6 +9,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--disable-extensions",
+                "--disable-workspace-trust",
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"${workspaceRoot}/client/testFixture"
 			],
@@ -24,6 +25,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--disable-extensions",
+                "--disable-workspace-trust",
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"${workspaceRoot}/client/testFixture"
 			],
@@ -39,6 +41,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--disable-extensions",
+                "--disable-workspace-trust",
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"${workspaceRoot}/../GEMS2"
 			],
@@ -54,6 +57,7 @@
 			"runtimeExecutable": "${execPath}",
 			"args": [
 				"--disable-extensions",
+                "--disable-workspace-trust",
 				"--extensionDevelopmentPath=${workspaceRoot}",
 				"${workspaceRoot}/../GEMS2"
 			],
@@ -79,6 +83,7 @@
                 "--extensionDevelopmentPath=${workspaceFolder}",
                 "--extensionTestsPath=${workspaceFolder}/dist/client/test/suite/index",
                 "--disable-extensions",
+                "--disable-workspace-trust",
                 "${workspaceFolder}/client/testFixture",
             ],
             "stopOnEntry": false,

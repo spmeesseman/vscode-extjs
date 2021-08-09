@@ -30,7 +30,7 @@ export async function ensureRequires(xtype: string | undefined)
 			for (const x of component.xtypes)
 			{
 				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, ComponentType.Widget);
-				if (c !== undefined && utils.isNeedRequire(c) && (!xtype || xtype === x.name)) {
+				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping()) && (!xtype || xtype === x.name)) {
 					componentClasses.add(c);
 				}
 			}
@@ -52,7 +52,7 @@ export async function ensureRequires(xtype: string | undefined)
 					}
 
 					const _requires = component.requires.value
-											   .filter((it: IRequire) => utils.isNeedRequire(it.name))
+											   .filter((it: IRequire) => utils.isNeedRequire(it.name, extjsLangMgr.getClsToWidgetMapping()))
 											   .map((it: IRequire) => { return it.name; })
 											   .concat(Array.from(componentClasses))
 											   .sort();
