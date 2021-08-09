@@ -97,6 +97,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             isFramework,
                             nameSpace: project || baseNameSpace,
                             componentClass: args[0].value,
+                            types: [],
                             xtypes: [],
                             aliases: [],
                             widgets: [],
@@ -128,6 +129,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
                         const propertyAlternateCls = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alternateClassName");
                         const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
+                        const propertyType = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "type");
                         const propertyConfig = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "config");
                         const propertyStatics = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "statics");
                         const propertyPrivates = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "privates");
@@ -171,6 +173,11 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         if (isObjectProperty(propertyXtype))
                         {
                             componentInfo.widgets.push(...parseClassDefProperties(propertyXtype)[0]);
+                        }
+
+                        if (isObjectProperty(propertyType))
+                        {
+                            componentInfo.types.push(...parseStoreDefProperties(propertyType)[0]);
                         }
 
                         logProperties("aliases", componentInfo.aliases);
@@ -655,6 +662,42 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
     }
 
     return params;
+}
+
+
+function parseStoreDefProperties(propertyNode: ObjectProperty): string[]
+{
+    const types: string[] = [];
+    const typeNodes: StringLiteral[] = [];
+
+    if (isStringLiteral(propertyNode.value)) {
+        typeNodes.push(propertyNode.value);
+    }
+
+    if (isArrayExpression(propertyNode.value))
+    {
+        propertyNode.value.elements.forEach(it => {
+            if (isStringLiteral(it)) {
+                typeNodes.push(it);
+            }
+        });
+    }
+
+    typeNodes.forEach(it =>
+    {
+        const propertyValue = it.value;
+        const propertyName = isIdentifier(propertyNode.key) ? propertyNode.key.name : undefined;
+        switch (propertyName)
+        {
+            case "type":
+                types.push(propertyValue);
+                break;
+            default:
+                break;
+        }
+    });
+
+    return types;
 }
 
 

@@ -1,9 +1,9 @@
 {
     "name": "vscode-extjs",
     "version": "0.3.0",
-    "displayName": "ExtJs Language Server",
+    "displayName": "ExtJs Intellisense",
     "author": "Scott Meesseman",
-    "description": "ExtJS intellisense, code completion, and more",
+    "description": "ExtJS Language Server - Intellisense, code completion, and more",
     "icon": "res/icon.png",
     "engines": {
         "vscode": "^1.44.0"
@@ -134,6 +134,11 @@
             {
                 "command": "vscode-extjs:indexFiles",
                 "title": "vscode-extjs: Index Files"
+            },
+            {
+                "command": "vscode-extjs:clearAst",
+                "title": "vscode-extjs: Clear Syntax Tree Cache",
+                "enablement": "none!=none"
             }
         ],
         "configuration": {

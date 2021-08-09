@@ -14,9 +14,10 @@ JsDoc:
 
 Miscellaneous:
 
-	☐ add 'clear ast cache' task for chance becomes corrupt
+	✔ add 'clear ast cache' or 'reindex' task for chance becomes corrupt @done(21-08-08 14:15)
 	☐ goto definition for jsdoc parameter types (surrounded with{})
-	☐ Configs and variable cache mappings need to be separated by a 3rd dimension (currently only project and namespace)
+	☐ Configs and variable level cache mappings need to be separated by a 3rd dimension (currently only project and namespace) @high
+		Separate again using component class name
 
 Stores:
 

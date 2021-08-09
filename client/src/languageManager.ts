@@ -1074,6 +1074,10 @@ class ExtjsLanguageManager
               cfgPct = this.config && this.config.length ? 100 / this.config.length : 100;
         let currentCfgIdx = 0,
             components: IComponent[] = [];
+        //
+        // store.type was added in 0.4, re-index if it hasn't been done already
+        //
+        const needsReIndex = fsStorage?.get("vscode-extjs-flags", "v0dot4Updated", "false");
 
         const _isIndexed = ((dir: string) =>
         {
@@ -1109,7 +1113,7 @@ class ExtjsLanguageManager
             //
             // Get components for this directory from local storage if exists
             //
-            if (storedComponents)
+            if (storedComponents && (needsReIndex === "true" || needsReIndex === undefined))
             {
                 if (!_isIndexed(conf.baseDir))
                 {
@@ -1213,6 +1217,8 @@ class ExtjsLanguageManager
                 });
             }
         }
+
+        fsStorage?.update("vscode-extjs-flags", "v0dot4Updated", "true");
 
         log.methodDone("indexing all", 1, "", true);
     }
