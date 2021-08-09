@@ -56,7 +56,7 @@
 			"args": [
 				"tools/codecov.sh",
 				"-t",
-				"${env:CODECOV_TOKEN}"
+				"${env:CODECOV_TOKEN_VSCODE_EXTJS}"
 			],
 			"group": "build",
 			"presentation": {
