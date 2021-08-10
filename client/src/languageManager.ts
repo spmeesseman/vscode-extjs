@@ -79,7 +79,7 @@ class ExtjsLanguageManager
     }
 
 
-    getAlias(componentClass: string, alias: string, nameSpace?: string, logPad = ""): IXtype | undefined
+    getAliasRef(componentClass: string, alias: string, nameSpace?: string, logPad = ""): IXtype | undefined
     {
         if (!nameSpace) {
             nameSpace = this.getNamespaceFromClass(componentClass);
@@ -508,8 +508,8 @@ class ExtjsLanguageManager
             property = document.getText(range),
             cmpType: ComponentType = ComponentType.None;
 
-        log.value("   trimmed line text", lineText, 2);
-        log.value("   property", property, 2);
+        log.value("   trimmed line text", lineText, 2, logPad);
+        log.value("   property", property, 2, logPad);
 
         //
         // Handle "this"
@@ -543,10 +543,10 @@ class ExtjsLanguageManager
         //
         //     Ext.create("Ext.data.Connection", {
         //     Ext.create("Ext.panel.Panel", {
-        //     requires: [ "MyApp.common.Utilities" ]
+        //     requires: [ "MyApp.common.Utilities" ]let cmp = this.down('physiciandropdown');
         //
-        if (lineText.match(new RegExp(`["']{1}[\\w.]*.${property}[\\w.]*["']{1}`)) ||
-            lineText.match(new RegExp(`["']{1}[\\w.]*${property}.[\\w.]*["']{1}`)))
+        if (lineText.match(new RegExp(`["']{1}[\\w.]*\\.${property}[\\w.]*["']{1}`)) ||
+            lineText.match(new RegExp(`["']{1}[\\w.]*${property}\\.[\\w.]*["']{1}`)))
         {
             cmpType = ComponentType.Class;
             //
@@ -580,7 +580,7 @@ class ExtjsLanguageManager
             //
             // Set the property to the last piece of the xtypes class name.
             //
-            const xtypeCmp = this.xtypeToComponentClassMapping[thisCmp.nameSpace][lineText] || this.xtypeToComponentClassMapping.Ext[lineText];
+            const xtypeCmp = this.widgetToComponentClassMapping[thisCmp.nameSpace][lineText] || this.widgetToComponentClassMapping.Ext[lineText];
             if (xtypeCmp) {
                 const strParts = xtypeCmp.split(".");
                 property = strParts[strParts.length - 1];
@@ -632,7 +632,7 @@ class ExtjsLanguageManager
         let cmpClass: string | undefined;
         const thisPath = window.activeTextEditor?.document?.uri.fsPath;
 
-        log.value("   property", property, 2, logPad);
+        log.value("   property (recalculated)", property, 2, logPad);
         log.value("   component type", cmpType, 2, logPad);
 
         if (cmpType === ComponentType.Class)
@@ -814,7 +814,6 @@ class ExtjsLanguageManager
         if (!nameSpace) {
             nameSpace = this.getNamespaceFromClass(componentClass);
         }
-        log.write("1: " + nameSpace ?? "n/a");
         log.value("   namespace", nameSpace, 2, logPad);
 
         const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property, nameSpace, logPad + "   ") :
@@ -962,7 +961,7 @@ class ExtjsLanguageManager
     }
 
 
-    getXType(componentClass: string, xtype: string, logPad = ""): IXtype | undefined
+    getXTypeRef(componentClass: string, xtype: string, logPad = ""): IXtype | undefined
     {
         log.methodStart("get xtype by component class", 1, logPad, false, [["component class", componentClass], ["xtype", xtype]]);
 
@@ -1418,7 +1417,7 @@ class ExtjsLanguageManager
                 componentClass, requires, widgets, xtypes, methods, configs, properties, aliases, nameSpace
             } = cmp;
 
-            log.write("process component " + componentClass, 2, logPad + "   ");
+            log.write("   process component " + componentClass, 2, logPad);
             log.values([
                 ["namespace", nameSpace], ["# of widgets", widgets.length], ["# of xtypes", xtypes.length],
                 ["# of methods", methods.length], ["# of configs", configs.length], ["# of properties", properties.length],
@@ -1443,7 +1442,7 @@ class ExtjsLanguageManager
                 cmp.markdown = this.commentParser.toMarkdown(componentClass, cmp.doc, logPad + "   ");
             }
 
-            log.write("   map classes to components", 4, logPad);
+            log.write("      map classes to components", 4, logPad);
 
             //
             // Map the component class to the various component types found
@@ -1499,7 +1498,7 @@ class ExtjsLanguageManager
                 this.componentClassToRequiresMapping[nameSpace][componentClass] = requires.value;
             }
 
-            log.write("   map components to classes", 4, logPad);
+            log.write("      map components to classes", 4, logPad);
 
             //
             // Map widget/alias/xtype types found to the component class
@@ -1584,9 +1583,19 @@ class ExtjsLanguageManager
             xtypes.forEach(xtype => {
                 this.xtypeToComponentClassMapping[nameSpace][xtype.name] = componentClass;
             });
+
+            log.write("      parsed component parts:", 4);
+            log.values([
+                [ "configs", JSON.stringify(this.configToComponentClassMapping[componentClass], undefined, 3)],
+                [ "methods", JSON.stringify(this.methodToComponentClassMapping[componentClass], undefined, 3)],
+                [ "property", JSON.stringify(this.propertyToComponentClassMapping[componentClass], undefined, 3)],
+                [ "widget", JSON.stringify(this.widgetToComponentClassMapping[componentClass], undefined, 3)],
+                [ "xtypes", JSON.stringify(this.xtypeToComponentClassMapping[componentClass], undefined, 3)]
+            ], 4, logPad + "   ");
+            log.write("   done processing component " + componentClass, 4);
         });
 
-        log.methodDone("process components", 1, logPad, true);
+        log.methodDone("process components", 1, logPad);
     }
 
 
