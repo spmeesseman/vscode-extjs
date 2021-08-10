@@ -180,7 +180,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             componentInfo.types.push(...parseStoreDefProperties(propertyType)[0]);
                         }
 
-                        logProperties("aliases", componentInfo.aliases);
                         logProperties("widgets", componentInfo.widgets);
 
                         if (isObjectProperty(propertyConfig))
@@ -396,6 +395,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
                             xtypes.push(name);
                             break;
                         default:
+                            aliases.push(propertyValue);
                             break;
                     }
                 }
