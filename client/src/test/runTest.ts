@@ -16,15 +16,16 @@ async function main()
         // The path to test runner
         // Passed to --extensionTestsPath
         //
-        const extensionTestsPath = path.resolve(__dirname, "../../../dist/client/test/suite/index");
-        const extensionTestsWsPath = path.resolve(__dirname, "../../testFixture");
+        const extensionTestsPath = path.resolve(__dirname, "./suite/index");
+        const extensionTestsWsPath = path.resolve(__dirname, "../../../client/testFixture");
         //
         // Download VS Code, unzip it and run the integration test
         //
         await runTests({
+            version: process.env.CODE_VERSION,
             extensionDevelopmentPath,
             extensionTestsPath,
-            launchArgs: [ "--disable-extensions", extensionTestsWsPath ]
+            launchArgs: [ "--disable-extensions", "--disable-workspace-trust", extensionTestsWsPath ]
         });
     }
     catch (err) {

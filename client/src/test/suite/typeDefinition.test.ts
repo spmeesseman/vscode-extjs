@@ -16,7 +16,7 @@ suite("Type Definition Tests", () =>
 	});
 
 
-	test("Function instance varibales", async () =>
+	test("Function instance variables", async () =>
 	{
 		//
 		// phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...

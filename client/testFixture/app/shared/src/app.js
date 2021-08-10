@@ -149,6 +149,16 @@ CCC
 	testFn7: function()
 	{
 		me.test3 = AppUtils.alertError("test");
+	},
+
+	testFn8: function(physName)
+	{
+		const phys = Ext.define({
+			xtype: "physiciandropdown",
+			name: physName,
+			
+		})
+		return phys;
 	}
 
 });

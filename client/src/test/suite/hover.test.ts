@@ -69,6 +69,11 @@ suite("Hover Tests", () =>
 		//
 		await testHover(docUri, new vscode.Position(81, 15), "{VSCodeExtJS.common.PhysicianDropdown}");
 		//
+		// Line 82 - Primitive
+		// const pin = phys.getPinNumber();
+		//
+		await testHover(docUri, new vscode.Position(81, 21), "{String}");
+		//
 		// Line 83
 		// phys.delete();
 		//

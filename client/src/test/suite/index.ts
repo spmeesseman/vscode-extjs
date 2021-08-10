@@ -17,7 +17,7 @@ import "source-map-support/register";
 
 //
 // Linux: prevent a weird NPE when mocha on Linux requires the window size from the TTY
-// Since we are not running in a tty environment, we just implementt he method statically
+// Since we are not running in a tty environment, we just implement he method statically
 //
 if (process.platform === "linux")
 {

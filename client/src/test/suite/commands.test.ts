@@ -101,7 +101,7 @@ suite("Command Tests", () =>
 	});
 
 
-	test("Replace text no-paramter edge case", async () =>
+	test("Replace text no-parameter edge case", async () =>
 	{
 		await testCommand("replaceText", "text");
 		await testCommand("replaceText");

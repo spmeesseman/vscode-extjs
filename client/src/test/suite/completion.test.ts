@@ -96,13 +96,13 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(124, 3), "", {
 			items: [
-				{ label: "userName", kind: vscode.CompletionItemKind.Property },
-				{ label: "readOnly (property)", kind: vscode.CompletionItemKind.Property }
+				{ label: "userName UserDropdown Config", kind: vscode.CompletionItemKind.Property },
+				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 		await testCompletion(docUri, new vscode.Position(124, 3), "u", {
 			items: [
-				{ label: "userName", kind: vscode.CompletionItemKind.Property }
+				{ label: "userName UserDropdown Config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 	});
@@ -118,7 +118,8 @@ suite("Completion Tests", () =>
 			items: [
 				{ label: "setTest", kind: vscode.CompletionItemKind.Method },
 				{ label: "getTest", kind: vscode.CompletionItemKind.Method },
-				{ label: "test", kind: vscode.CompletionItemKind.Property }
+				{ label: "test Config", kind: vscode.CompletionItemKind.Property },
+				{ label: "test2 Config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 	});
@@ -135,7 +136,8 @@ suite("Completion Tests", () =>
 			items: [
 				{ label: "save", kind: vscode.CompletionItemKind.Method },
 				{ label: "load", kind: vscode.CompletionItemKind.Method },
-				{ label: "delete", kind: vscode.CompletionItemKind.Method }
+				{ label: "delete", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
 	});
@@ -154,21 +156,27 @@ suite("Completion Tests", () =>
 		await configuration.update("intellisenseIncludePrivate", false);
 		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
 			items: [
-				{ label: "getPinNumber", kind: vscode.CompletionItemKind.Method }
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
 		await configuration.update("intellisenseIncludeDeprecated", true);
 		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
 			items: [
-				{ label: "getPinNumber", kind: vscode.CompletionItemKind.Method },
-				{ label: "getPin", kind: vscode.CompletionItemKind.Method }
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
+		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
+			items: [
+				{ label: "getPinNumberInternal", kind: vscode.CompletionItemKind.Method }
+			]
+		}, false);
 		await configuration.update("intellisenseIncludePrivate", true);
 		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
 			items: [
-				{ label: "getPinNumber", kind: vscode.CompletionItemKind.Method },
-				{ label: "getPin", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method },
+				// { label: "getPinNumberInternal (private)", kind: vscode.CompletionItemKind.Method },
 				{ label: "getPinNumberInternal", kind: vscode.CompletionItemKind.Method }
 			]
 		});
@@ -250,7 +258,7 @@ suite("Completion Tests", () =>
 });
 
 
-async function testCompletion(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedCompletionList: vscode.CompletionList)
+async function testCompletion(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedCompletionList: vscode.CompletionList, shouldShow = true)
 {
 	const actualCompletionList = (await vscode.commands.executeCommand(
 		"vscode.executeCompletionItemProvider",
@@ -271,9 +279,12 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	assert.ok(actualCompletionList.items.length >= expectedCompletionList.items.length);
 
 	expectedCompletionList.items.forEach((expectedItem, i) => {
-		assert.strictEqual(actualCompletionList.items.filter(
-			item => (item.label === expectedItem.label || item.insertText === expectedItem.label) && item.kind === expectedItem.kind).length,
-			1, expectedItem.label + " not found"
+		assert.strictEqual(
+			actualCompletionList.items.filter((item) =>
+			{
+				return item.kind === expectedItem.kind && (item.label.replace(/ /g, "") === expectedItem.label.replace(/ /g, "") ||
+						item.insertText?.toString().replace(/ /g, "") === expectedItem.label.replace(/ /g, ""));
+			}).length, shouldShow ? 1 : 0, expectedItem.label + " not found"
 		);
 	});
 }

@@ -162,7 +162,7 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(33, 11), [
         {
             uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-            range: toRange(13, 9, 13, 28)
+            range: toRange(6, 0, 55, 2)
         }]);
 		//
 		// Line 43 - ext component
@@ -171,7 +171,7 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(42, 11), [
 		{
 			uri: getDocUri("extjs/ext-all-debug.js"),
-			range: toRange(117895, 11, 117895, 24)
+			range: toRange(117889, 0, 118063, 2)
 		}]);
 		//
 		// Line 44 - ext component
@@ -180,7 +180,7 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(45, 11), [
 		{
 			uri: getDocUri("extjs/ext-all-debug.js"),
-			range: toRange(37965, 8, 37965, 19)
+			range: toRange(37961, 0, 41225, 2)
 		}]);
 		// await testHover(docUri, new vscode.Position(45, 3), "component");
 		//
@@ -188,6 +188,16 @@ suite("Definition Tests", () =>
 		// let cmp = this.down('physiciandropdown');
 		//
 		await testDefinition(docUri, new vscode.Position(144, 24), [
+		{
+			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+			range: toRange(6, 0, 55, 2)
+		}]);
+		// await testHover(docUri, new vscode.Position(45, 3), "component");
+		//
+		// Line 157
+		// xtype: "physiciandropdown"
+		//
+		await testDefinition(docUri, new vscode.Position(156, 16), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
 			range: toRange(6, 0, 55, 2)
@@ -252,39 +262,40 @@ async function testDefinition(docUri: vscode.Uri, position: vscode.Position, exp
 		position
 	)) as vscode.Location[];
 
-	assert.ok(actualDefinitions.length >= expectedDefinitions.length);
+	console.log("####################################");
+	console.log(docUri.path);
+	console.log("####################################");
+	console.log("Actual");
+	console.log("####################################");
+	actualDefinitions.forEach((d) => {
+		console.log("***********************");
+		console.log(d.uri.path);
+		console.log("***********************");
+		console.log("sLine: " + d.range.start.line);
+		console.log("sChar: " + d.range.start.character);
+		console.log("eLine: " + d.range.end.line);
+		console.log("eChar: " + d.range.end.character);
+	});
+	console.log("####################################");
+	console.log("Expected");
+	console.log("####################################");
+	expectedDefinitions.forEach((d) => {
+		console.log("***********************");
+		console.log(d.uri.path);
+		console.log("***********************");
+		console.log("sLine: " + d.range.start.line);
+		console.log("sChar: " + d.range.start.character);
+		console.log("eLine: " + d.range.end.line);
+		console.log("eChar: " + d.range.end.character);
+	});
 
-	// console.log("####################################");
-	// console.log("Actual");
-	// console.log("####################################");
-	// actualDefinitions.forEach((d) => {
-	// 	console.log("***********************");
-	// 	console.log(d.uri.path);
-	// 	console.log("***********************");
-	// 	console.log(d.range.start.line);
-	// 	console.log(d.range.start.character);
-	// 	console.log(d.range.end.line);
-	// 	console.log(d.range.end.character);
-	// });
-	// console.log("####################################");
-	// console.log("Expected");
-	// console.log("####################################");
-	// expectedDefinitions.forEach((d) => {
-	// 	console.log("***********************");
-	// 	console.log(d.uri.path);
-	// 	console.log("***********************");
-	// 	console.log(d.range.start.line);
-	// 	console.log(d.range.start.character);
-	// 	console.log(d.range.end.line);
-	// 	console.log(d.range.end.character);
-	// });
+	assert.ok(actualDefinitions);
+	assert.ok(expectedDefinitions);
 
-	expectedDefinitions.forEach((expectedDefinition) => {
-
-		assert.strictEqual(
-            actualDefinitions.filter(item => item.uri.path === expectedDefinition.uri.path &&
-				                             item.range.start.line === expectedDefinition.range.start.line).length,
-            1, expectedDefinition.uri.path + " definition error"
-        );
+	expectedDefinitions.forEach((expectedDefinition) =>
+	{
+		const actualFiltered = actualDefinitions.filter(item => item.uri.path === expectedDefinition.uri.path &&
+							   item.range.start.line === expectedDefinition.range.start.line);
+		assert.strictEqual(actualFiltered.length, expectedDefinitions.length);
 	});
 }
