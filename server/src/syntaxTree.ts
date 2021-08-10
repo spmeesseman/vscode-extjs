@@ -196,7 +196,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (isObjectProperty(propertyStatics))
                         {
-                            componentInfo.privates.push(...parseConfig(propertyStatics, componentInfo.componentClass));
+                            componentInfo.statics.push(...parseConfig(propertyStatics, componentInfo.componentClass));
                         }
                         logProperties("statics", componentInfo.statics);
 
