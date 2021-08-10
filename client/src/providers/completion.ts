@@ -15,7 +15,7 @@ import {
 
 class ExtJsCompletionItemProvider implements CompletionItemProvider
 {
-    private rightInfoPad = 40;
+    private rightInfoPad = 45;
 
     //
     // Properties that shouldn't get displayed in inline Intellisense
@@ -141,7 +141,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const tagText = this.tagText(cmp, isConfig, extendedFrom);
         if (tagText) {
             completionItem.insertText = property;
-            completionItem.label = `${completionItem.label}${this.rightPad(`(${tagText})`)}${tagText}`;
+            completionItem.label = `${completionItem.label}${this.rightPad(tagText, completionItem.label.length)}${tagText}`;
         }
 
         //
@@ -465,7 +465,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     const label = this.tagText(cmp, isConfig, extendedCls);
                     const cItems = !basic ? this.createCompletionItem(cCls, cCls, thisCmp.nameSpace, kind, isConfig, extendedCls, position) :
-                                            [ new CompletionItem(`${cCls}${this.rightPad(label)} ${label}`, kind) ];
+                                            [ new CompletionItem(`${cCls}${this.rightPad(label, cCls.length)}${label}`, kind) ];
                     //
                     // Add the completion item(s) to the completion item array that will be provided to
                     // the VSCode engine
@@ -706,11 +706,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private rightPad(text: string | undefined)
+    private rightPad(text: string | undefined, offset: number)
     {
         let pad = "";
         if (!text) { return pad; }
-        for (let i = text.length; i < this.rightInfoPad; i++)
+        for (let i = text.length + offset; i < this.rightInfoPad; i++)
         {
             pad += " ";
         }
@@ -720,13 +720,19 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
     private tagText(cmp: IComponent | IMethod | IProperty | IConfig | undefined, isConfig: boolean, extendedCls?: string)
     {
-        let tagText = ""; // = `${c.name}${this.rightPad(tagText)} ${tagText}`;
+        let tagText = "";
 
+        //
+        // Show extended class
+        //
         if (extendedCls) {
             const extendedClsParts = extendedCls.split(".");
             tagText += (extendedClsParts[extendedClsParts.length - 1] + " ");
         }
 
+        //
+        // If it's a config and not a property
+        //
         if (isConfig) {
             tagText += "Config ";
         }

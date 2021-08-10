@@ -142,7 +142,7 @@ export function values(values: (string|any)[][], level?: number, logPad = "", do
         if (values)
         {
             for (const [ n, v, l ] of values) {
-                value(logPad + "   " + n, v, l || lLevel + 1);
+                value(n, v, l || lLevel + 1, logPad);
             }
         }
     }

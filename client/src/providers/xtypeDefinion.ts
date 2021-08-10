@@ -33,8 +33,8 @@ class XtypeDefinitionProvider implements DefinitionProvider
                         {
                             let start = new Position(0, 0),
                                 end = new Position(0, 0);
-                            const pObject = extjsLangMgr.getXType(componentClass, xtype),
-                                pObject2 = extjsLangMgr.getAlias(componentClass, xtype, ns);
+                            const pObject = extjsLangMgr.getXTypeRef(componentClass, xtype),
+                                pObject2 = extjsLangMgr.getAliasRef(componentClass, xtype, ns);
                             if (pObject) {
                                 start = new Position(pObject.start?.line, pObject.start?.column);
                                 end = new Position(pObject.end?.line, pObject.end?.column);

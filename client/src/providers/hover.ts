@@ -21,23 +21,27 @@ class ExtJsHoverProvider implements HoverProvider
             return;
         }
 
-        const diagnostics = languages.getDiagnostics(document.uri),
-              range = document.getWordRangeAtPosition(position) || new Range(position, position);
-        log.value("   # of diagnostics", diagnostics.length, 2);
-
-        for (const diagnostic of diagnostics)
-        {
-            if (diagnostic.source !== "vscode-extjs" && diagnostic.range.intersection(range))
-            {
-                log.write("   hover disabled due to existing non-extjs diagnostic", 2);
-                return;
-            }
-        }
+        // const diagnostics = languages.getDiagnostics(document.uri),
+        //       range = document.getWordRangeAtPosition(position) || new Range(position, position);
+        // log.value("   # of diagnostics", diagnostics.length, 2);
+        //
+        // for (const diagnostic of diagnostics)
+        // {
+        //     if (diagnostic.source !== "vscode-extjs" && diagnostic.range.intersection(range))
+        //     {
+        //         if (diagnostic.relatedInformation?.values.length) {
+        //             // for (const rInfo of diagnostic.relatedInformation) {
+        //                 log.write("   hover disabled due to existing non-extjs diagnostic quick-fixes", 2);
+        //                 return;
+        //             // }
+        //         }
+        //     }
+        // }
 
         const { cmpType, property, cmpClass, thisClass, callee } = extjsLangMgr.getLineProperties(document, position, "   ");
 
         log.values([
-            ["# of diagnostics", diagnostics.length], ["component class", cmpClass], ["this class", thisClass],
+            /* ["# of diagnostics", diagnostics.length], */ ["component class", cmpClass], ["this class", thisClass],
             ["component type", cmpType], ["property", property], ["namespace", nameSpace], ["callee", callee]
         ], 2, "   ");
 
