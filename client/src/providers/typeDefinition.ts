@@ -14,7 +14,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
     {
         let location: Location | undefined;
 
-        log.methodStart("provide type definition", 1);
+        log.methodStart("provide type definition", 1, "", true);
 
         const { cmpClass, cmpType, property, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
 
@@ -25,7 +25,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),
-                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, "   "),
+                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, undefined, "   "),
                       range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
                 //
