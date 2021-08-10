@@ -15,7 +15,7 @@ class ExtJsHoverProvider implements HoverProvider
         log.methodStart("provide hover", 2, "", true, [["file", document.uri.fsPath]]);
 
         let hover: Hover | undefined;
-        const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath);
+        const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath, undefined, "   ");
         if (!nameSpace) {
             log.write("   hover disabled due to non extjs file", 2);
             return;
