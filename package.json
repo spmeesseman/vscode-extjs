@@ -105,9 +105,9 @@
         "webpack-cli": "^3.3.12"
     },
     "dependencies": {
-        "@babel/parser": "^7.12.16",
-        "@babel/traverse": "^7.12.13",
-        "@babel/types": "^7.12.13",
+        "@babel/parser": "^7.14.7",
+        "@babel/traverse": "^7.14.7",
+        "@babel/types": "^7.14.5",
         "json5": "^2.2.0",
         "minimatch": "^3.0.4",
         "vscode-languageclient": "^6.1.4",
