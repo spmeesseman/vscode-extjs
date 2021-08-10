@@ -478,16 +478,18 @@ class ExtjsLanguageManager
      */
     getLineProperties(document: TextDocument, position: Position, logPad = ""): ILineProperties
     {
+        log.methodStart("get line properties", 1, logPad);
+
         const line = position.line,
               nextLine = document.lineAt(line + 1),
               allLineText = document.getText(new Range(new Position(line, 0), nextLine.range.start)).trim(),
-              thisCmp = this.getComponentByFile(document.uri.fsPath) as IComponent,
+              thisCmp = this.getComponentByFile(document.uri.fsPath, logPad + "   ") as IComponent,
               range = document.getWordRangeAtPosition(position) || new Range(position, position);
 
-        log.methodStart("get line properties", 1, logPad, false, [
+        log.values([
             ["file", document.uri.fsPath], ["namespace", thisCmp?.nameSpace],
             ["component class", thisCmp?.componentClass], ["line text (all)", allLineText]
-        ]);
+        ], 2, logPad + "   ");
 
         //
         // Break line text down up to the property and any callee objects/class instance we need to examine
@@ -578,7 +580,7 @@ class ExtjsLanguageManager
             //
             // Set the property to the last piece of the xtypes class name.
             //
-            const xtypeCmp = this.xtypeToComponentClassMapping[thisCmp.nameSpace][lineText];
+            const xtypeCmp = this.xtypeToComponentClassMapping[thisCmp.nameSpace][lineText] || this.xtypeToComponentClassMapping.Ext[lineText];
             if (xtypeCmp) {
                 const strParts = xtypeCmp.split(".");
                 property = strParts[strParts.length - 1];
@@ -612,7 +614,7 @@ class ExtjsLanguageManager
         else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]{1,2}\\s*$`)) ||
                  allLineText.match(new RegExp(`(\\s*(const|var|let){0,1}\\s+|^)${property}\\s*[=.]{1}\\s*[ \\W\\w\\{\\(]*\\s*$`)))
         {
-            if (!this.getComponentByAlias(property, thisCmp.nameSpace) && !this.getComponent(property, thisCmp.nameSpace, false, logPad + "   ")) {
+            if (!this.getComponentByAlias(property, thisCmp.nameSpace, logPad + "   ") && !this.getComponent(property, thisCmp.nameSpace, false, logPad + "   ")) {
                 cmpType = ComponentType.Property;
             }
             else {
@@ -638,8 +640,12 @@ class ExtjsLanguageManager
             cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
             let cls: string | IComponent | undefined = this.variablesToComponentMapping[thisCmp.nameSpace][property];
             if (cls && cls.name) {
-                const variable = this.componentClassToVariablesMapping[thisCmp.nameSpace][cls.name]?.find(v => v.name === property);
+                let variable = this.componentClassToVariablesMapping[thisCmp.nameSpace][cls.name]?.find(v => v.name === property);
                 cmpClass = variable?.componentClass;
+                if (!cmpClass) {
+                    variable = this.componentClassToVariablesMapping.Ext[cls.name]?.find(v => v.name === property);
+                    cmpClass = variable?.componentClass;
+                }
             }
             else {
                 cls = this.widgetToComponentClassMapping[thisCmp.nameSpace][property] || this.widgetToComponentClassMapping.Ext[property];
@@ -766,9 +772,12 @@ class ExtjsLanguageManager
 
     getNamespaceFromClass(componentClass: string)
     {
+        log.write("1111111111111");
         if (componentClass.indexOf(".") !== -1) {
+            log.write(componentClass.substring(0, componentClass.indexOf(".")));
             return componentClass.substring(0, componentClass.indexOf("."));
         }
+        log.write("22222222222222");
         return componentClass;
     }
 
@@ -798,11 +807,17 @@ class ExtjsLanguageManager
         let start = new Position(0, 0),
             end = new Position(0, 0);
 
+        log.methodStart("get property position", 1, logPad, false, [
+            ["property", property], ["component class", componentClass]
+        ]);
+
         if (!nameSpace) {
             nameSpace = this.getNamespaceFromClass(componentClass);
         }
+        log.write("1: " + nameSpace ?? "n/a");
+        log.value("   namespace", nameSpace, 2, logPad);
 
-        const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property, nameSpace) :
+        const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property, nameSpace, logPad + "   ") :
                                       (cmpType === ComponentType.Config ? this.getConfig(componentClass, property, nameSpace, logPad + "   ") :
                                                                           this.getProperty(componentClass, property, nameSpace, logPad + "   "));
 
@@ -810,9 +825,9 @@ class ExtjsLanguageManager
         {
             if (o.start && o.end)
             {
-                log.write("setting position", 2, logPad);
-                log.value("   start line", o.start?.line, 3, logPad);
-                log.value("   end line", o.end?.line, 3, logPad);
+                log.write("   setting position", 2, logPad);
+                log.value("      start line", o.start?.line, 3, logPad);
+                log.value("      end line", o.end?.line, 3, logPad);
                 start = toVscodePosition(o.start);
                 end = toVscodePosition(o.end);
             }
@@ -832,20 +847,25 @@ class ExtjsLanguageManager
             }
         }
 
+        log.methodDone("get property position", 1, logPad);
         return { start, end };
     }
 
 
     getProperty(componentClass: string, property: string, nameSpace?: string, logPad = ""): IProperty | undefined
     {
+        log.methodStart("get property by component class", 1, logPad, false, [
+            ["component class", componentClass], ["property", property]
+        ]);
+
         let prop: IProperty | undefined;
         if (!nameSpace) {
             nameSpace = this.getNamespaceFromClass(componentClass);
         }
+
+        log.value("   namespace" + nameSpace ?? "na", nameSpace, 2, logPad);
+
         const properties = this.componentClassToPropertiesMapping[nameSpace][componentClass] || this.componentClassToPropertiesMapping.Ext[componentClass];
-        log.methodStart("get property by component class", 1, logPad, false, [
-            ["component class", componentClass], ["property", property], ["namespace", nameSpace]
-        ]);
         if (properties) {
             for (let c = 0; c < properties.length; c++) {
                 if (properties[c].name === property) {
