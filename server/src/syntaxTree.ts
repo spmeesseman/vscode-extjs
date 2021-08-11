@@ -505,6 +505,33 @@ function getObjectRanges(m: ObjectProperty): IRange[]
 }
 
 
+function getVariableType(cls: string): VariableType
+{
+    switch (cls)
+    {
+        case "arr":
+        case "array":
+            return VariableType._arr;
+        case "bool":
+        case "boolean":
+            return VariableType._boolean;
+        case "int":
+        case "number":
+            return VariableType._number;
+        case "object":
+            return VariableType._object;
+        case "string":
+            return VariableType._string;
+        default:
+            if (cls === "*") {
+                cls = "any";
+                return VariableType._any;
+            }
+    }
+    return VariableType._class;
+}
+
+
 function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string): IMethod[]
 {
     const methods: IMethod[] = [];
@@ -630,32 +657,7 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
                 if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
                 {
                     p.componentClass = paramDoc[1].replace(/[\{\}]/g, "");
-                    switch (p.componentClass.toLowerCase())
-                    {
-                        case "bool":
-                        case "boolean":
-                            p.type = VariableType._boolean;
-                            break;
-                        case "int":
-                        case "number":
-                            p.type = VariableType._number;
-                            break;
-                        case "object":
-                            p.type = VariableType._object;
-                            break;
-                        case "string":
-                            p.type = VariableType._string;
-                            break;
-                        default:
-                            if (p.componentClass === "*") {
-                                p.componentClass = "any";
-                                p.type = VariableType._any;
-                            }
-                            else {
-                                p.type = VariableType._class;
-                            }
-                            break;
-                    }
+                    p.type = getVariableType(p.componentClass.toLowerCase());
                 }
             }
         }
