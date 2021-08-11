@@ -1,4 +1,5 @@
 
+import { execSync } from "child_process";
 import * as path from "path";
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { runTests } from "vscode-test";
@@ -7,6 +8,8 @@ import { runTests } from "vscode-test";
 async function main()
 {
     try {
+        console.log("clear package.json activation event");
+        execSync("enable-full-coverage.sh", { cwd: "tools" });
         //
         // The folder containing the Extension Manifest package.json
         // Passed to '--extensionDevelopmentPath'
@@ -27,9 +30,13 @@ async function main()
             extensionTestsPath,
             launchArgs: [ "--disable-extensions", "--disable-workspace-trust", extensionTestsWsPath ]
         });
+        console.log("restore package.json activation event");
+        execSync("enable-full-coverage.sh --off", { cwd: "tools" });
     }
     catch (err) {
-        console.error(`Failed to run tests: ${err}\n${err.stack}`);
+        console.error(`Failed to run tests: ${err}\n${err.stack ?? "No call stack details found"}`);
+        console.log("restore package.json activation event");
+        execSync("enable-full-coverage.sh --off", { cwd: "tools" });
         process.exit(1);
     }
 }
