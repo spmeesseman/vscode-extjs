@@ -64,7 +64,7 @@ Ext.define('VSCodeExtJS',
 	testFn2: function(a, b)
 	{
 		this.testFn(1, 2);
-CCC
+
 		console.log(this.test);
 		console.log(this.test3);
 		console.log(this.getTest());
@@ -159,6 +159,27 @@ CCC
 			
 		})
 		return phys;
-	}
+	},
+
+	dockedItems: [
+	{
+		xtype: "physiciandropdown",
+
+	},
+	{ 
+		xtype: "patientdropdown",
+
+	},
+	{
+		xtype: 'userdropdown',
+		
+	},
+	{
+		xtype: 'tbseparator',
+	},
+	{
+		xtype: 'textfield',
+
+	}]
 
 });

@@ -48,7 +48,8 @@ suite("Diagnostics Tests", () =>
 	{
 		await testDiagnostics(docUri, "The referenced xtype", [
 			{ message: "The referenced xtype \"patieuntdropdown\" was not found.", range: toRange(36, 9, 36, 27), severity: vscode.DiagnosticSeverity.Error, source: "vscode-extjs" },
-			{ message: "The referenced xtype \"userdropdown\" does not have a corresponding requires directive.", range: toRange(39, 9, 39, 23), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" }
+			{ message: "The referenced xtype \"userdropdown\" does not have a corresponding requires directive.", range: toRange(39, 9, 39, 23), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" },
+			{ message: "The referenced xtype \"userdropdown\" does not have a corresponding requires directive.", range: toRange(173, 9, 173, 23), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" }
 		]);
 	});
 

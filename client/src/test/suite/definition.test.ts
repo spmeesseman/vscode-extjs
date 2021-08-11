@@ -262,32 +262,32 @@ async function testDefinition(docUri: vscode.Uri, position: vscode.Position, exp
 		position
 	)) as vscode.Location[];
 
-	console.log("####################################");
-	console.log(docUri.path);
-	console.log("####################################");
-	console.log("Actual");
-	console.log("####################################");
-	actualDefinitions.forEach((d) => {
-		console.log("***********************");
-		console.log(d.uri.path);
-		console.log("***********************");
-		console.log("sLine: " + d.range.start.line);
-		console.log("sChar: " + d.range.start.character);
-		console.log("eLine: " + d.range.end.line);
-		console.log("eChar: " + d.range.end.character);
-	});
-	console.log("####################################");
-	console.log("Expected");
-	console.log("####################################");
-	expectedDefinitions.forEach((d) => {
-		console.log("***********************");
-		console.log(d.uri.path);
-		console.log("***********************");
-		console.log("sLine: " + d.range.start.line);
-		console.log("sChar: " + d.range.start.character);
-		console.log("eLine: " + d.range.end.line);
-		console.log("eChar: " + d.range.end.character);
-	});
+	// console.log("####################################");
+	// console.log(docUri.path);
+	// console.log("####################################");
+	// console.log("Actual");
+	// console.log("####################################");
+	// actualDefinitions.forEach((d) => {
+	// 	console.log("***********************");
+	// 	console.log(d.uri.path);
+	// 	console.log("***********************");
+	// 	console.log("sLine: " + d.range.start.line);
+	// 	console.log("sChar: " + d.range.start.character);
+	// 	console.log("eLine: " + d.range.end.line);
+	// 	console.log("eChar: " + d.range.end.character);
+	// });
+	// console.log("####################################");
+	// console.log("Expected");
+	// console.log("####################################");
+	// expectedDefinitions.forEach((d) => {
+	// 	console.log("***********************");
+	// 	console.log(d.uri.path);
+	// 	console.log("***********************");
+	// 	console.log("sLine: " + d.range.start.line);
+	// 	console.log("sChar: " + d.range.start.character);
+	// 	console.log("eLine: " + d.range.end.line);
+	// 	console.log("eChar: " + d.range.end.character);
+	// });
 
 	assert.ok(actualDefinitions);
 	assert.ok(expectedDefinitions);
