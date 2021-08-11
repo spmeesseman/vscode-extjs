@@ -1155,9 +1155,15 @@ class ExtjsLanguageManager
                 dirs: string[] = [],
                 increment: number | undefined;
 
+            log.write("   process config", 1, logPad);
+            log.values([
+                ["projectName", projectName], ["confName", conf.name], ["wsDir", conf.wsDir],
+                ["baseWsDir", conf.baseWsDir], ["baseDir", conf.baseDir], ["classpath", conf.classpath.toString()]
+            ], 2, logPad + "   ");
+
             if (project) {
                 if (project.toLowerCase() !== projectName.toLowerCase()) {
-                    log.value("   skip project", projectName, 1, logPad);
+                    log.write("   skip project", 1, logPad);
                     continue;
                 }
             }

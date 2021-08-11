@@ -29,20 +29,19 @@ class FsStorage
     }
 
 
-    private checkKeyPath(key: string): string | boolean
+    private checkKeyPath(key: string): string | undefined
     {
-        let storagePath: string | boolean = false;
+        let storagePath: string | undefined;
         if (this.baseStoragePath && key)
         {
-            const projectStoragePath = path.join(this.baseStoragePath, key);
+            storagePath = path.join(this.baseStoragePath, key);
             try {
-                if (!fs.existsSync(projectStoragePath))
+                if (!fs.existsSync(storagePath))
                 {
-                    fs.mkdirSync(path.dirname(projectStoragePath), {
+                    fs.mkdirSync(path.dirname(storagePath), {
                         recursive: true
                     });
                 }
-                storagePath = projectStoragePath;
             }
             catch {}
         }
@@ -65,10 +64,11 @@ class FsStorage
         let value: string | undefined = defaultValue;
         if (key)
         {
-            if (typeof key === "string") {
+            const storagePath = this.checkKeyPath(key);
+            if (storagePath) {
                 try {
-                    if (fs.statSync(key)) {
-                        value = fs.readFileSync(key).toString();
+                    if (fs.statSync(storagePath)) {
+                        value = fs.readFileSync(storagePath).toString();
                     }
                 }
                 catch {}
@@ -83,7 +83,7 @@ class FsStorage
         if (key)
         {
             const storagePath = this.checkKeyPath(key);
-            if (storagePath && typeof storagePath === "string") {
+            if (storagePath) {
                 fs.writeFileSync(storagePath, value);
             }
         }

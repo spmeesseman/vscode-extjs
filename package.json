@@ -35,7 +35,7 @@
         "theme": "light"
     },
     "scripts": {
-        "clean-ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs\\VSCodeExtJS",
+        "clean-ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs\\testFixture",
         "build-webpack": "npm run build-common && npm run webpack-build",
         "build-common": "tsc -p ./common",
         "build-tsc": "npm run build-common && npm run tsc-build",
