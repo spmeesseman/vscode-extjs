@@ -91,13 +91,42 @@ suite("Command Tests", () =>
 		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the requires array
-		// entry we just put in, so that rest of the tests dont fail due to line # shifts !
+		// entry we just put in, so that rest of the tests don't fail due to line # shifts !
 		//
 		await vscode.commands.executeCommand("vscode-extjs:replaceText", "", toRange(11, 43, 12, 40));
 		//
 		// Wait again for validation (debounce is 250ms)
 		//
 		await waitForValidation();
+		//
+		// Test a file without an existing requires block
+		//
+		try {
+			const doc = await vscode.workspace.openTextDocument(getDocUri("app/shared/src/main/Main.js"));
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		//
+		// Wait for validation (debounce is 250ms)
+		//
+		await waitForValidation();
+		await testCommand("ensureRequire", "userdropdown"); //  toRange(37, 9, 39, 23));
+		//
+		// Wait for validation (debounce is 250ms)
+		//
+		await waitForValidation();
+		//
+		// Use the extension's vscode-extjs:replaceText command to erase the requires array
+		// entry we just put in, so that rest of the tests don't fail due to line # shifts !
+		//
+		await vscode.commands.executeCommand("vscode-extjs:replaceText", "", toRange(8, 4, 11, 0));
+		//
+		// Wait again for validation (debounce is 250ms)
+		//
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
 
