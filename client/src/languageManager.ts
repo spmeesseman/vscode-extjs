@@ -16,6 +16,7 @@ import * as log from "./common/log";
 import * as path from "path";
 import ServerRequest from "./common/ServerRequest";
 import { EOL } from "os";
+import { existsSync } from "fs";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
@@ -41,6 +42,7 @@ class ExtjsLanguageManager
 {
     private isIndexing = false;
     private isValidating = false;
+    private fsStoragePath = "";
 
     private config: IConf[] = [];
     private serverRequest: ServerRequest;
@@ -48,6 +50,23 @@ class ExtjsLanguageManager
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
     private commentParser: CommentParser;
     private configParser: ConfigParser;
+
+    //
+    // TODO - Mappings rework
+    //
+    // These mappings need some work.  These were pulled from the original base
+    // project and there was a misunderstanding how they worked, i.e. the current mess.
+    //
+    // Some of these mappings are maps from a key to the component represented by the key.
+    // But some of them represent a map of keys within a component.  It's a mess.  They
+    // were here before the IComponent interface was put in.
+    //
+    // widgetToComponentClassMapping seems to be the only useful mapping?  ALl other mappings
+    // are for definitions within a component itself, which, we can just grab IComponent now
+    // and don't need any of these mappings.  widgetToComponentClassMapping is useful because
+    // a respective provider can grab a class definition when doing completion or hover or
+    // definition from an open file.
+    //
 
     private widgetToComponentClassMapping: { [nameSpace: string]: { [widget: string]: string | undefined }} = {};
     private configToComponentClassMapping: { [nameSpace: string]: { [property: string]: string | undefined }} = {};
@@ -1011,11 +1030,22 @@ class ExtjsLanguageManager
     }
 
 
-    private getStorageKey(fsPath: string)
+    private getProjectName(fsPath: string)
     {
         const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
         if (wsf) {
-            return fsPath.replace(wsf.uri.fsPath, "");
+            return path.basename(wsf.uri.fsPath);
+        }
+        return path.basename(fsPath);
+    }
+
+
+    private getCmpStorageFileName(fsPath: string, nameSpace: string)
+    {
+        const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
+        if (wsf) {
+            const projectName = path.basename(wsf.uri.fsPath);
+            return path.join(fsPath.replace(wsf.uri.fsPath, ""), projectName, nameSpace, "components.json");
         }
         return Uri.file(fsPath).path;
     }
@@ -1085,9 +1115,11 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexAll(progress?: Progress<any>, forceAstIndexing = false)
+    private async indexAll(progress?: Progress<any>, project?: string, forceAstIndexing = false, logPad = "")
     {
-        log.methodStart("indexing all", 1, "", true, [[ "# of configs", this.config.length ]]);
+        log.methodStart("index all", 1, logPad, true, [
+            [ "project", project ], [ "forceAstIndexing", forceAstIndexing ], [ "# of configs", this.config.length ]
+        ]);
 
         const processedDirs: string[] = [],
               cfgPct = this.config && this.config.length ? 100 / this.config.length : 100;
@@ -1096,7 +1128,7 @@ class ExtjsLanguageManager
         //
         // store.type was added in 0.4, re-index if it hasn't been done already
         //
-        const needsReIndex = fsStorage?.get("vscode-extjs-flags", "v0dot4Updated", "false");
+        const needsReIndex = fsStorage?.get(path.join("vscode-extjs-flags", "v0dot4Updated"), "false");
 
         const _isIndexed = ((dir: string) =>
         {
@@ -1116,19 +1148,28 @@ class ExtjsLanguageManager
 
         for (const conf of this.config)
         {
+            const projectName = this.getProjectName(conf.wsDir),
+                  forceProjectAstIndexing = !existsSync(path.join(this.fsStoragePath, projectName));
             let currentFileIdx = 0,
                 numFiles = 0,
                 dirs: string[] = [],
                 increment: number | undefined;
 
+            if (project) {
+                if (project.toLowerCase() !== projectName.toLowerCase()) {
+                    log.value("   skip project", projectName, 1, logPad);
+                    continue;
+                }
+            }
+
             progress?.report({
                 increment: 0,
-                message: `: Scanning project ${path.basename(conf.wsDir)}`
+                message: `: Scanning project ${projectName}`
             });
 
-            const storageKey = this.getStorageKey(path.join(conf.baseDir, "components.json")),
-                storedComponents = !forceAstIndexing ? fsStorage?.get(conf.name, storageKey) : undefined;
-
+            const storageKey = this.getCmpStorageFileName(conf.baseDir, conf.name),
+                  storedComponents = !forceAstIndexing && !forceProjectAstIndexing ?
+                                        fsStorage?.get(storageKey) : undefined;
             //
             // Get components for this directory from local storage if exists
             //
@@ -1158,6 +1199,8 @@ class ExtjsLanguageManager
             }
             else // index the file via the language server
             {
+                components = []; // clear component defs from last loop iteration
+
                 if (typeof conf.classpath === "string")
                 {
                     dirs = [ conf.classpath ];
@@ -1186,7 +1229,7 @@ class ExtjsLanguageManager
                 increment = Math.round(1 / numFiles * cfgPct);
 
                 log.blank();
-                log.value("   # of files to index", numFiles, 1);
+                log.value("   # of files to index", numFiles, 1, logPad);
 
                 for (const dir of dirs)
                 {
@@ -1226,7 +1269,7 @@ class ExtjsLanguageManager
                 // Update local storage
                 //
                 if (components.length > 0) {
-                    await fsStorage?.update(conf.name, storageKey, JSON.stringify(components));
+                    await fsStorage?.update(storageKey, JSON.stringify(components));
                     await storage?.update(storageKey + "_TIMESTAMP", new Date());
                 }
 
@@ -1237,15 +1280,15 @@ class ExtjsLanguageManager
             }
         }
 
-        fsStorage?.update("vscode-extjs-flags", "v0dot4Updated", "true");
+        fsStorage?.update(path.join("vscode-extjs-flags", "v0dot4Updated"), "true");
 
-        log.methodDone("indexing all", 1, "", true);
+        log.methodDone("index all", 1, logPad, true);
     }
 
 
-    async indexFile(fsPath: string, project: string, saveToCache: boolean, document: TextDocument | Uri, oneCall = true, logPad = ""): Promise<IComponent[] | false | undefined>
+    async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall = true, logPad = ""): Promise<IComponent[] | false | undefined>
     {
-        log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "project", project ]]);
+        log.methodStart("indexing " + fsPath, 2, logPad, true, [[ "namespace", nameSpace ]]);
 
         const uriFile = Uri.file(fsPath),
               wsPath = workspace.getWorkspaceFolder(uriFile)?.uri.fsPath;
@@ -1296,14 +1339,14 @@ class ExtjsLanguageManager
             return false;
         }
 
-        const components = await this.serverRequest.parseExtJsFile(fsPath, project, text);
+        const components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
         await this.processComponents(components, logPad);
 
         if (components && saveToCache)
         {
             const baseDir = this.getAppJsonDir(fsPath),
-                  storageKey = this.getStorageKey(path.join(baseDir, "components.json")),
-                  storedComponents: IComponent[] = JSON.parse(fsStorage?.get(project, storageKey) || "[]");
+                  storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
+                  storedComponents: IComponent[] = JSON.parse(fsStorage?.get(storageKey) || "[]");
 
             for (const component of components)
             {
@@ -1317,7 +1360,7 @@ class ExtjsLanguageManager
                 }
             }
 
-            await fsStorage?.update(project, storageKey, JSON.stringify(storedComponents));
+            await fsStorage?.update(storageKey, JSON.stringify(storedComponents));
             await storage?.update(storageKey + "_TIMESTAMP", new Date());
         }
 
@@ -1342,7 +1385,7 @@ class ExtjsLanguageManager
      *
      * Public initializer
      */
-    async indexFiles()
+    async indexFiles(nameSpace?: string)
     {
         this.isIndexing = true;
         showReIndexButton(false);
@@ -1358,7 +1401,7 @@ class ExtjsLanguageManager
         async (progress) =>
         {
             try {
-                await this.indexAll(progress);
+                await this.indexAll(progress, nameSpace);
             }
             catch {}
         });
@@ -1387,6 +1430,7 @@ class ExtjsLanguageManager
 
     async initialize(context: ExtensionContext): Promise<Disposable[]>
     {
+        this.fsStoragePath = context.globalStoragePath;
         await this.initializeInternal();
         return this.registerWatchers(context);
     }

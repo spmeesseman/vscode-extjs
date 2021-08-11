@@ -29,16 +29,16 @@ class FsStorage
     }
 
 
-    private checkProjectDir(project: string): string | boolean
+    private checkKeyPath(key: string): string | boolean
     {
         let storagePath: string | boolean = false;
-        if (this.baseStoragePath && project)
+        if (this.baseStoragePath && key)
         {
-            const projectStoragePath = path.join(this.baseStoragePath, project);
+            const projectStoragePath = path.join(this.baseStoragePath, key);
             try {
                 if (!fs.existsSync(projectStoragePath))
                 {
-                    fs.mkdirSync(projectStoragePath, {
+                    fs.mkdirSync(path.dirname(projectStoragePath), {
                         recursive: true
                     });
                 }
@@ -47,27 +47,6 @@ class FsStorage
             catch {}
         }
         return storagePath;
-    }
-
-
-    private checkKeyPath(key: string)
-    {
-        let keyPath: string | boolean = false;
-        if (key)
-        {
-            const dKeyPath = path.dirname(key);
-            try {
-                if (!fs.existsSync(dKeyPath))
-                {
-                    fs.mkdirSync(dKeyPath, {
-                        recursive: true
-                    });
-                }
-                keyPath = dKeyPath;
-            }
-            catch {}
-        }
-        return keyPath;
     }
 
 
@@ -81,17 +60,15 @@ class FsStorage
     }
 
 
-    public get(project: string, key: string, defaultValue?: string): string | undefined
+    public get(key: string, defaultValue?: string): string | undefined
     {
         let value: string | undefined = defaultValue;
-        if (project && key)
+        if (key)
         {
-            const projectDir = this.checkProjectDir(project);
-            if (typeof projectDir === "string") {
+            if (typeof key === "string") {
                 try {
-                    const dataFile = path.join(projectDir, key);
-                    if (fs.statSync(dataFile)) {
-                        value = fs.readFileSync(dataFile).toString();
+                    if (fs.statSync(key)) {
+                        value = fs.readFileSync(key).toString();
                     }
                 }
                 catch {}
@@ -101,17 +78,13 @@ class FsStorage
     }
 
 
-    public async update(project: string, key: string, value: string)
+    public async update(key: string, value: string)
     {
-        if (project && key)
+        if (key)
         {
-            const projectDir = this.checkProjectDir(project);
-            if (typeof projectDir === "string")
-            {
-                const keyPath = path.join(projectDir, key);
-                if (this.checkKeyPath(keyPath)) {
-                    fs.writeFileSync(keyPath, value);
-                }
+            const storagePath = this.checkKeyPath(key);
+            if (storagePath && typeof storagePath === "string") {
+                fs.writeFileSync(storagePath, value);
             }
         }
     }
