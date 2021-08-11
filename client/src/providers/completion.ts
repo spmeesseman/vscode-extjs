@@ -2,7 +2,7 @@
 import * as log from "../common/log";
 import { extjsLangMgr } from "../extension";
 import { configuration } from "../common/configuration";
-import { ComponentType, DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty, utils } from "../../../common";
+import { ComponentType, DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty, IRange, utils } from "../../../common";
 import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
     TextDocument, CompletionItemKind, window, EndOfLine
@@ -444,9 +444,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               thisPath = window.activeTextEditor?.document?.uri.fsPath,
               thisCmp = thisPath ? extjsLangMgr.getComponentByFile(thisPath) : undefined,
               isInObject = thisCmp ? isPositionInObject(position, thisCmp) : undefined,
-              objectRange = isInObject ? (thisCmp ? getObjectRangeByPosition(position, thisCmp) : undefined) : undefined,
               method = thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
-
+console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
         if (!thisCmp) {
             return completionItems;
         }
@@ -520,6 +519,45 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         });
 
+        const _addObjectConfigs = (objectRange: IRange | undefined) =>
+        {   //
+            // We have to find the object block that contains the current position, so that we
+            // can look at the xtype within that block, and display the appropriate config items
+            //
+            if (objectRange)
+            {
+                const eol = documentEol(document),
+                    vsRange = toVscodeRange(objectRange.start, objectRange.end),
+                    objectRangeText = document.getText(vsRange),
+                    regex = new RegExp(/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/, "gmi"),
+                    innerPositionLine = position.line - vsRange.start.line;
+                let idx = -1, tIdx = -1, matches,
+                    objectRangeTextCUt = objectRangeText;
+
+                for (let i = 0; i < innerPositionLine; i++) {
+                    tIdx = objectRangeTextCUt.indexOf(eol) + 1;
+                    idx += tIdx;
+                    objectRangeTextCUt = objectRangeTextCUt.substring(tIdx);
+                }
+                ++idx;
+
+                if (idx !== -1)
+                {
+                    let xComponent;
+                    while ((matches = regex.exec(objectRangeText)) !== null)
+                    {
+                        if (matches.index <= idx)
+                        {
+                            const cls = extjsLangMgr.getMappedClass(matches[1], thisCmp.nameSpace, ComponentType.Widget);
+                            xComponent = cls ? extjsLangMgr.getComponent(cls, thisCmp.nameSpace) : undefined;
+                        }
+                        else { break; }
+                    }
+                    _addProps(xComponent);
+                }
+            }
+        };
+
         //
         // Depending on the current position, provide the completion items...
         //
@@ -560,6 +598,21 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     if (isPositionInRange(position, toVscodeRange(oRange.start, oRange.end)))
                     {   //
+                        // Add inner object class properties if there's an xtype label defined on it
+                        //
+                        // Example, consider the process of writing of the following:
+                        //
+                        //     const userDd = Ext.create({
+                        //         xtype: "userdropdowns",
+                        //         fieldLabel: "label",
+                        //         user
+                        //
+                        // While writing the above, at the current end of string, intellisense should pop up
+                        // all properties/configs of the xtype 'userdropdowns' that start with the text
+                        // 'user', i.e. userName, etc
+                        //
+                        _addObjectConfigs(oRange);
+                        //
                         // Method variable parameter object expressions
                         //
                         method.variables.forEach((v) =>
@@ -570,53 +623,27 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                                 _addProps(cmp);
                             }
                         });
-                        //
-                        // TODO - other object expression areas != method.variables
-                        //
                         break;
                     }
                 }
             }
-        }
-
-        //
-        // Add inner object class properties if there's an xtype label defined on it
-        //
-        // Example, consider the process of writing of the following:
-        //
-        //     {
-        //         xtype: "textfield",
-        //         fieldLabel: "label",
-        //         max
-        //
-        // While writing the above, at the current end of string, intellisense should pop up
-        // all properties/configs of the xtype 'textfield' that start with the text 'max',
-        // i.e. maxLength, etc
-        //
-        if (objectRange)
-        {
-            let idx = 0, tIdx = -1, matches;
-            const eol = documentEol(document),
-                  objectRangeText = document.getText(toVscodeRange(objectRange.start, objectRange.end)),
-                  regex = new RegExp(/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/, "gmi");
-
-            while ((tIdx = objectRangeText.indexOf(eol + lineText + eol, tIdx + 1)) !== -1) {
-                idx = tIdx;
-            }
-
-            if (idx !== -1)
-            {
-                let xComponent;
-                while ((matches = regex.exec(objectRangeText)) !== null)
-                {
-                    if (regex.lastIndex <= idx)
-                    {
-                        const cls = extjsLangMgr.getMappedClass(matches[1], thisCmp.nameSpace, ComponentType.Widget);
-                        xComponent = cls ? extjsLangMgr.getComponent(cls, thisCmp.nameSpace) : undefined;
-                    }
-                    else { break; }
-                }
-                _addProps(xComponent);
+            else { //
+                  // Add inner object class properties if there's an xtype label defined on it
+                 // for the main class object ranges.  (We processed all objects within methods
+                // above)
+                //
+                // Example, consider the process of writing of the following:
+                //
+                //     {
+                //         xtype: "textfield",
+                //         fieldLabel: "label",
+                //         max
+                //
+                // While writing the above, at the current end of string, intellisense should pop up
+                // all properties/configs of the xtype 'textfield' that start with the text 'max',
+                // i.e. maxLength, etc
+                //
+                _addObjectConfigs(thisCmp ? getObjectRangeByPosition(position, thisCmp) : undefined);
             }
         }
 
