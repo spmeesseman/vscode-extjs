@@ -6,12 +6,21 @@ Diagnostics:
 	☐ packages not @sencha should have xtype validation.  currently not validated if namespace name begins w Ext
 	☐ (warning) for deprecated property/config/method/class use
 	☐ Requires - marks onvalid when a class reference is to an alternateClassName
+	☐ Method parameter validation against types in jsdoc
 
 JsDoc:
 
 	☐ If jsdoc isn't present for an overridden method, then check for parent method jsdoc
 	☐ Handle the @inheritdoc tag
 	☐ Handle links
+
+Intellisense:
+
+	☐ xtype intellisense is displaying outside of blocks, i.e. comments
+	☐ Add mixin config to syntax tree parsing
+		Process as an extended class for properties/configs/methods
+	☐ When writing method parameters, and they are line broken (i.e. object param), method signature breaks
+	☐ Inline does not work when preceded by 'await ' (or probably any other word)
 
 Miscellaneous:
 
