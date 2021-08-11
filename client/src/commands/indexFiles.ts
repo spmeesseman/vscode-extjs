@@ -1,9 +1,8 @@
 
-import { rmdirSync } from "fs";
+import * as log from "../common/log";
 import { commands, ExtensionContext, StatusBarAlignment, StatusBarItem, window } from "vscode";
 import { extjsLangMgr } from "../extension";
 
-let fsStoragePath: string;
 let statusBarItem: StatusBarItem;
 
 
@@ -18,21 +17,22 @@ export function showReIndexButton(show = true)
 }
 
 
-export async function indexFiles()
+export async function indexFiles(nameSpace?: string, logPad = "")
 {
+    log.methodStart("index files command", 1, logPad, true);
+
     if (!extjsLangMgr.isBusy())
     {
-        rmdirSync(fsStoragePath, {
-            recursive: true
-        });
-        await extjsLangMgr.indexFiles();
+        await commands.executeCommand("vscode-extjs:clearAst", nameSpace, logPad + "   ");
+        await extjsLangMgr.indexFiles(nameSpace);
     }
+
+    log.methodStart("index files command", 1, logPad);
 }
 
 
 function registerIndexFilesCommand(context: ExtensionContext)
 {
-    fsStoragePath = context.globalStoragePath;
 	context.subscriptions.push(
         commands.registerCommand("vscode-extjs:indexFiles", async () => { await indexFiles(); })
     );

@@ -445,10 +445,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               thisCmp = thisPath ? extjsLangMgr.getComponentByFile(thisPath) : undefined,
               isInObject = thisCmp ? isPositionInObject(position, thisCmp) : undefined,
               method = thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
-console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
         if (!thisCmp) {
             return completionItems;
         }
+
         //
         // A helper function to add items to the completion list that will be provided to VSCode
         //

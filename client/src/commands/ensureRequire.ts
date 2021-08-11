@@ -16,7 +16,7 @@ export async function ensureRequires(xtype: string | undefined)
 		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, false, document) : undefined,
 		  workspaceEdit = new WorkspaceEdit();
 
-	log.methodStart("Command - Ensure requires", 1, "", true, [ [ "fs path", fsPath ] ]);
+	log.methodStart("Command - Ensure requires", 1, "", true, [ [ "namespace", ns ], [ "fs path", fsPath ] ]);
 
 	if (document && components)
 	{

@@ -1,4 +1,5 @@
 
+import * as path from "path";
 import * as log from "../common/log";
 import { rmdirSync } from "fs";
 import { commands, ExtensionContext } from "vscode";
@@ -7,18 +8,27 @@ import { extjsLangMgr } from "../extension";
 let fsStoragePath: string;
 
 
-export async function clearAst()
+export async function clearAst(nameSpace?: string, logPad = "")
 {
-    log.methodStart("clear ast command", 1, "", true, [["cache path", fsStoragePath]]);
+    log.methodStart("clear ast command", 1, logPad, true, [["cache path", fsStoragePath]]);
 
     if (!extjsLangMgr.isBusy())
     {
-        rmdirSync(fsStoragePath, {
+        let nsPath = fsStoragePath;
+        if (nameSpace) {
+            nsPath = path.join(fsStoragePath, nameSpace);
+        }
+
+        log.value("   removing directory", nsPath, 1, logPad);
+        rmdirSync(nsPath, {
             recursive: true
         });
     }
+    else {
+        log.write("   busy, did not run command", 1, logPad);
+    }
 
-    log.methodStart("clear ast command", 1);
+    log.methodStart("clear ast command", 1, logPad);
 }
 
 
