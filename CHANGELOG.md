@@ -1,5 +1,23 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.3.1 (August 12th, 2021)
+
+### Bug Fixes
+
+- **Providers:** occassionally the 'got to definition' provider just jumps to the top of the current file
+- **AST Parser:** static properties are not correctly parsed
+- **Providers:** goto type definition for an Ext framework component does not work from a string literal
+- **Logging:** the indentation in the logging is incorrect on hover
+- **Logging:** logged values are not aligned in some places
+- **Providers:** type definition provider for instance property within a method throws unhandled exception
+- **AST Parser:** the alternateClassName property is not parsed correctly when it doesn't contain the string '.widget'.
+
+### Refactoring
+
+- **Cache:** change cache mechanism to separate workspace projects
+- **AST Parser:** add parsing for 'type' store alias
+- **Providers:** validate class that begin with Ext. but are not core framework
+
 ## Version 0.3.0 (August 8th, 2021)
 
 ### Bug Fixes
