@@ -54,6 +54,7 @@ export interface IComponent extends IExtJsBase
     isFramework: boolean;
     markdown?: any;
     methods: IMethod[];
+    mixins: string[];
     nameSpace: string;
     objectRanges: IRange[];
     private?: boolean;

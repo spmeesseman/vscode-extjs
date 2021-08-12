@@ -97,20 +97,21 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             isFramework,
                             nameSpace: project || baseNameSpace,
                             componentClass: args[0].value,
-                            types: [],
-                            xtypes: [],
                             aliases: [],
-                            widgets: [],
+                            configs: [],
                             methods: [],
+                            mixins: [],
                             objectRanges: [],
                             properties: [],
-                            configs: [],
-                            statics: [],
                             privates: [],
                             start: path.node.loc!.start,
+                            statics: [],
+                            types: [],
                             end: path.node.loc!.end,
                             bodyStart: args[1].loc!.start,
-                            bodyEnd: args[1].loc!.end
+                            bodyEnd: args[1].loc!.end,
+                            widgets: [],
+                            xtypes: []
                         };
 
                         if (isExpressionStatement(path.container)) {
@@ -134,6 +135,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         const propertyStatics = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "statics");
                         const propertyPrivates = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "privates");
                         const propertyExtend = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "extend");
+                        const propertyMixins = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "mixins");
                         const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
                         const propertyObjects = args[1].properties.filter(p => isObjectProperty(p) && !isFunctionExpression(p.value));
@@ -154,6 +156,12 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                                 end: propertyRequires.loc!.end,
                             };
                             logProperties("requires", componentInfo.requires?.value);
+                        }
+
+                        if (isObjectProperty(propertyMixins))
+                        {
+                            componentInfo.mixins.push(...parseMixins(propertyMixins));
+                            logProperties("mixins", componentInfo.requires?.value);
                         }
 
                         if (isObjectProperty(propertyAlias))
@@ -562,6 +570,37 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
         }
     }
     return methods;
+}
+
+
+function parseMixins(propertyMixins: ObjectProperty)
+{
+    const mixins: string[] = [];
+    if (isArrayExpression(propertyMixins.value))
+    {
+        propertyMixins.value.elements
+        .reduce<string[]>((p, it) => {
+            if (it?.type === "StringLiteral") {
+                p.push(it.value);
+            }
+            return p;
+        }, mixins);
+    }
+    else if (isObjectExpression(propertyMixins.value))
+    {
+        propertyMixins.value.properties.reduce<string[]>((p, it) =>
+        {
+            if (it?.type === "ObjectProperty") {
+                // const name = isIdentifier(it.key) ? it.key.name : undefined;
+                const value = isStringLiteral(it.value) ? it.value : undefined;
+                if (value) {
+                    p.push(value.value);
+                }
+            }
+            return p;
+        }, mixins);
+    }
+    return mixins;
 }
 
 

@@ -30,12 +30,6 @@ suite("Completion Tests", () =>
 
 	suiteTeardown(async () =>
     {
-	});
-
-
-
-	suiteTeardown(async () =>
-    {
 		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
 		await configuration.update("ignoreErrors", ignoreErrors);
 		//

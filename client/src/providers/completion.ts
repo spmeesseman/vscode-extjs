@@ -238,17 +238,30 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         const _pushItems = ((cmp?: IComponent) =>
         {
-            if (!cmp) { return; }
-            completionItems.push(...this.getCmpCompletionItems(cmp, position, addedItems));
+            const baseCmp = cmp;
+            if (!baseCmp) { return; }
+            completionItems.push(...this.getCmpCompletionItems(baseCmp, position, addedItems));
             //
             // Traverse up the inheritance tree, checking the 'extend' property and if
             // it exists, we include public class properties in the Intellisense
             //
-            while (cmp && cmp.extend)
+            while (cmp)
             {
-                cmp = extjsLangMgr.getComponent(cmp.extend, nameSpace);
-                if (cmp) {
-                    _pushItems(cmp);
+                for (const mixin of cmp.mixins)
+                {
+                    const mixinCmp = extjsLangMgr.getComponent(mixin, nameSpace);
+                    if (mixinCmp) {
+                        _pushItems(mixinCmp);
+                    }
+                }
+                if (cmp.extend) {
+                    cmp = extjsLangMgr.getComponent(cmp.extend, nameSpace);
+                    if (cmp) {
+                        _pushItems(cmp);
+                    }
+                }
+                else {
+                    cmp = undefined;
                 }
             }
         });
