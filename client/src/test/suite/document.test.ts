@@ -1,8 +1,8 @@
 
 import * as vscode from "vscode";
 import { unlinkSync, writeFileSync } from "fs";
-import { getDocUri, waitForValidation, activate, toRange, getDocPath } from "./helper";
 import { configuration } from "../../common/configuration";
+import { getDocUri, waitForValidation, activate, toRange, getDocPath } from "./helper";
 
 
 suite("Document Tests", () =>
@@ -11,16 +11,18 @@ suite("Document Tests", () =>
 	const docUri = getDocUri("app/shared/src/app.js");
 	const newDocPath = getDocPath("app/shared/src/app2.js");
 	let validationDelay: number | undefined;
+	let ignoreErrors: any[];
 
 
 	suiteSetup(async () =>
-    {
-		await activate(docUri);
-		//
+    {   //
 		// Set debounce to minimum for test
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
+		ignoreErrors = configuration.get<any[]>("ignoreErrors");
+		await configuration.update("ignoreErrors", []);
+		await activate(docUri);
 	});
 
 
@@ -29,6 +31,7 @@ suite("Document Tests", () =>
 		// Reset validation delay setting back to original value
 		//
 		await configuration.update("validationDelay", validationDelay || undefined);
+		await configuration.update("ignoreErrors", ignoreErrors);
 	});
 
 

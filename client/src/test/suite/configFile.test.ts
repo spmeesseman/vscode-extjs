@@ -1,10 +1,10 @@
 
 import * as path from "path";
-import { workspace } from "vscode";
+import { workspace, WorkspaceConfiguration } from "vscode";
 import { writeFileSync, renameSync } from "fs";
 import { getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange } from "./helper";
-import { configuration } from "../../common/configuration";
 import { storage } from "../../common/storage";
+import { configuration } from "../../common/configuration";
 
 
 suite("Config File Tests", () =>
@@ -17,18 +17,17 @@ suite("Config File Tests", () =>
 
 
 	suiteSetup(async () =>
-    {
-		await activate(wsJsonUri);
-		//
+    {   //
 		// Set debounce to minimum for test
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		//
-		// Just some additional coverage, as of 3/7/21 this isnt convered but want to leave
+		// Just some additional coverage, as of 3/7/21 this isn't covered but want to leave
 		// in the fn implementation (case with a default value supplied in call to get)
 		//
 		storage?.get<string>("storage_test", "test");
+		await activate(wsJsonUri);
 	});
 
 

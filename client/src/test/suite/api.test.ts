@@ -1,5 +1,5 @@
 import { commands } from "vscode";
-import { getDocUri, activate, waitForValidation } from "./helper";
+import { activate, waitForValidation } from "./helper";
 
 
 suite("API Tests", () =>
@@ -13,7 +13,8 @@ suite("API Tests", () =>
 
 	test("Test commands with no document open", async () =>
 	{
-		await commands.executeCommand("vscode-extjs:clearAst", "VSCodeExtJS");
+		await commands.executeCommand("vscode-extjs:waitReady");
+		await commands.executeCommand("vscode-extjs:clearAst", "testFixture");
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:indexFiles");
 		await waitForValidation();

@@ -8,15 +8,15 @@ import { extjsLangMgr } from "../extension";
 let fsStoragePath: string;
 
 
-export async function clearAst(nameSpace?: string, logPad = "")
+export async function clearAst(project?: string, force = false, logPad = "")
 {
     log.methodStart("clear ast command", 1, logPad, true, [["cache path", fsStoragePath]]);
 
-    if (!extjsLangMgr.isBusy())
+    if (!extjsLangMgr.isBusy() || force)
     {
         let nsPath = fsStoragePath;
-        if (nameSpace) {
-            nsPath = path.join(fsStoragePath, nameSpace);
+        if (project) {
+            nsPath = path.join(fsStoragePath, project);
         }
 
         log.value("   removing directory", nsPath, 1, logPad);
@@ -36,7 +36,7 @@ function registerClearAstCommand(context: ExtensionContext)
 {
     fsStoragePath = context.globalStoragePath;
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:clearAst", async () => { await clearAst(); })
+        commands.registerCommand("vscode-extjs:clearAst", async (project?: string, force = false, logPad = "") => { await clearAst(project, force, logPad); })
     );
 }
 

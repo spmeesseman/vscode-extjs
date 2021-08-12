@@ -1,18 +1,19 @@
 
-import { Disposable, ExtensionContext, OutputChannel, window } from "vscode";
-import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
-import { registerProviders } from "./providers/manager";
-import { initStorage } from "./common/storage";
-import { initFsStorage } from "./common/fsStorage";
+import * as log from "./common/log";
+import * as path from "path";
 import registerEnsureRequiresCommand from "./commands/ensureRequire";
 import registerIndexFilesCommand from "./commands/indexFiles";
 import registerClearAstCommand from "./commands/clearAst";
 import registerReplaceTextCommand from "./commands/replaceText";
 import registerIgnoreErrorCommand from "./commands/ignoreError";
+import registerWaitReadyCommand from "./commands/waitReady";
 import ExtjsLanguageManager from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
-import * as log from "./common/log";
-import * as path from "path";
+import { Disposable, ExtensionContext, OutputChannel, window } from "vscode";
+import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
+import { registerProviders } from "./providers/manager";
+import { initStorage } from "./common/storage";
+import { initFsStorage } from "./common/fsStorage";
 
 
 let client: LanguageClient;
@@ -54,7 +55,7 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     await run(context);
 
     //
-    // Register VSCode Commands found in package.json contribuets.commands
+    // Register VSCode Commands found in package.json contributes.commands
     //
     registerCommands(context);
 
@@ -98,6 +99,7 @@ function registerCommands(context: ExtensionContext)
     registerIgnoreErrorCommand(context);
     registerIndexFilesCommand(context);
     registerClearAstCommand(context);
+    registerWaitReadyCommand(context);
 }
 
 
@@ -161,7 +163,7 @@ async function run(context: ExtensionContext)
         outputChannel,
         synchronize: {
             //
-            // Notify the server about file changes to '.clientrc files contained in the workspace
+            // Notify the server about file changes to '.extjsrc files contained in the workspace
             // fileEvents: vscode.workspace.createFileSystemWatcher('**/*.js'),
         }   //
     };

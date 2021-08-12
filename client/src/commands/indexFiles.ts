@@ -23,7 +23,7 @@ export async function indexFiles(nameSpace?: string, logPad = "")
 
     if (!extjsLangMgr.isBusy())
     {
-        await commands.executeCommand("vscode-extjs:clearAst", nameSpace, logPad + "   ");
+        await commands.executeCommand("vscode-extjs:clearAst", nameSpace, false, logPad + "   ");
         await extjsLangMgr.indexFiles(nameSpace);
     }
 

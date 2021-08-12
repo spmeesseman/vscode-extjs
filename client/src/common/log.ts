@@ -162,8 +162,8 @@ export function showLogOutput(show?: boolean)
         if (show) {
             logOutputChannel.show();
         }
-        else {
-            logOutputChannel.hide();
-        }
+        // else {
+        //     logOutputChannel.hide();
+        // }
     }
 }

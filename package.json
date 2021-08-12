@@ -135,6 +135,11 @@
                 "command": "vscode-extjs:clearAst",
                 "title": "vscode-extjs: Clear Syntax Tree Cache",
                 "enablement": "none!=none"
+            },
+            {
+                "command": "vscode-extjs:waitReady",
+                "title": "vscode-extjs: Wait Until Ready",
+                "enablement": "none!=none"
             }
         ],
         "configuration": {

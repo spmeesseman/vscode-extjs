@@ -3,7 +3,6 @@ import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, waitForValidation } from "./helper";
 import { configuration } from "../../common/configuration";
-import { assertTSConstructSignatureDeclaration } from "@babel/types";
 
 
 suite("Completion Tests", () =>
@@ -11,14 +10,17 @@ suite("Completion Tests", () =>
 
 	const docUri = getDocUri("app/shared/src/app.js");
 	let quickSuggest: boolean | undefined;
+	let ignoreErrors: any[];
 
 
 	suiteSetup(async () =>
     {
-		await activate(docUri);
 		const config = vscode.workspace.getConfiguration();
 		quickSuggest = config.get<boolean>("editor.quickSuggestions");
 		await config.update("editor.quickSuggestions", false);
+		ignoreErrors = configuration.get<any[]>("ignoreErrors", []);
+		await configuration.update("ignoreErrors", []);
+		await activate(docUri);
 		//
 		// Wait for validation (debounce is 250ms)
 		//
@@ -28,15 +30,19 @@ suite("Completion Tests", () =>
 
 	suiteTeardown(async () =>
     {
+	});
+
+
+
+	suiteTeardown(async () =>
+    {
 		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
+		await configuration.update("ignoreErrors", ignoreErrors);
 		//
 		// Wait for validation (debounce is 250ms)
 		//
 		await waitForValidation();
 	});
-
-
-	
 
 
 	test("Inline property start", async () =>
@@ -71,7 +77,7 @@ suite("Completion Tests", () =>
 		});
 
 		//
-		// Inside method calle expression (parameter)
+		// Inside method callee expression (parameter)
 		// Line 75
 		// VSCodeExtJS.common.PhysicianDropdown.create()
 		// Inside create() i.e. create( ... )

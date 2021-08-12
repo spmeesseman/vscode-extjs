@@ -2,7 +2,8 @@
 import {
     Disposable, ExtensionContext, Progress, TextDocumentChangeEvent, Range, Position,
     ProgressLocation, TextDocument, TextEditor, window, workspace, Uri, FileDeleteEvent,
-    ConfigurationChangeEvent
+    ConfigurationChangeEvent,
+    commands
 } from "vscode";
 import {
     IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType,
@@ -1126,9 +1127,13 @@ class ExtjsLanguageManager
         let currentCfgIdx = 0,
             components: IComponent[] = [];
         //
-        // store.type was added in 0.4, re-index if it hasn't been done already
+        // store.type and different cache paths were added in 0.4, re-index if it hasn't been done already
         //
-        const needsReIndex = fsStorage?.get(path.join("vscode-extjs-flags", "v0dot4Updated"), "false");
+        const needsV04ReIndex = storage?.get<string>("vscode-extjs-flags-0.4", "false") !== "true";
+        if (needsV04ReIndex) {
+            await commands.executeCommand("vscode-extjs:clearAst", undefined, true, "   ");
+        }
+        const needsReIndex = needsV04ReIndex;
 
         const _isIndexed = ((dir: string) =>
         {
@@ -1179,7 +1184,7 @@ class ExtjsLanguageManager
             //
             // Get components for this directory from local storage if exists
             //
-            if (storedComponents && (needsReIndex === "true" || needsReIndex === undefined))
+            if (storedComponents && needsReIndex === false)
             {
                 if (!_isIndexed(conf.baseDir))
                 {
@@ -1286,7 +1291,7 @@ class ExtjsLanguageManager
             }
         }
 
-        fsStorage?.update(path.join("vscode-extjs-flags", "v0dot4Updated"), "true");
+        storage?.update("vscode-extjs-flags-0.4", "true");
 
         log.methodDone("index all", 1, logPad, true);
     }

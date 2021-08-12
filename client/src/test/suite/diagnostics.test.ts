@@ -8,21 +8,15 @@ import { configuration } from "../../common/configuration";
 suite("Diagnostics Tests", () =>
 {
 
+	let ignoreErrors: any[];
 	const docUri = getDocUri("app/shared/src/app.js");
-	let ignoreErrors: any[] | undefined;
 
 
 	suiteSetup(async () =>
     {
-		await activate(docUri);
-		//
-		// For local dev environment test, make sure the ignore setting is undefined
-		//
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
-		await configuration.update("ignoreErrors", undefined);
-		//
-		// Wait again for validation (debounce is 250ms)
-		//
+		await configuration.update("ignoreErrors", []);
+		await activate(docUri);
 		await waitForValidation();
 	});
 
@@ -31,6 +25,7 @@ suite("Diagnostics Tests", () =>
     {
 		await configuration.update("ignoreErrors", ignoreErrors);
 	});
+
 
 /*
 	test("Diagnose uppercase texts", async () =>
