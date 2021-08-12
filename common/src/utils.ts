@@ -1,4 +1,14 @@
 
+export function atob(str: string): string
+{
+    return Buffer.from(str, "base64").toString("binary");
+}
+
+
+export function btoa(str: string): string
+{
+    return Buffer.from(str, "binary").toString("base64");
+}
 
 
 export async function forEachAsync(array: any, callback: any)
@@ -35,9 +45,45 @@ export function isGetterSetter(method: string): boolean
 }
 
 
+export function isLowerCase(value: string)
+{
+    return value === value.toLowerCase() && value !== value.toUpperCase();
+}
+
+
 export function isNeedRequire(componentClass: string | undefined, mapping: { [nameSpace: string]: { [cls: string]:  (string[]|string) | undefined }})
 {
     return !(!componentClass || (componentClass.startsWith("Ext.") && mapping.Ext[componentClass]));
+}
+
+
+export function isNumeric(value: string | number): boolean
+{
+    try {
+        return ((value !== null) && (value !== undefined) &&
+                (value !== "") && !isNaN(Number(value.toString())));
+    }
+    catch (e) {
+        return false;
+    }
+}
+
+
+export function isObject(value: any): value is string
+{
+    return value && value instanceof Object || typeof value === "object";
+}
+
+
+export function isString(value: any): value is string
+{
+    return (value || value === "") && value instanceof String || typeof value === "string";
+}
+
+
+export function isUpperCase(value: string)
+{
+    return value !== value.toLowerCase() && value === value.toUpperCase();
 }
 
 

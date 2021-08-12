@@ -1,7 +1,8 @@
 
 import * as path from "path";
-import { workspace, WorkspaceConfiguration } from "vscode";
-import { writeFileSync, renameSync } from "fs";
+import { workspace } from "vscode";
+import { renameSync } from "fs";
+import { writeFile } from "../../../../common/lib/fs";
 import { getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange } from "./helper";
 import { storage } from "../../common/storage";
 import { configuration } from "../../common/configuration";
@@ -52,7 +53,7 @@ suite("Config File Tests", () =>
 
 	test("Test extjsrc config", async () =>
 	{
-		writeFileSync(
+		await writeFile(
             extjsrcPath,
 			"{\r\n" +
             '    "classpath": "extjs",\r\n' +
@@ -65,7 +66,7 @@ suite("Config File Tests", () =>
 		await waitForValidation();
 		await waitForValidation();
 
-		writeFileSync(
+		await writeFile(
             extjsrcPath,
 			"{\r\n" +
             '    "classpath": "",\r\n' +

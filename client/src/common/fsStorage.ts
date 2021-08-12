@@ -1,5 +1,5 @@
 
-import * as fs from "fs";
+import * as fs from "../../../common/lib/fs";
 import * as path from "path";
 import {
     ExtensionContext
@@ -16,77 +16,60 @@ export const initFsStorage = (context: ExtensionContext) =>
 class FsStorage
 {
 
-    private baseStoragePath: string | undefined;
+    private baseStoragePath: string;
 
 
     constructor(storagePath: string)
     {
         this.baseStoragePath = storagePath;
-        if (!fs.existsSync(storagePath))
-        {
-            fs.mkdirSync(storagePath);
-        }
     }
 
 
-    private checkKeyPath(key: string): string | undefined
+    private async checkKeyPath(key: string)
     {
-        let storagePath: string | undefined;
-        if (this.baseStoragePath && key)
-        {
-            storagePath = path.join(this.baseStoragePath, key);
-            try {
-                if (!fs.existsSync(storagePath))
-                {
-                    fs.mkdirSync(path.dirname(storagePath), {
-                        recursive: true
-                    });
-                }
-            }
-            catch {}
+        const storagePath = path.join(this.baseStoragePath, key);
+        if (!fs.pathExists(storagePath)) {
+            await fs.createDir(storagePath);
         }
+        try {
+            if (!(await fs.pathExists(storagePath)))
+            {
+                await fs.createDir(path.dirname(storagePath));
+            }
+        }
+        catch {}
         return storagePath;
     }
 
 
-    public clear()
+    public async clear()
     {
-        if (this.baseStoragePath && fs.existsSync(this.baseStoragePath)) {
-            fs.rmdirSync(this.baseStoragePath, {
-                recursive: true
-            });
+        if (this.baseStoragePath && await fs.pathExists(this.baseStoragePath)) {
+            await fs.deleteDir(this.baseStoragePath);
         }
     }
 
 
-    public get(key: string, defaultValue?: string): string | undefined
+    public async get(key: string, defaultValue?: string)
     {
         let value: string | undefined = defaultValue;
-        if (key)
-        {
-            const storagePath = this.checkKeyPath(key);
-            if (storagePath) {
-                try {
-                    if (fs.statSync(storagePath)) {
-                        value = fs.readFileSync(storagePath).toString();
-                    }
-                }
-                catch {}
+        const storagePath = await this.checkKeyPath(key);
+        try {
+            if (await fs.pathExists(storagePath)) {
+                value = (await fs.readFile(storagePath)).toString();
             }
         }
+        catch {}
         return value;
     }
 
 
     public async update(key: string, value: string)
     {
-        if (key)
-        {
-            const storagePath = this.checkKeyPath(key);
-            if (storagePath) {
-                fs.writeFileSync(storagePath, value);
-            }
+        try {
+            await fs.writeFile(await this.checkKeyPath(key), value);
         }
+        catch {}
     }
 
 }

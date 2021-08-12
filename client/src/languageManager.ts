@@ -17,7 +17,7 @@ import * as log from "./common/log";
 import * as path from "path";
 import ServerRequest from "./common/ServerRequest";
 import { EOL } from "os";
-import { existsSync } from "fs";
+import { pathExists } from "../../common/lib/fs";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
@@ -1154,7 +1154,7 @@ class ExtjsLanguageManager
         for (const conf of this.config)
         {
             const projectName = this.getProjectName(conf.wsDir),
-                  forceProjectAstIndexing = !existsSync(path.join(this.fsStoragePath, projectName));
+                  forceProjectAstIndexing = !(await pathExists(path.join(this.fsStoragePath, projectName)));
             let currentFileIdx = 0,
                 numFiles = 0,
                 dirs: string[] = [],
@@ -1180,7 +1180,7 @@ class ExtjsLanguageManager
 
             const storageKey = this.getCmpStorageFileName(conf.baseDir, conf.name),
                   storedComponents = !forceAstIndexing && !forceProjectAstIndexing ?
-                                        fsStorage?.get(storageKey) : undefined;
+                                        await fsStorage?.get(storageKey) : undefined;
             //
             // Get components for this directory from local storage if exists
             //
@@ -1357,7 +1357,7 @@ class ExtjsLanguageManager
         {
             const baseDir = this.getAppJsonDir(fsPath),
                   storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
-                  storedComponents: IComponent[] = JSON.parse(fsStorage?.get(storageKey) || "[]");
+                  storedComponents: IComponent[] = JSON.parse(await fsStorage?.get(storageKey) || "[]");
 
             for (const component of components)
             {

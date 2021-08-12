@@ -1,7 +1,7 @@
 
 import * as path from "path";
 import * as log from "../common/log";
-import { rmdirSync } from "fs";
+import { deleteDir } from "../../../common/lib/fs";
 import { commands, ExtensionContext } from "vscode";
 import { extjsLangMgr } from "../extension";
 
@@ -20,9 +20,7 @@ export async function clearAst(project?: string, force = false, logPad = "")
         }
 
         log.value("   removing directory", nsPath, 1, logPad);
-        rmdirSync(nsPath, {
-            recursive: true
-        });
+        await deleteDir(nsPath);
     }
     else {
         log.write("   busy, did not run command", 1, logPad);

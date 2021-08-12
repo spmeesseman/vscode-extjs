@@ -3,7 +3,7 @@ import { Uri, workspace } from "vscode";
 import { configuration } from "./configuration";
 import { IConf } from  "../../../common";
 import * as log from "./log";
-import * as fs from "fs";
+import { deleteDir, pathExists, readFile } from "../../../common/lib/fs";
 import * as json5 from "json5";
 import * as path from "path";
 
@@ -58,7 +58,7 @@ export class ConfigParser
             for (const uri of confUris)
             {
                 const fileSystemPath = uri.fsPath || uri.path;
-                const confJson = fs.readFileSync(fileSystemPath, "utf8");
+                const confJson = await readFile(fileSystemPath);
                 const conf: IConf = json5.parse(confJson);
                 if (conf.classpath && conf.name)
                 {
@@ -94,7 +94,7 @@ export class ConfigParser
             let foundFwDir = !!fwDirectory;
             for (const uri of appDotJsonUris)
             {
-                foundFwDir = this.parseAppDotJson(uri, !fwDirectory && !foundFwDir, config);
+                foundFwDir = await this.parseAppDotJson(uri, !fwDirectory && !foundFwDir, config);
             }
         }
 
@@ -105,7 +105,7 @@ export class ConfigParser
     }
 
 
-    private parseAppDotJson(uri: Uri, parseFwDir: boolean, config: IConf[]): boolean
+    private async parseAppDotJson(uri: Uri, parseFwDir: boolean, config: IConf[])
     {
         const fileSystemPath = uri.fsPath || uri.path,
               baseDir = path.dirname(uri.fsPath),
@@ -118,7 +118,7 @@ export class ConfigParser
               baseWsDir = path.dirname(uri.fsPath.replace(wsDir || baseDir, ""))
                               .replace(/\\/g, "/").substring(1), // trim leading path sep
               confs: IConf[] = [],
-              conf: IConf = json5.parse(fs.readFileSync(fileSystemPath, "utf8"));
+              conf: IConf = json5.parse(await readFile(fileSystemPath));
         let foundFwDir = false;
 
         //
@@ -148,9 +148,9 @@ export class ConfigParser
         // workspace.json
         //
         const wsDotJsonFsPath = path.join(baseDir, "workspace.json");
-        if (fs.existsSync(wsDotJsonFsPath))
+        if (await pathExists(wsDotJsonFsPath))
         {
-            const wsConf = json5.parse(fs.readFileSync(wsDotJsonFsPath, "utf8"));
+            const wsConf = json5.parse(await readFile(wsDotJsonFsPath));
 
             if (parseFwDir && wsConf.frameworks && wsConf.frameworks.ext)
             {   //
@@ -160,9 +160,9 @@ export class ConfigParser
                 //
                 const buildDir = wsConf.build ? wsConf.build.dir.replace(/\$\{workspace.dir\}[/\\]{1}/, "") : undefined;
                 const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
-                if (fs.existsSync(fwJsonFsPath))
+                if (await pathExists(fwJsonFsPath))
                 {
-                    const fwConf = json5.parse(fs.readFileSync(fwJsonFsPath, "utf8"));
+                    const fwConf = json5.parse(await readFile(fwJsonFsPath));
                     if (fwConf.dependencies)
                     {
                         for (const dep in fwConf.dependencies)

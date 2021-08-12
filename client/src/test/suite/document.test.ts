@@ -1,6 +1,6 @@
 
 import * as vscode from "vscode";
-import { unlinkSync, writeFileSync } from "fs";
+import { deleteFile, writeFile } from "../../../../common/lib/fs";
 import { configuration } from "../../common/configuration";
 import { getDocUri, waitForValidation, activate, toRange, getDocPath } from "./helper";
 
@@ -60,7 +60,7 @@ suite("Document Tests", () =>
 
 	test("Test add new document", async () =>
 	{
-		writeFileSync(
+		await writeFile(
             newDocPath,
 			"Ext.define('VSCodeExtJS.Test',\r\n" +
             "{\r\n" +
@@ -79,7 +79,7 @@ suite("Document Tests", () =>
 
 	test("Test delete document", async () =>
 	{
-		unlinkSync(newDocPath);
+		await deleteFile(newDocPath);
 		//
 		// Wait for validation
 		//

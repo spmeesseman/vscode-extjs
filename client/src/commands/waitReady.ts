@@ -1,7 +1,6 @@
 
 import * as util from "../../../common/lib/utils";
 import * as log from "../common/log";
-import { rmdirSync } from "fs";
 import { commands, ExtensionContext } from "vscode";
 import { extjsLangMgr } from "../extension";
 
