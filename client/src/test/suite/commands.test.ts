@@ -50,7 +50,7 @@ suite("Command Tests", () =>
 	test("Ignore xtype errors", async function()
 	{
 		if (this && this.timeout) {
-			this.timeout(45 * 1000);
+			this.timeout(60 * 1000);
 		}
 
 		const activeDoc = vscode.window.activeTextEditor?.document;

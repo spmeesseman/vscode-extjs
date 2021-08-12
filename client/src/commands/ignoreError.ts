@@ -1,5 +1,5 @@
 
-import { commands, ExtensionContext, Range, Selection, TextDocument, Uri } from "vscode";
+import { commands, ExtensionContext, Range, Selection, TextDocument, Uri, window } from "vscode";
 import { addIgnoreError } from "../common/ignoreError";
 import { extjsLangMgr } from "../extension";
 
@@ -8,10 +8,14 @@ export async function ignoreError(code: number | undefined, document: TextDocume
 {
 	if (code)
 	{
-		await addIgnoreError({
-			code, fsPath: document?.uri?.fsPath
-		}, document, range);
-		await extjsLangMgr.validateDocument();
+		if (window.activeTextEditor)
+		{
+			const activeTextDocument = window.activeTextEditor.document;
+			await addIgnoreError({
+				code, fsPath: document?.uri?.fsPath
+			}, document, range);
+			await extjsLangMgr.validateDocument(activeTextDocument, extjsLangMgr.getNamespace(activeTextDocument));
+		}
 	}
 }
 

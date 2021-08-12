@@ -1,4 +1,5 @@
 
+import * as assert from "assert";
 import * as vscode from "vscode";
 import { deleteFile, writeFile } from "../../../../common/lib/fs";
 import { configuration } from "../../common/configuration";
@@ -35,30 +36,23 @@ suite("Document Tests", () =>
 	});
 
 
-	test("Test edit document", async () =>
+	test("Edit document", async () =>
 	{
 		const workspaceEdit = new vscode.WorkspaceEdit();
 		//
 		// Write document to trigger document change events - re-indexing and validation
 		//
 		workspaceEdit.replace(docUri, toRange(95, 0, 95, 0), "\t\tVSCodeExtJS.AppUtilities.alertError('This is a test');");
-		vscode.workspace.applyEdit(workspaceEdit);
-		//
-		// Wait for validation (debounce is 250ms)
-		//
 		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the text we just inserted
 		//
 		await vscode.commands.executeCommand("vscode-extjs:replaceText", "", toRange(95, 0, 95, 56));
-		//
-		// Wait again for validation (debounce is 250ms)
-		//
 		await waitForValidation();
 	});
 
 
-	test("Test add new document", async () =>
+	test("Add new document", async () =>
 	{
 		await writeFile(
             newDocPath,
@@ -70,19 +64,33 @@ suite("Document Tests", () =>
             "    }\r\n" +
             "});\r\n"
         );
-		//
-		// Wait for validation
-		//
 		await waitForValidation();
 	});
 
 
-	test("Test delete document", async () =>
+	test("Delete document", async () =>
 	{
 		await deleteFile(newDocPath);
+		await waitForValidation();
+	});
+
+
+	test("Non-ExtJS document", async () =>
+	{   //
+		// Open file with bad requires block
 		//
-		// Wait for validation
-		//
+		const jssUri = getDocUri("js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
 	});
 

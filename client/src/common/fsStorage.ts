@@ -4,18 +4,10 @@ import * as path from "path";
 import {
     ExtensionContext
 } from "vscode";
-
-export let fsStorage: FsStorage | undefined;
-
-
-export const initFsStorage = (context: ExtensionContext) =>
-{
-    fsStorage = new FsStorage(context.globalStoragePath);
-};
+import { getUserDataPath } from "./clientUtils";
 
 class FsStorage
 {
-
     private baseStoragePath: string;
 
 
@@ -73,3 +65,11 @@ class FsStorage
     }
 
 }
+
+export let fsStorage = new FsStorage(getUserDataPath());
+
+
+export const initFsStorage = (context: ExtensionContext) =>
+{
+    fsStorage = new FsStorage(context.globalStoragePath);
+};

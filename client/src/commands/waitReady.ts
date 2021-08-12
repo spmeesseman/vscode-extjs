@@ -12,8 +12,9 @@ export async function waitReady(logPad = "")
     log.methodStart("wait ready command", 1, logPad, true, [["cache path", fsStoragePath]]);
 
     let ct = 0;
-    while (extjsLangMgr.isBusy() && ++ct < 60) {
-        await util.timeout(500);
+    while ((extjsLangMgr.isBusy() || ct === 0) && ct < 120) {
+        ++ct;
+        await util.timeout(250);
     }
 
     log.methodStart("clear ast command", 1, logPad);

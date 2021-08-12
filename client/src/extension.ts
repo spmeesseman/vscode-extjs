@@ -249,17 +249,13 @@ async function run(context: ExtensionContext)
 }
 
 
-export function deactivate(): Thenable<void>
+export async function deactivate()
 {
     const promises: Thenable<void>[] = [];
-    if (disposables) {
-        for (const disposable of disposables) {
-            disposable.dispose();
-        }
+    for (const disposable of disposables) {
+        disposable.dispose();
     }
-    if (client) {
-        promises.push(client.stop());
-    }
+    promises.push(client.stop());
     for (const client of clients.values()) {
         promises.push(client.stop());
     }

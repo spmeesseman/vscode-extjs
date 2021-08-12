@@ -5,23 +5,41 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate } from "./helper";
+import { getDocUri, activate, waitForValidation } from "./helper";
+import { configuration } from "../../common/configuration";
 
 
 suite("Hover Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
+	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
-    {
+    {   //
+		// Set debounce to minimum for test
+		//
+		validationDelay = configuration.get<number>("validationDelay");
+		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await activate(docUri);
+		await waitForValidation();
+		await waitForValidation();
+	});
+
+
+	suiteTeardown(async () =>
+    {   //
+		// Reset validation delay setting back to original value
+		//
+		await configuration.update("validationDelay", validationDelay || undefined);
 	});
 
 
 	test("Test classes", async () =>
 	{
+		await waitForValidation();
+		await waitForValidation();
 		await testHover(docUri, new vscode.Position(71, 4), "VSCodeExtJS");
 		await testHover(docUri, new vscode.Position(71, 17), "VSCodeExtJS.AppUtilities");
 		// await testHover(docUri, new vscode.Position(74, 17), "VSCodeExtJS.common");

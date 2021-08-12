@@ -171,7 +171,6 @@
                 },
                 "extjsLangSvr.exclude": {
                     "type": [
-                        "string",
                         "array"
                     ],
                     "items": {
@@ -202,7 +201,6 @@
                 },
                 "extjsLangSvr.include": {
                     "type": [
-                        "string",
                         "array"
                     ],
                     "items": {

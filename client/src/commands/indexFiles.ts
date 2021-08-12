@@ -17,15 +17,14 @@ export function showReIndexButton(show = true)
 }
 
 
-export async function indexFiles(nameSpace?: string, logPad = "")
+export async function indexFiles(project?: string, clean = true, logPad = "")
 {
     log.methodStart("index files command", 1, logPad, true);
 
-    if (!extjsLangMgr.isBusy())
-    {
-        await commands.executeCommand("vscode-extjs:clearAst", nameSpace, false, logPad + "   ");
-        await extjsLangMgr.indexFiles(nameSpace);
+    if (clean !== false) {
+        await commands.executeCommand("vscode-extjs:clearAst", project, false, logPad + "   ");
     }
+    await extjsLangMgr.indexFiles(project);
 
     log.methodStart("index files command", 1, logPad);
 }
@@ -34,7 +33,7 @@ export async function indexFiles(nameSpace?: string, logPad = "")
 function registerIndexFilesCommand(context: ExtensionContext)
 {
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:indexFiles", async () => { await indexFiles(); })
+        commands.registerCommand("vscode-extjs:indexFiles", async (project?: string, clean = true, logPad = "") => { await indexFiles(project, clean, logPad); })
     );
 
     //
@@ -44,7 +43,7 @@ function registerIndexFilesCommand(context: ExtensionContext)
     statusBarItem.text = "$(refresh)";
     statusBarItem.tooltip = "Re-index all ExtJs files";
     statusBarItem.command = "vscode-extjs:indexFiles";
-    statusBarItem.hide(); // LanguageManager will show the control when indexing finishes
+    statusBarItem.hide(); // languageManager will show the control when indexing finishes
 }
 
 

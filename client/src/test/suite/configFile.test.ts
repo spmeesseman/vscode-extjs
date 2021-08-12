@@ -27,7 +27,7 @@ suite("Config File Tests", () =>
 		// Just some additional coverage, as of 3/7/21 this isn't covered but want to leave
 		// in the fn implementation (case with a default value supplied in call to get)
 		//
-		storage?.get<string>("storage_test", "test");
+		storage.get<string>("storage_test", "test");
 		await activate(wsJsonUri);
 	});
 
@@ -40,7 +40,7 @@ suite("Config File Tests", () =>
 	});
 
 
-	test("Test remove all configs", async () =>
+	test("Remove all configs", async () =>
 	{
 		renameSync(appJsonPath, path.join(path.dirname(appJsonPath), "_app.json"));
 		//
@@ -51,7 +51,7 @@ suite("Config File Tests", () =>
 	});
 
 
-	test("Test extjsrc config", async () =>
+	test("Extjsrc config", async () =>
 	{
 		await writeFile(
             extjsrcPath,
@@ -81,7 +81,7 @@ suite("Config File Tests", () =>
 	});
 
 
-	test("Test add back app.json", async () =>
+	test("Add back app.json", async () =>
 	{
 		renameSync(path.join(path.dirname(appJsonPath), "_app.json"), appJsonPath);
 		//
@@ -93,7 +93,7 @@ suite("Config File Tests", () =>
 	});
 
 
-	test("Test open tooling extjs framework location", async () =>
+	test("Open tooling extjs framework location", async () =>
 	{
 		//
 		// Write an open tooling extjs framework location
