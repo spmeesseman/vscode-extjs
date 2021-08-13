@@ -840,7 +840,8 @@ class ExtjsLanguageManager
         }
         else //
         {   // In the case where there are multiple classes defined in one file, get the main
-            // component file and search for the class position in the case where it is not 0,0
+            // component file and search for the class position in the case where it is not 0,0.
+            // Otherwise this is a class definition, and pObject (method, property, config) is undefined
             //
             const mainCmp = this.getComponent(componentClass, nameSpace, false, logPad + "   ");
             if (mainCmp) {
@@ -1430,6 +1431,13 @@ class ExtjsLanguageManager
     }
 
 
+    private async isParsed(fsPath: string)
+    {
+        const projectName = this.getWorkspaceProjectName(fsPath);
+        return pathExists(path.join(this.fsStoragePath, projectName));
+    }
+
+
     private async processComponents(components: IComponent[] | undefined, logPad = "")
     {   //
         // If no components, then bye
@@ -1855,7 +1863,7 @@ class ExtjsLanguageManager
         if (!nameSpace) {
             nameSpace = this.getNamespace(textDocument);
         }
-        if (utils.isExtJsFile(text)) {
+        if (utils.isExtJsFile(text) && await this.isParsed(textDocument.uri.fsPath)) {
             await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
         }
         this.isValidating = false;
