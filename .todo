@@ -21,6 +21,7 @@ Intellisense:
 		Process as an extended class for properties/configs/methods
 	☐ When writing method parameters, and they are line broken (i.e. object param), method signature breaks
 	☐ Inline does not work when preceded by 'await ' (or probably any other word)
+	☐ Main namespace inline does not work.  e.g. 'Ext', or 'VSCodeExtJS', 'GEMS'
 
 Miscellaneous:
 
