@@ -18,10 +18,11 @@ JsDoc:
 Intellisense:
 
 	☐ xtype intellisense is displaying outside of blocks, i.e. comments
+	☐ xtype selection is double printing xtype if already typed in and into the string part
 	✔ Add mixin config to syntax tree parsing @done(21-08-13 14:35)
 		Process as an extended class for properties/configs/methods
 	☐ When writing method parameters, and they are line broken (i.e. object param), method signature breaks
-	☐ Inline does not work when preceded by 'await ' (or probably any other word)
+	✔ Inline does not work when preceded by 'await ' (or probably any other word) @done(21-08-13 17:08)
 	☐ Main namespace inline does not work.  e.g. 'Ext', or 'VSCodeExtJS', 'GEMS'
 
 Miscellaneous:
@@ -30,7 +31,7 @@ Miscellaneous:
 	☐ goto definition for jsdoc parameter types (surrounded with{})
 	☐ Configs and variable level cache mappings need to be separated by a 3rd dimension (currently only project and namespace) @high
 		Separate again using component class name
-	☐ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json)
+	✔ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json) @done(21-08-13 16:52)
 
 Stores:
 

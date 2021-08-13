@@ -78,7 +78,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //     command: { command: "editor.action.triggerSuggest", title: "Re-trigger completions..." }
         // });
 
-        log.methodDone("provide dot completion items", 2, "", true, [["# of added items", completionItems.length]]);
+        log.methodDone("provide dot completion items", 2, "", true);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }
@@ -216,12 +216,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     {
         const completionItems: CompletionItem[] = [],
               fsPath = document.uri.fsPath,
-              nameSpace = extjsLangMgr.getNamespaceFromFile(fsPath);
+              nameSpace = extjsLangMgr.getNamespaceFromFile(fsPath, undefined, "   ");
         let lineCls = lineText?.substring(0, lineText.lastIndexOf(".")).trim();
 
         if (!nameSpace) {
             return completionItems;
         }
+
+        log.methodStart("get completion items", 2, "   ", true, [["line text", lineText], ["fn text", fnText]]);
 
         if (lineCls.includes("("))
         {
@@ -231,9 +233,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 lineCls = lineCls.substring(lineCls.indexOf(",") + 1).trim();
             }
         }
-        if (lineCls.includes("="))
-        {
+        if (lineCls.includes("=")) {
             lineCls = lineCls.substring(lineCls.indexOf("=") + 1).trim();
+        }
+        if (lineCls.includes(" ")) {
+            lineCls = lineCls.substring(lineCls.lastIndexOf(" ") + 1);
         }
 
         const _pushItems = ((cmp?: IComponent) =>
@@ -249,13 +253,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 for (const mixin of cmp.mixins)
                 {
-                    const mixinCmp = extjsLangMgr.getComponent(mixin, nameSpace);
+                    const mixinCmp = extjsLangMgr.getComponent(mixin, nameSpace, false, "      ");
                     if (mixinCmp) {
                         _pushItems(mixinCmp);
                     }
                 }
                 if (cmp.extend) {
-                    cmp = extjsLangMgr.getComponent(cmp.extend, nameSpace);
+                    cmp = extjsLangMgr.getComponent(cmp.extend, nameSpace, false, "      ");
                     if (cmp) {
                         _pushItems(cmp);
                     }
@@ -266,7 +270,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         });
 
-        log.value("   line cls", lineCls, 3);
+        log.value("      line cls", lineCls, 3);
 
         //
         // Handle "this"
@@ -284,7 +288,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Create the completion items, including items in extended classes
         //
-        let component = extjsLangMgr.getComponent(lineCls, nameSpace, true);
+        let component = extjsLangMgr.getComponent(lineCls, nameSpace, true, "      ");
         if (component)
         {   //
             // Push component items, i.e. methods, properties, and configs
@@ -308,15 +312,15 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             completionItems.push(...this.getChildClsCompletionItems(component.componentClass, nameSpace, position, addedItems));
         }
         else {
-            log.write("   try sub-component tree", 3);
-            const subComponents = extjsLangMgr.getSubComponentNames(lineCls);
+            log.write("      try sub-component tree", 3);
+            const subComponents = extjsLangMgr.getSubComponentNames(lineCls, "      ");
             if (subComponents.length > 0)
             {
-                log.write("   found sub-components", 3);
+                log.write("      found sub-components", 3);
                 for (const sf of subComponents)
                 {
                     if (!addedItems.includes(sf)) {
-                        log.value("   add sub-component", sf, 4);
+                        log.value("      add sub-component", sf, 4);
                         completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, nameSpace,
                                                                           CompletionItemKind.Class, false, undefined, position));
                         addedItems.push(sf);
@@ -326,7 +330,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
              // For local instance vars, only provide completion from the right function
             //
             else {
-                component = extjsLangMgr.getComponentByFile(fsPath);
+                component = extjsLangMgr.getComponentByFile(fsPath, "      ");
                 if (component && fnText)
                 {
                     _pushItems(...this.getLocalInstanceComponents(fnText, lineCls, position, fsPath, component));
@@ -334,6 +338,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         }
 
+        log.methodDone("get completion items", 2, "   ", false, [["# of added items", completionItems.length]]);
         return completionItems;
     }
 
