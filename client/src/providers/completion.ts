@@ -527,6 +527,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             // it exists, we include public class properties in the Intellisense
             //
             let tCmp: IComponent | undefined = cmp;
+            for (const mixin of tCmp.mixins)
+            {
+                const mixinCmp = extjsLangMgr.getComponent(mixin, thisCmp.nameSpace);
+                if (mixinCmp) {
+                    _addProps(mixinCmp, tCmp.componentClass);
+                }
+            }
             while (tCmp.extend && (tCmp = extjsLangMgr.getComponent(tCmp.extend, thisCmp.nameSpace)))
             {
                 _addProps(tCmp, tCmp.componentClass);
