@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRange, IRequire
+    DeclarationType, IParameter, utils, VariableType, IRange, IRequire, IAlias
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
@@ -171,24 +171,44 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (isObjectProperty(propertyAlias))
                         {
-                            const widgets = parseClassDefProperties(propertyAlias);
-                            componentInfo.widgets.push(...widgets[0]); // xtype array
-                            componentInfo.widgets.push(...widgets[1]); // alias array
+                            const widgets = parseClassDefProperties(propertyAlias, componentInfo.componentClass);
+                            const sWidgets: string[] = [],
+                                  sAliases: string[] = [];
+                            widgets[0].forEach((w) => {
+                                sWidgets.push(w.name);
+                            });
+                            widgets[1].forEach((w) => {
+                                sAliases.push(w.name);
+                            });
+                            componentInfo.widgets.push(...sWidgets); // xtype array
+                            componentInfo.widgets.push(...sAliases); // alias array
+                            componentInfo.aliases.push(...widgets[1]); // alias array
                         }
 
                         if (isObjectProperty(propertyAlternateCls))
                         {
-                            const widgets = parseClassDefProperties(propertyAlternateCls);
-                            componentInfo.widgets.push(...widgets[0]); // xtype array
-                            componentInfo.widgets.push(...widgets[1]); // alias array
-                            widgets[1].forEach((w) => {
-                                createAliases.push(w);
+                            const widgets = parseClassDefProperties(propertyAlternateCls, componentInfo.componentClass);
+                            const sWidgets: string[] = [],
+                                  sAliases: string[] = [];
+                            widgets[0].forEach((w) => {
+                                sWidgets.push(w.name);
                             });
+                            widgets[1].forEach((w) => {
+                                sAliases.push(w.name);
+                            });
+                            componentInfo.widgets.push(...sWidgets); // xtype array
+                            componentInfo.widgets.push(...sAliases); // alias array
+                            componentInfo.aliases.push(...widgets[1]); // alias array
                         }
 
                         if (isObjectProperty(propertyXtype))
                         {
-                            componentInfo.widgets.push(...parseClassDefProperties(propertyXtype)[0]);
+                            const sXtypes: string[] = [];
+                            const xtypes = parseClassDefProperties(propertyXtype, componentInfo.componentClass);
+                            xtypes[0].forEach((x) => {
+                                sXtypes.push(x.name);
+                            });
+                            componentInfo.widgets.push(...sXtypes);
                         }
 
                         if (isObjectProperty(propertyType))
@@ -379,10 +399,10 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 }
 
 
-function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
+function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string)
 {
-    const xtypes: string[] = [];
-    const aliases: string[] = [];
+    const xtypes: IXtype[] = [];
+    const aliases: IAlias[] = [];
     const aliasNodes: StringLiteral[] = [];
 
     if (isStringLiteral(propertyNode.value)) {
@@ -405,7 +425,12 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
         switch (propertyName)
         {
             case "xtype":
-                xtypes.push(propertyValue);
+                xtypes.push({
+                    name: propertyValue,
+                    start: it.loc!.start,
+                    end: it.loc!.end,
+                    componentClass
+                });
                 break;
             case "alias":
             case "alternateClassName":
@@ -414,15 +439,30 @@ function parseClassDefProperties(propertyNode: ObjectProperty): string[][]
                     const [_, namespace, name] = m;
                     switch (namespace) {
                         case "widget":
-                            xtypes.push(name);
+                            xtypes.push({
+                                name,
+                                start: it.loc!.start,
+                                end: it.loc!.end,
+                                componentClass
+                            });
                             break;
                         default:
-                            aliases.push(propertyValue);
+                            aliases.push({
+                                name: propertyValue,
+                                start: it.loc!.start,
+                                end: it.loc!.end,
+                                componentClass
+                            });
                             break;
                     }
                 }
                 else {
-                    aliases.push(propertyValue);
+                    aliases.push({
+                        name: propertyValue,
+                        start: it.loc!.start,
+                        end: it.loc!.end,
+                        componentClass
+                    });
                 }
                 break;
             default:

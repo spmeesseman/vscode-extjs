@@ -1510,6 +1510,9 @@ class ExtjsLanguageManager
             if (cmp.fsPath) {
                 this.fileToComponentClassMapping[cmp.fsPath] = componentClass;
                 this.componentClassToFilesMapping[componentClass] = cmp.fsPath;
+                cmp.aliases.forEach((a) => {
+                    this.componentClassToFilesMapping[a.name] = cmp.fsPath;
+                });
             }
 
             //
@@ -1519,6 +1522,9 @@ class ExtjsLanguageManager
                 this.componentClassToComponentsMapping[nameSpace] = {};
             }
             this.componentClassToComponentsMapping[nameSpace][componentClass] = cmp;
+            cmp.aliases.forEach((a) => {
+                this.componentClassToComponentsMapping[nameSpace][a.name] = cmp;
+            });
 
             //
             // Map the component class to any requires strings found

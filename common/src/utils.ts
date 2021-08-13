@@ -95,6 +95,16 @@ export function lowerCaseFirstChar(text: string)
 }
 
 
+export function pick<T, K extends keyof T>(obj: T, ...keys: K[])
+{
+    const ret: any = {};
+    keys.forEach(key => {
+      ret[key] = obj[key];
+    });
+    return ret;
+}
+
+
 /**
  * Camel case a string
  *
