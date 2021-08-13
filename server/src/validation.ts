@@ -332,7 +332,8 @@ function validateRequires(cmp: IComponent, diagRelatedInfoCapability: boolean, d
 
 	for (const require of requires)
 	{
-		const thisWidgetCls = componentClassToWidgetsMapping[cmp.nameSpace][require.name] || componentClassToWidgetsMapping.Ext[require.name];
+		const thisWidgetCls = componentClassToWidgetsMapping[cmp.nameSpace][require.name] || componentClassToWidgetsMapping.Ext[require.name] ||
+		                      widgetToComponentClassMapping[cmp.nameSpace][require.name] || widgetToComponentClassMapping.Ext[require.name];
 		if (thisWidgetCls) { // if we have a mapping, then no diagnostic
 			continue;
 		}
