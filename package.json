@@ -170,9 +170,7 @@
                     "description": "Set debug verbosity (1 - Low / 5 - High)."
                 },
                 "extjsLangSvr.exclude": {
-                    "type": [
-                        "array"
-                    ],
+                    "type": "array",
                     "items": {
                         "type": "string"
                     },
