@@ -24,6 +24,12 @@ Intellisense:
 	☐ When writing method parameters, and they are line broken (i.e. object param), method signature breaks
 	✔ Inline does not work when preceded by 'await ' (or probably any other word) @done(21-08-13 17:08)
 	☐ Main namespace inline does not work.  e.g. 'Ext', or 'VSCodeExtJS', 'GEMS'
+	☐ For instance properties, the 'go to definition' should go to the declaration, not the definition
+		the 'go to type definition' works as intended and goes to the definition
+	☐ The 'this' property needs to check for function scope, currently 'this' is always the main cmp instance
+	☐ dot completion - doesnt work if there are characters to the right
+		e.g.: app.js line 85, remove 'PhysicianDropdown' and try typing it in again
+		it will only work if the typing is coming left to right and there are no chars to the right
 
 Miscellaneous:
 

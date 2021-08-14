@@ -180,18 +180,18 @@ class ExtjsLanguageManager
         let component = this.componentClassToComponentsMapping[nameSpace][componentClass] || this.componentClassToComponentsMapping.Ext[componentClass];
         if (component)
         {
-            log.write(logPad + "   found component", 3, logPad);
-            log.value(logPad + "      namespace", component.nameSpace, 4, logPad);
-            log.value(logPad + "      base namespace", component.baseNameSpace, 4, logPad);
+            log.write("   found component", 3, logPad);
+            log.value("      namespace", component.nameSpace, 4, logPad);
+            log.value("      base namespace", component.baseNameSpace, 4, logPad);
         }
 
         if (!component && checkAlias === true)
         {
             component = this.getComponentByAlias(componentClass, nameSpace, logPad + "   ");
             if (component) {
-                log.write(logPad + "   found aliased component", 3, logPad);
-                log.value(logPad + "      namespace", component.nameSpace, 4, logPad);
-                log.value(logPad + "      base namespace", component.baseNameSpace, 4, logPad);
+                log.write("   found aliased component", 3, logPad);
+                log.value("      namespace", component.nameSpace, 4, logPad);
+                log.value("      base namespace", component.baseNameSpace, 4, logPad);
             }
         }
 
@@ -237,7 +237,7 @@ class ExtjsLanguageManager
         log.methodStart("get component by file", 1, logPad, false, [["component file", fsPath]]);
         const cls = this.getClassFromFile(fsPath, logPad);
         if (cls) {
-            log.value("   component class", cls, 2);
+            log.value("   component class", cls, 2, logPad);
             const component = this.getComponent(cls, this.getNamespaceFromClass(cls), false, logPad);
             if (component) {
                 log.methodDone("found component", 3, logPad, false, [["namespace", component.nameSpace], ["base namespace", component.baseNameSpace]]);
