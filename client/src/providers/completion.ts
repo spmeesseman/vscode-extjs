@@ -150,10 +150,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             completionItem.commitCharacters = [ "." ];
         }
 
-        const tagText = this.tagText(cmp, isConfig, extendedFrom);
-        if (tagText) {
+        let tagText = this.tagText(cmp, property, isConfig, extendedFrom);
+        if (tagText)
+        {
             completionItem.insertText = property;
-            completionItem.label = `${completionItem.label}${this.rightPad(tagText, completionItem.label.length)}${tagText}`;
+            //
+            // Label can be tagged with config, getter/setter, deprecated, since, etc...
+            //
+            completionItem.label = this.getLabel(completionItem.label, tagText);
         }
 
         //
@@ -172,18 +176,36 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (kind === CompletionItemKind.Property && ("getter" in cmp || "setter" in cmp))
         {
-            if ("getter" in cmp) {
-                propCompletion.push(new CompletionItem(cmp.getter, CompletionItemKind.Method));
-                propCompletion[propCompletion.length - 1].documentation = cmp.markdown;
+            if ("getter" in cmp)
+            {
+                const getterItem = new CompletionItem(cmp.getter, CompletionItemKind.Method);
+                getterItem.documentation = cmp.markdown;
+                tagText = this.tagText(cmp, cmp.getter, true, extendedFrom);
+                if (tagText) {
+                    getterItem.insertText = property + "()";
+                    getterItem.label = this.getLabel(getterItem.label, tagText);
+                }
+                propCompletion.push(getterItem);
             }
-            if ("setter" in cmp) {
-                propCompletion.push(new CompletionItem(cmp.setter, CompletionItemKind.Method));
-                propCompletion[propCompletion.length - 1].documentation = cmp.markdown;
+            if ("setter" in cmp)
+            {
+                const setterItem = new CompletionItem(cmp.setter, CompletionItemKind.Method);
+                setterItem.documentation = cmp.markdown;
+                tagText = this.tagText(cmp, cmp.setter, true, extendedFrom);
+                if (tagText) {
+                    setterItem.insertText = property + "(";
+                    setterItem.label = this.getLabel(setterItem.label, tagText);
+                }
+                propCompletion.push(setterItem);
             }
         }
 
         log.methodDone("create completion item", logLevel, logPad);
 
+        //
+        // this return line was here for the first 3 months of development, not sure how
+        // it ever even worked, but leaving here for reference for now
+        //
         // return cmp || kind === CompletionItemKind.Class ? propCompletion : [];
         return propCompletion;
     }
@@ -500,9 +522,17 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 const cCls = cls.split(".")[0];
                 if (addedItems.indexOf(cCls) === -1)
                 {
-                    const label = this.tagText(cmp, isConfig, extendedCls);
-                    const cItems = !basic ? this.createCompletionItem(cCls, cCls, thisCmp.nameSpace, kind, isConfig, extendedCls, position, logPad + "   ", logLevel + 1) :
-                                            [ new CompletionItem(`${cCls}${this.rightPad(label, cCls.length)}${label}`, kind) ];
+                    let cItems;
+                    if (!basic) {
+                        cItems = this.createCompletionItem(cCls, cCls, thisCmp.nameSpace, kind, isConfig, extendedCls, position, logPad + "   ", logLevel + 1);
+                    }
+                    else {
+                        const tagText = this.tagText(cmp, cCls, isConfig, extendedCls);
+                        cItems = [ new CompletionItem(this.getLabel(cCls, tagText), kind) ];
+                        if (tagText) {
+                            cItems[0].insertText = cCls;
+                        }
+                    }
                     //
                     // Add the completion item(s) to the completion item array that will be provided to
                     // the VSCode engine
@@ -696,6 +726,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
+    private getLabel(label: string, tagText: string)
+    {
+        return `${label}${this.rightPad(tagText, label.length)}${tagText}`;
+    }
+
+
     private getLocalInstanceComponents(fnText: string, lineCls: string, position: Position, fsPath: string, component: IComponent, logPad: string, logLevel: number): IComponent[]
     {
         log.methodStart("get local instance components", logLevel, logPad);
@@ -764,10 +800,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // property will be a lower-case-first-letter version of the extracted property
                 //
                 const gsProperty = utils.lowerCaseFirstChar(property.substring(3));
-                cmp = extjsLangMgr.getConfig(cmpClass, gsProperty, nameSpace, logPad + "   ", logLevel + 1);
-                if (!cmp) {
-                    cmp = extjsLangMgr.getConfig(cmpClass, property, nameSpace, logPad + "   ", logLevel + 1);
-                }
+                cmp = extjsLangMgr.getConfig(cmpClass, gsProperty, nameSpace, logPad + "   ", logLevel + 1) ||
+                      extjsLangMgr.getConfig(cmpClass, property, nameSpace, logPad + "   ", logLevel + 1);
             }
         }
 
@@ -779,10 +813,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     private getPropertyCmp(property: string, cmpClass: string, nameSpace: string, logPad: string, logLevel: number): IProperty | IConfig | undefined
     {
         log.methodStart("get property component", logLevel, logPad);
-        let cmp: IProperty | IConfig | undefined = extjsLangMgr.getConfig(cmpClass, property, nameSpace, logPad + "   ", logLevel + 1);
-        if (!cmp) {
-            cmp = extjsLangMgr.getProperty(cmpClass, property, nameSpace, logPad + "   ", logLevel + 1);
-        }
+        const cmp = extjsLangMgr.getConfig(cmpClass, property, nameSpace, logPad + "   ", logLevel + 1) ||
+                    extjsLangMgr.getProperty(cmpClass, property, nameSpace, logPad + "   ", logLevel + 1);
         log.methodDone("get property component", logLevel, logPad);
         return cmp;
     }
@@ -800,14 +832,15 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private tagText(cmp: IComponent | IMethod | IProperty | IConfig | undefined, isConfig: boolean, extendedCls?: string)
+    private tagText(cmp: IComponent | IMethod | IProperty | IConfig | undefined, property: string, isConfig: boolean, extendedCls?: string)
     {
         let tagText = "";
 
         //
         // Show extended class
         //
-        if (extendedCls) {
+        if (extendedCls)
+        {
             const extendedClsParts = extendedCls.split(".");
             tagText += (extendedClsParts[extendedClsParts.length - 1] + " ");
         }
@@ -815,8 +848,15 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // If it's a config and not a property
         //
-        if (isConfig) {
-            tagText += "Config ";
+        if (isConfig)
+        {
+            tagText += "config ";
+            if (property.startsWith("get")) {
+                tagText += "getter ";
+            }
+            else if (property.startsWith("set")) {
+                tagText += "setter ";
+            }
         }
 
         //
@@ -845,7 +885,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             tagText += `(since ${cmp.since}) `;
         }
 
-        return tagText.trim();
+        return tagText.trimRight();
     }
 
 }

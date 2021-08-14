@@ -18,7 +18,7 @@ import { create } from "domain";
  * Properties that wont display in intellisense
  */
 const ignoreProperties = [
-    "config", "items", "listeners", "requires", "privates", "statics", "alias", "alternateClassName"
+    "config", "items", "dockedItems", "listeners", "requires", "privates", "statics", "alias", "alternateClassName", "columns", "mixins"
 ];
 
 export const widgetToComponentClassMapping: { [nameSpace: string]: { [widget: string]: string | undefined }} = {};
