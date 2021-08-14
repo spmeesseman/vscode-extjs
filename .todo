@@ -28,8 +28,9 @@ Intellisense:
 		the 'go to type definition' works as intended and goes to the definition
 	☐ The 'this' property needs to check for function scope, currently 'this' is always the main cmp instance
 	☐ dot completion - doesnt work if there are characters to the right
-		e.g.: app.js line 85, remove 'PhysicianDropdown' and try typing it in again
+		e.g.: app.js line 85, remove some of 'PhysicianDropdown' and try typing it in again
 		it will only work if the typing is coming left to right and there are no chars to the right
+		remove it to the left dot, then it gives instance components.  fix weird things here.
 
 Miscellaneous:
 
