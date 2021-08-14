@@ -1,8 +1,6 @@
 
 import { ExtensionContext } from "vscode";
 import registerCodeActionProvider from "./codeAction";
-import registerXtypeCompletionProvider from "./xtypeCompletion";
-import registerXtypeDefinitionProvider from "./xtypeDefinion";
 import registerHoverProvider from "./hover";
 import registerCompletionProvider from "./completion";
 import registerDefinitionProvider from "./definition";
@@ -17,8 +15,6 @@ export function registerProviders(context: ExtensionContext)
 {
     const registers: Register[] = [
         registerCodeActionProvider,
-        registerXtypeDefinitionProvider,
-        registerXtypeCompletionProvider,
         registerHoverProvider,
         registerCompletionProvider,
         registerDefinitionProvider,

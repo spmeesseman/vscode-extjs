@@ -5,7 +5,7 @@ import { configuration } from "../common/configuration";
 import { ComponentType, DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty, IRange, utils } from "../../../common";
 import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
-    TextDocument, CompletionItemKind, window, EndOfLine
+    TextDocument, CompletionItemKind, window, EndOfLine, Range, TextEdit
 } from "vscode";
 import {
     getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange, isComponent, getObjectRangeByPosition, documentEol
@@ -180,9 +180,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 const getterItem = new CompletionItem(cmp.getter, CompletionItemKind.Method);
                 getterItem.documentation = cmp.markdown;
+                getterItem.commitCharacters = [ "(" ];
                 tagText = this.tagText(cmp, cmp.getter, true, extendedFrom);
                 if (tagText) {
-                    getterItem.insertText = property + "()";
+                    getterItem.insertText = cmp.getter;
                     getterItem.label = this.getLabel(getterItem.label, tagText);
                 }
                 propCompletion.push(getterItem);
@@ -191,9 +192,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 const setterItem = new CompletionItem(cmp.setter, CompletionItemKind.Method);
                 setterItem.documentation = cmp.markdown;
+                setterItem.commitCharacters = [ "(" ];
                 tagText = this.tagText(cmp, cmp.setter, true, extendedFrom);
                 if (tagText) {
-                    setterItem.insertText = property + "(";
+                    setterItem.insertText = cmp.setter;
                     setterItem.label = this.getLabel(setterItem.label, tagText);
                 }
                 propCompletion.push(setterItem);
@@ -512,7 +514,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // A helper function to add items to the completion list that will be provided to VSCode
         //
-        const _add = ((cmp: IConfig | IProperty | undefined, cls: string, basic: boolean, kind: CompletionItemKind, isConfig = false, extendedCls?: string, doc?: string) =>
+        const _add = (cmp: IConfig | IProperty | undefined, cls: string, basic: boolean, kind: CompletionItemKind, isConfig = false, extendedCls?: string, doc?: string) =>
         {   //
             // 'basic' means just add the completion item w/o all the checks.  this is for cases of
             // configs, properties within an object.
@@ -556,13 +558,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     log.value("      item", cCls, logLevel + 1, logPad);
                 }
             }
-        });
+        };
 
         //
         // A helper function for adding configs and properties of a class to the completion item list
         // that will be provided to VSCode.
         //
-        const _addProps = ((cmp: IComponent | undefined, extendedCls?: string) =>
+        const _addProps = (cmp: IComponent | undefined, extendedCls?: string) =>
         {
             if (!cmp) { return; }
             cmp?.configs.forEach((c: IConfig) =>
@@ -591,7 +593,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 _addProps(tCmp, tCmp.componentClass);
             }
-        });
+        };
 
         const _addObjectConfigs = (objectRange: IRange | undefined) =>
         {   //
@@ -603,21 +605,21 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 const eol = documentEol(document),
                     vsRange = toVscodeRange(objectRange.start, objectRange.end),
                     objectRangeText = document.getText(vsRange),
-                    regex = new RegExp(/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/, "gmi"),
                     innerPositionLine = position.line - vsRange.start.line;
-                let idx = -1, tIdx = -1, matches,
-                    objectRangeTextCUt = objectRangeText;
+                let idx = -1, tIdx = -1,
+                    objectRangeTextCut = objectRangeText;
 
                 for (let i = 0; i < innerPositionLine; i++) {
-                    tIdx = objectRangeTextCUt.indexOf(eol) + 1;
+                    tIdx = objectRangeTextCut.indexOf(eol) + 1;
                     idx += tIdx;
-                    objectRangeTextCUt = objectRangeTextCUt.substring(tIdx);
+                    objectRangeTextCut = objectRangeTextCut.substring(tIdx);
                 }
-                ++idx;
 
                 if (idx !== -1)
                 {
-                    let xComponent;
+                    ++idx;
+                    let xComponent, matches;
+                    const regex = new RegExp(/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/, "gmi");
                     while ((matches = regex.exec(objectRangeText)) !== null)
                     {
                         if (matches.index <= idx)
@@ -627,7 +629,17 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                         }
                         else { break; }
                     }
-                    _addProps(xComponent);
+                    if (xComponent) {
+                        _addProps(xComponent);
+                    }
+                    else {
+                        //
+                        // We're within an object expression, we provide configs and properties to the
+                        // completion items list here
+                        //
+                        _add(undefined, "xtype", true, CompletionItemKind.Property);
+                        completionItems.push(...this.getXtypeCompletionItems(document, position));
+                    }
                 }
             }
         };
@@ -653,11 +665,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         }
         else if (isInObject)
         {   //
-            // We're within an object expression, we provide configs and properties to the
-            // completion items list here
-            //
-            _add(undefined, "xtype", true, CompletionItemKind.Property);
-            //
             // First, find the class that the expression is being applied to, which contains the
             // base configs and properties that we want, we'll also traverse up the inheritance tree
             // to add the configs and properties of each component up to the base
@@ -817,6 +824,73 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     extjsLangMgr.getProperty(cmpClass, property, nameSpace, logPad + "   ", logLevel + 1);
         log.methodDone("get property component", logLevel, logPad);
         return cmp;
+    }
+
+
+    private getXtypeCompletionItems(document: TextDocument, position: Position)
+    {
+        const completionItems: CompletionItem[] = [],
+              xtypes = extjsLangMgr.getXtypeNames(),
+              cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath),
+              range = document.getWordRangeAtPosition(position),
+              addedItems: string[] = [];
+
+        if (range && cmp && isPositionInObject(position, cmp)) // && getMethodByPosition(position, cmp))
+        {   //
+            // Check to see if there's already an xtype definition within the object block
+            //
+            const objectRange = getObjectRangeByPosition(position, cmp);
+            if (objectRange)
+            {
+                // const eol = documentEol(document),
+                //     vsRange = toVscodeRange(objectRange.start, objectRange.end),
+                //    objectRangeText = document.getText(vsRange),
+                //    innerPositionLine = position.line - vsRange.start.line;
+                // let idx = -1, tIdx = -1,
+                //     objectRangeTextCut = objectRangeText;
+                //
+                // for (let i = 0; i < innerPositionLine; i++) {
+                //     tIdx = objectRangeTextCut.indexOf(eol) + 1;
+                //     idx += tIdx;
+                //     objectRangeTextCut = objectRangeTextCut.substring(tIdx);
+                // }
+                //
+                // while ((tIdx = objectRangeTextCut.indexOf("}")) !== -1)
+                // {
+                //
+                // }
+
+                // if ((/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/gmi).test(objectRangeTextCut))
+                // {
+                //     return completionItems;
+                // }
+            }
+
+            for (const xtype of xtypes)
+            {
+                if (!addedItems.includes(xtype))
+                {
+                    const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`),
+                          lineText = document.lineAt(position).text.substr(0, position.character),
+                          text = document.getText(range);
+                    xtypeCompletion.insertText = `xtype: "${xtype}",`;
+                    xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
+                    if (lineText.includes("xtype")) {
+                        const xTypeIdx = lineText.indexOf("xtype"),
+                              xTypeIdx2 = lineText.indexOf("xtype:"),
+                              xTypeIdx3 = lineText.indexOf("xtype: "),
+                              xTypeIdxOffset = xTypeIdx3 !== -1 ? 2 : (xTypeIdx2 !== -1 ? 1 : 0),
+                              preRange = new Range(new Position(position.line, xTypeIdx + xTypeIdxOffset),
+                                                   new Position(position.line, xTypeIdx + xTypeIdxOffset + 4));
+                        xtypeCompletion.additionalTextEdits = [ TextEdit.replace(preRange, "") ];
+                    }
+                    completionItems.push(xtypeCompletion);
+                    addedItems.push(xtype);
+                }
+            }
+        }
+
+        return completionItems;
     }
 
 
