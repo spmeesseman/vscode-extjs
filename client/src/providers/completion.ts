@@ -10,7 +10,14 @@ import {
 import {
     getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange, isComponent, getObjectRangeByPosition, documentEol
 } from "../common/clientUtils";
-
+import { parse } from "@babel/parser";
+import traverse from "@babel/traverse";
+import {
+    isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
+    isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
+    isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
+    isThisExpression, isAwaitExpression, SourceLocation, Node, isLabeledStatement
+} from "@babel/types";
 
 
 class ExtJsCompletionItemProvider implements CompletionItemProvider
@@ -602,45 +609,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             if (objectRange)
             {
-                const eol = documentEol(document),
-                    vsRange = toVscodeRange(objectRange.start, objectRange.end),
-                    objectRangeText = document.getText(vsRange),
-                    innerPositionLine = position.line - vsRange.start.line;
-                let idx = -1, tIdx = -1,
-                    objectRangeTextCut = objectRangeText;
-
-                for (let i = 0; i < innerPositionLine; i++) {
-                    tIdx = objectRangeTextCut.indexOf(eol) + 1;
-                    idx += tIdx;
-                    objectRangeTextCut = objectRangeTextCut.substring(tIdx);
-                }
-
-                if (idx !== -1)
-                {
-                    ++idx;
-                    let xComponent, matches;
-                    const regex = new RegExp(/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/, "gmi");
-                    while ((matches = regex.exec(objectRangeText)) !== null)
-                    {
-                        if (matches.index <= idx)
-                        {
-                            const cls = extjsLangMgr.getMappedClass(matches[1], thisCmp.nameSpace, ComponentType.Widget);
-                            xComponent = cls ? extjsLangMgr.getComponent(cls, thisCmp.nameSpace, false, logPad + "   ", logLevel + 1) : undefined;
-                        }
-                        else { break; }
-                    }
-                    if (xComponent) {
-                        _addProps(xComponent);
-                    }
-                    else {
-                        //
-                        // We're within an object expression, we provide configs and properties to the
-                        // completion items list here
-                        //
-                        _add(undefined, "xtype", true, CompletionItemKind.Property);
-                        completionItems.push(...this.getXtypeCompletionItems(document, position));
-                    }
-                }
+                completionItems.push(...this.getXtypeCompletionItems(document, position, thisCmp.nameSpace, logPad + "   ", logLevel, _addProps));
             }
         };
 
@@ -827,13 +796,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getXtypeCompletionItems(document: TextDocument, position: Position)
+    private getXtypeCompletionItems(document: TextDocument, position: Position, nameSpace: string, logPad: string, logLevel: number, addFn: (arg: IComponent) => void)
     {
         const completionItems: CompletionItem[] = [],
               xtypes = extjsLangMgr.getXtypeNames(),
               cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath),
               range = document.getWordRangeAtPosition(position),
               addedItems: string[] = [];
+        let hasXtype = "";
 
         if (range && cmp && isPositionInObject(position, cmp)) // && getMethodByPosition(position, cmp))
         {   //
@@ -842,50 +812,97 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             const objectRange = getObjectRangeByPosition(position, cmp);
             if (objectRange)
             {
-                // const eol = documentEol(document),
-                //     vsRange = toVscodeRange(objectRange.start, objectRange.end),
-                //    objectRangeText = document.getText(vsRange),
-                //    innerPositionLine = position.line - vsRange.start.line;
-                // let idx = -1, tIdx = -1,
-                //     objectRangeTextCut = objectRangeText;
-                //
-                // for (let i = 0; i < innerPositionLine; i++) {
-                //     tIdx = objectRangeTextCut.indexOf(eol) + 1;
-                //     idx += tIdx;
-                //     objectRangeTextCut = objectRangeTextCut.substring(tIdx);
-                // }
-                //
-                // while ((tIdx = objectRangeTextCut.indexOf("}")) !== -1)
-                // {
-                //
-                // }
+                const eol = documentEol(document),
+                      vsRange = toVscodeRange(objectRange.start, objectRange.end),
+                      innerPositionLine = position.line - vsRange.start.line;
+                let idx = 0, tIdx = -1,
+                    objectRangeText = document.getText(vsRange),
+                    objectRangeTextCut = objectRangeText;
 
-                // if ((/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/gmi).test(objectRangeTextCut))
-                // {
-                //     return completionItems;
-                // }
+                for (let i = 0; i <= innerPositionLine; i++) {
+                    tIdx = objectRangeText.indexOf(eol, idx) + eol.length;
+                    objectRangeTextCut = objectRangeText.substring(idx, tIdx);
+                    idx = tIdx;
+                }
+                // objectRangeText = objectRangeText.substring(idx, objectRangeText.indexOf(eol, idx));
+                objectRangeText = objectRangeText.replace(objectRangeTextCut, "");
+                try {
+                    const ast = parse(objectRangeText);
+                    if (ast)
+                    {
+                        const astNode = ast.program.body[0];
+                        if (isLabeledStatement(astNode))
+                        {
+                            if (isExpressionStatement(astNode.body) && isArrayExpression(astNode.body.expression))
+                            {
+                                const elements = astNode.body.expression.elements;
+                                for (const e of elements)
+                                {
+                                    if (isObjectExpression(e) && e.loc)
+                                    {
+                                        const relativePosition = new Position(position.line - objectRange.start.line, position.character);
+                                        if (toVscodeRange(e.loc.start, e.loc.end).contains(relativePosition))
+                                        {
+                                            for (const p of e.properties)
+                                            {
+                                                if (isObjectProperty(p))
+                                                {
+                                                    if (isIdentifier(p.key))
+                                                    {
+                                                        if (p.key.name === "xtype")
+                                                        {
+                                                            if (isStringLiteral(p.value))
+                                                            {
+                                                                hasXtype = p.value.value;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (ex) {
+                    log.error(ex.toString());
+                    return completionItems;
+                }
             }
 
-            for (const xtype of xtypes)
+            // if ((/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/gmi).test(objectRangeTextCut))
+            if (hasXtype)
             {
-                if (!addedItems.includes(xtype))
+                const cls = extjsLangMgr.getMappedClass(hasXtype, nameSpace, ComponentType.Widget),
+                      xComponent = cls ? extjsLangMgr.getComponent(cls, nameSpace, false, logPad + "   ", logLevel + 1) : undefined;
+                if (xComponent) {
+                    addFn(xComponent);
+                }
+            }
+            else
+            {
+                for (const xtype of xtypes)
                 {
-                    const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`),
-                          lineText = document.lineAt(position).text.substr(0, position.character),
-                          text = document.getText(range);
-                    xtypeCompletion.insertText = `xtype: "${xtype}",`;
-                    xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
-                    if (lineText.includes("xtype")) {
-                        const xTypeIdx = lineText.indexOf("xtype"),
-                              xTypeIdx2 = lineText.indexOf("xtype:"),
-                              xTypeIdx3 = lineText.indexOf("xtype: "),
-                              xTypeIdxOffset = xTypeIdx3 !== -1 ? 2 : (xTypeIdx2 !== -1 ? 1 : 0),
-                              preRange = new Range(new Position(position.line, xTypeIdx + xTypeIdxOffset),
-                                                   new Position(position.line, xTypeIdx + xTypeIdxOffset + 4));
-                        xtypeCompletion.additionalTextEdits = [ TextEdit.replace(preRange, "") ];
+                    if (!addedItems.includes(xtype))
+                    {
+                        const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`),
+                            lineText = document.lineAt(position).text.substr(0, position.character);
+                        xtypeCompletion.insertText = `xtype: "${xtype}",`;
+                        xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
+                        if (lineText.includes("xtype")) {
+                            const xTypeIdx = lineText.indexOf("xtype"),
+                                xTypeIdx2 = lineText.indexOf("xtype:"),
+                                xTypeIdx3 = lineText.indexOf("xtype: "),
+                                xTypeIdxOffset = xTypeIdx3 !== -1 ? 2 : (xTypeIdx2 !== -1 ? 1 : 0),
+                                preRange = new Range(new Position(position.line, xTypeIdx + xTypeIdxOffset),
+                                                    new Position(position.line, xTypeIdx + xTypeIdxOffset + 4));
+                            xtypeCompletion.additionalTextEdits = [ TextEdit.replace(preRange, "") ];
+                        }
+                        completionItems.push(xtypeCompletion);
+                        addedItems.push(xtype);
                     }
-                    completionItems.push(xtypeCompletion);
-                    addedItems.push(xtype);
                 }
             }
         }

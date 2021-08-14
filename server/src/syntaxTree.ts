@@ -10,9 +10,8 @@ import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
-    isThisExpression, isAwaitExpression, SourceLocation
+    isThisExpression, isAwaitExpression, SourceLocation, Node
 } from "@babel/types";
-import { create } from "domain";
 
 /**
  * Properties that wont display in intellisense
@@ -47,13 +46,14 @@ export async function loadExtJsComponent(ast: string | undefined)
 
 export async function parseExtJsFile(fsPath: string, text: string, project?: string, isFramework?: boolean)
 {
-    let ast: any;
+    let ast: Node;
 
     try {
         ast = parse(text);
     }
     catch (ex) {
         log.error(ex.toString());
+        return [];
     }
 
     const components: IComponent[] = [];
