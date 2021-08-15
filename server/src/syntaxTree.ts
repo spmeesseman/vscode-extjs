@@ -262,10 +262,10 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         }
                         logProperties("methods", componentInfo.methods);
 
-                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo.componentClass));
+                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo.nameSpace, componentInfo.componentClass));
                         logProperties("xtypes", componentInfo.xtypes);
 
-                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo.componentClass, "alias"));
+                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo.nameSpace, componentInfo.componentClass, "alias"));
                         logProperties("aliases", componentInfo.aliases);
 
                         // createAliases.forEach((a) => {
@@ -1083,11 +1083,42 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
 }
 
 
-function parseXTypes(objEx: ObjectExpression, text: string, componentClass: string, nodeName = "xtype"): IXtype[]
+function parseXTypes(objEx: ObjectExpression, text: string, componentClass: string, nameSpace: string, nodeName = "xtype"): IXtype[]
 {
     const xType: IXtype[] = [];
     const line = objEx.loc!.start.line - 1;
     const column = objEx.loc!.start.column;
+
+    const _add = ((v: StringLiteral) =>
+    {   //
+        // CHeck the mapping so we don't add something that the user is currently
+        // typing in
+        //
+        if (!widgetToComponentClassMapping[nameSpace][v.value]) {
+            return;
+        }
+
+        const start = v.loc!.start;
+        const end = v.loc!.end;
+
+        if (start.line === 1) {
+            start.column += + column - 2;
+        }
+        if (end.line === 1) {
+            end.column += + column - 2;
+        }
+        start.line += line;
+        end.line += line;
+
+        log.write("   push xtype " + v.value, 3);
+
+        xType.push({
+            name: v.value,
+            start,
+            end,
+            componentClass
+        });
+    });
 
     //
     // Get the substring from the doc text, just the jso w/o the Ext.define() wrap so we can
@@ -1124,30 +1155,6 @@ function parseXTypes(objEx: ObjectExpression, text: string, componentClass: stri
             if (!isStringLiteral(valueNode) && !isArrayExpression(valueNode)) {
                 return;
             }
-
-            const _add = ((v: StringLiteral) =>
-            {
-                const start = v.loc!.start;
-                const end = v.loc!.end;
-
-                if (start.line === 1) {
-                    start.column += + column - 2;
-                }
-                if (end.line === 1) {
-                    end.column += + column - 2;
-                }
-                start.line += line;
-                end.line += line;
-
-                log.write("   push xtype " + v.value, 3);
-
-                xType.push({
-                    name: v.value,
-                    start,
-                    end,
-                    componentClass
-                });
-            });
 
             if (isStringLiteral(valueNode)) {
                 _add(valueNode);

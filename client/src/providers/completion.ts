@@ -810,7 +810,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         log.methodStart("get xtype completion Items", logLevel, logPad);
 
         const completionItems: CompletionItem[] = [],
-              xtypes = extjsLangMgr.getXtypeNames(),
               cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath),
               addedItems: string[] = [];
         let hasXtype = "";
@@ -920,7 +919,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             else //  An `xtype` is not defined on this object, add the complete `xtype` list
             {   //
                 const eol = documentEol(document),
-                      quote = quoteChar();
+                      quote = quoteChar(),
+                      xtypes = extjsLangMgr.getXtypeNames();
                 for (const xtype of xtypes)
                 {
                     if (!addedItems.includes(xtype))
@@ -937,10 +937,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                         if (lineText.includes("xtype"))
                         {
                             const xTypeIdx = lineText.indexOf("xtype"),
-                                  quoteIdx = lineText.indexOf(quote, xTypeIdx),
+                                  quoteIdx = lineText.indexOf(quote, xTypeIdx), // dealing with surrounding quotes
                                   preRange =  new Range(new Position(position.line, xTypeIdx),
                                                         new Position(position.line, xTypeIdx + 6 + (quoteIdx !== -1 ? 2 : 0)));
                             xtypeCompletion.additionalTextEdits = [ TextEdit.replace(preRange, "") ];
+                            //
+                            // Deal with surrounding quotes - the last quotes we need to actually back up one
+                            // character into the actual edit space, otherwise no edit takes place
+                            //
                             if (quoteIdx !== -1) {
                                 const quoteIdx2 = lineText.lastIndexOf(quote),
                                       leftPad = lineText.length - lineText.trimLeft().length,
