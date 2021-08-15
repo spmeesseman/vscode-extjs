@@ -142,6 +142,7 @@ export interface IParameter extends IExtJsBase
     methodName: string;
     declaration?: DeclarationType;
     type?: VariableType;
+    reassignments: IVariable[];
 }
 
 
@@ -196,6 +197,7 @@ export interface IVariable extends IExtJsBase
     methodName: string;
     declaration?: DeclarationType;
     type?: VariableType;
+    reassignments: IVariable[];
 }
 
 

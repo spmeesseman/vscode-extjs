@@ -26,21 +26,40 @@ export function blank(level?: number)
 }
 
 
-export function error(msg: string | string[], params?: (string|any)[][])
+function writeError(e: Error)
+{
+    write("*** " + e.name, undefined, "", true);
+    write("*** " + e.message, undefined, "", true);
+    if (e.stack) {
+        const stackFmt = e.stack.replace(/\n/g, "\n                        *** ");
+        write("*** " + stackFmt, undefined, "", true);
+    }
+}
+
+
+export function error(msg: string | (string|Error)[] | Error, params?: (string|any)[][])
 {
     write("***", undefined, "", true);
     if (typeof msg === "string") {
         write("*** " + msg, undefined, "", true);
     }
+    else if (msg instanceof Error) {
+        writeError(msg);
+    }
     else {
-        msg.forEach((m: string) => {
-            write("*** " + m, undefined, "", true);
-        });
-        if (params)
-        {
-            for (const [ n, v, l ] of params) {
-                value("***   " + n, v);
+        msg.forEach((m: string | Error) => {
+            if (msg instanceof Error) {
+                writeError(msg);
             }
+            else {
+                write("*** " + m, undefined, "", true);
+            }
+        });
+    }
+    if (params)
+    {
+        for (const [ n, v, l ] of params) {
+            value("***   " + n, v);
         }
     }
     write("***", undefined, "", true);

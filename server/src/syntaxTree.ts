@@ -10,7 +10,7 @@ import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
-    isThisExpression, isAwaitExpression, SourceLocation, Node
+    isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration, VariableDeclarator, AssignmentExpression, CallExpression, variableDeclarator, LVAL_TYPES, toIdentifier, variableDeclaration
 } from "@babel/types";
 
 /**
@@ -53,7 +53,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
         ast = parse(text);
     }
     catch (ex) {
-        log.error(ex.toString());
+        log.error(ex);
         return [];
     }
 
@@ -530,13 +530,13 @@ function parseExtend(propertyExtend: ObjectProperty): string | undefined
 }
 
 
-function getObjectRanges(m: ObjectProperty): IObjectRange[]
+function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRange[]
 {
     const objectRanges: IObjectRange[] = [];
 
     if (isFunctionExpression(m.value))
     {
-        const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p));
+        const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p) || isAssignmentExpression(p));
         if (propertyObjects && propertyObjects.length)
         {
 
@@ -572,14 +572,19 @@ function getObjectRanges(m: ObjectProperty): IObjectRange[]
                                 pushRanges(d.init.argument.arguments);
                             }
                             else {
-                                log.error("Unhandled Object Range: unexpected await syntax");
+                                log.error("Unhandled Object Range: unexpected await syntax", [["method name", methodName]]);
                             }
                         }
                     }
                 }
-                else if (isExpressionStatement(o) && isCallExpression(o.expression))
+                else if (isExpressionStatement(o))
                 {
-                    pushRanges(o.expression.arguments);
+                    if (isCallExpression(o.expression)) {
+                        pushRanges(o.expression.arguments);
+                    }
+                    else if (isAssignmentExpression(o.expression) && isCallExpression(o.expression.right)) {
+                        pushRanges(o.expression.right.arguments);
+                    }
                 }
             });
         }
@@ -626,20 +631,22 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
             if (propertyName)
             {
-                const doc = getComments(m.leadingComments);
+                const doc = getComments(m.leadingComments),
+                      params = parseParams(m, propertyName, text, componentClass, doc),
+                      variables = parseVariables(m, propertyName, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
                 methods.push({
                     componentClass,
                     doc,
-                    params: parseParams(m, propertyName, text, componentClass, doc),
+                    params,
                     name: propertyName,
                     start: m.loc!.start,
                     end: m.loc!.end,
-                    variables: parseVariables(m, propertyName, text, componentClass, (m.value.loc?.start.line || 1) - 1),
+                    variables,
                     returns: getReturns(doc),
                     since: getSince(doc),
                     private: doc?.includes("@private"),
                     deprecated: doc?.includes("@deprecated"),
-                    objectRanges: getObjectRanges(m),
+                    objectRanges: getMethodObjectRanges(m, propertyName),
                     bodyStart: m.value.loc!.start,
                     bodyEnd: m.value.loc!.end
                 });
@@ -752,7 +759,9 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
                     start: p.loc!.start,
                     end: p.loc!.end,
                     methodName,
-                    componentClass: parentCls
+                    componentClass: parentCls,
+                    reassignments: [],
+                    type: VariableType._any
                 });
             }
         }
@@ -819,7 +828,7 @@ function parseStoreDefProperties(propertyNode: ObjectProperty): string[]
 }
 
 
-function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, lineOffset: number): IVariable[]
+function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, lineOffset: number, params?: IParameter[]): IVariable[]
 {
     const variables: IVariable[] = [];
     if (!text || !methodName) {
@@ -840,6 +849,52 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
     const ast = getMethodAst(objEx, methodName, text);
     traverse(ast,
     {
+        ExpressionStatement(path)
+        {   //
+            // If a method parameter is reset, the intellisense should change
+            // on this variable if editing below the reassignment.  Record the position
+            // of the reassignment and the new variable type it has become
+            //
+            const node = path.node;
+            if (!isAssignmentExpression(node.expression)) {
+                return;
+            }
+            if (isIdentifier(node.expression.left))
+            {
+                if (isCallExpression(node.expression.right))
+                {
+                    try {
+                        const declarator = variableDeclarator(node.expression.left, node.expression.right),
+                              declaration = variableDeclaration("let", [ declarator ]);
+                        declarator.loc = { ...node.expression.right.loc } as SourceLocation;
+                        const variable = parseVariable(declaration, declarator, node.expression.left.name, methodName, parentCls);
+                        if (variable) {
+                            _add(variable);
+                        }
+                    }
+                    catch (e) {
+                        log.error(e);
+                    }
+                }
+                if (params)
+                {
+                    for (const p of params)
+                    {
+                        if (p.name === node.expression.left.name) {
+                            //
+                            // TODO - parameter reassignment
+                            //
+                            // const variable = parseVariable(node.expression.r, dec, dec.id.name, methodName, dec.id.name);
+                            // if (variable) {
+                            //     _add(variable);
+                            //     p.reassignments.push(variable);
+                            // }
+                        }
+                    }
+                }
+            }
+        },
+
         VariableDeclaration(path)
         {
             const node = path.node;
@@ -847,169 +902,185 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
             if (!isVariableDeclaration(node) || !node.declarations || node.declarations.length === 0) {
                 return;
             }
-
+            //
+            // If variables are comma separated then the # of declarations will be > 1
+            //
+            //     e.g.:
+            //
+            //         const me = this,
+            //               view = me.getView();
+            //
             for (const dec of node.declarations)
             {
                 if (!isVariableDeclarator(dec) || !isIdentifier(dec.id)) {
                     return;
                 }
 
-                const varName = dec.id.name;
-                let isNewExp = false,
-                    callee,
-                    args,
-                    callerCls = "";
-
-                if (isNewExpression(dec.init))
-                {
-                    callee = dec.init.callee;
-                    args = dec.init.arguments;
-                    isNewExp = true;
+                const variable = parseVariable(node, dec, dec.id.name, methodName, parentCls);
+                if (variable) {
+                    _add(variable);
                 }
-                else if (isCallExpression(dec.init))
-                {
-                    callee = dec.init.callee;
-                    args = dec.init.arguments;
-                }
-                else if (isThisExpression(dec.init))
-                {
-                    _add({
-                        name: varName,
-                        declaration: DeclarationType[node.kind],
-                        start: node.declarations[0].loc!.start,
-                        end: node.declarations[0].loc!.end,
-                        componentClass: parentCls,
-                        methodName
-                    });
-                    continue;
-                }
-                else if (isAwaitExpression(dec.init))
-                {
-                    if (isCallExpression(dec.init.argument)) {
-                        callee = dec.init.argument.callee;
-                        args = dec.init.argument.arguments;
-                    }
-                    else {
-                        log.error("Unhandled Variable: unexpected await syntax", [["method name", methodName]]);
-                        continue;
-                    }
-                }
-                else {
-                    continue;
-                }
-
-                //
-                // Member expression example:
-                //
-                //     VSCodeExtJS.common.PhysicianDropdown.create
-                //
-                if (isMemberExpression(callee))
-                {
-                    if (!isIdentifier(callee.object))
-                    {   //
-                        // Example:
-                        //
-                        //     VSCodeExtJS.common.PhysicianDropdown.create
-                        //
-                        // The current callee.property is 'create', type 'MemberExpression'.
-                        //
-                        // The current callee.object is 'PhysicianDropdown', type 'MemberExpression'.
-                        //
-                        // Build the fill class name by traversing down each MemberExpression until the
-                        // Identifier is found, in this example 'VSCodeExtJS'.
-                        //
-                        let object: any = callee.object;
-                        if (isMemberExpression(object) && isIdentifier(object.property))
-                        {
-                            let foundObj = true;
-                            callerCls = object.property.name;
-                            object = object.object;
-                            while (isMemberExpression(object))
-                            {
-                                if (isIdentifier(object.property))
-                                {
-                                    callerCls = object.property.name + "." + callerCls;
-                                    object = object.object;
-                                }
-                                else {
-                                    foundObj = false;
-                                    break;
-                                }
-                            }
-                            if (!foundObj) {
-                                continue;
-                            }
-                            //
-                            // Add the base identifier to caller cls name, e.g. "VSCodeExtJS" in the comments
-                            // example.  We looped until we found it but it has not been added yet.
-                            //
-                            if (isIdentifier(object)) {
-                                callerCls = object.name + "." + callerCls;
-                            }
-                        }
-                        else if (isThisExpression(object))
-                        {
-                            callerCls = "this";
-                        }
-                        else {
-                            continue;
-                        }
-                    }
-                    else {
-                        callerCls = callee.object.name;
-                    }
-                }
-
-                //
-                // Filter unsupported properties
-                //
-                if (!isMemberExpression(callee) || !isIdentifier(callee.property) || !callerCls)
-                {
-                    continue;
-                }
-
-                //
-                // Get instance component class
-                //
-                let instCls = "Primitive";
-                const isFramework = callerCls === "Ext";
-                if (isFramework)
-                {
-                    if (!isStringLiteral(args[0])) {
-                        continue;
-                    }
-                    else {
-                        instCls = args[0].value;
-                    }
-                }
-                else {
-                    instCls = callerCls;
-                }
-                //
-                // In the case of "new" keyword, the callee property is the last part of the class name.
-                // Whereas other scenario is "full_classname".create, where "create" is the callee property.
-                //
-                if (isNewExp)
-                {
-                    instCls += ("." + callee.property.name);
-                }
-
-                //
-                // Add thr variable to the component's IVariables array
-                //
-                _add({
-                    name: varName,
-                    declaration: DeclarationType[node.kind],
-                    start: node.declarations[0].loc!.start,
-                    end: node.declarations[0].loc!.end,
-                    componentClass: instCls,
-                    methodName
-                });
             }
         }
     });
 
     return variables;
+}
+
+
+function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varName: string, methodName: string, parentCls: string): IVariable | undefined
+{
+    let isNewExp = false,
+        callee,
+        args,
+        callerCls = "";
+
+    if (isNewExpression(dec.init))
+    {
+        callee = dec.init.callee;
+        args = dec.init.arguments;
+        isNewExp = true;
+    }
+    else if (isCallExpression(dec.init))
+    {
+        callee = dec.init.callee;
+        args = dec.init.arguments;
+    }
+    else if (isThisExpression(dec.init))
+    {
+        return {
+            name: varName,
+            declaration: DeclarationType[node.kind],
+            start: node.declarations[0].loc!.start,
+            end: node.declarations[0].loc!.end,
+            componentClass: parentCls,
+            methodName,
+            reassignments: []
+        };
+    }
+    else if (isAwaitExpression(dec.init))
+    {
+        if (isCallExpression(dec.init.argument)) {
+            callee = dec.init.argument.callee;
+            args = dec.init.argument.arguments;
+        }
+        else {
+            log.error("Unhandled Variable: unexpected await syntax", [["method name", methodName]]);
+            return;
+        }
+    }
+    else {
+        return;
+    }
+
+    //
+    // Member expression example:
+    //
+    //     VSCodeExtJS.common.PhysicianDropdown.create
+    //
+    if (isMemberExpression(callee))
+    {
+        if (!isIdentifier(callee.object))
+        {   //
+            // Example:
+            //
+            //     VSCodeExtJS.common.PhysicianDropdown.create
+            //
+            // The current callee.property is 'create', type 'MemberExpression'.
+            //
+            // The current callee.object is 'PhysicianDropdown', type 'MemberExpression'.
+            //
+            // Build the fill class name by traversing down each MemberExpression until the
+            // Identifier is found, in this example 'VSCodeExtJS'.
+            //
+            let object: any = callee.object;
+            if (isMemberExpression(object) && isIdentifier(object.property))
+            {
+                let foundObj = true;
+                callerCls = object.property.name;
+                object = object.object;
+                while (isMemberExpression(object))
+                {
+                    if (isIdentifier(object.property))
+                    {
+                        callerCls = object.property.name + "." + callerCls;
+                        object = object.object;
+                    }
+                    else {
+                        foundObj = false;
+                        break;
+                    }
+                }
+                if (!foundObj) {
+                    return;
+                }
+                //
+                // Add the base identifier to caller cls name, e.g. "VSCodeExtJS" in the comments
+                // example.  We looped until we found it but it has not been added yet.
+                //
+                if (isIdentifier(object)) {
+                    callerCls = object.name + "." + callerCls;
+                }
+            }
+            else if (isThisExpression(object))
+            {
+                callerCls = "this";
+            }
+            else {
+                return;
+            }
+        }
+        else {
+            callerCls = callee.object.name;
+        }
+    }
+
+    //
+    // Filter unsupported properties
+    //
+    if (!isMemberExpression(callee) || !isIdentifier(callee.property) || !callerCls)
+    {
+        return;
+    }
+
+    //
+    // Get instance component class
+    //
+    let instCls = "Primitive";
+    const isFramework = callerCls === "Ext";
+    if (isFramework)
+    {
+        if (!isStringLiteral(args[0])) {
+            return;
+        }
+        else {
+            instCls = args[0].value;
+        }
+    }
+    else {
+        instCls = callerCls;
+    }
+    //
+    // In the case of "new" keyword, the callee property is the last part of the class name.
+    // Whereas other scenario is "full_classname".create, where "create" is the callee property.
+    //
+    if (isNewExp)
+    {
+        instCls += ("." + callee.property.name);
+    }
+
+    //
+    // Add thr variable to the component's IVariables array
+    //
+    return {
+        name: varName,
+        declaration: DeclarationType[node.kind],
+        start: node.declarations[0].loc!.start,
+        end: node.declarations[0].loc!.end,
+        componentClass: instCls,
+        methodName,
+        reassignments: []
+    };
 }
 
 

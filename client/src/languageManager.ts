@@ -40,7 +40,11 @@ export interface ILineProperties
 
 
 class ExtjsLanguageManager
-{
+{   //
+    // WHen an update requires a re-index, change the name of this flag
+    //
+    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.4";
+
     private isIndexing = false;
     private isValidating = false;
     private fsStoragePath = "";
@@ -1091,10 +1095,10 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexAll(progress?: Progress<any>, project?: string, forceAstIndexing = false, logPad = "", logLevel = 1)
+    private async indexAll(progress?: Progress<any>, project?: string, logPad = "", logLevel = 1)
     {
         log.methodStart("index all", logLevel, logPad, true, [
-            [ "project", project ], [ "forceAstIndexing", forceAstIndexing ], [ "# of configs", this.config.length ]
+            [ "project", project ], [ "# of configs", this.config.length ]
         ]);
 
         const processedDirs: string[] = [],
@@ -1104,11 +1108,10 @@ class ExtjsLanguageManager
         //
         // store.type and different cache paths were added in 0.4, re-index if it hasn't been done already
         //
-        const needsV04ReIndex = storage.get<string>("vscode-extjs-flags-0.4", "false") !== "true";
-        if (needsV04ReIndex) {
+        const needsReIndex = storage.get<string>(this.forceReIndexOnUpdateFlag, "false") !== "true";
+        if (needsReIndex) {
             await commands.executeCommand("vscode-extjs:clearAst", undefined, true, "   ");
         }
-        const needsReIndex = needsV04ReIndex;
 
         const _isIndexed = ((dir: string) =>
         {
@@ -1154,8 +1157,7 @@ class ExtjsLanguageManager
             });
 
             const storageKey = this.getCmpStorageFileName(conf.baseDir, conf.name),
-                  storedComponents = !forceAstIndexing && !forceProjectAstIndexing ?
-                                        await fsStorage.get(storageKey) : undefined;
+                  storedComponents = !forceProjectAstIndexing ? await fsStorage.get(storageKey) : undefined;
             //
             // Get components for this directory from local storage if exists
             //
@@ -1269,7 +1271,7 @@ class ExtjsLanguageManager
             }
         }
 
-        storage.update("vscode-extjs-flags-0.4", "true");
+        storage.update(this.forceReIndexOnUpdateFlag, "true");
 
         log.methodDone("index all", logLevel, logPad, true);
     }
@@ -1413,7 +1415,9 @@ class ExtjsLanguageManager
             try {
                 await this.indexAll(progress, project);
             }
-            catch {}
+            catch (e) {
+                log.error(e);
+            }
         });
         //
         // Validate active js document if there is one
