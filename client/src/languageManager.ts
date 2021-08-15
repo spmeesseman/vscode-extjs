@@ -41,7 +41,7 @@ export interface ILineProperties
 
 class ExtjsLanguageManager
 {   //
-    // WHen an update requires a re-index, change the name of this flag
+    // When an update requires a re-index, change the name of this flag
     //
     private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.4";
 

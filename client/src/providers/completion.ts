@@ -23,6 +23,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 {
     private rightInfoPad = 45;
 
+    //
+    // Properties that shouldn't get displayed in inline Intellisense
+    //
+    private ignoreProps = [
+        "xtype", "extend", "requires", "alias", "alternateClassName", "singleton"
+    ];
 
     provideCompletionItems(document: TextDocument, position: Position)
     {
@@ -33,7 +39,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               range = document.getWordRangeAtPosition(position),
               text = range ? document.getText(range) : "";
 
-        log.methodStart("provide dot completion items", 1, "", true, [["text", text], ["line text", lineText]]);
+        log.methodStart("provide completion items", 1, "", true, [["text", text], ["line text", lineText]]);
 
         //
         // The `getInlineCompletionItems` method handles completion items that lead all other
@@ -80,7 +86,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //     command: { command: "editor.action.triggerSuggest", title: "Re-trigger completions..." }
         // });
 
-        log.methodDone("provide dot completion items", 1, "", true);
+        log.methodDone("provide completion items", 1, "", true);
 
         return completionItems.length > 0 ? completionItems : undefined;
     }
@@ -575,7 +581,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             });
             cmp?.properties.forEach((p: IProperty) =>
             {
-                _add(p, p.name, true, CompletionItemKind.Property, false, extendedCls, p.markdown);
+                if (this.ignoreProps.indexOf(p.name) === -1) {
+                    _add(p, p.name, true, CompletionItemKind.Property, false, extendedCls, p.markdown);
+                }
             });
             //
             // Traverse up the inheritance tree, checking the 'extend' property and if
@@ -640,21 +648,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 for (const oRange of method.objectRanges)
                 {
                     if (isPositionInRange(position, toVscodeRange(oRange.start, oRange.end)))
-                    {   //
-                        // Add inner object class properties if there's an xtype label defined on it
-                        //
-                        // Example, consider the process of writing of the following:
-                        //
-                        //     const userDd = Ext.create({
-                        //         xtype: "userdropdowns",
-                        //         fieldLabel: "label",
-                        //         user
-                        //
-                        // While writing the above, at the current end of string, intellisense should pop up
-                        // all properties/configs of the xtype 'userdropdowns' that start with the text
-                        // 'user', i.e. userName, etc
-                        //
-                        _addObjectConfigs(oRange);
+                    {
+                        let added = false;
                         //
                         // Method variable parameter object expressions
                         //
@@ -663,9 +658,30 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                             if (isPositionInRange(position, toVscodeRange(v.start, v.end)))
                             {
                                 const cmp = extjsLangMgr.getComponent(v.componentClass, thisCmp.nameSpace, false, logPad + "   ", logLevel + 1);
-                                _addProps(cmp);
+                                if (cmp) {
+                                    _addProps(cmp);
+                                    added = true;
+                                }
+                                return false; // break forEach()
                             }
                         });
+                        if (!added)
+                        {   //
+                            // Add inner object class properties if there's an xtype label defined on it
+                            //
+                            // Example, consider the process of writing of the following:
+                            //
+                            //     const userDd = Ext.create({
+                            //         xtype: "userdropdowns",
+                            //         fieldLabel: "label",
+                            //         user
+                            //
+                            // While writing the above, at the current end of string, intellisense should pop up
+                            // all properties/configs of the xtype 'userdropdowns' that start with the text
+                            // 'user', i.e. userName, etc
+                            //
+                            _addObjectConfigs(oRange);
+                        }
                         break;
                     }
                 }
@@ -791,6 +807,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
     private getXtypeCompletionItems(document: TextDocument, position: Position, nameSpace: string, logPad: string, logLevel: number, addFn: (arg: IComponent) => void)
     {
+        log.methodStart("get xtype completion Items", logLevel, logPad);
+
         const completionItems: CompletionItem[] = [],
               xtypes = extjsLangMgr.getXtypeNames(),
               cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath),
@@ -798,7 +816,43 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               addedItems: string[] = [];
         let hasXtype = "";
 
-        if (range && cmp && isPositionInObject(position, cmp)) // && getMethodByPosition(position, cmp))
+        if (!cmp) {
+            log.write("   get xtype component not found");
+            log.methodDone("get xtype completion Items", logLevel, logPad);
+            return completionItems;
+        }
+
+        const addThisExtendProps = () =>
+        {
+            let cmp2 = extjsLangMgr.getComponent(cmp.componentClass, cmp.nameSpace, false, logPad + "   ", logLevel + 1);
+            if (cmp2 && cmp2.extend)
+            {
+                const ns = extjsLangMgr.getNamespaceFromClass(cmp2.extend);
+                cmp2 = extjsLangMgr.getComponent(cmp2.extend, ns, false, logPad + "   ", logLevel + 1);
+                if (cmp2) {
+                    addFn(cmp2);
+                }
+            }
+        };
+
+        //
+        // If we aren't within a parsed `objectRange`, then this is the main Ext.define.
+        // Add properties and configs from the extended class.
+        //
+        if (!isPositionInObject(position, cmp))
+        {
+            addThisExtendProps();
+        }
+
+        //
+        // Attempt to determine if an object defines an `xtype` and if it does, add it's
+        // properties and configs to the completion list.
+        //
+        // Note that if it was determined that an object was a parameter to a call expression
+        // i.e. x.y.z.create or Ext.create("x.y.x", ...) then this method will not have been
+        // called for that object.
+        //
+        else if (range)
         {   //
             // Check to see if there's already an xtype definition within the object block
             //
@@ -826,25 +880,36 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // so we'll use the ast parser here
                 //
                 objectRangeText = objectRangeText.replace(objectRangeTextCut, "").trim();
-                if (objectRange.type === ObjectRangeType.MethodParameterArray || objectRange.type === ObjectRangeType.MethodParameterObject) {
-                    objectRangeText = "a: [" + objectRangeText + "]";
-                }
 
-                const astNode = ast.getLabeledStatementAst(objectRangeText).program.body[0];
-                if (isLabeledStatement(astNode) && isExpressionStatement(astNode.body) && isArrayExpression(astNode.body.expression))
-                {
-                    for (const e of astNode.body.expression.elements)
+                if (objectRange.type === ObjectRangeType.PropertyObject || objectRange.type === ObjectRangeType.PropertyArray)
+                {   //
+                    // This is the main Ext.define. add properties and configs from the extended class.
+                    //
+                    addThisExtendProps();
+                }
+                else
+                {   //
+                    // If this is a method parameter, then the text is a plain object { ... }.  Wrap...
+                    //
+                    if (objectRange.type === ObjectRangeType.MethodParameterArray || objectRange.type === ObjectRangeType.MethodParameterObject) {
+                        objectRangeText = "a: [" + objectRangeText + "]";
+                    }
+                    const astNode = ast.getLabeledStatementAst(objectRangeText).program.body[0];
+                    if (isLabeledStatement(astNode) && isExpressionStatement(astNode.body) && isArrayExpression(astNode.body.expression))
                     {
-                        if (isObjectExpression(e) && e.loc)
+                        for (const e of astNode.body.expression.elements)
                         {
-                            const relativePosition = new Position(position.line - objectRange.start.line, position.character);
-                            if (toVscodeRange(e.loc.start, e.loc.end).contains(relativePosition))
+                            if (isObjectExpression(e) && e.loc)
                             {
-                                for (const p of e.properties)
+                                const relativePosition = new Position(position.line - objectRange.start.line, position.character);
+                                if (toVscodeRange(e.loc.start, e.loc.end).contains(relativePosition))
                                 {
-                                    if (isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype" && isStringLiteral(p.value))
+                                    for (const p of e.properties)
                                     {
-                                        hasXtype = p.value.value;
+                                        if (isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "xtype" || p.key.name === "extend") && isStringLiteral(p.value))
+                                        {
+                                            hasXtype = p.value.value;
+                                        }
                                     }
                                 }
                             }
@@ -854,14 +919,17 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
 
             if (hasXtype)
-            {
+            {   //
+                // Add the objects `xtype` properties and configs
+                //
                 const cls = extjsLangMgr.getMappedClass(hasXtype, nameSpace, ComponentType.Widget),
                       xComponent = cls ? extjsLangMgr.getComponent(cls, nameSpace, false, logPad + "   ", logLevel + 1) : undefined;
                 if (xComponent) {
                     addFn(xComponent);
                 }
-            }
-            else {
+            }     //
+            else //  An `xtype` is not defined on this object, add the complete `xtype` list
+            {   //
                 const eol = documentEol(document);
                 for (const xtype of xtypes)
                 {
@@ -894,6 +962,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         }
 
+        log.methodDone("get xtype completion Items", logLevel, logPad);
         return completionItems;
     }
 

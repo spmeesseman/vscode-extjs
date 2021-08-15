@@ -14,11 +14,10 @@ import {
 } from "@babel/types";
 
 /**
- * Properties that wont display in intellisense
+ * Possible object properties that shouldn't be parsed as normal properties
  */
 const ignoreProperties = [
-    "xtype", "extend", "requires", "alias", "alternateClassName", "singleton", "columns", "mixins",
-    "config", "items", "dockedItems", "listeners", "requires", "privates", "statics", "alias", "alternateClassName"
+    "config", "requires", "privates", "statics", "uses"
 ];
 
 export const widgetToComponentClassMapping: { [nameSpace: string]: { [widget: string]: string | undefined }} = {};
