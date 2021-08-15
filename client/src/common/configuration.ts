@@ -5,7 +5,7 @@ import {
     WorkspaceConfiguration, ConfigurationTarget, Uri
 } from "vscode";
 
-const extensionName = "extjsLangSvr";
+const extensionName = "extjsIntellisense";
 
 class Configuration
 {

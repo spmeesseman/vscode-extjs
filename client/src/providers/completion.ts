@@ -850,7 +850,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 }
             }
 
-            // if ((/\bxtype: *["']{1}([A-Z0-9-_]+)["']{1} *,{0,1} *$/gmi).test(objectRangeTextCut))
             if (hasXtype)
             {
                 const cls = extjsLangMgr.getMappedClass(hasXtype, nameSpace, ComponentType.Widget),
@@ -859,8 +858,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     addFn(xComponent);
                 }
             }
-            else
-            {
+            else {
                 const eol = documentEol(document);
                 for (const xtype of xtypes)
                 {
@@ -870,7 +868,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                               lineText = document.lineAt(position).text.substr(0, position.character); // ,
                               // leftPad = lineText.replace(document.getText(range), "");
                         // xtypeCompletion.insertText = `xtype: "${xtype}",${eol}${leftPad}`;
-                        xtypeCompletion.insertText = `xtype: "${xtype}",${eol}`;
+                        xtypeCompletion.insertText = `xtype: "${xtype}",${configuration.get<boolean>("intellisenseXtypeEol", true) ? eol : ""}`;
                         xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
                         //
                         // If user has already typed in `xtype[: '""]` then do an additional edit and remove

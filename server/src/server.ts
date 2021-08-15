@@ -97,7 +97,7 @@ connection.onInitialized(async () =>
     {   //
         // Register for all configuration changes.
         //
-        await connection.client.register(DidChangeConfigurationNotification.type, { section: "extjsLangSvr" });
+        await connection.client.register(DidChangeConfigurationNotification.type, { section: "extjsIntellisense" });
     }
     // if (hasWorkspaceFolderCapability)
     // {
@@ -113,7 +113,7 @@ connection.onInitialized(async () =>
 connection.onDidChangeConfiguration(change =>
 {
     globalSettings = <ISettings>(
-        (change.settings?.extjsLangSvr || defaultSettings)
+        (change.settings?.extjsIntellisense || defaultSettings)
     );
 	// documents.all().forEach((textDocument) => {
     //     validateExtJsFile(textDocument, connection, hasDiagnosticRelatedInformationCapability);

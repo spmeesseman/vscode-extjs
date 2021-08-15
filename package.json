@@ -3,7 +3,7 @@
     "version": "0.3.1",
     "displayName": "ExtJs Intellisense",
     "author": "Scott Meesseman",
-    "description": "ExtJS Language Server - Intellisense, code completion, and more",
+    "description": "ExtJS Intellisense - Code completion and more",
     "icon": "res/icon.png",
     "engines": {
         "vscode": "^1.44.0"
@@ -142,22 +142,27 @@
                 "enablement": "none!=none"
             }
         ],
+        "configurationDefaults": {
+            "[javascript]": {
+              "editor.quickSuggestions": true
+            }
+        },
         "configuration": {
-            "id": "extjsLangSvr",
+            "id": "extjsIntellisense",
             "type": "object",
-            "title": "ExtJs Language Server",
+            "title": "ExtJs Intellisense",
             "properties": {
-                "extjsLangSvr.debugClient": {
+                "extjsIntellisense.debugClient": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Turn on client logging."
+                    "markdownDescription": "Turn on client logging at the specified `#extjsIntellisense.debugLevel#`."
                 },
-                "extjsLangSvr.debugServer": {
+                "extjsIntellisense.debugServer": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Turn on server logging."
+                    "markdownDescription": "Turn on client logging at the specified `#extjsIntellisense.debugLevel#`."
                 },
-                "extjsLangSvr.debugLevel": {
+                "extjsIntellisense.debugLevel": {
                     "type": "number",
                     "enum": [
                         1,
@@ -167,13 +172,10 @@
                         5
                     ],
                     "default": 1,
-                    "description": "Set debug verbosity (1 - Low / 5 - High)."
+                    "markdownDescription": "Set logging verbosity - `1 Low | 5 High`."
                 },
-                "extjsLangSvr.exclude": {
+                "extjsIntellisense.exclude": {
                     "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
                     "default": [
                         "**/.vscode-test/**",
                         "**/bin/**",
@@ -181,6 +183,7 @@
                         "**/CompiledOutput/**",
                         "**/dist/**",
                         "**/doc/**",
+                        "**/node_modules/**",
                         "**/out/**",
                         "**/output/**",
                         "**/packages/**",
@@ -195,20 +198,18 @@
                         "**/vendor/**",
                         "**/work/**"
                     ],
-                    "description": "Paths (glob) to exclude / ignore"
+                    "markdownDescription": "Paths (glob patterns) to exclude / ignore, applies to `#extjsIntellisense.include#` only"
                 },
-                "extjsLangSvr.include": {
-                    "type": [
-                        "array"
-                    ],
+                "extjsIntellisense.include": {
+                    "type": "array",
                     "items": {
                         "type": "string"
                     },
                     "default": [],
                     "title": "Include",
-                    "description": "Directories to search when indexing ExtJs files"
+                    "description": "Additional directories to search when indexing files"
                 },
-                "extjsLangSvr.ignoreErrors": {
+                "extjsIntellisense.ignoreErrors": {
                     "type": "array",
                     "items": {
                         "type": "object"
@@ -216,26 +217,31 @@
                     "default": [],
                     "description": "Errors that are excluded from validation, globally or for a document only"
                 },
-                "extjsLangSvr.intellisenseIncludeDeprecated": {
+                "extjsIntellisense.intellisenseIncludeDeprecated": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Include deprecated methods, properties, and configs in Intellisense.  Note these properties will be tagged"
+                    "markdownDescription": "Include `deprecated` items in the completion items list.  Note these properties will be tagged"
                 },
-                "extjsLangSvr.intellisenseIncludePrivate": {
+                "extjsIntellisense.intellisenseIncludePrivate": {
                     "type": "boolean",
                     "default": false,
-                    "description": "Include private methods, properties, and configs in Intellisense"
+                    "markdownDescription": "Include `private` items in the completion items list"
                 },
-                "extjsLangSvr.frameworkDirectory": {
-                    "type": "string",
-                    "description": "Directory to the ExtJS Framework.  If not specified, the fist framework directory found by the Syntax Parser will be used."
-                },
-                "extjsLangSvr.validateXTypes": {
+                "extjsIntellisense.intellisenseXtypeEol": {
                     "type": "boolean",
                     "default": true,
-                    "description": "Validate that all required classes are included in the 'requires' array for all xtype references found"
+                    "markdownDescription": "Add an end of line character when an `XType` selection is made in the completion list."
                 },
-                "extjsLangSvr.validationDelay": {
+                "extjsIntellisense.frameworkDirectory": {
+                    "type": "string",
+                    "description": "Directory to the ExtJS Framework. If not specified, the first framework directory found by the Indexer will be used."
+                },
+                "extjsIntellisense.validateXTypes": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "Validate that all required classes are included in the `requires` array for all xtype references"
+                },
+                "extjsIntellisense.validationDelay": {
                     "type": "number",
                     "default": 1250,
                     "enum": [
@@ -249,7 +255,7 @@
                         1750,
                         2000
                     ],
-                    "description": "The time (in ms) to allow between keystrokes before validation is triggered."
+                    "description": "The time (in ms) to allow between keystrokes before re-validation is triggered."
                 }
             }
         }

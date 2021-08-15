@@ -1281,16 +1281,31 @@ class ExtjsLanguageManager
 
         const uriFile = Uri.file(fsPath),
               wsPath = workspace.getWorkspaceFolder(uriFile)?.uri.fsPath;
+        let skipExcludeCheck = false;
 
         //
         // Exclude configured build dir from workspace.json
         //
-        for (const c of this.config) {
-            if (c.buildDir && wsPath) {
-                const buildUriPath = Uri.file(path.join(wsPath, c.buildDir)).path;
-                if (uriFile.path.includes(buildUriPath)) {
-                    log.write(logPad + "Excluded by workspace.json build path");
-                    return;
+        if (wsPath)
+        {
+            for (const c of this.config) {
+                if (c.buildDir) {
+                    const buildUriPath = Uri.file(path.join(wsPath, c.buildDir)).path;
+                    if (uriFile.path.includes(buildUriPath)) {
+                        log.write(logPad + "Excluded by workspace.json build path");
+                        return;
+                    }
+                }
+                if (c.classpath) {
+                    const classPaths = typeof(c.classpath) === "string" ? [ c.classpath ] : c.classpath;
+                    for (const classPath of classPaths)
+                    {
+                        const cpUriPath = Uri.file(path.join(wsPath, classPath)).path;
+                        if (uriFile.path.includes(cpUriPath)) {
+                            skipExcludeCheck = true;
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -1299,7 +1314,7 @@ class ExtjsLanguageManager
         // Exclude Application/workspace/user configured paths
         // Paths must be glob pattern e.g. **/src/**
         //
-        if (isExcluded(uriFile.path)) {
+        if (!skipExcludeCheck && isExcluded(uriFile.path)) {
             log.write(logPad + "Excluded by configured exclude path(s)");
             return;
         }
@@ -1744,7 +1759,7 @@ class ExtjsLanguageManager
 
     private async processSettingsChange(e: ConfigurationChangeEvent)
     {
-        if (e.affectsConfiguration("extjsLangSvr.ignoreErrors"))
+        if (e.affectsConfiguration("extjsIntellisense.ignoreErrors"))
         {
             this.reIndexTaskId = undefined;
             const document = window.activeTextEditor?.document,
