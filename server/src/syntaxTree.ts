@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRange, IRequire, IAlias
+    DeclarationType, IParameter, utils, VariableType, IRange, IRequire, IAlias, ObjectRangeType, IObjectRange
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
@@ -17,7 +17,8 @@ import {
  * Properties that wont display in intellisense
  */
 const ignoreProperties = [
-    "config", "items", "dockedItems", "listeners", "requires", "privates", "statics", "alias", "alternateClassName", "columns", "mixins"
+    "xtype", "extend", "requires", "alias", "alternateClassName", "singleton", "columns", "mixins",
+    "config", "items", "dockedItems", "listeners", "requires", "privates", "statics", "alias", "alternateClassName"
 ];
 
 export const widgetToComponentClassMapping: { [nameSpace: string]: { [widget: string]: string | undefined }} = {};
@@ -247,7 +248,8 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             propertyObjects.forEach((o) => {
                                 componentInfo.objectRanges.push({
                                     start: o.loc!.start,
-                                    end: o.loc!.end
+                                    end: o.loc!.end,
+                                    type: ObjectRangeType.PropertyObject
                                 });
                             });
                         }
@@ -255,6 +257,9 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         if (propertyMethod && propertyMethod.length)
                         {
                             componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], !isFramework ? text : undefined, componentInfo.componentClass));
+                            componentInfo.methods.forEach((m) => {
+                                componentInfo.objectRanges.push(...m.objectRanges);
+                            });
                         }
                         logProperties("methods", componentInfo.methods);
 
@@ -515,9 +520,9 @@ function parseExtend(propertyExtend: ObjectProperty): string | undefined
 }
 
 
-function getObjectRanges(m: ObjectProperty): IRange[]
+function getObjectRanges(m: ObjectProperty): IObjectRange[]
 {
-    const objectRanges: IRange[] = [];
+    const objectRanges: IObjectRange[] = [];
 
     if (isFunctionExpression(m.value))
     {
@@ -538,7 +543,8 @@ function getObjectRanges(m: ObjectProperty): IRange[]
                                 {
                                     objectRanges.push({
                                         start: a.loc!.start,
-                                        end: a.loc!.end
+                                        end: a.loc!.end,
+                                        type: ObjectRangeType.MethodParameterObject
                                     });
                                 }
                             }
@@ -554,7 +560,8 @@ function getObjectRanges(m: ObjectProperty): IRange[]
                         {
                             objectRanges.push({
                                 start: a.loc!.start,
-                                end: a.loc!.end
+                                end: a.loc!.end,
+                                type: ObjectRangeType.MethodParameterObject
                             });
                         }
                     }

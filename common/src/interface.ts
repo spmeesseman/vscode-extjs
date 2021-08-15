@@ -18,6 +18,16 @@ export enum DeclarationType
 }
 
 
+export enum ObjectRangeType
+{
+    MethodParameterArray,
+    MethodParameterObject,
+    MethodParameterVariable,
+    PropertyArray,
+    PropertyObject
+}
+
+
 export enum VariableType
 {
     _any,
@@ -33,7 +43,6 @@ export interface IExtJsBase extends IRange
 {
     componentClass: string;
     name: string;
-    fsPath?: string;
 }
 
 
@@ -56,7 +65,7 @@ export interface IComponent extends IExtJsBase
     methods: IMethod[];
     mixins: string[];
     nameSpace: string;
-    objectRanges: IRange[];
+    objectRanges: IObjectRange[];
     private?: boolean;
     privates: (IProperty | IMethod)[];
     properties: IProperty[];
@@ -113,10 +122,16 @@ export interface IMethod extends IProperty
 {
     bodyStart: IPosition;
     bodyEnd: IPosition;
-    objectRanges: IRange[];
+    objectRanges: IObjectRange[];
     params: IParameter[];
     variables: IVariable[];
     returns: any;
+}
+
+
+export interface IObjectRange extends IRange
+{
+    type: ObjectRangeType;
 }
 
 
