@@ -2,7 +2,7 @@
 import { Connection, Diagnostic, DiagnosticSeverity, Range, DocumentUri } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, componentClassToWidgetsMapping, widgetToComponentClassMapping } from "./syntaxTree";
-import { IPosition, IComponent, utils, ErrorCode, IRequire } from "../../common";
+import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses } from "../../common";
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
 import * as log from "./log";
@@ -126,7 +126,12 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		//
 		// Validate requires array
 		//
-		validateRequires(cmp, diagRelatedInfoCapability, textObj, diagnostics);
+		validateRequiredClasses(cmp.requires, cmp, diagRelatedInfoCapability, textObj, diagnostics);
+
+		//
+		// Validate uses array
+		//
+		validateRequiredClasses(cmp.uses, cmp, diagRelatedInfoCapability, textObj, diagnostics);
 
 		//
 		// Validate method variables
@@ -306,14 +311,14 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 }
 
 
-function validateRequires(cmp: IComponent, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp: IComponent, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
-	const cmpRequires = cmp.requires,
-		  requires: IRequire[] = [],
-		  fsPath = URI.file(document.uri).fsPath;
 	if (!cmpRequires) {
 		return;
 	}
+
+	const requires: IRequire[] = [],
+		  fsPath = URI.file(document.uri).fsPath;
 
 	requires.push(...(cmpRequires?.value || []));
 

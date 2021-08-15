@@ -3,7 +3,7 @@ import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
-    IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
+    ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
     DeclarationType, IParameter, utils, VariableType, IRange, IRequire, IAlias, ObjectRangeType, IObjectRange
 } from "../../common";
 import {
@@ -46,22 +46,17 @@ export async function loadExtJsComponent(ast: string | undefined)
 
 export async function parseExtJsFile(fsPath: string, text: string, project?: string, isFramework?: boolean)
 {
-    let ast: Node;
+    const components: IComponent[] = [],
+          nodeAst = ast.getComponentsAst(text, log.error);
 
-    try {
-        ast = parse(text);
+    if (!nodeAst) {
+        return components;
     }
-    catch (ex) {
-        log.error(ex);
-        return [];
-    }
-
-    const components: IComponent[] = [];
 
     //
     // Construct our syntax tree to be able to serve the goods
     //
-    traverse(ast,
+    traverse(nodeAst,
     {
         CallExpression(path)
         {
@@ -132,6 +127,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         log.value("   Component", args[0].value, 1);
 
                         const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
+                        const propertyUses = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "uses");
                         const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
                         const propertyAlternateCls = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alternateClassName");
                         const propertyXtype = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "xtype");
@@ -156,11 +152,21 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         if (isObjectProperty(propertyRequires))
                         {
                             componentInfo.requires = {
-                                value: parseRequires(propertyRequires),
+                                value: parseStringArray(propertyRequires),
                                 start: propertyRequires.loc!.start,
                                 end: propertyRequires.loc!.end,
                             };
                             logProperties("requires", componentInfo.requires?.value);
+                        }
+
+                        if (isObjectProperty(propertyUses))
+                        {
+                            componentInfo.uses = {
+                                value: parseStringArray(propertyUses),
+                                start: propertyUses.loc!.start,
+                                end: propertyUses.loc!.end,
+                            };
+                            logProperties("uses", componentInfo.uses?.value);
                         }
 
                         if (isObjectProperty(propertyMixins))
@@ -714,12 +720,12 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
 }
 
 
-function parseRequires(propertyRequires: ObjectProperty)
+function parseStringArray(property: ObjectProperty)
 {
-    const requires: IRequire[] = [];
-    if (isArrayExpression(propertyRequires.value))
+    const values: IRequire[] = [];
+    if (isArrayExpression(property.value))
     {
-        propertyRequires.value.elements
+        property.value.elements
             .reduce<IRequire[]>((p, it) => {
             if (it?.type === "StringLiteral") {
                 p.push({
@@ -729,9 +735,9 @@ function parseRequires(propertyRequires: ObjectProperty)
                 });
             }
             return p;
-        }, requires);
+        }, values);
     }
-    return requires;
+    return values;
 }
 
 

@@ -73,6 +73,7 @@ export interface IComponent extends IExtJsBase
     since?: string;
     statics: (IProperty | IMethod)[];
     types: string[];
+    uses?: IRequires;
     widgets: string[];
     xtypes: IXtype[];
 }
@@ -190,6 +191,12 @@ export interface IRequire
     start: IPosition | undefined;
     end: IPosition | undefined;
 }
+
+
+export interface IUse extends IRequire {}
+
+
+export interface IUses extends IRequires {}
 
 
 export interface IVariable extends IExtJsBase

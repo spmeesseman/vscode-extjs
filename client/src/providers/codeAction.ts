@@ -5,6 +5,7 @@ import {
     TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind, DiagnosticRelatedInformation
 } from "vscode";
 import { ErrorCode } from "../../../common";
+import { quoteChar } from "../common/clientUtils";
 
 
 class ExtjsCodeActionProvider implements CodeActionProvider
@@ -103,19 +104,20 @@ function addSuggestedActions(relatedInformation: DiagnosticRelatedInformation[],
         if (matches)
         {
             const suggestions = matches[1].replace(/ /g, "").split(","),
+                quote = quoteChar(),
                 addSuggest = [];
 
 
             for (const suggestion of suggestions)
             {
                 addSuggest.push({
-                    title: `Replace declared ${label} with '${suggestion}'`,
+                    title: `Replace declared ${label} with ${quote}${suggestion}${quote}`,
                     isPreferred: true,
                     kind: CodeActionKind.QuickFix,
                     command: {
-                        title: `Replace declared ${label} with '${suggestion}'`,
+                        title: `Replace declared ${label} with ${quote}${suggestion}${quote}`,
                         command: "vscode-extjs:replaceText",
-                        arguments: [ '"' + suggestion + '"', range ]
+                        arguments: [ `${quote}${suggestion}${quote}`, range ]
                     }
                 });
             }

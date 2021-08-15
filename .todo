@@ -3,6 +3,7 @@
 Diagnostics:
 
 	☐ dot notation.  pretty much same validation as for requires[] but diff in code blocks (warning vs. error)
+	✔ 'uses' property.  same validation as for requires[] @done(21-08-15 18:46)
 	☐ packages not @sencha should have xtype validation.  currently not validated if namespace name begins w Ext
 	☐ (warning) for deprecated property/config/method/class use
 	✔ Requires - marks onvalid when a class reference is to an alternateClassName @done(21-08-13 15:33)
