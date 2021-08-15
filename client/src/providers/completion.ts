@@ -822,8 +822,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             return completionItems;
         }
 
-        const addThisExtendProps = () =>
-        {
+        //
+        // Check if we aren't within a parsed `objectRange`, if we are not, then this is the
+        // main Ext.define object.
+        //
+        if (!isPositionInObject(position, cmp))
+        {   //
+            // Add properties and configs from the extended class.
+            //
             let cmp2 = extjsLangMgr.getComponent(cmp.componentClass, cmp.nameSpace, false, logPad + "   ", logLevel + 1);
             if (cmp2 && cmp2.extend)
             {
@@ -833,15 +839,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     addFn(cmp2);
                 }
             }
-        };
-
-        //
-        // If we aren't within a parsed `objectRange`, then this is the main Ext.define.
-        // Add properties and configs from the extended class.
-        //
-        if (!isPositionInObject(position, cmp))
-        {
-            addThisExtendProps();
         }
 
         //
@@ -858,7 +855,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             const objectRange = getObjectRangeByPosition(position, cmp);
             if (objectRange)
-            {
+            {   //
+                // We'll be using the AST parser here, so remove the current line from the text that
+                // will be sent to the parser, since it'll probably be invalid syntax during an edit.
+                // Remove the current line and store the result in objectRangeText` for AST parsing.
+                //
                 if (objectRange.type === ObjectRangeType.MethodParameterVariable) {
                     return completionItems;
                 }
@@ -868,48 +869,39 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 let idx = 0, tIdx = -1,
                     objectRangeText = document.getText(vsRange),
                     objectRangeTextCut = objectRangeText;
-
                 for (let i = 0; i <= innerPositionLine; i++) {
                     tIdx = objectRangeText.indexOf(eol, idx) + eol.length;
                     objectRangeTextCut = objectRangeText.substring(idx, tIdx);
                     idx = tIdx;
                 }
+                objectRangeText = objectRangeText.replace(objectRangeTextCut, "").trim();
                 //
                 // Only show xtype completion if an xtype is not already defined within the current object
                 // block... before or after the current line otherwise this would have been a little easier,
                 // so we'll use the ast parser here
                 //
-                objectRangeText = objectRangeText.replace(objectRangeTextCut, "").trim();
-
-                if (objectRange.type === ObjectRangeType.PropertyObject || objectRange.type === ObjectRangeType.PropertyArray)
-                {   //
-                    // This is the main Ext.define. add properties and configs from the extended class.
-                    //
-                    addThisExtendProps();
+                if (objectRange.type === ObjectRangeType.MethodParameterArray || objectRange.type === ObjectRangeType.MethodParameterObject) {
+                    objectRangeText = "a: [" + objectRangeText + "]";
                 }
-                else
-                {   //
-                    // If this is a method parameter, then the text is a plain object { ... }.  Wrap...
-                    //
-                    if (objectRange.type === ObjectRangeType.MethodParameterArray || objectRange.type === ObjectRangeType.MethodParameterObject) {
-                        objectRangeText = "a: [" + objectRangeText + "]";
-                    }
-                    const astNode = ast.getLabeledStatementAst(objectRangeText).program.body[0];
-                    if (isLabeledStatement(astNode) && isExpressionStatement(astNode.body) && isArrayExpression(astNode.body.expression))
+                //
+                // Use AST parser to determine if there's a defined `xtype` within the object, either
+                // before or after the current position.
+                //
+                const astNode = ast.getLabeledStatementAst(objectRangeText).program.body[0];
+                if (isLabeledStatement(astNode) && isExpressionStatement(astNode.body) && isArrayExpression(astNode.body.expression))
+                {
+                    for (const e of astNode.body.expression.elements)
                     {
-                        for (const e of astNode.body.expression.elements)
+                        if (isObjectExpression(e) && e.loc)
                         {
-                            if (isObjectExpression(e) && e.loc)
+                            const relativePosition = new Position(position.line - objectRange.start.line, position.character);
+                            if (toVscodeRange(e.loc.start, e.loc.end).contains(relativePosition))
                             {
-                                const relativePosition = new Position(position.line - objectRange.start.line, position.character);
-                                if (toVscodeRange(e.loc.start, e.loc.end).contains(relativePosition))
+                                for (const p of e.properties)
                                 {
-                                    for (const p of e.properties)
+                                    if (isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "xtype" || p.key.name === "extend") && isStringLiteral(p.value))
                                     {
-                                        if (isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "xtype" || p.key.name === "extend") && isStringLiteral(p.value))
-                                        {
-                                            hasXtype = p.value.value;
-                                        }
+                                        hasXtype = p.value.value;
                                     }
                                 }
                             }
