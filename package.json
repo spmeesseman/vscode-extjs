@@ -236,6 +236,12 @@
                     "type": "string",
                     "description": "Directory to the ExtJS Framework. If not specified, the first framework directory found by the Indexer will be used."
                 },
+                "extjsIntellisense.quoteCharacter": {
+                    "type": "string",
+                    "default": "Single",
+                    "markdownDescription": "The quotation character to use. `Single | Double`",
+                    "enum": [ "Double", "Single" ]
+                },
                 "extjsIntellisense.validateXTypes": {
                     "type": "boolean",
                     "default": true,
@@ -244,18 +250,8 @@
                 "extjsIntellisense.validationDelay": {
                     "type": "number",
                     "default": 1250,
-                    "enum": [
-                        250,
-                        400,
-                        500,
-                        750,
-                        1000,
-                        1250,
-                        1500,
-                        1750,
-                        2000
-                    ],
-                    "description": "The time (in ms) to allow between keystrokes before re-validation is triggered."
+                    "description": "The time (in ms) to allow between keystrokes before re-validation is triggered.",
+                    "enum": [ 250, 400, 500, 750, 1000, 1250, 1500, 1750, 2000 ]
                 }
             }
         }

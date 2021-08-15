@@ -11,7 +11,8 @@ import {
     TextDocument, CompletionItemKind, window, EndOfLine, Range, TextEdit
 } from "vscode";
 import {
-    getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange, isComponent, getObjectRangeByPosition, documentEol
+    getMethodByPosition, isPositionInObject, isPositionInRange, toVscodeRange, isComponent,
+    getObjectRangeByPosition, documentEol, quoteChar
 } from "../common/clientUtils";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, isObjectProperty, isExpressionStatement,
@@ -513,7 +514,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               thisPath = window.activeTextEditor?.document?.uri.fsPath,
               thisCmp = thisPath ? extjsLangMgr.getComponentByFile(thisPath, logPad + "   ", logLevel + 1) : undefined,
               isInObject = thisCmp ? isPositionInObject(position, thisCmp) : undefined,
-              method = thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
+              method = thisCmp ? getMethodByPosition(position, thisCmp) : undefined,
+              quote = quoteChar();
 
         if (!thisCmp) {
             return completionItems;
@@ -603,21 +605,17 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         };
 
-        const _addObjectConfigs = (objectRange: IRange | undefined) =>
-        {   //
-            // We have to find the object block that contains the current position, so that we
-            // can look at the xtype within that block, and display the appropriate config items
-            //
-            if (objectRange)
-            {
-                completionItems.push(...this.getXtypeCompletionItems(document, position, thisCmp.nameSpace, logPad + "   ", logLevel, _addProps));
-            }
-        };
-
+        //
+        // Check special property cases
+        //
+        if (lineText && lineText.match(new RegExp(`xtype\\s*:\\s*${quote}${quote}$`)))
+        {
+            completionItems.push(...this.getXtypeCompletionItems(document, position, thisCmp.nameSpace, logPad + "   ", logLevel, _addProps));
+        }
         //
         // Depending on the current position, provide the completion items...
         //
-        if (method && !isInObject)
+        else if (method && !isInObject)
         {   //
             // We're in a function, and not within an object expression
             //
@@ -665,7 +663,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                                 return false; // break forEach()
                             }
                         });
-                        if (!added)
+                        if (!added && oRange)
                         {   //
                             // Add inner object class properties if there's an xtype label defined on it
                             //
@@ -680,7 +678,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                             // all properties/configs of the xtype 'userdropdowns' that start with the text
                             // 'user', i.e. userName, etc
                             //
-                            _addObjectConfigs(oRange);
+                            completionItems.push(...this.getXtypeCompletionItems(document, position, thisCmp.nameSpace, logPad + "   ", logLevel, _addProps));
                         }
                         break;
                     }
@@ -702,7 +700,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // all properties/configs of the xtype 'textfield' that start with the text 'max',
                 // i.e. maxLength, etc
                 //
-                _addObjectConfigs(thisCmp ? getObjectRangeByPosition(position, thisCmp) : undefined);
+                if (getObjectRangeByPosition(position, thisCmp)) {
+                    completionItems.push(...this.getXtypeCompletionItems(document, position, thisCmp.nameSpace, logPad + "   ", logLevel, _addProps));
+                }
             }
         }
 
@@ -919,14 +919,16 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }     //
             else //  An `xtype` is not defined on this object, add the complete `xtype` list
             {   //
-                const eol = documentEol(document);
+                const eol = documentEol(document),
+                      quote = quoteChar();
                 for (const xtype of xtypes)
                 {
                     if (!addedItems.includes(xtype))
                     {
                         const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`),
-                              lineText = document.lineAt(position).text.substr(0, position.character);
-                        xtypeCompletion.insertText = `xtype: "${xtype}",${configuration.get<boolean>("intellisenseXtypeEol", true) ? eol : ""}`;
+                              lineText = document.lineAt(position).text.trimRight(),
+                              useXTypeEol = configuration.get<boolean>("intellisenseXtypeEol", true);
+                        xtypeCompletion.insertText = `xtype: ${quote}${xtype}${quote},${useXTypeEol ? eol : ""}`;
                         xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
                         //
                         // If user has already typed in `xtype[: '""]` then do an additional edit and remove
@@ -935,12 +937,17 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                         if (lineText.includes("xtype"))
                         {
                             const xTypeIdx = lineText.indexOf("xtype"),
-                                xTypeIdx2 = lineText.indexOf("xtype:"),
-                                xTypeIdx3 = lineText.indexOf("xtype: "),
-                                xTypeIdxOffset = xTypeIdx3 !== -1 ? 2 : (xTypeIdx2 !== -1 ? 1 : 0),
-                                preRange = new Range(new Position(position.line, xTypeIdx),
-                                                    new Position(position.line, xTypeIdx + 6));
+                                  quoteIdx = lineText.indexOf(quote, xTypeIdx),
+                                  preRange =  new Range(new Position(position.line, xTypeIdx),
+                                                        new Position(position.line, xTypeIdx + 6 + (quoteIdx !== -1 ? 2 : 0)));
                             xtypeCompletion.additionalTextEdits = [ TextEdit.replace(preRange, "") ];
+                            if (quoteIdx !== -1) {
+                                const quoteIdx2 = lineText.lastIndexOf(quote),
+                                      leftPad = lineText.length - lineText.trimLeft().length,
+                                      preRange2 =  new Range(new Position(position.line, quoteIdx2 + (leftPad ? leftPad - 1 : 0)),
+                                                             new Position(position.line, quoteIdx2 + leftPad + 10));
+                                xtypeCompletion.additionalTextEdits.push(TextEdit.replace(preRange2, leftPad ? lineText[0] : ""));
+                            }
                         }
                         completionItems.push(xtypeCompletion);
                         addedItems.push(xtype);
@@ -1031,7 +1038,7 @@ function registerCompletionProvider(context: ExtensionContext)
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
         "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-        "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_", ".", ":"
+        "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_", ".", ":", quoteChar()
     ];
     context.subscriptions.push(
         languages.registerCompletionItemProvider("javascript", new ExtJsCompletionItemProvider(), ...triggerChars)

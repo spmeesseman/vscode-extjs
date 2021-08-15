@@ -227,6 +227,12 @@ export function isPositionInObject(position: Position, component: IComponent)
 }
 
 
+export function quoteChar()
+{
+    return configuration.get<string>("quoteCharacter", "Single") === "Single" ? "'" : "\"";
+}
+
+
 // export function toIPosition(position: Position, lineText: string): IPosition
 // {
 //     const { line, character } = position;
