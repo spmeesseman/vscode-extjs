@@ -59,7 +59,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // that are contains in strings or comments
         //
         if (!lineText || !lineText.includes(".") || (!text && lineText.endsWith("(")) ||
-           ((text && lineText.match(new RegExp(`(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}\\s*$`)))))
+           ((text && lineText.match(new RegExp(`(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*$`)))))
         {
             completionItems.push(...this.getInlineCompletionItems(text, lineText, position, document, "   ", 2));
         }
@@ -812,7 +812,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const completionItems: CompletionItem[] = [],
               xtypes = extjsLangMgr.getXtypeNames(),
               cmp = extjsLangMgr.getComponentByFile(document.uri.fsPath),
-              range = document.getWordRangeAtPosition(position),
               addedItems: string[] = [];
         let hasXtype = "";
 
@@ -840,7 +839,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 }
             }
         }
-
         //
         // Attempt to determine if an object defines an `xtype` and if it does, add it's
         // properties and configs to the completion list.
@@ -849,9 +847,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // i.e. x.y.z.create or Ext.create("x.y.x", ...) then this method will not have been
         // called for that object.
         //
-        else if (range)
-        {   //
-            // Check to see if there's already an xtype definition within the object block
+        else //
+        {   // Check to see if there's already an xtype definition within the object block
             //
             const objectRange = getObjectRangeByPosition(position, cmp);
             if (objectRange)
@@ -928,9 +925,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     if (!addedItems.includes(xtype))
                     {
                         const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`),
-                              lineText = document.lineAt(position).text.substr(0, position.character); // ,
-                              // leftPad = lineText.replace(document.getText(range), "");
-                        // xtypeCompletion.insertText = `xtype: "${xtype}",${eol}${leftPad}`;
+                              lineText = document.lineAt(position).text.substr(0, position.character);
                         xtypeCompletion.insertText = `xtype: "${xtype}",${configuration.get<boolean>("intellisenseXtypeEol", true) ? eol : ""}`;
                         xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
                         //
@@ -943,8 +938,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                                 xTypeIdx2 = lineText.indexOf("xtype:"),
                                 xTypeIdx3 = lineText.indexOf("xtype: "),
                                 xTypeIdxOffset = xTypeIdx3 !== -1 ? 2 : (xTypeIdx2 !== -1 ? 1 : 0),
-                                preRange = new Range(new Position(position.line, xTypeIdx + xTypeIdxOffset),
-                                                    new Position(position.line, xTypeIdx + xTypeIdxOffset + 4));
+                                preRange = new Range(new Position(position.line, xTypeIdx),
+                                                    new Position(position.line, xTypeIdx + 6));
                             xtypeCompletion.additionalTextEdits = [ TextEdit.replace(preRange, "") ];
                         }
                         completionItems.push(xtypeCompletion);

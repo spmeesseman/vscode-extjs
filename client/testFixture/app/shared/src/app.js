@@ -180,6 +180,15 @@ Ext.define('VSCodeExtJS',
 	{
 		xtype: 'textfield',
 
-	}]
+	}],
+
+	testFn10: function()
+	{
+		const grid = Ext.create({
+			hidden: false,
+			disabled: true,
+			
+		});
+	}
 
 });
