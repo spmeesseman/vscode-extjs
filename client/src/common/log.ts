@@ -32,9 +32,9 @@ function isLoggingEnabled()
 }
 
 
-export function write(msg: string, level?: number, logPad = "")
+export function write(msg: string, level?: number, logPad = "", force = false)
 {
-    if (isLoggingEnabled())
+    if (force || isLoggingEnabled())
     {
         const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + logPad + msg;
         if (logOutputChannel && (!level || level <= configuration.get<number>("debugLevel"))) {
@@ -55,18 +55,24 @@ export function blank(level?: number)
 }
 
 
-export function error(msg: string | string[])
+export function error(msg: string | string[], params?: (string|any)[][])
 {
-    write("***");
+    write("***", undefined, "", true);
     if (typeof msg === "string") {
-        write("*** " + msg);
+        write("*** " + msg, undefined, "", true);
     }
     else {
         msg.forEach((m: string) => {
-            write("*** " + m);
+            write("*** " + m, undefined, "", true);
         });
+        if (params)
+        {
+            for (const [ n, v, l ] of params) {
+                value("***   " + n, v);
+            }
+        }
     }
-    write("***");
+    write("***", undefined, "", true);
 }
 
 

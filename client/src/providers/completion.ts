@@ -33,7 +33,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               range = document.getWordRangeAtPosition(position),
               text = range ? document.getText(range) : "";
 
-        log.methodStart("provide dot completion items", 1, "", true, [["line text", lineText]]);
+        log.methodStart("provide dot completion items", 1, "", true, [["text", text], ["line text", lineText]]);
 
         //
         // The `getInlineCompletionItems` method handles completion items that lead all other
@@ -44,7 +44,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // The `MyApp` part of the class path is of interest, when the user starts typing into a
         // blank line (or a new statement block), we want to display all possible parts of a
-        // classpath that lead the class name, in this case we ant to add 'MyApp' as a completion item
+        // classpath that lead the class name, in this case we ant to add 'MyApp' as a completion item.
+        //
+        // If we're within an object expression, then we are interested in properties of the defined
+        // xtype of the object.
         //
         // The `(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)` portion of the regex ignores patterns
         // that are contains in strings or comments
@@ -972,7 +975,7 @@ function registerCompletionProvider(context: ExtensionContext)
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
         "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
-        "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_", "."
+        "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "_", ".", ":"
     ];
     context.subscriptions.push(
         languages.registerCompletionItemProvider("javascript", new ExtJsCompletionItemProvider(), ...triggerChars)

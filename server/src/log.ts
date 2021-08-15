@@ -4,13 +4,13 @@ import { connection, globalSettings } from "./server";
 const logValueWhiteSpace = 40;
 
 
-export function write(msg: string, level?: number, logPad = "")
+export function write(msg: string, level?: number, logPad = "", force = false)
 {
     if (msg === null || msg === undefined) {
         return;
     }
 
-    if (globalSettings.debugServer === true)
+    if (force || globalSettings.debugServer === true)
     {
         const tsMsg = new Date().toISOString().replace(/[TZ]/g, " ") + logPad + msg;
         if (!level || (globalSettings.debugLevel !== undefined && level <= globalSettings.debugLevel)) {
@@ -26,21 +26,24 @@ export function blank(level?: number)
 }
 
 
-export function error(msg: string | string[])
+export function error(msg: string | string[], params?: (string|any)[][])
 {
-    if (msg === null || msg === undefined) {
-        return;
-    }
-    write("***");
+    write("***", undefined, "", true);
     if (typeof msg === "string") {
-        write("*** " + msg);
+        write("*** " + msg, undefined, "", true);
     }
     else {
         msg.forEach((m: string) => {
-            write("*** " + m);
+            write("*** " + m, undefined, "", true);
         });
+        if (params)
+        {
+            for (const [ n, v, l ] of params) {
+                value("***   " + n, v);
+            }
+        }
     }
-    write("***");
+    write("***", undefined, "", true);
 }
 
 
@@ -110,4 +113,22 @@ export function value(msg: string, value: any, level?: number, logPad = "")
     }
 
     write(logMsg, level, logPad);
+}
+
+
+export function values(values: (string|any)[][], level?: number, logPad = "", doLogBlank?: boolean)
+{
+    if (globalSettings.debugServer === true)
+    {
+        const lLevel = level || 1;
+        if (doLogBlank === true) {
+            blank(lLevel);
+        }
+        if (values)
+        {
+            for (const [ n, v, l ] of values) {
+                value(n, v, l || lLevel + 1, logPad);
+            }
+        }
+    }
 }

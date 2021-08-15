@@ -1821,8 +1821,8 @@ class ExtjsLanguageManager
             classPaths.push("**/*.js");
         }
 
-        log.value("   file watcher globs", classPaths.join (" | "), 2);
-        log.write(`**/{${classPaths.join(",")}}/**/*.js`);
+        log.write("   file watcher glob:", 2);
+        log.write(`   **/{${classPaths.join(",")}}/**/*.js`, 2);
 
         //
         // rc/conf file / app.json

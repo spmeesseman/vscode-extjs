@@ -364,7 +364,17 @@ function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | 
     //         to:
     //     function testFn(a, b, c) { ... }
     //
-    subText = subText.replace(new RegExp(`${propertyName}\\s*:\\s*function\\s*\\(`), `function ${propertyName} (`);
+    let matches;
+    const regex = new RegExp(`${propertyName}\\s*:\\s*( +async +)*\\s*function\\s*\\(`);
+    if ((matches = regex.exec(subText)))
+    {
+        if (matches[1]) {
+            subText = subText.replace(matches[0], `${matches[1].trim()} function ${propertyName} (`);
+        }
+        else {
+            subText = subText.replace(matches[0], `function ${propertyName} (`);
+        }
+    }
 
     try{
         return parse(subText);
@@ -529,6 +539,22 @@ function getObjectRanges(m: ObjectProperty): IObjectRange[]
         const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p));
         if (propertyObjects && propertyObjects.length)
         {
+
+            const pushRanges = (args: any) =>
+            {
+                for (const a of args)
+                {
+                    if (isObjectExpression(a))
+                    {
+                        objectRanges.push({
+                            start: a.loc!.start,
+                            end: a.loc!.end,
+                            type: ObjectRangeType.MethodParameterObject
+                        });
+                    }
+                }
+            };
+
             propertyObjects.forEach((o) =>
             {
                 if (isVariableDeclaration(o))
@@ -537,34 +563,23 @@ function getObjectRanges(m: ObjectProperty): IObjectRange[]
                     {
                         if (isCallExpression(d.init) || isNewExpression(d.init))
                         {
-                            for (const a of d.init.arguments)
+                            pushRanges(d.init.arguments);
+                        }
+                        if (isAwaitExpression(d.init))
+                        {
+                            if (isCallExpression(d.init.argument))
                             {
-                                if (isObjectExpression(a))
-                                {
-                                    objectRanges.push({
-                                        start: a.loc!.start,
-                                        end: a.loc!.end,
-                                        type: ObjectRangeType.MethodParameterObject
-                                    });
-                                }
+                                pushRanges(d.init.argument.arguments);
+                            }
+                            else {
+                                log.error("Unhandled Object Range: unexpected await syntax");
                             }
                         }
-                        // TODO - 'Await' expression
                     }
                 }
                 else if (isExpressionStatement(o) && isCallExpression(o.expression))
                 {
-                    for (const a of o.expression.arguments)
-                    {
-                        if (isObjectExpression(a))
-                        {
-                            objectRanges.push({
-                                start: a.loc!.start,
-                                end: a.loc!.end,
-                                type: ObjectRangeType.MethodParameterObject
-                            });
-                        }
-                    }
+                    pushRanges(o.expression.arguments);
                 }
             });
         }
@@ -611,10 +626,11 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
             if (propertyName)
             {
-                const doc = getComments(m.leadingComments),
-                      params = parseParams(m, propertyName, text, componentClass, doc);
+                const doc = getComments(m.leadingComments);
                 methods.push({
-                    componentClass, doc, params,
+                    componentClass,
+                    doc,
+                    params: parseParams(m, propertyName, text, componentClass, doc),
                     name: propertyName,
                     start: m.loc!.start,
                     end: m.loc!.end,
@@ -869,8 +885,14 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
                 }
                 else if (isAwaitExpression(dec.init))
                 {
-                    // TODO !!
-                    continue;
+                    if (isCallExpression(dec.init.argument)) {
+                        callee = dec.init.argument.callee;
+                        args = dec.init.argument.arguments;
+                    }
+                    else {
+                        log.error("Unhandled Variable: unexpected await syntax", [["method name", methodName]]);
+                        continue;
+                    }
                 }
                 else {
                     continue;
