@@ -883,7 +883,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // Use AST parser to determine if there's a defined `xtype` within the object, either
                 // before or after the current position.
                 //
-                const astNode = ast.getLabeledStatementAst(objectRangeText).program.body[0];
+                const astNode = ast.getLabeledStatementAst(objectRangeText, log.error).program.body[0];
                 if (isLabeledStatement(astNode) && isExpressionStatement(astNode.body) && isArrayExpression(astNode.body.expression))
                 {
                     for (const e of astNode.body.expression.elements)

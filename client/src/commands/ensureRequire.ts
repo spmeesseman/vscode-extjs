@@ -3,7 +3,7 @@ import * as json5 from "json5";
 import * as log from "../common/log";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
 import { ComponentType, IPosition, IRequire, utils } from "../../../common";
-import { toVscodePosition, toVscodeRange } from "../common/clientUtils";
+import { quoteChar, toVscodePosition, toVscodeRange } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
 
@@ -14,7 +14,8 @@ export async function ensureRequires(xtype: string | undefined)
 		  fsPath = document?.uri.fsPath,
 		  ns = fsPath ? extjsLangMgr.getNamespaceFromFile(fsPath) : undefined,
 		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, false, document) : undefined,
-		  workspaceEdit = new WorkspaceEdit();
+		  workspaceEdit = new WorkspaceEdit(),
+		  quote = quoteChar();
 
 	log.methodStart("Command - Ensure requires", 1, "", true, [ [ "namespace", ns ], [ "fs path", fsPath ] ]);
 
@@ -60,8 +61,8 @@ export async function ensureRequires(xtype: string | undefined)
 					const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
 											   .replace(/\[/, "[" + EOL + pad + "    ")
 											   .replace(/,/g, "," + EOL + pad + "    ")
-											   .replace(/\]/, EOL + pad + "]");
-
+											   .replace(/\]/, EOL + pad + "]")
+											   .replace(/"/g, quote);
 					workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
 					workspace.applyEdit(workspaceEdit);
 				}
