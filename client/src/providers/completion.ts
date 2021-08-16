@@ -197,9 +197,19 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // If we're inline and it's a base name space property, select it
         //
-        if (property === nameSpace)
+        if (isComponent(cmp))
         {
-            completionItem.preselect = true;
+            if (property === nameSpace || cmpClass === nameSpace) {
+                completionItem.preselect = true;
+            }
+            else {
+                for (const a of cmp.aliases) {
+                    if (a.name === property) {
+                        completionItem.preselect = true;
+                        break;
+                    }
+                }
+            }
         }
 
         //
