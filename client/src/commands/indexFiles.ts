@@ -40,7 +40,7 @@ function registerIndexFilesCommand(context: ExtensionContext)
     // Status bar button
     //
     statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, -10);
-    statusBarItem.text = "$(refresh)";
+    statusBarItem.text = "$(refresh) extjs";
     statusBarItem.tooltip = "Re-index all ExtJs files";
     statusBarItem.command = "vscode-extjs:indexFiles";
     statusBarItem.hide(); // languageManager will show the control when indexing finishes

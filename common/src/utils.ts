@@ -35,7 +35,8 @@ export async function forEachMapAsync(map: any, callback: any)
 
 export function isExtJsFile(documentText: string | undefined)
 {
-    return documentText && documentText.includes("Ext.define");
+    const regex = /Ext\.define\s*\([\r\n]*['"]{1}[\r\n,a-zA-Z0-9.]+['"]{1}\s*,\s*[\r\n]*\s*{/m;
+    return documentText && documentText.trim() && regex.test(documentText);
 }
 
 

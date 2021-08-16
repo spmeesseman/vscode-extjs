@@ -266,10 +266,10 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         }
                         logProperties("methods", componentInfo.methods);
 
-                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo.nameSpace, componentInfo.componentClass));
+                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo));
                         logProperties("xtypes", componentInfo.xtypes);
 
-                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo.nameSpace, componentInfo.componentClass, "alias"));
+                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo, "alias"));
                         logProperties("aliases", componentInfo.aliases);
                     }
 
@@ -1081,7 +1081,7 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
 }
 
 
-function parseXTypes(objEx: ObjectExpression, text: string, componentClass: string, nameSpace: string, nodeName = "xtype"): IXtype[]
+function parseXTypes(objEx: ObjectExpression, text: string, component: IComponent, nodeName = "xtype"): IXtype[]
 {
     const xType: IXtype[] = [];
     const line = objEx.loc!.start.line - 1;
@@ -1089,12 +1089,19 @@ function parseXTypes(objEx: ObjectExpression, text: string, componentClass: stri
 
     const _add = ((v: StringLiteral) =>
     {   //
-        // CHeck the mapping so we don't add something that the user is currently
-        // typing in
+        // CHeck the widgets we parsed on this component so we don't add something
+        // that the user is currently typing in
         //
-        if (!widgetToComponentClassMapping[nameSpace][v.value]) {
-            return;
-        }
+        // let xtypeExists = false;
+        // component.widgets.forEach((w: string) => {
+        //     if (w === v.value) {
+        //         xtypeExists = true;
+        //         return false; // break forEach()
+        //     }
+        // });
+        // if (!xtypeExists) {
+        //     return;
+        // }
 
         const start = v.loc!.start;
         const end = v.loc!.end;
@@ -1114,7 +1121,7 @@ function parseXTypes(objEx: ObjectExpression, text: string, componentClass: stri
             name: v.value,
             start,
             end,
-            componentClass
+            componentClass: component.componentClass
         });
     });
 

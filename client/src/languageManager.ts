@@ -1238,7 +1238,7 @@ class ExtjsLanguageManager
                                 }
                             }
                             catch (e) {
-                                log.error(e.toString());
+                                log.error(e);
                                 break;
                             }
                             //
@@ -1453,13 +1453,6 @@ class ExtjsLanguageManager
     isBusy()
     {
         return this.isIndexing || this.isValidating;
-    }
-
-
-    private async isParsed(fsPath: string)
-    {
-        const projectName = this.getWorkspaceProjectName(fsPath);
-        return pathExists(path.join(this.fsStoragePath, projectName));
     }
 
 
@@ -1688,35 +1681,37 @@ class ExtjsLanguageManager
 
     private processOpenDocumentChange(e: TextDocumentChangeEvent)
     {
-        let debounceMs = configuration.get<number>("validationDelay", 1250);
-        const textDocument = e.document;
-
-        //
-        // On enter/return key, validate immediately as the line #s for all range definitions
-        // underneath the edit have just shifted by one line
-        //
-        for (const change of e.contentChanges)
-        {
-            if (change.text.includes(EOL)) {
-                debounceMs = 0;
-            }
+        if (e.contentChanges.length === 0) {
+            return;
         }
 
-        if (textDocument.languageId === "javascript")
+        let debounceMs = configuration.get<number>("validationDelay", 1250);
+        const textDocument = e.document;
+        //
+        // Clear debounce timeout if still pending
+        //
+        if (this.reIndexTaskId) {
+            clearTimeout(this.reIndexTaskId);
+        }
+
+        if (textDocument.languageId === "javascript" && utils.isExtJsFile(textDocument.getText()))
         {   //
+            // On enter/return key, validate immediately as the line #s for all range definitions
+            // underneath the edit have just shifted by one line
+            //
+            for (const change of e.contentChanges)
+            {
+                if (change.text.includes(EOL)) {
+                    debounceMs = 0;
+                }
+            }
+            //
             // Debounce!!
             //
-            if (this.reIndexTaskId) {
-                clearTimeout(this.reIndexTaskId);
-            }
             this.reIndexTaskId = setTimeout(async () =>
             {
                 this.reIndexTaskId = undefined;
                 const ns = this.getNamespace(textDocument);
-                //
-                // Clear
-                //
-                // this.handleDeleFile(fsPath);
                 //
                 // Index the file
                 //
@@ -1736,28 +1731,13 @@ class ExtjsLanguageManager
     {
         this.handleDeleFile(uri.fsPath);
         const activeTextDocument = window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-        }
-    }
-
-
-    private async processDocumentOpen(textDocument: TextDocument)
-    {
-        if (textDocument.languageId === "javascript") {
-           await this.validateDocument(textDocument, this.getNamespace(textDocument));
-        }
+        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
     }
 
 
     private async processEditorChange(e: TextEditor | undefined)
     {
-        const textDocument = e?.document;
-        if (textDocument) {
-            if (textDocument.languageId === "javascript") {
-                await this.validateDocument(textDocument, this.getNamespace(textDocument));
-            }
-        }
+        await this.validateDocument(e?.document, this.getNamespace(e?.document));
     }
 
 
@@ -1854,13 +1834,9 @@ class ExtjsLanguageManager
         disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
         disposables.push(jsWatcher.onDidDelete(async (e) => { await this.processDocumentDelete(e); }, this));
         //
-        // Active editor changed
+        // Active editor changed (processes open-document too)
         //
         disposables.push(window.onDidChangeActiveTextEditor(async (e) => { await this.processEditorChange(e); }, this));
-        //
-        // Open text document
-        //
-        disposables.push(workspace.onDidOpenTextDocument(async (e) => { await this.processDocumentOpen(e); }, this));
         //
         // Register configurations/settings change watcher
         //
@@ -1881,17 +1857,30 @@ class ExtjsLanguageManager
     }
 
 
-    async validateDocument(textDocument: TextDocument, nameSpace: string)
+    async validateDocument(textDocument: TextDocument | undefined, nameSpace: string)
     {
-        this.isValidating = true;
-        const text = textDocument.getText();
-        if (!nameSpace) {
-            nameSpace = this.getNamespace(textDocument);
+        const text = textDocument?.getText();
+        //
+        // Check to make sure it's an ExtJs file
+        //
+        if (!text || !textDocument || textDocument.languageId !== "javascript" || !utils.isExtJsFile(text))
+        {
+            showReIndexButton(false);
         }
-        if (utils.isExtJsFile(text) && await this.isParsed(textDocument.uri.fsPath)) {
-            await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
+        else //
+        {   // Validate
+            //
+            this.isValidating = true;
+            nameSpace = nameSpace || this.getNamespace(textDocument);
+            if (await pathExists(path.join(this.fsStoragePath, this.getWorkspaceProjectName(textDocument.uri.fsPath)))) {
+                await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
+            }
+            // else {
+            //     await this.indexFiles(this.getWorkspaceProjectName(textDocument.uri.fsPath));
+            // }
+            showReIndexButton(true);
+            this.isValidating = false;
         }
-        this.isValidating = false;
     }
 
 }
