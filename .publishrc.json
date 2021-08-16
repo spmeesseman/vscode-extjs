@@ -1,26 +1,26 @@
 {
-    "projectName":        "vscode-extjs",
-    "branch":             "master",
-    "buildCommand":       "npm run rebuild-webpack",
-    "changelogFile":      "CHANGELOG.md",
-    "deployCommand":      [
+    "projectName":              "vscode-extjs",
+    "branch":                   "master",
+    "buildCommand":             "npm run rebuild-webpack",
+    "changelogFile":            "CHANGELOG.md",
+    "deployCommand": [
         "npm run rebuild-webpack",
         "npx vsce publish"
     ],
-    "githubRelease":      "Y",
-    "githubUser":         "spmeesseman",
-    "githubAssets":       [
+    "githubAssets": [
         "CHANGELOG.md|Changelog File",
         "vscode-extjs-$(VERSION).vsix|VSIX Installer"
     ],
-    "preGithubRelease":   "npx vsce package",
-    "postGithubRelease":  "npx rimraf *.vsix",
-    "postBuildCommand":   "npm run test",
-    "postReleaseCommand": "bash.exe tools/codecov.sh -t ${CODECOV_TOKEN2}",
-    "promptVersion":      "N",
-    "repo":               "https://github.com/spmeesseman/vscode-extjs.git",
-    "repoType":           "git",
-    "skipChangelogEdits": "N",
-    "skipVersionEdits":   "Y",
-    "vcWebPath":          "https://github.com/spmeesseman/vscode-extjs"
+    "githubRelease":            "Y",
+    "githubReleasePreCommand":  "npx vsce package",
+    "githubReleasePostCommand": "npx rimraf *.vsix",
+    "githubUser":               "spmeesseman",
+    "postBuildCommand":         "npm run test",
+    "postReleaseCommand":       "bash.exe tools/codecov.sh -t ${CODECOV_TOKEN2}",
+    "promptVersion":            "N",
+    "repo":                     "https://github.com/spmeesseman/vscode-extjs.git",
+    "repoType":                 "git",
+    "skipChangelogEdits":       "N",
+    "skipVersionEdits":         "Y",
+    "vcWebPath":                "https://github.com/spmeesseman/vscode-extjs"
 }
