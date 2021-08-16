@@ -93,7 +93,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    createCompletionItem(property: string, cmpClass: string, nameSpace: string, kind: CompletionItemKind, isConfig: boolean, extendedFrom: string | undefined, position: Position, logPad = "   ", logLevel = 2)
+    createCompletionItem(property: string, cmpClass: string, nameSpace: string, kind: CompletionItemKind, isConfig: boolean, extendedFrom: string | undefined, position: Position, document: TextDocument, logPad = "   ", logLevel = 2)
     {
         const propCompletion: CompletionItem[] = [];
         log.methodStart("create completion item", logLevel, logPad, false, [
@@ -173,6 +173,26 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // Documentation / JSDoc / Leading Comments
         //
         completionItem.documentation = cmp.markdown;
+
+        //
+        // If a text edit triggers a completion in the middle of the expression we need to
+        // make sure to replace the existing right side part if the user selects from the
+        // completion items.  Use `additionalTextEdits` on the completion item to accomplish.
+        //
+        const lineText = document.lineAt(position).text,
+              lineTextLeft = lineText.substr(0, position.character),
+              lineTextRight = lineText.replace(lineTextLeft, ""),
+              rTextMatch = lineTextRight.match(/([a-zA-Z_0-9]+)/);
+        let rText: string | undefined;
+        if (rTextMatch && rTextMatch[1])
+        {
+            rText = rTextMatch[1];
+        }
+        if (rText)
+        {
+            const rRange = new Range(position, new Position(position.line, position.character + rText.length));
+            completionItem.additionalTextEdits = [ TextEdit.replace(rRange, "") ];
+        }
 
         //
         // Add the populated completion item to the array of items to be returned to the caller,
@@ -297,7 +317,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             const baseCmp = cmp;
             if (!baseCmp) { return; }
-            completionItems.push(...this.getCmpCompletionItems(baseCmp, position, addedItems, logPad + "   ", logLevel + 1));
+            completionItems.push(...this.getCmpCompletionItems(baseCmp, position, document, addedItems, logPad + "   ", logLevel + 1));
             //
             // Traverse up the inheritance tree, checking the 'extend' property and if
             // it exists, we include public class properties in the Intellisense
@@ -362,7 +382,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //         common
             //         etc...
             //
-            completionItems.push(...this.getChildClsCompletionItems(component.componentClass, nameSpace, position, addedItems, logPad + "   ", logLevel + 1));
+            completionItems.push(...this.getChildClsCompletionItems(component.componentClass, nameSpace, position, document, addedItems, logPad + "   ", logLevel + 1));
         }
         else {
             log.write("   try sub-component tree", logLevel + 2, logPad);
@@ -375,7 +395,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     if (!addedItems.includes(sf)) {
                         log.value("   add sub-component", sf, logLevel + 2, logPad);
                         completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, nameSpace,
-                                                                          CompletionItemKind.Class, false, undefined, position, logPad + "   ", logLevel + 2));
+                                                                          CompletionItemKind.Class, false, undefined, position, document, logPad + "   ", logLevel + 2));
                         addedItems.push(sf);
                     }
                 }
@@ -415,7 +435,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      *
      * @returns {CompletionItem[]}
      */
-    private getChildClsCompletionItems(componentClass: string, nameSpace: string, position: Position, addedItems: string[], logPad: string, logLevel: number): CompletionItem[]
+    private getChildClsCompletionItems(componentClass: string, nameSpace: string, position: Position, document: TextDocument, addedItems: string[], logPad: string, logLevel: number): CompletionItem[]
     {
         const cmps = extjsLangMgr.getComponentNames(),
               cmpClsParts = componentClass.split("."),
@@ -443,7 +463,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
                 if (cCls && addedItems.indexOf(cCls) === -1)
                 {
-                    completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, undefined, position, logPad + "   ", logLevel + 1));
+                    completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, undefined, position, document, logPad + "   ", logLevel + 1));
                     addedItems.push(cCls);
                     log.write("   added inline completion item", 3, logPad);
                     log.value("      item", cCls, 3, logPad);
@@ -456,7 +476,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getCmpCompletionItems(component: IComponent, position: Position, addedItems: string[], logPad: string, logLevel: number): CompletionItem[]
+    private getCmpCompletionItems(component: IComponent, position: Position, document: TextDocument, addedItems: string[], logPad: string, logLevel: number): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [];
         log.methodStart("get cmp completion items", logLevel, logPad);
@@ -465,7 +485,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, undefined, position, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added dot completion method", logLevel + 1, logPad);
                 log.value("      name", c.name, logLevel + 1);
@@ -476,7 +496,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, undefined, position, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added dot completion method", logLevel + 1, logPad);
                 log.value("      name", c.name, logLevel + 1, logPad);
@@ -487,7 +507,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, undefined, position, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added dot completion method", logLevel + 1);
                 log.value("      name", c.name, logLevel + 1, logPad);
@@ -536,7 +556,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     let cItems;
                     if (!basic) {
-                        cItems = this.createCompletionItem(cCls, cCls, thisCmp.nameSpace, kind, isConfig, extendedCls, position, logPad + "   ", logLevel + 1);
+                        cItems = this.createCompletionItem(cCls, cCls, thisCmp.nameSpace, kind, isConfig, extendedCls, position, document, logPad + "   ", logLevel + 1);
                     }
                     else {
                         const tagText = this.tagText(cmp, cCls, isConfig, extendedCls);

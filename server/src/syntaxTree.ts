@@ -80,8 +80,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                     //
                     if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
                     {
-                        const createAliases: string[] = [];
-
                         if (isFramework === undefined)
                         {
                             isFramework = args[0].value.startsWith("Ext.") && !args[0].value.startsWith("Ext.csi.");
@@ -273,12 +271,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo.nameSpace, componentInfo.componentClass, "alias"));
                         logProperties("aliases", componentInfo.aliases);
-
-                        // createAliases.forEach((a) => {
-                        //     const aliasComponent = { ...{}, ...componentInfo };
-                        //     aliasComponent.name = a;
-                        //     components.push(aliasComponent);
-                        // });
                     }
 
                     log.methodDone("parse extjs file", 1, "", true);
