@@ -137,7 +137,9 @@ class ExtjsLanguageManager
                 if (cls && alias)
                 {
                     for (const a of alias) {
-                        aliases.push(a.name);
+                        if (!aliases.includes(a.name)) {
+                            aliases.push(a.name);
+                        }
                     }
                 }
             });
@@ -219,7 +221,9 @@ class ExtjsLanguageManager
               map = this.clsToCmpMapping;
         Object.values(map).forEach((ns) => {
             Object.keys(ns).forEach((cmp) => {
-                cmps.push(cmp);
+                if (!cmps.includes(cmp)) {
+                    cmps.push(cmp);
+                }
             });
         });
         return cmps;
@@ -810,12 +814,26 @@ class ExtjsLanguageManager
     }
 
 
-    getNamespaceFromClass(componentClass: string)
+    getNamespaceFromClass(componentClass: string, defaultNs?: string, logPad = "", logLevel = 1)
     {
-        if (componentClass.indexOf(".") !== -1) {
+        if (!defaultNs) {
+            defaultNs = componentClass;
+        }
+        if (componentClass.indexOf(".") !== -1)
+        {
             return componentClass.substring(0, componentClass.indexOf("."));
         }
-        return componentClass;
+        if (!this.widgetToClsMapping[componentClass])
+        {
+            let aCmp = this.getComponentByAlias(componentClass, defaultNs, logPad, logLevel);
+            if (!aCmp) {
+                aCmp = this.getComponentByAlias(componentClass, "Ext", logPad, logLevel);
+            }
+            if (aCmp) {
+                return aCmp.componentClass.substring(0, aCmp.componentClass.indexOf("."));
+            }
+        }
+        return defaultNs;
     }
 
 

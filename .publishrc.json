@@ -3,10 +3,7 @@
     "branch":                   "master",
     "buildCommand":             "npm run rebuild-webpack",
     "changelogFile":            "CHANGELOG.md",
-    "deployCommand": [
-        "npm run rebuild-webpack",
-        "npx vsce publish"
-    ],
+    "deployCommand":            "npx vsce publish",
     "githubAssets": [
         "CHANGELOG.md|Changelog File",
         "vscode-extjs-$(VERSION).vsix|VSIX Installer"
@@ -15,7 +12,10 @@
     "githubReleasePreCommand":  "npx vsce package",
     "githubReleasePostCommand": "npx rimraf *.vsix",
     "githubUser":               "spmeesseman",
-    "postBuildCommand":         "npm run test",
+    "postBuildCommand": [
+        "npm run test:dev",
+        "npm run webpack-build"
+    ],
     "postReleaseCommand":       "bash.exe tools/codecov.sh -t ${CODECOV_TOKEN2}",
     "promptVersion":            "N",
     "repo":                     "https://github.com/spmeesseman/vscode-extjs.git",

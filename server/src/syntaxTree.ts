@@ -180,14 +180,24 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             const sWidgets: string[] = [],
                                   sAliases: string[] = [];
                             widgets[0].forEach((w) => {
-                                sWidgets.push(w.name);
+                                if (!sWidgets.includes(w.name)) {
+                                    sWidgets.push(w.name);
+                                }
                             });
                             widgets[1].forEach((w) => {
-                                sAliases.push(w.name);
+                                if (!sAliases.includes(w.name)) {
+                                    sAliases.push(w.name);
+                                }
                             });
-                            componentInfo.widgets.push(...sWidgets); // xtype array
-                            componentInfo.widgets.push(...sAliases); // alias array
-                            componentInfo.aliases.push(...widgets[1]); // alias array
+                            componentInfo.widgets.push(...sWidgets.filter((w) => {
+                                return !componentInfo.widgets.includes(w);
+                            })); // xtype array
+                            componentInfo.widgets.push(...sAliases.filter((w) => {
+                                return !componentInfo.widgets.includes(w);
+                            })); // alias array
+                            componentInfo.aliases.push(...widgets[1].filter((x) => {
+                                return !componentInfo.aliases.includes(x);
+                            })); // alias array
                         }
 
                         if (isObjectProperty(propertyAlternateCls))
@@ -201,9 +211,15 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             widgets[1].forEach((w) => {
                                 sAliases.push(w.name);
                             });
-                            componentInfo.widgets.push(...sWidgets); // xtype array
-                            componentInfo.widgets.push(...sAliases); // alias array
-                            componentInfo.aliases.push(...widgets[1]); // alias array
+                            componentInfo.widgets.push(...sWidgets.filter((w) => {
+                                return !componentInfo.widgets.includes(w);
+                            })); // xtype array
+                            componentInfo.widgets.push(...sAliases.filter((w) => {
+                                return !componentInfo.widgets.includes(w);
+                            })); // alias array
+                            componentInfo.aliases.push(...widgets[1].filter((x) => {
+                                return !componentInfo.aliases.includes(x);
+                            })); // alias array
                         }
 
                         if (isObjectProperty(propertyXtype))
@@ -267,10 +283,14 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         }
                         logProperties("methods", componentInfo.methods);
 
-                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo));
+                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo).filter((x) => {
+                            return !componentInfo.xtypes.includes(x);
+                        }));
                         logProperties("xtypes", componentInfo.xtypes);
 
-                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo, "alias"));
+                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo, "alias").filter((a) => {
+                            return !componentInfo.aliases.includes(a);
+                        }));
                         logProperties("aliases", componentInfo.aliases);
                     }
 
