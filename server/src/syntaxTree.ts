@@ -4,13 +4,14 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRange, IRequire, IAlias, ObjectRangeType, IObjectRange
+    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, ObjectRangeType, IObjectRange
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
-    isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration, VariableDeclarator, AssignmentExpression, CallExpression, variableDeclarator, LVAL_TYPES, toIdentifier, variableDeclaration
+    isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
+    VariableDeclarator, variableDeclarator, variableDeclaration
 } from "@babel/types";
 
 /**

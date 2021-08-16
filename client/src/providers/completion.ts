@@ -195,6 +195,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         }
 
         //
+        // If we're inline and it's a base name space property, select it
+        //
+        if (property === nameSpace)
+        {
+            completionItem.preselect = true;
+        }
+
+        //
         // Add the populated completion item to the array of items to be returned to the caller,
         // if this is a `config`, then we are going to add getter/setter items as well
         //
@@ -551,12 +559,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             if (cls)
             {
-                const cCls = cls.split(".")[0];
+                const cCls = cls.split(".")[0],
+                      ns = extjsLangMgr.getNamespaceFromClass(cls);
                 if (addedItems.indexOf(cCls) === -1)
                 {
                     let cItems;
                     if (!basic) {
-                        cItems = this.createCompletionItem(cCls, cCls, thisCmp.nameSpace, kind, isConfig, extendedCls, position, document, logPad + "   ", logLevel + 1);
+                        cItems = this.createCompletionItem(cCls, cls, ns, kind, isConfig, extendedCls, position, document, logPad + "   ", logLevel + 1);
                     }
                     else {
                         const tagText = this.tagText(cmp, cCls, isConfig, extendedCls);
