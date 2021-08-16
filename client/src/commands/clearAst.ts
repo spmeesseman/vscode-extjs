@@ -2,7 +2,7 @@
 import * as path from "path";
 import * as log from "../common/log";
 import { deleteDir } from "../../../common/lib/fs";
-import { commands, ExtensionContext } from "vscode";
+import { commands, ExtensionContext, workspace } from "vscode";
 import { extjsLangMgr } from "../extension";
 
 let fsStoragePath: string;
@@ -14,13 +14,24 @@ export async function clearAst(project?: string, force = false, logPad = "")
 
     if (!extjsLangMgr.isBusy() || force)
     {
-        let nsPath = fsStoragePath;
-        if (project) {
-            nsPath = path.join(fsStoragePath, project);
+        if (workspace.workspaceFolders)
+        {
+            let nsPath = fsStoragePath;
+            if (project) {
+                nsPath = path.join(fsStoragePath, project);
+                log.value("   removing directory", nsPath, 1, logPad);
+                await deleteDir(nsPath);
+            }
+            else {
+                for (const wsFolder of workspace.workspaceFolders)
+                {
+                    const projectName = path.basename(wsFolder.uri.fsPath),
+                        projectPath = path.join(nsPath, projectName);
+                    log.value("   removing directory", projectPath, 1, logPad);
+                    await deleteDir(projectPath);
+                }
+            }
         }
-
-        log.value("   removing directory", nsPath, 1, logPad);
-        await deleteDir(nsPath);
     }
     else {
         log.write("   busy, did not run command", 1, logPad);
