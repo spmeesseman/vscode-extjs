@@ -184,13 +184,23 @@ class ExtjsLanguageManager
     {
         log.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["namespace", nameSpace]]);
 
-        if (componentClass === "scroller.scroller") {
-            console.log("1");
-        }
-
+        //
+        // Get component from mapping
+        //
         let component = this.clsToCmpMapping[nameSpace] ? this.clsToCmpMapping[nameSpace][componentClass] : undefined;
         if (!component) {
             component = this.clsToCmpMapping.Ext[componentClass];
+        }
+        //
+        // Some namespaces will be calculated as 'Ext', i.e. Ext.csi, Ext.ux, or others that may not
+        // necessarily be a part of the ExtJs Framework and the 'Ext' namespace.  Loop through all
+        // the parsed namespaces and see if we can find the component
+        //
+        if (!component) {
+            Object.keys(this.clsToCmpMapping).forEach(async (ns) => {
+                component = this.clsToCmpMapping[ns][componentClass];
+                return !!component;
+            });
         }
 
         if (component)
@@ -231,10 +241,23 @@ class ExtjsLanguageManager
 
 
     getComponentByAlias(alias: string, nameSpace: string, logPad = "", logLevel = 1): IComponent | undefined
-    {
+    {   //
+        // Get mapping
+        //
         let cls = this.widgetToClsMapping[nameSpace] ? this.widgetToClsMapping[nameSpace][alias] : undefined;
         if (!cls) {
             cls = this.widgetToClsMapping.Ext[alias];
+        }
+        //
+        // Some namespaces will be calculated as 'Ext', i.e. Ext.csi, Ext.ux, or others that may not
+        // necessarily be a part of the ExtJs Framework and the 'Ext' namespace.  Loop through all
+        // the parsed namespaces and see if we can find the component
+        //
+        if (!cls) {
+            Object.keys(this.widgetToClsMapping).forEach(async (ns) => {
+                cls = this.widgetToClsMapping[ns][alias];
+                return !!cls;
+            });
         }
         log.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace]]);
         if (cls) {
@@ -379,6 +402,17 @@ class ExtjsLanguageManager
             if (!aliasClass) {
                 aliasClass = this.widgetToClsMapping.Ext[property];
             }
+            //
+            // Some namespaces will be calculated as 'Ext', i.e. Ext.csi, Ext.ux, or others that may not
+            // necessarily be a part of the ExtJs Framework and the 'Ext' namespace.  Loop through all
+            // the parsed namespaces and see if we can find the component
+            //
+            if (!aliasClass) {
+                Object.keys(this.widgetToClsMapping).forEach(async (ns) => {
+                    aliasClass = this.widgetToClsMapping[ns][cmpClass];
+                    return !!aliasClass;
+                });
+            }
             if (aliasClass) {
                 cmpClass = aliasClass;
             }
@@ -465,13 +499,27 @@ class ExtjsLanguageManager
 
     getConfig(componentClass: string, property: string, nameSpace: string, logPad = "", logLevel = 1): IConfig | undefined
     {
+        log.methodStart("get config by component class", logLevel, logPad, false, [
+            ["component class", componentClass], ["property", property], ["namespace", nameSpace]
+        ]);
+        //
+        // Get mapping
+        //
         let configs = this.clsToConfigsMapping[nameSpace] ? this.clsToConfigsMapping[nameSpace][componentClass] : undefined;
         if (!configs) {
             configs = this.clsToConfigsMapping.Ext[componentClass];
         }
-        log.methodStart("get config by component class", logLevel, logPad, false, [
-            ["component class", componentClass], ["property", property], ["namespace", nameSpace]
-        ]);
+        //
+        // Some namespaces will be calculated as 'Ext', i.e. Ext.csi, Ext.ux, or others that may not
+        // necessarily be a part of the ExtJs Framework and the 'Ext' namespace.  Loop through all
+        // the parsed namespaces and see if we can find the component
+        //
+        if (!configs) {
+            Object.keys(this.clsToConfigsMapping).forEach(async (ns) => {
+                configs = this.clsToConfigsMapping[ns][componentClass];
+                return !!configs;
+            });
+        }
         if (configs)
         {
             for (let c = 0; c < configs.length; c++)
@@ -908,10 +956,24 @@ class ExtjsLanguageManager
             ["component class", componentClass], ["property", property], ["namespace", nameSpace]
         ]);
 
+        //
+        // Get mapping
+        //
         let prop: IProperty | undefined;
         let properties = this.clsToPropertiesMapping[nameSpace] ? this.clsToPropertiesMapping[nameSpace][componentClass] : undefined;
         if (!properties) {
             properties = this.clsToPropertiesMapping.Ext[componentClass];
+        }
+        //
+        // Some namespaces will be calculated as 'Ext', i.e. Ext.csi, Ext.ux, or others that may not
+        // necessarily be a part of the ExtJs Framework and the 'Ext' namespace.  Loop through all
+        // the parsed namespaces and see if we can find the component
+        //
+        if (!properties) {
+            Object.keys(this.clsToPropertiesMapping).forEach(async (ns) => {
+                properties = this.clsToPropertiesMapping[ns][componentClass];
+                return !!properties;
+            });
         }
 
         if (properties) {
@@ -962,6 +1024,17 @@ class ExtjsLanguageManager
             methods = this.clsToMethodsMapping[nameSpace] ? this.clsToMethodsMapping[nameSpace][componentClass] : undefined;
         if (!methods) {
             methods = this.clsToMethodsMapping.Ext[componentClass];
+        }
+        //
+        // Some namespaces will be calculated as 'Ext', i.e. Ext.csi, Ext.ux, or others that may not
+        // necessarily be a part of the ExtJs Framework and the 'Ext' namespace.  Loop through all
+        // the parsed namespaces and see if we can find the component
+        //
+        if (!methods) {
+            Object.keys(this.clsToMethodsMapping).forEach(async (ns) => {
+                methods = this.clsToMethodsMapping[ns][componentClass];
+                return !!methods;
+            });
         }
 
         if (methods)

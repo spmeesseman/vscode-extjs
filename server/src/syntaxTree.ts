@@ -196,7 +196,12 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                                 return !componentInfo.widgets.includes(w);
                             })); // alias array
                             componentInfo.aliases.push(...widgets[1].filter((x) => {
-                                return !componentInfo.aliases.includes(x);
+                                for (const a of componentInfo.aliases) {
+                                    if (a.name === x.name) {
+                                        return false;
+                                    }
+                                }
+                                return true;
                             })); // alias array
                         }
 
@@ -206,10 +211,14 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             const sWidgets: string[] = [],
                                   sAliases: string[] = [];
                             widgets[0].forEach((w) => {
-                                sWidgets.push(w.name);
+                                if (!sWidgets.includes(w.name)) {
+                                    sWidgets.push(w.name);
+                                }
                             });
                             widgets[1].forEach((w) => {
-                                sAliases.push(w.name);
+                                if (!sAliases.includes(w.name)) {
+                                    sAliases.push(w.name);
+                                }
                             });
                             componentInfo.widgets.push(...sWidgets.filter((w) => {
                                 return !componentInfo.widgets.includes(w);
@@ -218,7 +227,12 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                                 return !componentInfo.widgets.includes(w);
                             })); // alias array
                             componentInfo.aliases.push(...widgets[1].filter((x) => {
-                                return !componentInfo.aliases.includes(x);
+                                for (const a of componentInfo.aliases) {
+                                    if (a.name === x.name) {
+                                        return false;
+                                    }
+                                }
+                                return true;
                             })); // alias array
                         }
 
@@ -227,7 +241,9 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             const sXtypes: string[] = [];
                             const xtypes = parseClassDefProperties(propertyXtype, componentInfo.componentClass);
                             xtypes[0].forEach((x) => {
-                                sXtypes.push(x.name);
+                                if (!sXtypes.includes(x.name)) {
+                                    sXtypes.push(x.name);
+                                }
                             });
                             componentInfo.widgets.push(...sXtypes);
                         }
@@ -284,12 +300,22 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         logProperties("methods", componentInfo.methods);
 
                         componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo).filter((x) => {
-                            return !componentInfo.xtypes.includes(x);
+                            for (const x2 of componentInfo.xtypes) {
+                                if (x.name === x2.name) {
+                                    return false;
+                                }
+                            }
+                            return true;
                         }));
                         logProperties("xtypes", componentInfo.xtypes);
 
-                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo, "alias").filter((a) => {
-                            return !componentInfo.aliases.includes(a);
+                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo, "alias").filter((x) => {
+                            for (const a of componentInfo.aliases) {
+                                if (a.name === x.name) {
+                                    return false;
+                                }
+                            }
+                            return true;
                         }));
                         logProperties("aliases", componentInfo.aliases);
                     }

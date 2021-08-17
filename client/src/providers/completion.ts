@@ -34,13 +34,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     provideCompletionItems(document: TextDocument, position: Position)
     {
         const addedItems: string[] = [],
-              lineText = document.lineAt(position).text.substr(0, position.character),
+              lineTextLeft = document.lineAt(position).text.substr(0, position.character).trimLeft(),
               fnText = this.getFunctionName(document, position),
               completionItems: CompletionItem[] = [],
               range = document.getWordRangeAtPosition(position),
               text = range ? document.getText(range) : "";
 
-        log.methodStart("provide completion items", 1, "", true, [["text", text], ["line text", lineText]]);
+        log.methodStart("provide completion items", 1, "", true, [["text", text], ["line text left", lineTextLeft]]);
 
         //
         // The `getInlineCompletionItems` method handles completion items that lead all other
@@ -59,13 +59,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // The `(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)` portion of the regex ignores patterns
         // that are contains in strings or comments
         //
-        if (!lineText || !lineText.includes(".") || (!text && lineText.endsWith("(")) ||
-           ((text && lineText.match(new RegExp(`(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*$`)))))
+        if (!lineTextLeft || !lineTextLeft.includes(".") || (!text && lineTextLeft.endsWith("(")) ||
+           ((text && lineTextLeft.match(new RegExp(`(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*$`)))))
         {
-            completionItems.push(...this.getInlineCompletionItems(text, lineText, position, document, "   ", 2));
+            completionItems.push(...this.getInlineCompletionItems(text, lineTextLeft, position, document, "   ", 2));
         }
         else {
-            completionItems.push(...this.getCompletionItems(text, lineText, fnText, position, document, addedItems, "   ", 2));
+            completionItems.push(...this.getCompletionItems(text, lineTextLeft, fnText, position, document, addedItems, "   ", 2));
         }
 
         // completionItems.push({
@@ -302,14 +302,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      * @param fsPath The filesystem path to the JavasScript class file.
      * @param addedItems Array holding item labels already added in this request.
      */
-    private getCompletionItems(text: string, lineText: string, fnText: string | undefined, position: Position, document: TextDocument, addedItems: string[], logPad = "", logLevel = 2): CompletionItem[]
+    private getCompletionItems(text: string, lineTextLeft: string, fnText: string | undefined, position: Position, document: TextDocument, addedItems: string[], logPad = "", logLevel = 2): CompletionItem[]
     {
-        log.methodStart("get completion items", logLevel, logPad, true, [["line text", lineText], ["fn text", fnText]]);
+        log.methodStart("get completion items", logLevel, logPad, true, [["text", text], ["line text left", lineTextLeft], ["fn text", fnText]]);
 
         const completionItems: CompletionItem[] = [],
               fsPath = document.uri.fsPath,
               nameSpace = extjsLangMgr.getNamespaceFromFile(fsPath, undefined, logPad + "   ", logLevel + 1);
-        let lineCls = lineText?.substring(0, lineText.lastIndexOf(".")).trim();
+        let lineCls = lineTextLeft?.substring(0, lineTextLeft.lastIndexOf(".")).trim();
 
         if (!nameSpace) {
             return completionItems;
@@ -364,19 +364,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         log.value("   line cls", lineCls, logLevel + 1, logPad);
 
         //
-        // Handle "this"
-        //
-        if (lineText.trim() === "this.")
-        {
-            // const thisCls = extjsLangMgr.getClassFromFile(fsPath);
-            // if (thisCls) {
-            //     _pushItems(extjsLangMgr.getComponent(thisCls, true));
-            // }
-            // return completionItems;
-            // lineCls = extjsLangMgr.getClassFromFile(fsPath) || lineCls;
-        }
-
-        //
         // Create the completion items, including items in extended classes
         //
         let component = extjsLangMgr.getComponent(lineCls, nameSpace, true, "      ", logLevel + 1);
@@ -412,8 +399,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     if (!addedItems.includes(sf)) {
                         log.value("   add sub-component", sf, logLevel + 2, logPad);
-                        completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, nameSpace,
-                                                                          CompletionItemKind.Class, false, undefined, position, document, logPad + "   ", logLevel + 2));
+                        completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, nameSpace, CompletionItemKind.Class,
+                                                                          false, undefined, position, document, logPad + "   ", logLevel + 2));
                         addedItems.push(sf);
                     }
                 }
@@ -424,7 +411,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 component = extjsLangMgr.getComponentByFile(fsPath, "      ", logLevel + 2);
                 if (component && fnText)
                 {
-                    _pushItems(...this.getLocalInstanceComponents(text, fnText, lineCls, position, fsPath, component, logPad + "   ", logLevel + 1));
+                    _pushItems(...this.getLocalInstanceComponents(fnText, lineCls, position, fsPath, component, logPad + "   ", logLevel + 1));
                 }
             }
         }
@@ -446,7 +433,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      *     Any existing classpaths should display in the intellisense:
      *         AppUtilities
      *         common
-     *         etc...
+     *         ...
+     *     FFrom the classes:
+     *         VSCode.AppUtilities
+     *         VSCode.common.UserDropdown
+     *         ...
      *
      * @param componentClass Component class
      * @param addedItems Shared provider instance array to avoid duplicate references
@@ -463,29 +454,30 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         for (const cls of cmps)
         {
-            if (cls)
+            let cCls: string | undefined;
+            const clsParts = cls.split(".");
+
+            for (let i = 0; i < clsParts.length &&  i < cmpClsParts.length; i++)
             {
-                let cCls: string | undefined;
-                const clsParts = cls.split(".");
-
-                for (let i = 0; i < clsParts.length &&  i < cmpClsParts.length; i++)
-                {
-                    if (clsParts[i] !== cmpClsParts[i]) {
-                        continue;
-                    }
-                    if (i === cmpClsParts.length - 1 && clsParts.length > i + 1 && cCls !== componentClass) {
-                        cCls = clsParts[i + 1];
-                        break;
-                    }
+                if (clsParts[i] !== cmpClsParts[i]) {
+                    continue;
                 }
-
-                if (cCls && !addedItems.includes(cCls) && cCls.toLowerCase().includes(text.toLowerCase()))
-                {
-                    completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, undefined, position, document, logPad + "   ", logLevel + 1));
-                    addedItems.push(cCls);
-                    log.write("   added inline completion item", 3, logPad);
-                    log.value("      item", cCls, 3, logPad);
+                else if (i === cmpClsParts.length - 1 && clsParts.length > i + 1 && cCls !== componentClass) {
+                    cCls = clsParts[i + 1];
+                    break;
                 }
+            }
+
+            if (cCls && !addedItems.includes(cCls))
+            {
+                completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                addedItems.push(cCls);
+                log.write("   added inline completion item", logLevel + 2, logPad);
+                log.value("      item", cCls, logLevel + 2, logPad);
+            }
+            else {
+                log.write("   skipped inline completion item", logLevel + 3, logPad);
+                log.value("      item", cCls, logLevel + 3, logPad);
             }
         }
 
@@ -505,8 +497,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
-                log.write("   added dot completion method", logLevel + 1, logPad);
-                log.value("      name", c.name, logLevel + 1);
+                log.write("   added methods dot completion method", logLevel + 2, logPad);
+                log.value("      name", c.name, logLevel + 2);
+            }
+            else {
+                log.write("   skipped methods dot completion item", logLevel + 3, logPad);
+                log.value("      item", c.name, logLevel + 3, logPad);
             }
         });
 
@@ -516,8 +512,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
-                log.write("   added dot completion method", logLevel + 1, logPad);
-                log.value("      name", c.name, logLevel + 1, logPad);
+                log.write("   added properties dot completion method", logLevel + 2, logPad);
+                log.value("      name", c.name, logLevel + 2, logPad);
+            }
+            else {
+                log.write("   skipped properties dot completion item", logLevel + 3, logPad);
+                log.value("      item", c.name, logLevel + 3, logPad);
             }
         });
 
@@ -527,8 +527,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
-                log.write("   added dot completion method", logLevel + 1);
-                log.value("      name", c.name, logLevel + 1, logPad);
+                log.write("   added configs dot completion method", logLevel + 2);
+                log.value("      name", c.name, logLevel + 2, logPad);
+            }
+            else {
+                log.write("   skipped configs dot completion item", logLevel + 3, logPad);
+                log.value("      item", c.name, logLevel + 3, logPad);
             }
         });
 
@@ -541,7 +545,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getInlineCompletionItems(text: string, lineText: string, position: Position, document: TextDocument, logPad: string, logLevel: number): CompletionItem[]
+    private getInlineCompletionItems(text: string, lineTextLeft: string, position: Position, document: TextDocument, logPad: string, logLevel: number): CompletionItem[]
     {
         log.methodStart("get inline completion items", logLevel, logPad);
 
@@ -647,7 +651,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Check special property cases
         //
-        if (lineText && lineText.match(new RegExp(`xtype\\s*:\\s*${quote}${quote}$`)))
+        if (lineTextLeft && lineTextLeft.match(new RegExp(`xtype\\s*:\\s*${quote}${quote}$`)))
         {
             completionItems.push(...this.getXtypeCompletionItems(document, position, thisCmp.nameSpace, logPad + "   ", logLevel, _addProps));
         }
@@ -756,11 +760,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getLocalInstanceComponents(text: string, fnText: string, lineCls: string, position: Position, fsPath: string, component: IComponent, logPad: string, logLevel: number): IComponent[]
+    private getLocalInstanceComponents(fnText: string, lineCls: string, position: Position, fsPath: string, component: IComponent, logPad: string, logLevel: number): IComponent[]
     {
         log.methodStart("get local instance components", logLevel, logPad);
 
         const components: IComponent[] = [];
+
         const _add = ((a: IExtJsBase[] | undefined) =>
         {
             if (!a) { return; }
@@ -770,7 +775,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     if (p.name === lineCls) {
                         const lCmp = extjsLangMgr.getComponentInstance(lineCls, component.nameSpace, position, fsPath, logPad + "   ", logLevel + 1);
-                        if (isComponent(lCmp) && lCmp.name.toLowerCase().includes(text.toLowerCase())) {
+                        if (isComponent(lCmp)) {
                             components.push(lCmp);
                         }
                         break;
@@ -779,7 +784,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
             else {
                 const lCmp = extjsLangMgr.getComponentInstance(lineCls, component.nameSpace, position, fsPath, logPad + "   ", logLevel + 1);
-                if (isComponent(lCmp) && lCmp.name.toLowerCase().includes(text.toLowerCase())) {
+                if (isComponent(lCmp)) {
                     components.push(lCmp);
                 }
             }
