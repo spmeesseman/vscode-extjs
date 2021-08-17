@@ -93,7 +93,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    createCompletionItem(property: string, cmpClass: string, nameSpace: string, kind: CompletionItemKind, isConfig: boolean, extendedFrom: string | undefined, position: Position, document: TextDocument, logPad = "   ", logLevel = 2)
+    createCompletionItem(property: string, cmpClass: string, nameSpace: string, kind: CompletionItemKind, isConfig: boolean, isInlineChild: boolean, extendedFrom: string | undefined, position: Position, document: TextDocument, logPad = "   ", logLevel = 2)
     {
         const propCompletion: CompletionItem[] = [];
         log.methodStart("create completion item", logLevel, logPad, false, [
@@ -159,7 +159,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             completionItem.commitCharacters = [ "." ];
         }
 
-        let tagText = this.tagText(cmp, property, isConfig, extendedFrom);
+        let tagText = !isInlineChild ? this.tagText(cmp, property, isConfig, extendedFrom) : "";
         if (tagText)
         {
             completionItem.insertText = property;
@@ -400,7 +400,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     if (!addedItems.includes(sf)) {
                         log.value("   add sub-component", sf, logLevel + 2, logPad);
                         completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, nameSpace, CompletionItemKind.Class,
-                                                                          false, undefined, position, document, logPad + "   ", logLevel + 2));
+                                                                          false, false, undefined, position, document, logPad + "   ", logLevel + 2));
                         addedItems.push(sf);
                     }
                 }
@@ -470,7 +470,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
             if (cCls && !addedItems.includes(cCls))
             {
-                completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, true, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(cCls);
                 log.write("   added inline completion item", logLevel + 2, logPad);
                 log.value("      item", cCls, logLevel + 2, logPad);
@@ -495,7 +495,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added methods dot completion method", logLevel + 2, logPad);
                 log.value("      name", c.name, logLevel + 2);
@@ -510,7 +510,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added properties dot completion method", logLevel + 2, logPad);
                 log.value("      name", c.name, logLevel + 2, logPad);
@@ -525,7 +525,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             if (addedItems.indexOf(c.name) === -1)
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, undefined, position, document, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added configs dot completion method", logLevel + 2);
                 log.value("      name", c.name, logLevel + 2, logPad);
@@ -579,7 +579,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     let cItems;
                     if (!basic) {
-                        cItems = this.createCompletionItem(cCls, cls, ns, kind, isConfig, extendedCls, position, document, logPad + "   ", logLevel + 1);
+                        cItems = this.createCompletionItem(cCls, cls, ns, kind, isConfig, false, extendedCls, position, document, logPad + "   ", logLevel + 1);
                     }
                     else {
                         const tagText = this.tagText(cmp, cCls, isConfig, extendedCls);
