@@ -2,6 +2,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as assert from "assert";
+import { extjsLangMgr } from "../../extension";
 
 export let doc: vscode.TextDocument;
 export let editor: vscode.TextEditor;
@@ -37,6 +38,7 @@ export async function activate(docUri?: vscode.Uri)
 			console.error(e);
 		}
 	}
+	extjsLangMgr.setTests(true);
 	return extJsApi;
 }
 

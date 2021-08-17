@@ -1,11 +1,12 @@
 
 import * as path from "path";
-import { workspace } from "vscode";
+import { commands, workspace } from "vscode";
 import { renameSync } from "fs";
-import { writeFile } from "../../../../common/lib/fs";
+import { readFile, writeFile } from "../../../../common/lib/fs";
 import { getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange } from "./helper";
 import { storage } from "../../common/storage";
 import { configuration } from "../../common/configuration";
+import { extjsLangMgr } from "../../extension";
 
 
 suite("Config File Tests", () =>
@@ -65,6 +66,7 @@ suite("Config File Tests", () =>
 		//
 		await waitForValidation();
 		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
 
 		await writeFile(
             extjsrcPath,
@@ -78,6 +80,13 @@ suite("Config File Tests", () =>
 		//
 		await waitForValidation();
 		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
+	test("Extension settings config", async () =>
+	{
+		const settingsPaths = configuration.get<string[]>("settingsPaths");
 	});
 
 
@@ -89,34 +98,54 @@ suite("Config File Tests", () =>
 		//
 		await waitForValidation();
 		await waitForValidation();
-		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
-	test("Open tooling extjs framework location", async () =>
+	test("Open tooling extjs framework location", async function()
 	{
+		this.timeout(45 * 1000);
 		//
 		// Write an open tooling extjs framework location
 		//
 		insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
-		workspace.saveAll();
+		await workspace.saveAll();
 		//
 		// Wait for validation x3
 		//
 		await waitForValidation();
 		await waitForValidation();
-		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Reset
 		//
 		insertDocContent("extjs", toRange(3, 16, 3, 40));
-		workspace.saveAll();
+		await workspace.saveAll();
+
+		await waitForValidation();
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		// Set tests to 'false' to cover branch for user prompt for config file change
+		//
+		extjsLangMgr.setTests(false);
+		insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
+		await workspace.saveAll();
 		//
 		// Wait for validation x3
 		//
 		await waitForValidation();
 		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		// Reset
+		//
+		insertDocContent("extjs", toRange(3, 16, 3, 40));
+		await workspace.saveAll();
 		await waitForValidation();
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		extjsLangMgr.setTests(true);
 	});
 
 });

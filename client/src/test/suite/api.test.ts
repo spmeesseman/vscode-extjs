@@ -31,11 +31,12 @@ suite("API Tests", () =>
 
 	test("Indexing api command", async function()
 	{
-		this.timeout(60 * 1000);
+		this.timeout(75 * 1000);
 		await commands.executeCommand("vscode-extjs:clearAst", "testFixture");
 		await waitForValidation();
 		extjsLangMgr.setBusy(true);
 		await commands.executeCommand("vscode-extjs:clearAst", "testFixture");
+		await commands.executeCommand("vscode-extjs:clearAst", "testFixture", true);
 		await commands.executeCommand("vscode-extjs:indexFiles");
 		extjsLangMgr.setBusy(false);
 		await commands.executeCommand("vscode-extjs:indexFiles");
@@ -47,7 +48,7 @@ suite("API Tests", () =>
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:indexFiles", "testFixture");
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:indexFiles", "testFixture", false);
+		await commands.executeCommand("vscode-extjs:indexFiles", "testFixture", false, "   ");
 		await waitForValidation();
 	});
 
