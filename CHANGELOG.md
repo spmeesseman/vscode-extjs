@@ -1,5 +1,11 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.4.1 (August 17th, 2021)
+
+### Bug Fixes
+
+- build package is including tsc test build
+
 ## Version 0.4.0 (August 17th, 2021)
 
 ### Bug Fixes
