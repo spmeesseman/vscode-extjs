@@ -1,6 +1,6 @@
 {
     "name": "vscode-extjs",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "displayName": "ExtJs Intellisense",
     "author": "Scott Meesseman",
     "description": "ExtJS Intellisense - Code completion and more",
@@ -144,7 +144,7 @@
         ],
         "configurationDefaults": {
             "[javascript]": {
-              "editor.quickSuggestions": true
+                "editor.quickSuggestions": true
             }
         },
         "configuration": {
@@ -240,7 +240,10 @@
                     "type": "string",
                     "default": "Single",
                     "markdownDescription": "The quotation character to use. `Single | Double`",
-                    "enum": [ "Double", "Single" ]
+                    "enum": [
+                        "Double",
+                        "Single"
+                    ]
                 },
                 "extjsIntellisense.validateXTypes": {
                     "type": "boolean",
@@ -251,7 +254,17 @@
                     "type": "number",
                     "default": 1250,
                     "description": "The time (in ms) to allow between keystrokes before re-validation is triggered.",
-                    "enum": [ 250, 400, 500, 750, 1000, 1250, 1500, 1750, 2000 ]
+                    "enum": [
+                        250,
+                        400,
+                        500,
+                        750,
+                        1000,
+                        1250,
+                        1500,
+                        1750,
+                        2000
+                    ]
                 }
             }
         }
