@@ -44,7 +44,7 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 	 *
 	 * Test get pin # internal description, private function
 	 * 
-	 * @since 1.0.0
+	 * @since 1.0.2
 	 * @private
 	 * @returns {String} Pin #
 	 */

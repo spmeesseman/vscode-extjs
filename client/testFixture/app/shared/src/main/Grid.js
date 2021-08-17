@@ -8,7 +8,7 @@ Ext.define('VSCodeExtJS.main.Grid',
    extend: 'Ext.grid.Panel',
 
     uses: [
-       "Ext.grid.Panel"
+       "Ext.rid.Panel"
     ]
 
 });
