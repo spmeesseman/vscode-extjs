@@ -19,6 +19,7 @@ _**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The
 - [ExtJs Language Server - Intellisense, Code Completion, and More](#extjs-language-server---intellisense-code-completion-and-more)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
+  - [File Indexing](#file-indexing)
   - [Configuration](#configuration)
     - [Configuration - The app.json ExtJs Project File](#configuration---the-appjson-extjs-project-file)
     - [Configuration - The .extjsrc.json Configuration File](#configuration---the-extjsrcjson-configuration-file)
@@ -51,6 +52,10 @@ The ExtJs Language Server provides most Intellisense and other language features
 - Method and Class Validation
 
 See the section [Compared to Sencha Extension](#compared-to-sencha-extension) for a detailed feature list.
+
+## File Indexing
+
+The first time the extension loads, it will index all ExtJs files found within the VSCode workspace, as specified by the Sencha project files (i.e. app.json and workspace.json) or the extension's configuration.  *First time indexing* may take several minutes depending on the size of your workspace, the # of ExtJs projects in the workspace, and the size of the ExtJs projects.  Once indexed though, cached indexing will be less than 10% the time it takes to perform the full indexing when opening the VSCode workspace.
 
 ## Configuration
 
