@@ -45,7 +45,7 @@ export async function loadExtJsComponent(ast: string | undefined)
 }
 
 
-export async function parseExtJsFile(fsPath: string, text: string, project?: string, isFramework?: boolean)
+export async function parseExtJsFile(fsPath: string, text: string, project?: string)
 {
     const components: IComponent[] = [],
           nodeAst = ast.getComponentsAst(text, log.error);
@@ -81,11 +81,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                     //
                     if (isStringLiteral(args[0]) && isObjectExpression(args[1]))
                     {
-                        if (isFramework === undefined)
-                        {
-                            isFramework = args[0].value.startsWith("Ext.") && !args[0].value.startsWith("Ext.csi.");
-                        }
-
                         const dotIdx = args[0].value.indexOf("."),
                               baseNameSpace = dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value;
 
@@ -93,7 +88,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             name: project || args[0].value,
                             baseNameSpace,
                             fsPath,
-                            isFramework,
                             nameSpace: project || baseNameSpace,
                             componentClass: args[0].value,
                             aliases: [],
@@ -292,7 +286,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (propertyMethod && propertyMethod.length)
                         {
-                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], !isFramework ? text : undefined, componentInfo.componentClass));
+                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, fsPath));
                             componentInfo.methods.forEach((m) => {
                                 componentInfo.objectRanges.push(...m.objectRanges);
                             });
@@ -665,9 +659,18 @@ function getVariableType(cls: string): VariableType
 }
 
 
-function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string): IMethod[]
+function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, fsPath: string): IMethod[]
 {
     const methods: IMethod[] = [];
+
+    //
+    // We don't want to parse the framework method's parameters and variables, set
+    // text to undefined if this is a framework file...
+    //
+    if (componentClass.startsWith("Ext.") &&  (fsPath.includes("@sencha") || fsPath.toLowerCase().includes("extjs"))) {
+        text = undefined;
+    }
+
     for (const m of propertyMethods)
     {
         if (isFunctionExpression(m.value))
@@ -804,7 +807,6 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
                     end: p.loc!.end,
                     methodName,
                     componentClass: parentCls,
-                    reassignments: [],
                     type: VariableType._any
                 });
             }
@@ -998,8 +1000,7 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
             start: node.declarations[0].loc!.start,
             end: node.declarations[0].loc!.end,
             componentClass: parentCls,
-            methodName,
-            reassignments: []
+            methodName
         };
     }
     else if (isAwaitExpression(dec.init))
@@ -1122,8 +1123,7 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
         start: node.declarations[0].loc!.start,
         end: node.declarations[0].loc!.end,
         componentClass: instCls,
-        methodName,
-        reassignments: []
+        methodName
     };
 }
 

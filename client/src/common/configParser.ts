@@ -19,7 +19,7 @@ export class ConfigParser
 			  confUris = await workspace.findFiles("**/.extjsrc{.json,}"),
               appDotJsonUris = await workspace.findFiles("**/app.json"),
 			  fwDirectory = configuration.get<string>("frameworkDirectory"),
-              settingsPaths = configuration.get<string[]>("include");
+              settingsPaths = configuration.get<string[]>("include", []);
 
         // workspace.workspaceFolders?.map(folder => folder.uri.path)
 
@@ -28,42 +28,36 @@ export class ConfigParser
         //
         // Specific directories set directly in user settings, the `include` setting
         //
-        if (settingsPaths)
+        for (const path of settingsPaths)
         {
-            for (const path of settingsPaths)
+            const pathParts = path?.split("|");
+            if (pathParts.length === 2)
             {
-                const pathParts = path?.split("|");
-                if (pathParts.length === 2)
-                {
-                    config.push({
-                        classpath: pathParts[1],
-                        name: pathParts[0],
-                        baseDir: "",
-                        baseWsDir: "",
-                        buildDir: "",
-                        wsDir: workspace.getWorkspaceFolder(Uri.file(pathParts[1]))?.uri.fsPath || "",
-                    });
-                }
+                config.push({
+                    classpath: pathParts[1],
+                    name: pathParts[0],
+                    baseDir: "",
+                    baseWsDir: "",
+                    buildDir: "",
+                    wsDir: workspace.getWorkspaceFolder(Uri.file(pathParts[1]))?.uri.fsPath || "",
+                });
             }
         }
 
         //
         // The `.extjsrc` config files
         //
-        if (confUris)
+        for (const uri of confUris)
         {
-            for (const uri of confUris)
+            const fileSystemPath = uri.fsPath || uri.path;
+            const confJson = await readFile(fileSystemPath);
+            const conf: IConf = json5.parse(confJson);
+            if (conf.classpath && conf.name)
             {
-                const fileSystemPath = uri.fsPath || uri.path;
-                const confJson = await readFile(fileSystemPath);
-                const conf: IConf = json5.parse(confJson);
-                if (conf.classpath && conf.name)
-                {
-                    log.value("   add .extjsrc path", fileSystemPath, 2);
-                    log.value("      namespace", conf.name, 2);
-                    log.value("      classpath", conf.classpath, 3);
-                    config.push(conf);
-                }
+                log.value("   add .extjsrc path", fileSystemPath, 2);
+                log.value("      namespace", conf.name, 2);
+                log.value("      classpath", conf.classpath, 3);
+                config.push(conf);
             }
         }
 
@@ -86,13 +80,9 @@ export class ConfigParser
         //
         // The `app.json` files
         //
-        if (appDotJsonUris)
+        for (const uri of appDotJsonUris)
         {
-            let foundFwDir = !!fwDirectory;
-            for (const uri of appDotJsonUris)
-            {
-                foundFwDir = await this.parseAppDotJson(uri, !fwDirectory && !foundFwDir, config);
-            }
+            await this.parseAppDotJson(uri, config);
         }
 
         log.value("   # of configs found", config.length, 3);
@@ -102,9 +92,9 @@ export class ConfigParser
     }
 
 
-    private async parseAppDotJson(uri: Uri, parseFwDir: boolean, config: IConf[])
+    private async parseAppDotJson(uri: Uri, config: IConf[])
     {
-        const fileSystemPath = uri.fsPath || uri.path,
+        const fileSystemPath = uri.fsPath,
               baseDir = path.dirname(uri.fsPath),
               wsDir = workspace.getWorkspaceFolder(uri)?.uri.fsPath || baseDir,
               //
@@ -116,13 +106,6 @@ export class ConfigParser
                               .replace(/\\/g, "/").substring(1), // trim leading path sep
               confs: IConf[] = [],
               conf: IConf = json5.parse(await readFile(fileSystemPath));
-        let foundFwDir = false;
-
-        //
-        // Merge classpath to root
-        //
-        const classic = conf.classic ? Object.assign([], conf.classic) : {},
-              modern = conf.modern ? Object.assign([], conf.modern) : {};
 
         if (!conf.classpath)
         {
@@ -133,11 +116,19 @@ export class ConfigParser
             conf.classpath = [ conf.classpath ];
         }
 
-        if (classic?.classpath)
+        //
+        // Merge classpath to root
+        //
+        const classic = conf.classic ? Object.assign([], conf.classic) : {},
+              modern = conf.modern ? Object.assign([], conf.modern) : {};
+
+
+        if (classic.classpath)
         {
             conf.classpath = conf.classpath.concat(...classic.classpath);
         }
-        if (modern?.classpath) {
+        if (modern.classpath)
+        {
             conf.classpath = conf.classpath.concat(...modern.classpath);
         }
 
@@ -149,7 +140,7 @@ export class ConfigParser
         {
             const wsConf = json5.parse(await readFile(wsDotJsonFsPath));
 
-            if (parseFwDir && wsConf.frameworks && wsConf.frameworks.ext)
+            if (wsConf.frameworks && wsConf.frameworks.ext)
             {   //
                 // The framework directory should have a package.json, specifying its dependencies, i.e.
                 // the ext-core package.  Read package.json in framework directory.  If found, this is an
@@ -178,7 +169,6 @@ export class ConfigParser
                                 };
                                 if (sdkConf.classpath)
                                 {
-                                    foundFwDir = true;
                                     confs.push(sdkConf);
                                     log.value("   add framework package.json path", fwPath, 2);
                                     log.value("      framework version", fwConf.dependencies[dep], 2);
@@ -238,8 +228,6 @@ export class ConfigParser
 			}
             config.push(...confs);
         }
-
-        return foundFwDir;
     }
 
 }

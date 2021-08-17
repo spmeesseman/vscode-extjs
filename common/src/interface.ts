@@ -60,7 +60,6 @@ export interface IComponent extends IExtJsBase
     doc?: string;
     extend?: string;
     fsPath: string;
-    isFramework: boolean;
     markdown?: any;
     methods: IMethod[];
     mixins: string[];
@@ -143,7 +142,6 @@ export interface IParameter extends IExtJsBase
     methodName: string;
     declaration?: DeclarationType;
     type?: VariableType;
-    reassignments: IVariable[];
 }
 
 
@@ -204,7 +202,6 @@ export interface IVariable extends IExtJsBase
     methodName: string;
     declaration?: DeclarationType;
     type?: VariableType;
-    reassignments: IVariable[];
 }
 
 

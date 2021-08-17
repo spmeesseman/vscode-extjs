@@ -14,6 +14,7 @@
 	"tslint.enable": true,
     "typescript.preferences.quoteStyle": "double",
     "cSpell.words": [
+        "confs",
         "extjsrcjson",
         "nocase",
         "qzsiniong",
