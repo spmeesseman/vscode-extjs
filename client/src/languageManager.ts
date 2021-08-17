@@ -1047,13 +1047,13 @@ class ExtjsLanguageManager
         const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
         if (wsf) {
             const projectName = path.basename(wsf.uri.fsPath);
-            sFile = path.join(fsPath.replace(wsf.uri.fsPath, ""), projectName, nameSpace, "components.json");
+            sFile = path.join(projectName, fsPath.replace(wsf.uri.fsPath, ""), nameSpace, "components.json");
         }
-        return sFile;
+        return path.join(path.dirname(sFile), nameSpace, "components.json");
     }
 
 
-    private handleDeleFile(fsPath: string)
+    private handleDeleteFile(fsPath: string)
     {
         log.methodStart("handle delete file", 1, "", true, [["path", fsPath]]);
 
@@ -1760,7 +1760,7 @@ class ExtjsLanguageManager
 
     private async processDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
     {
-        this.handleDeleFile(uri.fsPath);
+        this.handleDeleteFile(uri.fsPath);
         const activeTextDocument = window.activeTextEditor?.document;
         await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
     }
@@ -1784,7 +1784,7 @@ class ExtjsLanguageManager
             {   //
                 // Clear
                 //
-                this.handleDeleFile(fsPath);
+                this.handleDeleteFile(fsPath);
                 //
                 // Index the file
                 //
