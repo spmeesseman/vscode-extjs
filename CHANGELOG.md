@@ -1,5 +1,11 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.4.3 (August 17th, 2021)
+
+### Bug Fixes
+
+- re-index fails for extjs projects found in subfolders of a main VSCode workspace folder
+
 ## Version 0.4.2 (August 17th, 2021)
 
 ### Bug Fixes
