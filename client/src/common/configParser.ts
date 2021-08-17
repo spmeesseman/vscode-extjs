@@ -23,7 +23,7 @@ export class ConfigParser
 
         // workspace.workspaceFolders?.map(folder => folder.uri.path)
 
-        log.methodStart("initialize configurations", 1, "", true);
+        log.methodStart("get extjs configuration", 1, "", true);
 
         //
         // Specific directories set directly in user settings, the `include` setting
@@ -34,7 +34,7 @@ export class ConfigParser
             if (pathParts.length === 2)
             {
                 config.push({
-                    classpath: pathParts[1],
+                    classpath: [ pathParts[1] ],
                     name: pathParts[0],
                     baseDir: "",
                     baseWsDir: "",
@@ -49,14 +49,17 @@ export class ConfigParser
         //
         for (const uri of confUris)
         {
-            const fileSystemPath = uri.fsPath || uri.path;
-            const confJson = await readFile(fileSystemPath);
-            const conf: IConf = json5.parse(confJson);
+            const fileSystemPath = uri.fsPath || uri.path,
+                  confJson = await readFile(fileSystemPath),
+                  conf: IConf = json5.parse(confJson);
             if (conf.classpath && conf.name)
             {
-                log.value("   add .extjsrc path", fileSystemPath, 2);
+                if (typeof conf.classpath === "string") {
+                    conf.classpath = [ conf.classpath ];
+                }
+                log.value("   add .extjsrc path", fileSystemPath, 1);
                 log.value("      namespace", conf.name, 2);
-                log.value("      classpath", conf.classpath, 3);
+                log.value("      classpath", conf.classpath, 2);
                 config.push(conf);
             }
         }
@@ -67,13 +70,15 @@ export class ConfigParser
 		//
 		if (fwDirectory)
 		{
+            log.value("   add framework path from settings", fwDirectory, 1);
 			config.push({
-				classpath: fwDirectory.replace("\\", "/"),
+				classpath: [ fwDirectory.replace("\\", "/") ],
 				name: "Ext",
                 baseDir: fwDirectory,
                 baseWsDir: fwDirectory,
                 buildDir: "",
-                wsDir: workspace.getWorkspaceFolder(Uri.file(fwDirectory))?.uri.fsPath || fwDirectory
+                wsDir: workspace.getWorkspaceFolder(Uri.file(fwDirectory))?.uri.fsPath || fwDirectory,
+                frameworkDir: fwDirectory
 			});
 		}
 
@@ -82,18 +87,19 @@ export class ConfigParser
         //
         for (const uri of appDotJsonUris)
         {
-            await this.parseAppDotJson(uri, config);
+            await this.parseAppDotJson(uri, config, "   ");
         }
 
-        log.value("   # of configs found", config.length, 3);
-        log.methodDone("initialize config", 1, "", true);
+        log.methodDone("get extjs configuration", 1, "", true, [["   # of configured projects found", config.length]]);
 
         return config;
     }
 
 
-    private async parseAppDotJson(uri: Uri, config: IConf[])
+    private async parseAppDotJson(uri: Uri, config: IConf[], logPad: string)
     {
+        log.methodStart("parse app.json", 1, logPad, true, [["path", uri.fsPath]]);
+
         const fileSystemPath = uri.fsPath,
               baseDir = path.dirname(uri.fsPath),
               wsDir = workspace.getWorkspaceFolder(uri)?.uri.fsPath || baseDir,
@@ -107,6 +113,10 @@ export class ConfigParser
               confs: IConf[] = [],
               conf: IConf = json5.parse(await readFile(fileSystemPath));
 
+        if (!conf.name)
+        {
+            return confs;
+        }
         if (!conf.classpath)
         {
             conf.classpath = [];
@@ -123,14 +133,33 @@ export class ConfigParser
               modern = conf.modern ? Object.assign([], conf.modern) : {};
 
 
+        log.write("   process toolkit specific classpaths", 1, logPad);
         if (classic.classpath)
         {
-            conf.classpath = conf.classpath.concat(...classic.classpath);
+            log.write("      add classpaths for 'classic' toolkit", 1, logPad);
+            for (const c of classic.classpath)
+            {
+                log.value("         path", c, 1, logPad);
+                conf.classpath.push(...classic.classpath.filter((c2: string) => !conf.classpath.includes(c2)));
+            }
         }
         if (modern.classpath)
         {
-            conf.classpath = conf.classpath.concat(...modern.classpath);
+            log.write("      add classpaths for 'modern' toolkit", 1, logPad);
+            for (const c of modern.classpath)
+            {
+                log.value("         path", c, 1, logPad);
+                conf.classpath.push(...modern.classpath.filter((c2: string) => !conf.classpath.includes(c2)));
+            }
         }
+
+        //
+        // Push the main configuration (project level)
+        //
+        conf.baseDir = baseDir;
+        conf.baseWsDir = baseWsDir;
+        conf.wsDir = wsDir;
+        confs.push(conf);
 
         //
         // workspace.json
@@ -146,88 +175,105 @@ export class ConfigParser
                 // the ext-core package.  Read package.json in framework directory.  If found, this is an
                 // open tooling project
                 //
-                const buildDir = wsConf.build ? wsConf.build.dir.replace(/\$\{workspace.dir\}[/\\]{1}/, "") : undefined;
-                const fwJsonFsPath = path.join(baseDir, wsConf.frameworks.ext, "package.json");
+                const buildDir = wsConf.build ? wsConf.build.dir.replace(/\$\{workspace.dir\}[/\\]{1}/, "") : undefined,
+                      frameworkDir = path.join(baseDir, wsConf.frameworks.ext),
+                      fwJsonFsPath = path.join(frameworkDir, "package.json");
                 if (await pathExists(fwJsonFsPath))
-                {
+                {   //
+                    // There should be a reference to the core package in the 'dependencies' property of
+                    // package.json, e.g.:
+                    //
+                    //     "dependencies": {
+                    //         "@sencha/ext-core": "7.2.0"
+                    //     }
+                    //
+                    log.write("   this is an open tooling project", 1, logPad);
                     const fwConf = json5.parse(await readFile(fwJsonFsPath));
-                    if (fwConf.dependencies)
+                    if (fwConf && fwConf.dependencies)
                     {
+                        log.write("   process framework dependency packages", 1, logPad);
                         for (const dep in fwConf.dependencies)
                         {
                             if (fwConf.dependencies.hasOwnProperty(dep))
                             {
-								const fwPath = path.join("node_modules", dep).replace(/\\/g, "/");
-                                const sdkConf: IConf = {
-                                    name: "Ext",
-                                    // eslint-disable-next-line no-template-curly-in-string
-                                    classpath: fwConf.sencha?.classpath?.replace("${package.dir}", fwPath),
-                                    baseDir,
-                                    baseWsDir,
-                                    buildDir,
-                                    wsDir
-                                };
-                                if (sdkConf.classpath)
+								const fwPath = path.join("node_modules", dep).replace(/\\/g, "/"),
+                                      // eslint-disable-next-line no-template-curly-in-string
+                                      fwSdkClasspath = fwConf.sencha?.classpath?.replace("${package.dir}", fwPath);
+                                if (fwSdkClasspath)
                                 {
-                                    confs.push(sdkConf);
-                                    log.value("   add framework package.json path", fwPath, 2);
-                                    log.value("      framework version", fwConf.dependencies[dep], 2);
+                                    log.write(`      add dependency package '${dep}'`, 1, logPad);
+                                    log.value("         path", fwPath, 1, logPad);
+                                    log.value("         version", fwConf.dependencies[dep], 1, logPad);
+                                    confs.push({
+                                        name: "Ext",
+                                        classpath: [ fwSdkClasspath ],
+                                        baseDir,
+                                        baseWsDir,
+                                        buildDir,
+                                        wsDir,
+                                        frameworkDir
+                                    });
                                 }
                             }
                         }
                     }
-                    else {
-                        log.error("No package.json found in workspace.framework directory");
-                    }
                 }
                 else {
+                    log.write("   this is a sencha cmd project", 1, logPad);
+                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 1, logPad);
 					confs.push({
 						name: "Ext",
-						classpath: wsConf.frameworks.ext,
+						classpath: [ wsConf.frameworks.ext ],
                         baseDir,
                         baseWsDir,
                         buildDir,
-                        wsDir
+                        wsDir,
+                        frameworkDir
 					});
-                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 2);
                 }
             }
 
             if (wsConf.packages && wsConf.packages.dir)
             {
+                log.write("   process workspace.json dependency packages from packages.dir", 1, logPad);
                 const dirs = wsConf.packages.dir.split(",");
                 for (const d of dirs)
                 {
-                    const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "")
-                                    .replace(/\$\{toolkit.name\}/, "classic");
-                    conf.classpath.push(wsPath);
-                    log.value("   add ws.json path", wsPath, 2);
+                    const toolkit = configuration.get<string>("toolkit", "classic"),
+                          wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit);
+                    log.write("      add dependency package", 1, logPad);
+                    log.value("         path", wsPath, 1, logPad);
+                    if (!conf.classpath.includes(wsPath)) {
+                        conf.classpath.push(wsPath);
+                    }
                 }
             }
         }
 
-		if (conf.classpath && conf.name)
-        {
-            conf.baseDir = baseDir;
-            conf.baseWsDir = baseWsDir;
-            conf.wsDir = wsDir;
-			confs.push(conf);
-		}
-
         if (confs.length)
         {
-            log.value("   add app.json paths", fileSystemPath, 2);
-            log.value("      namespace", confs[0].name, 2);
-            log.value("      classpath", confs[0].classpath, 3);
-            log.value("      workspace dir", confs[0].baseWsDir, 3);
+            log.write("   successfully parsed app.json:", 1, logPad);
+            log.value("      namespace", confs[0].name, 1, logPad);
+            log.value("      path", fileSystemPath, 1, logPad);
+            log.value("      workspace dir", confs[0].baseWsDir, 1, logPad);
+            log.value("      base project dir", confs[0].baseDir, 1, logPad);
+            log.write("      classpaths:", 1, logPad);
+            confs[0].classpath.every((c) => {
+                log.write(`         ${confs[0].classpath}`, 1, logPad);
+            });
 			if (confs.length > 1) {
-				log.write("      framework directory");
-				log.value("         namespace", confs[1].name, 2);
-				log.value("         classpath", confs[1].classpath, 3);
-				log.value("         workspace dir", confs[1].baseWsDir, 3);
+				log.write("      framework directory:");
+				log.value("         namespace", confs[1].name, 1, logPad);
+				log.value("         workspace dir", confs[1].baseWsDir, 1, logPad);
+                log.write("         classpaths:", 1, logPad);
+                confs[1].classpath.every((c) => {
+                    log.write(`            ${confs[1].classpath}`, 1, logPad);
+                });
 			}
             config.push(...confs);
         }
+
+        log.methodDone("parse app.json", 1, logPad);
     }
 
 }
