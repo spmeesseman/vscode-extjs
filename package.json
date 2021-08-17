@@ -238,11 +238,20 @@
                 },
                 "extjsIntellisense.quoteCharacter": {
                     "type": "string",
-                    "default": "Single",
-                    "markdownDescription": "The quotation character to use. `Single | Double`",
+                    "default": "single",
+                    "markdownDescription": "The quotation character to use. `single | double`",
                     "enum": [
-                        "Double",
-                        "Single"
+                        "double",
+                        "single"
+                    ]
+                },
+                "extjsIntellisense.toolkit": {
+                    "type": "string",
+                    "default": "classic",
+                    "markdownDescription": "The toolkit that will be used in parsing. `classic | modern`",
+                    "enum": [
+                        "classic",
+                        "modern"
                     ]
                 },
                 "extjsIntellisense.validateXTypes": {

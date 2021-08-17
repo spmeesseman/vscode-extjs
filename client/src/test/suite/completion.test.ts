@@ -258,8 +258,8 @@ suite("Completion Tests", () =>
 
 	test("Full xtype lines", async () =>
 	{
-		const quoteCharacter = configuration.get<string>("quoteCharacter", "Single");
-		await configuration.update("quoteCharacter", "Single");
+		const quoteCharacter = configuration.get<string>("quoteCharacter", "single");
+		await configuration.update("quoteCharacter", "single");
 		//
 		// Line 187 - 191
 		// const grid = Ext.create({

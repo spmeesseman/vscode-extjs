@@ -229,7 +229,7 @@ export function isPositionInObject(position: Position, component: IComponent)
 
 export function quoteChar()
 {
-    return configuration.get<string>("quoteCharacter", "Single") === "Single" ? "'" : "\"";
+    return configuration.get<string>("quoteCharacter", "single") === "single" ? "'" : "\"";
 }
 
 
