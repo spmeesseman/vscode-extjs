@@ -8,3 +8,4 @@ lib
 .sencha
 coverage
 .nyc_output
+!/client/testFixture/**/*

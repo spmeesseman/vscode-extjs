@@ -255,7 +255,7 @@ export class ConfigParser
             log.write("   successfully parsed app.json:", 1, logPad);
             log.value("      namespace", confs[0].name, 1, logPad);
             log.value("      path", fileSystemPath, 1, logPad);
-            log.value("      workspace dir", confs[0].baseWsDir, 1, logPad);
+            log.value("      workspace rel dir", confs[0].baseWsDir, 1, logPad);
             log.value("      base project dir", confs[0].baseDir, 1, logPad);
             log.write("      classpaths:", 1, logPad);
             confs[0].classpath.every((c) => {
@@ -264,7 +264,7 @@ export class ConfigParser
 			if (confs.length > 1) {
 				log.write("      framework directory:");
 				log.value("         namespace", confs[1].name, 1, logPad);
-				log.value("         workspace dir", confs[1].baseWsDir, 1, logPad);
+				log.value("         workspace rel dir", confs[1].baseWsDir, 1, logPad);
                 log.write("         classpaths:", 1, logPad);
                 confs[1].classpath.every((c) => {
                     log.write(`            ${confs[1].classpath}`, 1, logPad);
