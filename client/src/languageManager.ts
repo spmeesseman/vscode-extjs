@@ -1327,10 +1327,9 @@ class ExtjsLanguageManager
                 // Ext.csi, Ext.plyr, etc.
                 //
                 if (c.classpath && uriFile.path.includes("node_modules")) {
-                    const classPaths = typeof(c.classpath) === "string" ? [ c.classpath ] : c.classpath;
-                    for (const classPath of classPaths)
+                    for (const classPath of c.classpath)
                     {
-                        const cpUriPath = Uri.file(path.join(wsPath, classPath)).path;
+                        const cpUriPath = Uri.file(path.join(c.baseDir, classPath)).path;
                         if (uriFile.path.includes(cpUriPath)) {
                             skipExcludeCheck = true;
                             break;

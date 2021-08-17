@@ -88,11 +88,12 @@ export interface IConf
     builds?: any;
     cache?: any;
     classic?: any;
-    classpath: string | string[];
+    classpath: string[];
     css?: any;
     development?: any;
     fashion?: any;
     framework?: string;
+    frameworkDir?: string;
     id?: string;
     ignore?: string[];
     indexHtmlPath?: string;
