@@ -1,5 +1,15 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.4.4 (August 17th, 2021)
+
+### Refactoring
+
+- parse all referenced framework dirs, not just the 1st found
+
+### Build System
+
+- update webpack config and packages
+
 ## Version 0.4.3 (August 17th, 2021)
 
 ### Bug Fixes
