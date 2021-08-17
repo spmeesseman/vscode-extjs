@@ -91,6 +91,18 @@ suite("Completion Tests", () =>
 		});
 
 		//
+		// Inside object - 'u' trigger
+		// Line 121-123
+		// const phys = Ext.create('VSCodeExtJS.common.PatientDropdown', {
+		//
+		// });
+		//
+		await testCompletion(docUri, new vscode.Position(121, 3), "u", {
+			items: [
+				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
+			]
+		});
+		//
 		// Inside object
 		// Line 124-126
 		// const phys = Ext.create('VSCodeExtJS.common.PhysicianDropdown', {
@@ -99,13 +111,8 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(124, 3), "", {
 			items: [
-				{ label: "userName UserDropdown Config", kind: vscode.CompletionItemKind.Property },
+				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property },
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
-			]
-		});
-		await testCompletion(docUri, new vscode.Position(124, 3), "u", {
-			items: [
-				{ label: "userName UserDropdown Config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 	});
@@ -119,10 +126,10 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(70, 7), ".", {
 			items: [
-				{ label: "setTest", kind: vscode.CompletionItemKind.Method },
-				{ label: "getTest", kind: vscode.CompletionItemKind.Method },
-				{ label: "test Config", kind: vscode.CompletionItemKind.Property },
-				{ label: "test2 Config", kind: vscode.CompletionItemKind.Property }
+				{ label: "setTest config setter", kind: vscode.CompletionItemKind.Method },
+				{ label: "getTest config getter", kind: vscode.CompletionItemKind.Method },
+				{ label: "test config", kind: vscode.CompletionItemKind.Property },
+				{ label: "test2 config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 	});
@@ -130,6 +137,8 @@ suite("Completion Tests", () =>
 
 	test("Local inherited methods", async () =>
 	{
+		const incDeprecated = configuration.get<boolean>("intellisenseIncludeDeprecated");
+		await configuration.update("intellisenseIncludeDeprecated", true);
 		//
 		// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
 		// Line 83
@@ -143,6 +152,15 @@ suite("Completion Tests", () =>
 				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
+
+		await configuration.update("intellisenseIncludeDeprecated", false);
+		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
+			items: [
+				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method }
+			]
+		}, false);
+
+		await configuration.update("intellisenseIncludeDeprecated", incDeprecated);
 	});
 
 
@@ -171,7 +189,7 @@ suite("Completion Tests", () =>
 		});
 		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
 			items: [
-				{ label: "getPinNumberInternal", kind: vscode.CompletionItemKind.Method }
+				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
 			]
 		}, false);
 		await configuration.update("intellisenseIncludePrivate", true);
@@ -180,7 +198,7 @@ suite("Completion Tests", () =>
 				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
 				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method },
 				// { label: "getPinNumberInternal (private)", kind: vscode.CompletionItemKind.Method },
-				{ label: "getPinNumberInternal", kind: vscode.CompletionItemKind.Method }
+				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
 		await configuration.update("intellisenseIncludeDeprecated", incDeprecated);
@@ -199,7 +217,7 @@ suite("Completion Tests", () =>
 				{ label: "common", kind: vscode.CompletionItemKind.Class },
 				{ label: "AppUtilities", kind: vscode.CompletionItemKind.Class }
 			]
-		});
+		}, true, "middle classpath inline");
 
 		//
 		// Line 72
@@ -218,7 +236,7 @@ suite("Completion Tests", () =>
 		await testCompletion(docUri, new vscode.Position(74, 21), ".", {
 			items: [
 				{ label: "PhysicianDropdown", kind: vscode.CompletionItemKind.Class },
-				{ label: "UserDropdown", kind: vscode.CompletionItemKind.Class }
+				{ label: "UserDropdown (since v1.0.0)", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 	});
@@ -240,13 +258,17 @@ suite("Completion Tests", () =>
 
 	test("Full xtype lines", async () =>
 	{
+		const quoteCharacter = configuration.get<string>("quoteCharacter", "Single");
+		await configuration.update("quoteCharacter", "Single");
 		//
-		// Line 121-123
-		// const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
+		// Line 187 - 191
+		// const grid = Ext.create({
+		//	   hidden: false,
+		//	   disabled: true,
 		//
 		// });
 		//
-		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
+		await testCompletion(docUri, new vscode.Position(189, 3), "x", {
 			items: [
 				{ label: "xtype: component", kind: vscode.CompletionItemKind.Property },
 				{ label: "xtype: grid", kind: vscode.CompletionItemKind.Property },
@@ -256,6 +278,19 @@ suite("Completion Tests", () =>
 				{ label: "xtype: userdropdown", kind: vscode.CompletionItemKind.Property }
 			]
 		});
+		//
+		// Line 121-123 - should return nothing, since the component is defined
+		// in the 1st argument to Ext.create
+		//
+		// const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
+		//
+		// });
+		//
+		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
+			items: []
+		});
+
+		await configuration.update("quoteCharacter", quoteCharacter);
 	});
 
 
@@ -270,7 +305,7 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(166, 3), "u", {
 			items: [
-				{ label: "userName UserDropdown Config", kind: vscode.CompletionItemKind.Property }
+				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 		await testCompletion(docUri, new vscode.Position(166, 3), "r", {
@@ -284,7 +319,7 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(170, 3), "u", {
 			items: [
-				{ label: "userName UserDropdown Config", kind: vscode.CompletionItemKind.Property }
+				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 		await testCompletion(docUri, new vscode.Position(170, 3), "r", {
@@ -298,7 +333,7 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(174, 3), "u", {
 			items: [
-				{ label: "userName Config", kind: vscode.CompletionItemKind.Property }
+				{ label: "userName config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 		await testCompletion(docUri, new vscode.Position(174, 3), "r", {
@@ -313,12 +348,12 @@ suite("Completion Tests", () =>
 		await testCompletion(docUri, new vscode.Position(181, 3), "a", {
 			items: [
 				{ label: "allowBlank", kind: vscode.CompletionItemKind.Property },
-				{ label: "maxHeight Component Config", kind: vscode.CompletionItemKind.Property }
+				{ label: "maxHeight Component config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 		await testCompletion(docUri, new vscode.Position(181, 3), "m", {
 			items: [
-				{ label: "maxHeight Component Config", kind: vscode.CompletionItemKind.Property }
+				{ label: "maxHeight Component config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 		await testCompletion(docUri, new vscode.Position(181, 3), "f", {
@@ -343,7 +378,7 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(158, 3), "u", {
 			items: [
-				{ label: "userName UserDropdown Config", kind: vscode.CompletionItemKind.Property }
+				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
 			]
 		});
 		await testCompletion(docUri, new vscode.Position(158, 3), "r", {
@@ -356,8 +391,11 @@ suite("Completion Tests", () =>
 });
 
 
-async function testCompletion(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedCompletionList: vscode.CompletionList, shouldShow = true)
+async function testCompletion(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedCompletionList: vscode.CompletionList, shouldShow = true, testDesc?: string)
 {
+	const logKind = "Class";
+	const logDesc = "middle classpath inline";
+
 	const actualCompletionList = (await vscode.commands.executeCommand(
 		"vscode.executeCompletionItemProvider",
 		docUri,
@@ -365,23 +403,26 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		triggerChar
 	)) as vscode.CompletionList;
 
-	// console.log("####################################");
-	// console.log(docUri.path);
-	// console.log("actual items length", actualCompletionList.items.length);
-	// console.log("expected items length", expectedCompletionList.items.length);
-	// console.log("####################################");
-	// let ct = 0;
-	// actualCompletionList.items.forEach((actualItem, i) => {
-	// 	// const actualItem = actualCompletionList.items[i];
-	// 	// assert.equal(actualItem.label, expectedItem.label);
-	// 	// assert.equal(actualItem.kind, expectedItem.kind);
-	// 	if (triggerChar && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === "Property") {
-	// 		console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
-	// 	}
-	// 	if (++ct > 50) {
-	// 		return false; // break forEach
-	// 	}
-	// });
+	if (testDesc === logDesc)
+	{
+		console.log("####################################");
+		console.log(docUri.path);
+		console.log("actual items length", actualCompletionList.items.length);
+		console.log("expected items length", expectedCompletionList.items.length);
+		console.log("####################################");
+		let ct = 0;
+		actualCompletionList.items.forEach((actualItem, i) => {
+			// const actualItem = actualCompletionList.items[i];
+			// assert.equal(actualItem.label, expectedItem.label);
+			// assert.equal(actualItem.kind, expectedItem.kind);
+			if (triggerChar && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
+				console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
+			}
+			if (++ct > 50) {
+				return false; // break forEach
+			}
+		});
+	}
 
 	assert.ok(actualCompletionList.items.length >= expectedCompletionList.items.length);
 
@@ -390,8 +431,8 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 			actualCompletionList.items.filter((item) =>
 			{
 				return item.kind === expectedItem.kind && (item.label.replace(/ /g, "") === expectedItem.label.replace(/ /g, "") ||
-						item.insertText?.toString().replace(/ /g, "") === expectedItem.label.replace(/ /g, ""));
-			}).length, shouldShow ? 1 : 0, expectedItem.label + " not found"
+						item.insertText?.toString().replace(/ /g, "") === expectedItem.insertText?.toString().replace(/ /g, ""));
+			}).length, shouldShow ? 1 : 0, expectedItem.label + " not found" + (testDesc ? ` (${testDesc})` : "")
 		);
 	});
 }

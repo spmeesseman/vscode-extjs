@@ -140,6 +140,71 @@ suite("Code Action Tests", () =>
 		await waitForValidation();
 	});
 
+
+	test("Uses array", async () =>
+	{	//
+		// Open file with bad requires block
+		//
+		const mainGridUri = getDocUri("app/shared/src/main/Grid.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(mainGridUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await waitForValidation();
+
+		//
+		// The uses array:
+		//
+		// 09
+		// 10   uses: [
+        // 11     "Ext.rid.Panel"
+    	// 12   ]
+		// 13
+		//
+
+		const data: vscode.CodeAction[] = [{
+			title: "Ignore errors of this type (this line only)",
+			command: {
+				title: "Ignore errors of this type (this line only)",
+				command: "vscode-extjs:ignoreError",
+				arguments: [ ErrorCode.classNotFound, mainGridUri.path, toRange(0, 0, 0, 0) ]
+			}
+		},
+		{
+			title: "Ignore errors of this type (file)",
+			command: {
+				title: "Ignore errors of this type (file)",
+				command: "vscode-extjs:ignoreError",
+				arguments: [ ErrorCode.classNotFound, mainGridUri.path ]
+			}
+		},
+		{
+			title: "Ignore errors of this type (global)",
+			command: {
+				title: "Ignore errors of this type (global)",
+				command: "vscode-extjs:ignoreError",
+				arguments: [ ErrorCode.classNotFound ]
+			}
+		}];
+
+		const range = toRange(10, 8, 10, 23);
+		if (data[0].command && data[0].command.arguments) {
+			data[0].command.arguments[2] = range;
+			await testCodeAction(mainGridUri, range, data);
+			await waitForValidation();
+		}
+		else {
+			assert.fail("undefined range for uses quick fix 1");
+		}
+
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitForValidation();
+	});
+
 });
 
 
