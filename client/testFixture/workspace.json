@@ -1,7 +1,7 @@
 {
     "frameworks":
     {
-        "ext": "extjs"
+        "ext": "node_modules/@sencha/ext"
     },
     "build":
     {
