@@ -20,9 +20,6 @@ class FsStorage
     private async checkKeyPath(key: string)
     {
         const storagePath = path.join(this.baseStoragePath, key);
-        if (!fs.pathExists(storagePath)) {
-            await fs.createDir(storagePath);
-        }
         try {
             if (!(await fs.pathExists(storagePath)))
             {

@@ -1043,13 +1043,14 @@ class ExtjsLanguageManager
 
     private getCmpStorageFileName(fsPath: string, nameSpace: string)
     {
-        let sFile = Uri.file(fsPath).path;
-        const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
+        const uriFile = Uri.file(fsPath),
+              wsf = workspace.getWorkspaceFolder(uriFile);
+        let sFile = path.join(path.basename(uriFile.fsPath), nameSpace, "components.json");
         if (wsf) {
             const projectName = path.basename(wsf.uri.fsPath);
             sFile = path.join(projectName, fsPath.replace(wsf.uri.fsPath, ""), nameSpace, "components.json");
         }
-        return path.join(path.dirname(sFile), nameSpace, "components.json");
+        return sFile;
     }
 
 
