@@ -18,8 +18,8 @@ export class ConfigParser
         const config: IConf[] = [],
 			  confUris = await workspace.findFiles("**/.extjsrc{.json,}"),
               appDotJsonUris = await workspace.findFiles("**/app.json"),
-			  fwDirectory = configuration.get<string>("frameworkDirectory");
-        let settingsPaths = configuration.get<string[]|string>("include");
+			  fwDirectory = configuration.get<string>("frameworkDirectory"),
+              settingsPaths = configuration.get<string[]>("include");
 
         // workspace.workspaceFolders?.map(folder => folder.uri.path)
 
@@ -30,9 +30,6 @@ export class ConfigParser
         //
         if (settingsPaths)
         {
-            if (typeof settingsPaths === "string") {
-                settingsPaths = [ settingsPaths ];
-            }
             for (const path of settingsPaths)
             {
                 const pathParts = path?.split("|");

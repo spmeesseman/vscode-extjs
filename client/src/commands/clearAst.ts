@@ -12,29 +12,26 @@ export async function clearAst(project?: string, force = false, logPad = "")
 {
     log.methodStart("clear ast command", 1, logPad, true, [["cache path", fsStoragePath]]);
 
-    if (!extjsLangMgr.isBusy() || force)
+    if (workspace.workspaceFolders && (force || !extjsLangMgr.isBusy()))
     {
-        if (workspace.workspaceFolders)
-        {
-            let nsPath = fsStoragePath;
-            if (project) {
-                nsPath = path.join(fsStoragePath, project);
-                log.value("   removing directory", nsPath, 1, logPad);
-                await deleteDir(nsPath);
-            }
-            else {
-                for (const wsFolder of workspace.workspaceFolders)
-                {
-                    const projectName = path.basename(wsFolder.uri.fsPath),
-                        projectPath = path.join(nsPath, projectName);
-                    log.value("   removing directory", projectPath, 1, logPad);
-                    await deleteDir(projectPath);
-                }
+        let nsPath = fsStoragePath;
+        if (project) {
+            nsPath = path.join(fsStoragePath, project);
+            log.value("   removing directory", nsPath, 1, logPad);
+            await deleteDir(nsPath);
+        }
+        else {
+            for (const wsFolder of workspace.workspaceFolders)
+            {
+                const projectName = path.basename(wsFolder.uri.fsPath),
+                    projectPath = path.join(nsPath, projectName);
+                log.value("   removing directory", projectPath, 1, logPad);
+                await deleteDir(projectPath);
             }
         }
     }
     else {
-        log.write("   busy, did not run command", 1, logPad);
+        log.write("   did not run command", 1, logPad);
     }
 
     log.methodStart("clear ast command", 1, logPad);

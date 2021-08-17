@@ -221,7 +221,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // If this is a `config` property (i.e. IConfig), then add getter/setter
         //
-        if (kind === CompletionItemKind.Property && ("getter" in cmp || "setter" in cmp))
+        if (kind === CompletionItemKind.Property)
         {
             if ("getter" in cmp)
             {
@@ -335,7 +335,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             const baseCmp = cmp;
             if (!baseCmp) { return; }
-            completionItems.push(...this.getCmpCompletionItems(text, baseCmp, position, document, addedItems, logPad + "   ", logLevel + 1));
+            completionItems.push(...this.getCmpCompletionItems(baseCmp, position, document, addedItems, logPad + "   ", logLevel + 1));
             //
             // Traverse up the inheritance tree, checking the 'extend' property and if
             // it exists, we include public class properties in the Intellisense
@@ -475,10 +475,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 log.write("   added inline completion item", logLevel + 2, logPad);
                 log.value("      item", cCls, logLevel + 2, logPad);
             }
-            else {
-                log.write("   skipped inline completion item", logLevel + 3, logPad);
-                log.value("      item", cCls, logLevel + 3, logPad);
-            }
         }
 
         log.methodDone("get child cls completion items", logLevel, logPad, false, [["# of added items", completionItems.length]]);
@@ -486,54 +482,33 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getCmpCompletionItems(text: string, component: IComponent, position: Position, document: TextDocument, addedItems: string[], logPad: string, logLevel: number): CompletionItem[]
+    private getCmpCompletionItems(component: IComponent, position: Position, document: TextDocument, addedItems: string[], logPad: string, logLevel: number): CompletionItem[]
     {
         const completionItems: CompletionItem[] = [];
         log.methodStart("get cmp completion items", logLevel, logPad);
 
-        component.methods.forEach((c: IMethod) =>
+        component.methods.filter((m) => !addedItems.includes(m.name)).forEach((c: IMethod) =>
         {
-            if (addedItems.indexOf(c.name) === -1)
-            {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
-                addedItems.push(c.name);
-                log.write("   added methods dot completion method", logLevel + 2, logPad);
-                log.value("      name", c.name, logLevel + 2);
-            }
-            else {
-                log.write("   skipped methods dot completion item", logLevel + 3, logPad);
-                log.value("      item", c.name, logLevel + 3, logPad);
-            }
+            completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
+            addedItems.push(c.name);
+            log.write("   added methods dot completion method", logLevel + 2, logPad);
+            log.value("      name", c.name, logLevel + 2);
         });
 
-        component.properties.forEach((c: IProperty) =>
+        component.properties.filter((p) => !addedItems.includes(p.name)).forEach((c: IProperty) =>
         {
-            if (addedItems.indexOf(c.name) === -1)
-            {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
-                addedItems.push(c.name);
-                log.write("   added properties dot completion method", logLevel + 2, logPad);
-                log.value("      name", c.name, logLevel + 2, logPad);
-            }
-            else {
-                log.write("   skipped properties dot completion item", logLevel + 3, logPad);
-                log.value("      item", c.name, logLevel + 3, logPad);
-            }
+            completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
+            addedItems.push(c.name);
+            log.write("   added properties dot completion method", logLevel + 2, logPad);
+            log.value("      name", c.name, logLevel + 2, logPad);
         });
 
-        component.configs.forEach((c: IConfig) =>
+        component.configs.filter((c) => !addedItems.includes(c.name)).forEach((c: IConfig) =>
         {
-            if (addedItems.indexOf(c.name) === -1)
-            {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, false, undefined, position, document, logPad + "   ", logLevel + 1));
-                addedItems.push(c.name);
-                log.write("   added configs dot completion method", logLevel + 2);
-                log.value("      name", c.name, logLevel + 2, logPad);
-            }
-            else {
-                log.write("   skipped configs dot completion item", logLevel + 3, logPad);
-                log.value("      item", c.name, logLevel + 3, logPad);
-            }
+            completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, false, undefined, position, document, logPad + "   ", logLevel + 1));
+            addedItems.push(c.name);
+            log.write("   added configs dot completion method", logLevel + 2);
+            log.value("      name", c.name, logLevel + 2, logPad);
         });
 
         //

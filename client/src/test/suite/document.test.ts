@@ -77,9 +77,45 @@ suite("Document Tests", () =>
 
 	test("Non-ExtJS document", async () =>
 	{   //
-		// Open file with bad requires block
+		// Open non extjs doc outside of a classpath
 		//
-		const jssUri = getDocUri("js/script1.js");
+		let jssUri = getDocUri("js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitForValidation();
+		//
+		// Open non extjs doc inside of a classpath
+		//
+		jssUri = getDocUri("app/js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitForValidation();
+	});
+
+
+	test("Ignored document", async () =>
+	{   //
+		// Open file that should be ignored
+		//
+		const jssUri = getDocUri("app/shared/src/test/Test.js");
 		try {
 			const doc = await vscode.workspace.openTextDocument(jssUri);
 			await vscode.window.showTextDocument(doc);
