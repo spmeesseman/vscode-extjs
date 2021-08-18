@@ -107,12 +107,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    createCompletionItem(property: string, cmpClass: string, nameSpace: string, kind: CompletionItemKind, isConfig: boolean, isStatic: boolean, isInlineChild: boolean, extendedFrom: string | undefined, position: Position, document: TextDocument, logPad = "   ", logLevel = 2)
+    createCompletionItem(property: string, cmpClass: string, nameSpace: string, kind: CompletionItemKind, isStatic: boolean, isInlineChild: boolean, extendedFrom: string | undefined, position: Position, document: TextDocument, logPad = "   ", logLevel = 2)
     {
         const propCompletion: CompletionItem[] = [];
         log.methodStart("create completion item", logLevel, logPad, false, [
             ["property", property], ["namespace", nameSpace], ["kind", kind.toString()],
-            ["is config", isConfig], ["extended from", extendedFrom], ["position", position]
+            ["extended from", extendedFrom], ["position", position]
         ]);
 
         //
@@ -173,7 +173,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             completionItem.commitCharacters = [ "." ];
         }
 
-        let tagText = !isInlineChild ? this.tagText(cmp, property, isConfig, extendedFrom) : "";
+        let tagText = !isInlineChild ? this.tagText(cmp, property, extendedFrom) : "";
         if (tagText)
         {
             completionItem.insertText = property;
@@ -242,7 +242,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 const getterItem = new CompletionItem(cmp.getter, CompletionItemKind.Method);
                 getterItem.documentation = cmp.markdown;
                 getterItem.commitCharacters = [ "(" ];
-                tagText = this.tagText(cmp, cmp.getter, true, extendedFrom);
+                tagText = this.tagText(cmp, cmp.getter, extendedFrom);
                 if (tagText) {
                     getterItem.insertText = cmp.getter;
                     getterItem.label = this.getLabel(getterItem.label, tagText);
@@ -254,7 +254,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 const setterItem = new CompletionItem(cmp.setter, CompletionItemKind.Method);
                 setterItem.documentation = cmp.markdown;
                 setterItem.commitCharacters = [ "(" ];
-                tagText = this.tagText(cmp, cmp.setter, true, extendedFrom);
+                tagText = this.tagText(cmp, cmp.setter, extendedFrom);
                 if (tagText) {
                     setterItem.insertText = cmp.setter;
                     setterItem.label = this.getLabel(setterItem.label, tagText);
@@ -431,7 +431,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     if (!addedItems.includes(sf)) {
                         log.value("   add sub-component", sf, logLevel + 2, logPad);
                         completionItems.push(...this.createCompletionItem(sf, lineCls + "." + sf, nameSpace, CompletionItemKind.Class,
-                                                                          false, false, false, undefined, position, document, logPad + "   ", logLevel + 2));
+                                                                          false, false, undefined, position, document, logPad + "   ", logLevel + 2));
                         addedItems.push(sf);
                     }
                 }
@@ -511,7 +511,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
             if (cCls && !addedItems.includes(cCls))
             {
-                completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, false, true, undefined, position, document, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(cCls, cls, nameSpace, CompletionItemKind.Class, false, true, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(cCls);
                 log.write("   added inline completion item", logLevel + 2, logPad);
                 log.value("      item", cCls, logLevel + 2, logPad);
@@ -532,7 +532,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             component.methods.filter((m) => !addedItems.includes(m.name)).forEach((c: IMethod) =>
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Method, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added methods dot completion method", logLevel + 2, logPad);
                 log.value("      name", c.name, logLevel + 2);
@@ -540,7 +540,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
             component.properties.filter((p) => !addedItems.includes(p.name)).forEach((c: IProperty) =>
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added properties dot completion method", logLevel + 2, logPad);
                 log.value("      name", c.name, logLevel + 2, logPad);
@@ -550,7 +550,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {
                 component.configs.filter((c) => !addedItems.includes(c.name)).forEach((c: IConfig) =>
                 {
-                    completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, true, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                    completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                     addedItems.push(c.name);
                     log.write("   added configs dot completion method", logLevel + 2);
                     log.value("      name", c.name, logLevel + 2, logPad);
@@ -558,7 +558,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
                 component.privates.filter((c) => !addedItems.includes(c.name)).forEach((c: IProperty | IMethod) =>
                 {
-                    completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                    completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                     addedItems.push(c.name);
                     log.write("   added privates dot completion method", logLevel + 2);
                     log.value("      name", c.name, logLevel + 2, logPad);
@@ -569,7 +569,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {
             component.statics.filter((c) => !addedItems.includes(c.name)).forEach((c: IProperty | IMethod) =>
             {
-                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, true, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                const kind = utils.isProperty(c) ? CompletionItemKind.Property : CompletionItemKind.Method;
+                completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, kind, true, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added statics dot completion method", logLevel + 2);
                 log.value("      name", c.name, logLevel + 2, logPad);
@@ -602,7 +603,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // A helper function to add items to the completion list that will be provided to VSCode
         //
-        const _add = (cmp: IConfig | IProperty | undefined, cls: string, basic: boolean, kind: CompletionItemKind, isConfig = false, extendedCls?: string, doc?: string) =>
+        const _add = (cmp: IConfig | IProperty | undefined, cls: string, basic: boolean, kind: CompletionItemKind, extendedCls?: string, doc?: string) =>
         {   //
             // See if the typed text is inclusive in this class name (cls)...
             //
@@ -618,10 +619,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     // configs, properties within an object.
                     //
                     if (!basic) {
-                        cItems = this.createCompletionItem(cCls, cls, ns, kind, isConfig, false, false, extendedCls, position, document, logPad + "   ", logLevel + 1);
+                        cItems = this.createCompletionItem(cCls, cls, ns, kind, false, false, extendedCls, position, document, logPad + "   ", logLevel + 1);
                     }
                     else {
-                        const tagText = this.tagText(cmp, cCls, isConfig, extendedCls);
+                        const tagText = this.tagText(cmp, cCls, extendedCls);
                         cItems = [ new CompletionItem(this.getLabel(cCls, tagText), kind) ];
                         if (tagText) {
                             cItems[0].insertText = cCls;
@@ -661,12 +662,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             if (!cmp) { return; }
             cmp?.configs.forEach((c: IConfig) =>
             {
-                _add(c, c.name, true, CompletionItemKind.Property, true, extendedCls, c.markdown);
+                _add(c, c.name, true, CompletionItemKind.Property, extendedCls, c.markdown);
             });
             cmp?.properties.forEach((p: IProperty) =>
             {
                 if (this.ignoreProps.indexOf(p.name) === -1) {
-                    _add(p, p.name, true, CompletionItemKind.Property, false, extendedCls, p.markdown);
+                    _add(p, p.name, true, CompletionItemKind.Property, extendedCls, p.markdown);
                 }
             });
             //
@@ -1067,7 +1068,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private tagText(cmp: IComponent | IMethod | IProperty | IConfig | undefined, property: string, isConfig: boolean, extendedCls?: string)
+    private tagText(cmp: IComponent | IMethod | IProperty | IConfig | undefined, property: string, extendedCls?: string)
     {
         let tagText = "";
 
@@ -1083,7 +1084,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // If it's a config and not a property
         //
-        if (isConfig)
+        if (utils.isConfig(cmp))
         {
             tagText += "config ";
             if (property.startsWith("get")) {
@@ -1110,6 +1111,15 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         if (cmp?.private)
         {
             tagText += "(private) ";
+        }
+
+        //
+        // Show/hide private properties according to user settings (default false)
+        // If this property is hidden by user preference, this method exited already above.
+        //
+        if ((utils.isProperty(cmp) || utils.isMethod(cmp)) && cmp.static)
+        {
+            tagText += "(static) ";
         }
 
         //

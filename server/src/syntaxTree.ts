@@ -267,19 +267,19 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (isObjectProperty(propertyPrivates))
                         {
-                            componentInfo.privates.push(...parseConfig(propertyPrivates, componentInfo.componentClass));
+                            componentInfo.privates.push(...parsePropertyBlock(propertyPrivates, componentInfo.componentClass, false, text, fsPath));
                         }
                         logProperties("privates", componentInfo.privates);
 
                         if (isObjectProperty(propertyStatics))
                         {
-                            componentInfo.statics.push(...parseStatics(propertyStatics, componentInfo.componentClass, text, fsPath));
+                            componentInfo.statics.push(...parsePropertyBlock(propertyStatics, componentInfo.componentClass, true, text, fsPath));
                         }
                         logProperties("statics", componentInfo.statics);
 
                         if (propertyProperty && propertyProperty.length)
                         {
-                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass));
+                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass, false));
                         }
                         logProperties("properties", componentInfo.properties);
 
@@ -296,7 +296,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (propertyMethod && propertyMethod.length)
                         {
-                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, fsPath));
+                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, false, fsPath));
                             componentInfo.methods.forEach((m) => {
                                 componentInfo.objectRanges.push(...m.objectRanges);
                             });
@@ -679,7 +679,7 @@ function getVariableType(cls: string): VariableType
 }
 
 
-function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, fsPath: string): IMethod[]
+function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, fsPath: string): IMethod[]
 {
     const methods: IMethod[] = [];
 
@@ -715,7 +715,8 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     deprecated: doc?.includes("@deprecated"),
                     objectRanges: getMethodObjectRanges(m, propertyName),
                     bodyStart: m.value.loc!.start,
-                    bodyEnd: m.value.loc!.end
+                    bodyEnd: m.value.loc!.end,
+                    static: isStatic
                 });
             }
         }
@@ -755,7 +756,7 @@ function parseMixins(propertyMixins: ObjectProperty)
 }
 
 
-function parseProperties(propertyProperties: ObjectProperty[], componentClass: string): IProperty[]
+function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, isStatic: boolean): IProperty[]
 {
     const properties: IProperty[] = [];
     propertyProperties.forEach((m) =>
@@ -773,7 +774,8 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
                     since: getSince(doc),
                     private: doc?.includes("@private"),
                     deprecated: doc?.includes("@deprecated"),
-                    componentClass
+                    componentClass,
+                    static: isStatic
                 });
             }
         }
@@ -858,7 +860,7 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
 }
 
 
-function parseStatics(staticsConfig: ObjectProperty, componentClass: string, text: string | undefined, fsPath: string)
+function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: string, isStatic: boolean, text: string | undefined, fsPath: string)
 {
     const statics: (IMethod| IProperty)[] = [];
     if (isObjectExpression(staticsConfig.value))
@@ -866,8 +868,8 @@ function parseStatics(staticsConfig: ObjectProperty, componentClass: string, tex
         const propertyMethod = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
         const propertyProperty = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
 
-        statics.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, fsPath));
-        statics.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass));
+        statics.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, isStatic, fsPath));
+        statics.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, isStatic));
     }
     return statics;
 }

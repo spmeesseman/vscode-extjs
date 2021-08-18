@@ -6,6 +6,7 @@ import {
 import { extjsLangMgr } from "../extension";
 import { isComponent } from "../common/clientUtils";
 import * as log from "../common/log";
+import { IComponent, IMethod, utils } from "../../../common";
 
 
 class MethodSignatureProvider implements SignatureHelpProvider
@@ -62,7 +63,8 @@ class MethodSignatureProvider implements SignatureHelpProvider
     {
 		let signature = "";
         const params: ParameterInformation[] = [],
-			  matches = lineText.match(/([\w]+\.)/g);
+			  matches = lineText.match(/([\w]+\.)/g),
+              methodName = lineText.substring(lineText.lastIndexOf(".") + 1, lineText.indexOf("("));
 
 		//
 		// Create signature parameter information
@@ -71,6 +73,18 @@ class MethodSignatureProvider implements SignatureHelpProvider
         {
             let ns = extjsLangMgr.getNamespaceFromFile(fsPath);
             let cls = "";
+            const _add = (method: IMethod) =>
+            {
+                if (method.name === methodName && method.params)
+                {
+                    for (const p of method.params)
+                    {
+                        params.push(new ParameterInformation(p.name, p.markdown || p.doc));
+                    }
+                    return true;
+                }
+            };
+
             for (const m of matches)
             {
                 cls += m;
@@ -83,16 +97,18 @@ class MethodSignatureProvider implements SignatureHelpProvider
 
             if (isComponent(cmp))
             {
-				const methodName = lineText.substring(lineText.lastIndexOf(".") + 1, lineText.indexOf("("));
                 for (const m of cmp.methods)
                 {
-                    if (m.name === methodName && m.params)
+                    if (_add(m) === true) break;
+                }
+                if (params.length === 0) // check statics
+                {
+                    for (const s of cmp.statics)
                     {
-						for (const p of m.params)
-						{
-							params.push(new ParameterInformation(p.name, p.markdown || p.doc));
-						}
-						break;
+                        if (utils.isMethod(s))
+                        {
+                            if (_add(s) === true) break;
+                        }
                     }
                 }
             }

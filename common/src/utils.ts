@@ -1,4 +1,4 @@
-import { IConfig, IMethod, IProperty } from "./interface";
+import { IComponent, IConfig, IMethod, IProperty } from "./interface";
 
 export function atob(str: string): string
 {
@@ -34,9 +34,9 @@ export async function forEachMapAsync(map: any, callback: any)
 }
 
 
-export function isConfig(component: IProperty | IMethod | IConfig)
+export function isConfig(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IConfig
 {
-    return "getter" in component;
+    return !!component && "getter" in component;
 }
 
 
@@ -59,9 +59,9 @@ export function isLowerCase(value: string)
 }
 
 
-export function isMethod(component: IProperty | IMethod | IConfig)
+export function isMethod(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IMethod
 {
-    return "variables" in component;
+    return !!component && "variables" in component;
 }
 
 
@@ -89,9 +89,9 @@ export function isObject(value: any): value is string
 }
 
 
-export function isProperty(component: IProperty | IMethod | IConfig)
+export function isProperty(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IProperty
 {
-    return !("variables" in component) && !("getter" in component);
+    return !!component && !("variables" in component) && !("getter" in component);
 }
 
 

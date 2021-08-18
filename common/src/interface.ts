@@ -113,7 +113,7 @@ export interface IConf
 }
 
 
-export interface IConfig extends IProperty
+export interface IConfig extends IPropertyBase
 {
     setter: string;
     getter: string;
@@ -160,13 +160,19 @@ export interface IPrimitive extends IExtJsBase
 }
 
 
-export interface IProperty extends IExtJsBase
+export interface IPropertyBase extends IExtJsBase
 {
     doc?: string;
     markdown?: any;
     private?: boolean;
     deprecated?: boolean;
     since?: string;
+}
+
+
+export interface IProperty extends IPropertyBase
+{
+    static: boolean;
 }
 
 
