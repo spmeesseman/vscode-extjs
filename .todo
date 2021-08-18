@@ -1,4 +1,27 @@
 
+Completion:
+
+	☐ xtype cmopletion is displaying outside of blocks, i.e. comments
+	✔ xtype selection is double printing xtype if already typed in and into the string part @done(21-08-15 19:17)
+	✔ Add mixin config to syntax tree parsing @done(21-08-13 14:35)
+		Process as an extended class for properties/configs/methods
+	☐ When writing method parameters, and they are line broken (i.e. object param), method signature breaks
+	✔ Inline does not work when preceded by 'await ' (or probably any other word) @done(21-08-13 17:08)
+	✔ Main namespace inline does not work.  e.g. 'Ext', or 'VSCodeExtJS', 'GEMS' @done(21-08-17 23:44)
+	☐ For instance properties, the 'go to definition' should go to the declaration, not the definition
+		the 'go to type definition' works as intended and goes to the definition
+	☐ The 'this' property needs to check for function scope, currently 'this' is always the main cmp instance
+	☐ dot completion - doesnt work if there are characters to the right
+		e.g.: app.js line 85, remove some of 'PhysicianDropdown' and try typing it in again
+		it will only work if the typing is coming left to right and there are no chars to the right
+		remove it to the left dot, then it gives instance components.  fix weird things here.
+	☐ Instance properties should not show when the class name is typed
+		i.e. "VSCodeExtJS." should not display "testFn" unless it was a singleton or the method was in a 'statics' block
+	☐ Implement 'singleton' - display on classname typing, not instance
+	✔ Implement 'statics' block - display on classname typing, not instance @done(21-08-18 20:35)
+	☐ Should work for a string in a requires/uses/models/stores block should display the doc for that class
+	☐ The 'privates' block should be applied to instance components
+	☐ Model property getter/setter when using associations
 
 Diagnostics:
 
@@ -9,37 +32,26 @@ Diagnostics:
 	✔ Requires - marks onvalid when a class reference is to an alternateClassName @done(21-08-13 15:33)
 		e.g. App.model.user.User as alternate but namespace sees App.model.User
 	☐ Method parameter validation against types in jsdoc
+	☐ The 'models' and 'stores' property in Application.js should be validated like 'requires' and 'uses'
+	☐ the 'uses' validation should have separate error code from 'requires'
 
 JsDoc:
 
 	☐ If jsdoc isn't present for an overridden method, then check for parent method jsdoc
 	☐ Handle the @inheritdoc tag
 	☐ Handle links
-
-Intellisense:
-
-	☐ xtype intellisense is displaying outside of blocks, i.e. comments
-	☐ xtype selection is double printing xtype if already typed in and into the string part
-	✔ Add mixin config to syntax tree parsing @done(21-08-13 14:35)
-		Process as an extended class for properties/configs/methods
-	☐ When writing method parameters, and they are line broken (i.e. object param), method signature breaks
-	✔ Inline does not work when preceded by 'await ' (or probably any other word) @done(21-08-13 17:08)
-	☐ Main namespace inline does not work.  e.g. 'Ext', or 'VSCodeExtJS', 'GEMS'
-	☐ For instance properties, the 'go to definition' should go to the declaration, not the definition
-		the 'go to type definition' works as intended and goes to the definition
-	☐ The 'this' property needs to check for function scope, currently 'this' is always the main cmp instance
-	☐ dot completion - doesnt work if there are characters to the right
-		e.g.: app.js line 85, remove some of 'PhysicianDropdown' and try typing it in again
-		it will only work if the typing is coming left to right and there are no chars to the right
-		remove it to the left dot, then it gives instance components.  fix weird things here.
+	☐ Hovering over a string in a requires/uses/models/stores block should display the doc for that class
+		GoTo Def does.
 
 Miscellaneous:
 
 	✔ add 'clear ast cache' or 'reindex' task for chance becomes corrupt @done(21-08-08 14:15)
 	☐ goto definition for jsdoc parameter types (surrounded with{})
-	☐ Configs and variable level cache mappings need to be separated by a 3rd dimension (currently only project and namespace) @high
-		Separate again using component class name
+	☐ Configs and variable level cache mappings need to be separated by a 3rd dimension @high
+		Separate again using project name (workspace dir name)
+		currently only [namespace][componentname].  needs to be [project][namespace][componentname]
 	✔ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json) @done(21-08-13 16:52)
+	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index them
 
 Stores:
 
