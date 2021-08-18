@@ -25,7 +25,7 @@ class ExtJsDefinitionProvider implements DefinitionProvider
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),
-                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, extjsLangMgr.getNamespaceFromClass(cmpClass), "   "),
+                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, extjsLangMgr.getNamespaceFromClass(cmpClass), false, "   "),
                       range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
                 //

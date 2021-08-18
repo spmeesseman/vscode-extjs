@@ -51,6 +51,28 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 	getPinNumberInternal: function()
 	{
 		return "1212";
+	},
+
+	statics:
+	{
+		/**
+		 * @property {Boolean} staticVariable
+		 * Test a static property
+		 */
+		staticVariable: true,
+
+		/**
+		 * @method saveAll
+		 * @since 1.3.0
+		 * @param {String} defaultName default name
+		 * @param {Boolean} force Force
+		 * @param {Boolean} exitOnError exit on error
+		 * @returns {Boolean} `true` if successful, `false` otherwise
+		 */
+		saveAll: function(defaultName, force, exitOnError)
+		{
+			return false;
+		}
 	}
 
 });

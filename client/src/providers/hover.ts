@@ -49,7 +49,7 @@ class ExtJsHoverProvider implements HoverProvider
         {
             if (cmpType === ComponentType.Method)
             {
-                const method = extjsLangMgr.getMethod(cmpClass, property, nameSpace, "   ");
+                const method = extjsLangMgr.getMethod(cmpClass, property, nameSpace, false, "   ");
                 if (method && method.markdown) {
                     log.value("   provide class hover info", property, 2);
                     hover = new Hover(method.markdown);
@@ -57,7 +57,7 @@ class ExtJsHoverProvider implements HoverProvider
             }
             else if (cmpType === ComponentType.Property)
             {
-                const prop = extjsLangMgr.getProperty(cmpClass, property, nameSpace, "   ");
+                const prop = extjsLangMgr.getProperty(cmpClass, property, nameSpace, false, "   ");
                 if (prop) {
                     if (prop.markdown) {
                         log.value("   provide property hover info", property, 2);

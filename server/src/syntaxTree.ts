@@ -11,7 +11,7 @@ import {
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
-    VariableDeclarator, variableDeclarator, variableDeclaration
+    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral
 } from "@babel/types";
 
 /**
@@ -97,6 +97,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             objectRanges: [],
                             properties: [],
                             privates: [],
+                            singleton: false,
                             start: path.node.loc!.start,
                             statics: [],
                             types: [],
@@ -130,15 +131,24 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         const propertyPrivates = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "privates");
                         const propertyExtend = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "extend");
                         const propertyMixins = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "mixins");
+                        const propertySingleton = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "singleton");
                         const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
                         const propertyObjects = args[1].properties.filter(p => isObjectProperty(p) && !isFunctionExpression(p.value));
 
                         if (isObjectProperty(propertyExtend))
                         {
-                            componentInfo.extend = parseExtend(propertyExtend);
+                            componentInfo.extend = parseStringLiteral(propertyExtend);
                             if (componentInfo.extend) {
                                 logProperties("extend", [ componentInfo.extend ]);
+                            }
+                        }
+
+                        if (isObjectProperty(propertySingleton))
+                        {
+                            componentInfo.singleton = parseBooleanLiteral(propertySingleton);
+                            if (componentInfo.singleton) {
+                                logProperties("singleton", [ componentInfo.singleton.toString() ]);
                             }
                         }
 
@@ -263,7 +273,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (isObjectProperty(propertyStatics))
                         {
-                            componentInfo.statics.push(...parseConfig(propertyStatics, componentInfo.componentClass));
+                            componentInfo.statics.push(...parseStatics(propertyStatics, componentInfo.componentClass, text, fsPath));
                         }
                         logProperties("statics", componentInfo.statics);
 
@@ -423,7 +433,7 @@ function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | 
 }
 
 
-function isDocObject(object: any): object is (IMethod | IProperty | IConfig)
+function isJsDocObject(object: any): object is (IMethod | IProperty | IConfig)
 {
     return "doc" in object;
 }
@@ -443,7 +453,7 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
             else if (p !== undefined)
             {
                 log.write("      " + p.name, 3);
-                if (isDocObject(p) && p.doc) {
+                if (isJsDocObject(p) && p.doc) {
                     log.write(p.doc.replace(/\n/g, "<br>"), 5);
                 }
             }
@@ -559,12 +569,22 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string)
 }
 
 
-function parseExtend(propertyExtend: ObjectProperty): string | undefined
+function parseStringLiteral(property: ObjectProperty): string | undefined
 {
-    if (isStringLiteral(propertyExtend.value))
+    if (isStringLiteral(property.value))
     {
-        return propertyExtend.value.value;
+        return property.value.value;
     }
+}
+
+
+function parseBooleanLiteral(property: ObjectProperty): boolean
+{
+    if (isBooleanLiteral(property.value))
+    {
+        return property.value.value;
+    }
+    return false;
 }
 
 
@@ -835,6 +855,21 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
     }
 
     return params;
+}
+
+
+function parseStatics(staticsConfig: ObjectProperty, componentClass: string, text: string | undefined, fsPath: string)
+{
+    const statics: (IMethod| IProperty)[] = [];
+    if (isObjectExpression(staticsConfig.value))
+    {
+        const propertyMethod = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
+        const propertyProperty = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
+
+        statics.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, fsPath));
+        statics.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass));
+    }
+    return statics;
 }
 
 

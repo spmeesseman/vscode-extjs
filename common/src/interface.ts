@@ -70,6 +70,7 @@ export interface IComponent extends IExtJsBase
     properties: IProperty[];
     requires?: IRequires;
     since?: string;
+    singleton: boolean;
     statics: (IProperty | IMethod)[];
     types: string[];
     uses?: IRequires;

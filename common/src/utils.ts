@@ -1,3 +1,4 @@
+import { IConfig, IMethod, IProperty } from "./interface";
 
 export function atob(str: string): string
 {
@@ -33,6 +34,12 @@ export async function forEachMapAsync(map: any, callback: any)
 }
 
 
+export function isConfig(component: IProperty | IMethod | IConfig)
+{
+    return "getter" in component;
+}
+
+
 export function isExtJsFile(documentText: string | undefined)
 {
     const regex = /Ext\.define\s*\([\r\n]*['"]{1}[\r\n,a-zA-Z0-9.]+['"]{1}\s*,\s*[\r\n]*\s*{/m;
@@ -49,6 +56,12 @@ export function isGetterSetter(method: string): boolean
 export function isLowerCase(value: string)
 {
     return value === value.toLowerCase() && value !== value.toUpperCase();
+}
+
+
+export function isMethod(component: IProperty | IMethod | IConfig)
+{
+    return "variables" in component;
 }
 
 
@@ -73,6 +86,12 @@ export function isNumeric(value: string | number): boolean
 export function isObject(value: any): value is string
 {
     return value && value instanceof Object || typeof value === "object";
+}
+
+
+export function isProperty(component: IProperty | IMethod | IConfig)
+{
+    return !("variables" in component) && !("getter" in component);
 }
 
 
