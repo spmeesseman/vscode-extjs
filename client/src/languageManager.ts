@@ -1385,22 +1385,20 @@ class ExtjsLanguageManager
         if (components && saveToCache)
         {
             const baseDir = this.getAppJsonDir(fsPath),
-                  storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
-                  storedComponents: IComponent[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
-
-            for (const component of components)
+                  storageKey = this.getCmpStorageFileName(baseDir, nameSpace);
+            for (const component of this.components)
             {
-                for (let i = 0; i < storedComponents.length; i++)
+                for (let i = 0; i < this.components.length; i++)
                 {
-                    if (storedComponents[i].fsPath === fsPath)
+                    if (this.components[i].fsPath === fsPath)
                     {
-                        storedComponents[i] = component;
+                        this.components[i] = component;
                         break;
                     }
                 }
             }
 
-            await fsStorage.update(storageKey, JSON.stringify(storedComponents));
+            await fsStorage.update(storageKey, JSON.stringify(this.components));
             await storage.update(storageKey + "_TIMESTAMP", new Date());
         }
 
