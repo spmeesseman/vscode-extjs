@@ -50,6 +50,8 @@ suite("API Tests", () =>
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:indexFiles", "testFixture", false, "   ");
 		await waitForValidation();
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 });
