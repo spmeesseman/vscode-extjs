@@ -1,4 +1,4 @@
-# ExtJs Language Server - Intellisense, Code Completion, and More
+# ExtJs Intellisense - Code Completion, and More
 
 [![authors](https://img.shields.io/badge/authors-scott%20meesseman-6F02B5.svg?logo=visual%20studio%20code)](https://www.littlesm.com)
 [![Installs](https://vsmarketplacebadge.apphb.com/installs-short/spmeesseman.vscode-extjs.svg)](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-extjs)
@@ -6,29 +6,38 @@
 [![Ratings](https://vsmarketplacebadge.apphb.com/rating-short/spmeesseman.vscode-extjs.svg)](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-extjs&ssr=false#review-details)
 [![PayPalDonate](https://img.shields.io/badge/paypal-donate-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=YWZXT3KE2L4BA&item_name=extjs&currency_code=USD)
 
+[![codecov](https://codecov.io/gh/spmeesseman/vscode-extjs/branch/master/graph/badge.svg)](https://codecov.io/gh/spmeesseman/vscode-extjs)
+[![CodeFactor](https://www.codefactor.io/repository/github/spmeesseman/vscode-extjs/badge)](https://www.codefactor.io/repository/github/spmeesseman/vscode-extjs)
+[![app-publisher](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-app--publisher-e10000.svg)](https://github.com/spmeesseman/app-publisher)
+
 [![GitHub issues open](https://img.shields.io/github/issues-raw/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs/issues)
 [![GitHub issues closed](https://img.shields.io/github/issues-closed-raw/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs/pulls)
 [![GitHub last commit](https://img.shields.io/github/last-commit/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs)
-[![app-publisher](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-app--publisher-e10000.svg)](https://github.com/perryjohnsoninc/app-publisher)
 
-_**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The extension is stable, and at the point where it is helping with development, but, there will be bugs and there may be cases within source code where Intellisense doesn't seem to work, cases that have not been come across in usage testing.  Version 1.0.0 will be released once determined bug free*.
+_**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The extension is stable, and at the point where it is helping with development, so I released it.  Version 1.0.0 will be released once I think I have most of what I want in there completed.
 
 ## Table of Contents
 
-- [ExtJs Language Server - Intellisense, Code Completion, and More](#extjs-language-server---intellisense-code-completion-and-more)
+- [ExtJs Intellisense - Code Completion, and More](#extjs-intellisense---code-completion-and-more)
   - [Table of Contents](#table-of-contents)
   - [Description](#description)
   - [File Indexing](#file-indexing)
   - [Configuration](#configuration)
     - [Configuration - The app.json ExtJs Project File](#configuration---the-appjson-extjs-project-file)
     - [Configuration - The .extjsrc.json Configuration File](#configuration---the-extjsrcjson-configuration-file)
-    - [Configuration - The include Setting](#configuration---the-include-setting)
-    - [Configuration - Required Configuration Properties](#configuration---required-configuration-properties)
-      - [Configuration - Required Configuration Property - `name`](#configuration---required-configuration-property---name)
-      - [Configuration - Required Configuration Property - `classpath`](#configuration---required-configuration-property---classpath)
-    - [Configuration - VScode Quick Suggestions](#configuration---vscode-quick-suggestions)
+    - [Configuration - The `name` Setting (Required)](#configuration---the-name-setting-required)
+    - [Configuration - The `classpath` Setting (Required)](#configuration---the-classpath-setting-required)
+    - [Configuration - The `exclude` Setting](#configuration---the-exclude-setting)
+    - [Configuration - The `include` Setting](#configuration---the-include-setting)
+    - [Configuration - VSCode Quick Suggestions](#configuration---vscode-quick-suggestions)
   - [Compared to Sencha Extension](#compared-to-sencha-extension)
+  - [JsDoc](#jsdoc)
+  - [Code Completion](#code-completion)
+  - [GoTo Definitions](#goto-definitions)
+  - [GoTo Type Definitions](#goto-type-definitions)
+  - [Method Signatures](#method-signatures)
+  - [Diagnostics](#diagnostics)
   - [ESLint Tips](#eslint-tips)
   - [Caching](#caching)
   - [Thank You](#thank-you)
@@ -40,7 +49,7 @@ _**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The
 
 ## Description
 
-The ExtJs Language Server provides most Intellisense and other language features that cannot be parsed by a normal JavaScript parser, due to the nature of the Ext.define implementation.
+ExtJs Intellisense is a VSCode Language Server that provides most Intellisense and other language features that cannot be parsed by a normal JavaScript parser, due to the nature of the Ext.define implementation.
 
 - Supports multi-root workspace
 - Automatic parsing, no manual configuration needed
@@ -69,6 +78,8 @@ This language server looks at your entire workspace, whether single or multi roo
 2. .extjsrc.json
 3. settings.json / VSCode Settings
 
+Whether or not an [app.json](#the-appjson-extjs-project-file), [.extjsrc.json](#the-extjsrcjson-configuration-file), or [include](#configuration---the-include-setting) path is used, there are two required properties that must be present for any of the configuration types.  For **include** paths, see the [section below](#configuration---the-include-setting) describing how to specify both of these properties in the Settings entries.  These two properties are [name](#configuration---the-name-setting-required)) and [classpath](#configuration---the-classpath-setting-require).
+
 ### Configuration - The app.json ExtJs Project File
 
 The **app.json** file is a part of all Sencha Cmd and Sencha ext-gen generated Open Tooling projects.  If an **app.json** file is located, the namespaces and classpaths are extracted and added to indexing.  If a corresponding **workspace.json** file is located in the same directory as an **app.json** file, classpaths are extracted from the *packages.dir* property and added to indexing.  The *packages.dir* property should be a comma delimited string of package paths included in the application classpath, these normally specify the paths to the packages included in the *requires* array property of the **app.json** file.
@@ -82,19 +93,7 @@ The **.extjsrc** file can contain any of the defined properties of a Sencha ExtJ
 1. name
 2. classpath
 
-### Configuration - The include Setting
-
-The **include** path(s) can be set to a string or an array of strings of additional paths to be indexed.  These strings must be in the form:
-
-    NAME|RELATIVE_DIRECTORY
-
-The `NAME` part represents the `name` field [described below](#required-configuration-property---name).  The `RELATIVE_DIRECTORY` is a directory that is *relative* to the workspace folders and represents the `classpath` field [described below](#required-configuration-property---classpath).
-
-### Configuration - Required Configuration Properties
-
-Whether or not an [app.json](#the-appjson-extjs-project-file), [.extjsrc.json](#the-extjsrcjson-configuration-file), or [include](#the-include-setting) path is used, there are two required properties that must be present for any of the configuration types.  For **include** paths, see the [section above](#the-include-setting) describing how to specify both of these properties in the Settings entries.  These twp properties are `name` and `classpath`...
-
-#### Configuration - Required Configuration Property - `name`
+### Configuration - The `name` Setting (Required)
 
 The `name` is a string specifying the project name, or main project namespace.  FOr example, if your ExtJS files are defined like:
 
@@ -103,7 +102,7 @@ The `name` is a string specifying the project name, or main project namespace.  
 
 Then the default namespace / project name, in most cases, would be "VSCodeExtJS".  This field corresponds to the `name` property of an [app.json](#the-appjson-extjs-project-file) file.
 
-#### Configuration - Required Configuration Property - `classpath`
+### Configuration - The `classpath` Setting (Required)
 
 The `classpath` is a string, or an array of strings, of where the ExtJS JavaScript files can be located.  This field corresponds to the `classpath` property of an [app.json](#the-appjson-extjs-project-file) file.
 
@@ -111,9 +110,21 @@ Note that classpaths defined in `toolkit` object properties in [app.json](#the-a
 
 That's it, ExtJS Language Server should start indexing your files once a valid configuration file has been found.
 
-### Configuration - VScode Quick Suggestions
+### Configuration - The `exclude` Setting
 
-In order for inline completion items to work correctly, ensure the VSCode editor setting `quickSuggestions` is enabled.  An appropriate setting could be:
+The **exclude** path(s) can be set to a string or an array of globs that should be ignored during indexing.  Keep in mind that for app.json and open tooling projects, this might not work as expected, as only defined `classpaths` are indexed anyway.
+
+### Configuration - The `include` Setting
+
+The **include** path(s) can be set to a string or an array of globs of additional paths to be indexed.  These strings must be in the form:
+
+    NAME|RELATIVE_DIRECTORY
+
+The `NAME` part represents the `name` field [described below](#configuration---the-name-setting-required), this is associated with the base *namespace* of an ExtJs defined component.  The `RELATIVE_DIRECTORY` is a directory that is *relative* to the workspace folders and represents the `classpath` field [described below](#configuration---the-classpath-setting-required).
+
+### Configuration - VSCode Quick Suggestions
+
+In order for *inline* completion to work correctly, ensure the VSCode editor setting `quickSuggestions` is enabled.  An appropriate setting could be:
 
     "editor.quickSuggestions": {
         "other": true,
@@ -154,6 +165,91 @@ Aside from that, the ExtJs Language Server provides everything else it is capabl
 21. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
 22. Configurable validation timeout useful for slower systems.
 23. Miscellaneous custom validations.
+
+## JsDoc
+
+JsDoc comments are most useful to a JavaScript programmer but useless to an ExtJs programmer.  Not anymore... They are parsed and used where applicable just like a standard JavaScript Language Server:
+
+- Hovering over a component class, variable, or other definition
+- When a completion item is highlighted
+- When a method signature helper is invoked, parameter by parameter
+
+ExtJs component classes, methods, configs, and properties can be documented with JsDoc using the same structure as the ExtJs Framework JsDoc comments.  Generally, it's plain old JsDoc with exception of a few ExtJs specific properties - `@cfg` and  `@singleton`.
+
+Examples:
+
+    /**
+     * @class AppName.util.Utilities
+     * 
+     * @singleton
+     * 
+     * Common utility methods
+     */
+    Ext.define(
+    {
+        singleton: true,
+
+        /**
+         * @property {Boolean} dirty
+         * @since 1.2.0
+         */
+        dirty: false,
+
+        /**
+         * @property {Boolean} modified
+         * @deprecated 1.2.0 Use {@link #dirty}
+         */
+        modified: false,
+
+        /**
+         * @method getUserName
+         * Gets the name of the logged in user
+         * @param {Boolean} useTitleCase If `true`, returns the name in title/proper casing.
+         * @returns {String}
+         */ 
+        getUserName: function(useTitleCase)
+        {
+
+        }
+
+    });
+
+    /**
+     * @class AppName.view.main.Main
+     * 
+     * The main screen
+     */
+    Ext.define(
+    {
+        extend: 'Ext.Panel',
+        config:
+        {
+            /**
+            * @cfg {String} userName
+            * The username to display on the top banner
+            */ 
+            userName: null
+        }
+    });
+## Code Completion
+
+TODO
+
+## GoTo Definitions
+
+TODO
+
+## GoTo Type Definitions
+
+TODO
+
+## Method Signatures
+
+TODO
+
+## Diagnostics
+
+TODO
 
 ## ESLint Tips
 
@@ -240,13 +336,6 @@ See the [current TODO List](https://github.com/spmeesseman/vscode-extjs/blob/mas
 |extjs-pkg-tinymce|ExtJS TinyMCE Wrapper|[GitHub](https://github.com/spmeesseman/extjs-pkg-tinymce)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-pkg-tinymce)|
 |extjs-pkg-websocket|ExtJS WebSocket Wrapper|[GitHub](https://github.com/spmeesseman/extjs-pkg-websocket)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-pkg-websocket)|
 |extjs-pkg-webworker|ExtJS WebWorker Wrapper|[GitHub](https://github.com/spmeesseman/extjs-pkg-webworker)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-pkg-webworker)|
-|extjs-theme-graphite-small|ExtJS Dark Theme|[GitHub](https://github.com/spmeesseman/extjs-theme-graphite-small)|[Npmjs.org Private Registry](https://www.npmjs.com/package/@spmeesseman/@spmeesseman/extjs-theme-graphite-small)|
-|extjs-theme-amethyst|ExtJS Purple Theme|[GitHub](https://github.com/spmeesseman/extjs-theme-amethyst)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-theme-amethyst)|
-|extjs-theme-emerald|ExtJS Green Theme|[GitHub](https://github.com/spmeesseman/extjs-theme-emerald)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-theme-emerald)|
-|extjs-theme-ruby|ExtJS Red Theme|[GitHub](https://github.com/spmeesseman/extjs-theme-ruby)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-theme-ruby)|
-|extjs-theme-ruby-dark|ExtJS Dark Theme|[GitHub](https://github.com/spmeesseman/extjs-theme-ruby-dark)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-theme-ruby-dark)|
-|extjs-theme-turquoise|ExtJS Blue Theme|[GitHub](https://github.com/spmeesseman/extjs-theme-turquoise)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-theme-turquoise)|
-|extjs-theme-turquoise-dark|ExtJS Dark Theme|[GitHub](https://github.com/spmeesseman/extjs-theme-turquoise-dark)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/extjs-theme-turquoise-dark)|
 |jenkins-mantisbt-plugin|Jenkins MantisBT Integration|[GitHub](https://github.com/spmeesseman/jenkins-mantisbt-plugin)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/jenkins-mantisbt-plugin)|
 |jenkins-utility-server|Jenkins Desktop Server|[GitHub](https://github.com/spmeesseman/jenkins-utility-server)|[Npmjs.org Registry](https://www.npmjs.com/package/@spmeesseman/jenkins-utility-server)|
 |mantisbt|MantisBT Custom Site|[GitHub](https://github.com/spmeesseman/mantisbt)|[GitHub Releases](https://github.com/spmeesseman/mantisbt/releases)|
