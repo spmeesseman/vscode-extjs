@@ -17,6 +17,7 @@ suite("Code Action Tests", () =>
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
 		await configuration.update("ignoreErrors", []);
 		await activate(docUri);
+		await waitForValidation();
 	});
 
 
@@ -28,6 +29,8 @@ suite("Code Action Tests", () =>
 
 	test("Requires for xtypes", async () =>
 	{
+		const quoteCharacter = configuration.get<string>("quoteCharacter", "single");
+		await configuration.update("quoteCharacter", "single");
 		//
 		// Line 34 - app component
 		// patieuntdropdown - invalid xtype, should be patientdropdown
@@ -62,6 +65,8 @@ suite("Code Action Tests", () =>
 				command: "vscode-extjs:ensureRequire"
 			}
         }]);
+
+		await configuration.update("quoteCharacter", quoteCharacter);
 	});
 
 
@@ -217,36 +222,36 @@ async function testCodeAction(docUri: vscode.Uri, range: vscode.Range, expectedC
 		vscode.CodeActionKind.QuickFix.value
 	)) as vscode.CodeAction[];
 
-	// console.log("####################################");
-	// console.log(docUri.path);
-	// console.log("####################################");
-	// console.log("Actual");
-	// console.log("####################################");
-	// actualCommands.forEach((d) => {
-	// 	console.log("***********************");
-	// 	console.log(d.title);
-	// 	console.log("***********************");
-	// 	if (d.command && d.command.arguments && d.command.arguments.length > 2) {
-	// 		console.log("sLine: " + d.command.arguments[2].start.line);
-	// 		console.log("sChar: " + d.command.arguments[2].start.character);
-	// 		console.log("eLine: " + d.command.arguments[2].end.line);
-	// 		console.log("eChar: " + d.command.arguments[2].end.character);
-	// 	}
-	// });
-	// console.log("####################################");
-	// console.log("Expected");
-	// console.log("####################################");
-	// expectedCommands.forEach((d) => {
-	// 	console.log("***********************");
-	// 	console.log(d.title);
-	// 	console.log("***********************");
-	// 	if (d.command && d.command.arguments && d.command.arguments.length > 2) {
-	// 		console.log("sLine: " + d.command.arguments[2].start.line);
-	// 		console.log("sChar: " + d.command.arguments[2].start.character);
-	// 		console.log("eLine: " + d.command.arguments[2].end.line);
-	// 		console.log("eChar: " + d.command.arguments[2].end.character);
-	// 	}
-	// });
+	console.log("####################################");
+	console.log(docUri.path);
+	console.log("####################################");
+	console.log("Actual");
+	console.log("####################################");
+	actualCommands.forEach((d) => {
+		console.log("***********************");
+		console.log(d.title);
+		console.log("***********************");
+		if (d.command && d.command.arguments && d.command.arguments.length > 2) {
+			console.log("sLine: " + d.command.arguments[2].start.line);
+			console.log("sChar: " + d.command.arguments[2].start.character);
+			console.log("eLine: " + d.command.arguments[2].end.line);
+			console.log("eChar: " + d.command.arguments[2].end.character);
+		}
+	});
+	console.log("####################################");
+	console.log("Expected");
+	console.log("####################################");
+	expectedCommands.forEach((d) => {
+		console.log("***********************");
+		console.log(d.title);
+		console.log("***********************");
+		if (d.command && d.command.arguments && d.command.arguments.length > 2) {
+			console.log("sLine: " + d.command.arguments[2].start.line);
+			console.log("sChar: " + d.command.arguments[2].start.character);
+			console.log("eLine: " + d.command.arguments[2].end.line);
+			console.log("eChar: " + d.command.arguments[2].end.character);
+		}
+	});
 
 	assert.ok(actualCommands.length >= expectedCommands.length);
 

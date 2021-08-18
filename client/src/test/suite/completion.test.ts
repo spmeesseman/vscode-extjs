@@ -21,9 +21,6 @@ suite("Completion Tests", () =>
 		ignoreErrors = configuration.get<any[]>("ignoreErrors", []);
 		await configuration.update("ignoreErrors", []);
 		await activate(docUri);
-		//
-		// Wait for validation (debounce is 250ms)
-		//
 		await waitForValidation();
 	});
 
