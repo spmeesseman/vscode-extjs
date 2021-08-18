@@ -1,5 +1,16 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.4.5 (August 17th, 2021)
+
+### Refactoring
+
+- add new setting 'toolkit'
+- improve logging when reading configurations
+
+### Build System
+
+- fix - tools dir is being included in release package
+
 ## Version 0.4.4 (August 17th, 2021)
 
 ### Refactoring
