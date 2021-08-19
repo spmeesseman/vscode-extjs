@@ -39,7 +39,7 @@ export async function activate(docUri?: vscode.Uri)
 		}
 	}
 	extjsLangMgr.setTests(true);
-	return extJsApi;
+	return doc;
 }
 
 

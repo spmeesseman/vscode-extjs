@@ -128,7 +128,7 @@ suite("Completion Tests", () =>
 				{ label: "test config", kind: vscode.CompletionItemKind.Property },
 				{ label: "test2 config", kind: vscode.CompletionItemKind.Property }
 			]
-		});
+		}, true, "this methods");
 	});
 
 
@@ -200,6 +200,21 @@ suite("Completion Tests", () =>
 		});
 		await configuration.update("intellisenseIncludeDeprecated", incDeprecated);
 		await configuration.update("intellisenseIncludePrivate", incPrivate);
+	});
+
+
+	test("Static properties and methods", async () =>
+	{
+		//
+		// Line 193
+		// VSCodeExtJS.common.PhysicianDropdown.saveAll
+		//
+		await testCompletion(docUri, new vscode.Position(192, 38), ".", {
+			items: [
+				{ label: "saveAll (static) (since v1.3.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "staticVariable (static)", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "static properties and methods");
 	});
 
 
@@ -291,7 +306,7 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("class object configs and properties", async () =>
+	test("Class object configs and properties", async () =>
 	{   //
 		// Line 167
 		// Within main object
@@ -398,8 +413,8 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		triggerChar
 	)) as vscode.CompletionList;
 
-	// const logKind = "Class";
-	// const logDesc = "middle classpath inline";
+	// const logKind = "Method";
+	// const logDesc = "static properties and methods";
 	// if (testDesc === logDesc)
 	// {
 	// 	console.log("####################################");
@@ -407,16 +422,9 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	// 	console.log("actual items length", actualCompletionList.items.length);
 	// 	console.log("expected items length", expectedCompletionList.items.length);
 	// 	console.log("####################################");
-	// 	let ct = 0;
-	// 	actualCompletionList.items.forEach((actualItem, i) => {
-	// 		// const actualItem = actualCompletionList.items[i];
-	// 		// assert.equal(actualItem.label, expectedItem.label);
-	// 		// assert.equal(actualItem.kind, expectedItem.kind);
-	// 		if (triggerChar && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
+	// 	actualCompletionList.items.forEach((actualItem) => {
+	// 		if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
 	// 			console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
-	// 		}
-	// 		if (++ct > 50) {
-	// 			return false; // break forEach
 	// 		}
 	// 	});
 	// }

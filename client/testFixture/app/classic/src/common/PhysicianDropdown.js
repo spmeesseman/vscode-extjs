@@ -69,7 +69,7 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 		 * @param {Boolean} exitOnError exit on error
 		 * @returns {Boolean} `true` if successful, `false` otherwise
 		 */
-		saveAll: function(defaultName, force, exitOnError)
+		stopAll: function(defaultName, force, exitOnError)
 		{
 			return false;
 		}

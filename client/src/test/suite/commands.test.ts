@@ -182,10 +182,8 @@ suite("Command Tests", () =>
 	test("Re-index files", async () =>
 	{
 		await testCommand("indexFiles");
-		//
-		// Wait for validation
-		//
 		await waitForValidation();
+		await testCommand("waitReady");
 	});
 
 });

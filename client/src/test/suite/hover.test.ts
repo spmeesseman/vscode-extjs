@@ -20,7 +20,7 @@ suite("Hover Tests", () =>
     {   //
 		// Set debounce to minimum for test
 		//
-		validationDelay = configuration.get<number>("validationDelay");
+		validationDelay = configuration.get<number>("validationDelay", 1250);
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await activate(docUri);
 		await waitForValidation();
@@ -32,11 +32,11 @@ suite("Hover Tests", () =>
     {   //
 		// Reset validation delay setting back to original value
 		//
-		await configuration.update("validationDelay", validationDelay || undefined);
+		await configuration.update("validationDelay", validationDelay);
 	});
 
 
-	test("Test classes", async () =>
+	test("Classes", async () =>
 	{
 		await waitForValidation();
 		await waitForValidation();
@@ -47,21 +47,21 @@ suite("Hover Tests", () =>
 	});
 
 
-	test("Test class methods", async () =>
+	test("Class methods", async () =>
 	{
 		await testHover(docUri, new vscode.Position(71, 28), "VSCodeExtJS.AppUtilities.alertError");
 		// await testHover(docUri, new vscode.Position(74, 40), "VSCodeExtJS.common.PhysicianDropdown.create");
 	});
 
 
-	test("Test aliases", async () =>
+	test("Aliases", async () =>
 	{
 		await testHover(docUri, new vscode.Position(72, 4), "AppUtils");
 		await testHover(docUri, new vscode.Position(72, 12), "AppUtils.alertError");
 	});
 
 
-	test("Test configs", async () =>
+	test("Configs", async () =>
 	{
 		await testHover(docUri, new vscode.Position(67, 20), "test");
 		await testHover(docUri, new vscode.Position(68, 20), "test3");
@@ -70,7 +70,7 @@ suite("Hover Tests", () =>
 	});
 
 
-	test("Test local variables", async () =>
+	test("Local variables", async () =>
 	{   //
 		// Line 74 - Primitive
 		// const str = this.testFn5();
@@ -99,14 +99,14 @@ suite("Hover Tests", () =>
 	});
 
 
-	test("Test this keywords", async () =>
+	test("This keyword", async () =>
 	{
 		await testHover(docUri, new vscode.Position(108, 3), "{VSCodeExtJS}");
 		await testHover(docUri, new vscode.Position(109, 3), "{VSCodeExtJS}");
 	});
 
 
-	test("Test xtypes", async () =>
+	test("Xtypes", async () =>
 	{
 		await testHover(docUri, new vscode.Position(33, 11), "physiciandropdown");
 		await testHover(docUri, new vscode.Position(39, 11), "userdropdown");

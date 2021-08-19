@@ -189,6 +189,8 @@ Ext.define('VSCodeExtJS',
 			disabled: true,
 			
 		});
+
+		VSCodeExtJS.common.PhysicianDropdown.stopAll();
 	}
 
 });
