@@ -35,19 +35,16 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     {
         const lineText = document.lineAt(position).text,
               lineTextLeft = lineText.substr(0, position.character).trimLeft(),
-              fnText = this.getFunctionName(document, position), // name of the method we are in
               completionItems: CompletionItem[] = [],
               range = document.getWordRangeAtPosition(position),
               text = range ? document.getText(range) : "",
+              quotesRegex = new RegExp(`(?<=(?:"|')[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?=(?:("|')))$`),
               commentRegex = new RegExp(`(?<=(?:\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?<!(?:\\*\\/))$`),
-              //
-              // The `(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)` portion of the regex ignores patterns
-              // that are contains in strings or comments
-              //
-              inComments = commentRegex.test(lineText);
+              inComments = commentRegex.test(lineText),
+              inQuotes = quotesRegex.test(lineText);
 
         log.methodStart("provide completion items", 1, "", true, [
-            ["text", text], ["line text left", lineTextLeft], ["in comments", inComments]
+            ["text", text], ["line text left", lineTextLeft], ["in comments", inComments], ["in quotes", inQuotes]
         ]);
 
         //
@@ -67,18 +64,28 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // The `(?<!(?:"|'|\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)` portion of the regex ignores patterns
         // that are contains in strings or comments
         //
-        if (!inComments)
+        if (!inComments && !inQuotes)
         {
-            if (!lineTextLeft || !lineTextLeft.includes(".") || (!text && lineTextLeft.endsWith("(")))
+            if (!lineTextLeft || !lineTextLeft.includes(".") || (new RegExp(`(?:\\(|;)\\s*${text}`)).test(lineTextLeft))
             {
+                log.write("   do inline completion", 1);
                 completionItems.push(...this.getInlineCompletionItems(text, lineTextLeft, position, document, "   ", 2));
             }
             else {
-                completionItems.push(...this.getCompletionItems(text, lineTextLeft, fnText, position, document, "   ", 2));
+                log.write("   do dot completion", 1);
+                let methodName: string | undefined;
+                const thisCls = extjsLangMgr.getClassFromFile(document.uri.fsPath, "   ", 2);
+                if (thisCls) {
+                    const nameSpace = extjsLangMgr.getNamespaceFromClass(thisCls, undefined, "   ", 2),
+                            thisCmp = extjsLangMgr.getComponent(thisCls, nameSpace, true, "   ", 2),
+                            outerMethod =  thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
+                    methodName = outerMethod?.name; // name of the method we are in
+                }
+                completionItems.push(...this.getCompletionItems(text, lineTextLeft, methodName, position, document, "   ", 2));
             }
         }
         else {
-            log.write("   in quotes/comments, exit", 2);
+            log.write("   in comment/quote - todo - display full class paths only", 3);
         }
 
         // completionItems.push({
@@ -106,7 +113,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    createCompletionItem(property: string, cmpClass: string, nameSpace: string, kind: CompletionItemKind, isStatic: boolean, isInlineChild: boolean, extendedFrom: string | undefined, position: Position, document: TextDocument, logPad = "   ", logLevel = 2)
+    createCompletionItem(property: string, cmpClassPart: string, nameSpace: string, kind: CompletionItemKind, isStatic: boolean, isInlineChild: boolean, extendedFrom: string | undefined, position: Position, document: TextDocument, logPad = "   ", logLevel = 2)
     {
         const propCompletion: CompletionItem[] = [];
         log.methodStart("create completion item", logLevel, logPad, false, [
@@ -122,13 +129,13 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         switch (kind)
         {
             case CompletionItemKind.Method:
-                cmp = this.getMethodCmp(property, cmpClass, nameSpace, isStatic, logPad + "   ", logLevel + 1);
+                cmp = this.getMethodCmp(property, cmpClassPart, nameSpace, isStatic, logPad + "   ", logLevel + 1);
                 break;
             case CompletionItemKind.Property: // or config
-                cmp = this.getPropertyCmp(property, cmpClass, nameSpace, isStatic, logPad + "   ", logLevel + 1);
+                cmp = this.getPropertyCmp(property, cmpClassPart, nameSpace, isStatic, logPad + "   ", logLevel + 1);
                 break;
             default: // class
-                cmp = extjsLangMgr.getComponent(cmpClass, nameSpace, true, logPad + "   ", logLevel + 1);
+                cmp = extjsLangMgr.getComponent(cmpClassPart, nameSpace, true, logPad + "   ", logLevel + 1);
                 break;
         }
 
@@ -212,7 +219,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (isComponent(cmp))
         {
-            if (property === nameSpace || cmpClass === nameSpace) {
+            if (property === nameSpace || cmpClassPart === nameSpace) {
                 completionItem.preselect = true;
             }
             else {
@@ -242,10 +249,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 getterItem.documentation = cmp.markdown;
                 getterItem.commitCharacters = [ "(" ];
                 tagText = this.tagText(cmp, cmp.getter, extendedFrom);
-                if (tagText) {
-                    getterItem.insertText = cmp.getter;
-                    getterItem.label = this.getLabel(getterItem.label, tagText);
-                }
+                getterItem.insertText = cmp.getter;
+                getterItem.label = this.getLabel(getterItem.label, tagText);
                 propCompletion.push(getterItem);
             }
             if ("setter" in cmp)
@@ -254,10 +259,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 setterItem.documentation = cmp.markdown;
                 setterItem.commitCharacters = [ "(" ];
                 tagText = this.tagText(cmp, cmp.setter, extendedFrom);
-                if (tagText) {
-                    setterItem.insertText = cmp.setter;
-                    setterItem.label = this.getLabel(setterItem.label, tagText);
-                }
+                setterItem.insertText = cmp.setter;
+                setterItem.label = this.getLabel(setterItem.label, tagText);
                 propCompletion.push(setterItem);
             }
         }
@@ -270,38 +273,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // return cmp || kind === CompletionItemKind.Class ? propCompletion : [];
         return propCompletion;
-    }
-
-
-    /**
-     * @method getFunctionName
-     *
-     * Get outer function name based on current document position.  Used to determine if
-     * targeted properties are local to a function or global
-     *
-     * @param document VSCode Document object
-     * @param position VSCode position object
-     */
-    private getFunctionName(document: TextDocument, position: Position)
-    {
-        const text = document.getText();
-        let idx = text.lastIndexOf("function", document.offsetAt(position));
-        if (idx !== -1)
-        {
-            let sidx = idx = text.lastIndexOf(":", idx);
-            if (sidx !== -1)
-            {
-                const sidx2 = text.lastIndexOf("\t", --sidx),
-                      sidx3 = text.lastIndexOf("\n", sidx);
-                sidx = text.lastIndexOf(" ", sidx);
-                if (sidx2 > sidx) {  sidx = sidx2; }
-                if (sidx3 > sidx) { sidx = sidx3; }
-                if (sidx !== -1)
-                {
-                    return text.substring(sidx, idx).trim();
-                }
-            }
-        }
     }
 
 

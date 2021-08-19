@@ -857,7 +857,7 @@ class ExtjsLanguageManager
             }
         }
         log.methodDone("get namespace from class", logLevel, logPad, false, [["namespace", defaultNs]]);
-        return defaultNs;
+        return defaultNs || componentClass;
     }
 
 
