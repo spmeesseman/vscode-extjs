@@ -211,7 +211,7 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(192, 38), ".", {
 			items: [
-				{ label: "saveAll (static) (since v1.3.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "stopAll (static) (since v1.3.0)", kind: vscode.CompletionItemKind.Method },
 				{ label: "staticVariable (static)", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "static properties and methods");
