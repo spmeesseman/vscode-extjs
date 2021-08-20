@@ -33,7 +33,7 @@ export async function indexFiles(project?: string, clean = true, logPad = "")
 function registerIndexFilesCommand(context: ExtensionContext)
 {
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:indexFiles", async (project?: string, clean = true, logPad = "") => { await indexFiles(project, clean, logPad); })
+        commands.registerCommand("vscode-extjs:indexFiles", async (project?: string, clean?: boolean, logPad?: string) => { await indexFiles(project, clean, logPad); })
     );
 
     //

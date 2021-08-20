@@ -9,19 +9,16 @@ let writeToConsoleLevel = 2;
 let logOutputChannel: OutputChannel | undefined;
 
 
-export function initLog(settingGrpName: string, dispName: string, context?: ExtensionContext, showLog?: boolean)
+export function initLog(settingGrpName: string, dispName: string, context: ExtensionContext, showLog?: boolean)
 {
     //
     // Set up a log in the Output window
     //
     logOutputChannel = window.createOutputChannel(dispName);
-    if (context)
-    {
-        context.subscriptions.push(logOutputChannel);
-        context.subscriptions.push(
-            commands.registerCommand(settingGrpName + ".showOutput", showLogOutput)
-        );
-    }
+    context.subscriptions.push(logOutputChannel);
+    context.subscriptions.push(
+        commands.registerCommand(settingGrpName + ".showOutput", showLogOutput)
+    );
     showLogOutput(showLog);
 }
 

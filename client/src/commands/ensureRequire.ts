@@ -68,7 +68,7 @@ export async function ensureRequires(xtype: string | undefined)
 				}
 				else
 				{
-					let pad = "";
+					let pad = "    ";
 					const start = component.start;
 					start.line += 2;
 					start.column = 0;
@@ -80,9 +80,6 @@ export async function ensureRequires(xtype: string | undefined)
 						{
 							pad += lineText[i];
 						}
-					}
-					else {
-						pad = "    ";
 					}
 					const requiresBlock = json5.stringify(Array.from(componentClasses))
 											.replace(/\[/, "[" + EOL + pad + "    ")
