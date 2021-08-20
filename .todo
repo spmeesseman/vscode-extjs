@@ -34,6 +34,7 @@ Diagnostics:
 	☐ Method parameter validation against types in jsdoc
 	☐ The 'models' and 'stores' property in Application.js should be validated like 'requires' and 'uses'
 	☐ the 'uses' validation should have separate error code from 'requires'
+	☐ 'mixins' property.  same validation as for requires[] and uses[].  separate error code. (see above too)
 
 JsDoc:
 
