@@ -148,7 +148,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (cmp.private && configuration.get<boolean>("intellisenseIncludePrivate") !== true)
         {
-            log.write("   private properties are configred to be ignored", logLevel, logPad);
+            log.write("   private properties are configured to be ignored", logLevel, logPad);
             log.methodDone("create completion item", logLevel, logPad);
             return propCompletion;
         }
@@ -158,7 +158,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (cmp.deprecated && configuration.get<boolean>("intellisenseIncludeDeprecated") !== true)
         {
-            log.write("   deprecated properties are configred to be ignored", logLevel, logPad);
+            log.write("   deprecated properties are configured to be ignored", logLevel, logPad);
             log.methodDone("create completion item", logLevel, logPad);
             return propCompletion;
         }
@@ -537,7 +537,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
                 component.privates.filter((c) => !addedItems.includes(c.name)).forEach((c: IProperty | IMethod) =>
                 {
-                    completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, CompletionItemKind.Property, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
+                    const kind = utils.isProperty(c) ? CompletionItemKind.Property : CompletionItemKind.Method;
+                    completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, kind, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                     addedItems.push(c.name);
                     log.write("   added privates dot completion method", logLevel + 2);
                     log.value("      name", c.name, logLevel + 2, logPad);
@@ -602,7 +603,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                         cItems = this.createCompletionItem(cCls, cls, ns, kind, false, false, extendedCls, position, document, logPad + "   ", logLevel + 1);
                     }
                     else {
-                        const tagText = this.tagText(cmp, cCls, extendedCls);
+                        const tagText = cmp ? this.tagText(cmp, cCls, extendedCls) : "";
                         cItems = [ new CompletionItem(this.getLabel(cCls, tagText), kind) ];
                         if (tagText) {
                             cItems[0].insertText = cCls;
@@ -1048,7 +1049,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private tagText(cmp: IComponent | IMethod | IProperty | IConfig | undefined, property: string, extendedCls?: string)
+    private tagText(cmp: IComponent | IMethod | IProperty | IConfig, property: string, extendedCls?: string)
     {
         let tagText = "";
 
@@ -1079,7 +1080,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // Show/hide deprecated properties according to user settings (default true).
         // If this property is hidden by user preference, this method exited already above.
         //
-        if (cmp?.deprecated)
+        if (cmp.deprecated)
         {
             tagText += "(deprecated) ";
         }
@@ -1088,7 +1089,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // Show/hide private properties according to user settings (default false)
         // If this property is hidden by user preference, this method exited already above.
         //
-        if (cmp?.private)
+        if (cmp.private)
         {
             tagText += "(private) ";
         }
@@ -1105,7 +1106,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Show  `since` properties if not deprecated
         //
-        if (cmp?.since && !cmp.deprecated)
+        if (cmp.since && !cmp.deprecated)
         {
             tagText += `(since ${cmp.since}) `;
         }
