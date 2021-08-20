@@ -132,7 +132,7 @@ suite("Config File Tests", () =>
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
 		//
-		// Reset
+		// Reset framework path to "extjs"
 		//
 		insertDocContent("extjs", toRange(3, 16, 3, 40));
 		await workspace.saveAll();
@@ -140,6 +140,48 @@ suite("Config File Tests", () =>
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
 		extjsLangMgr.setTests(true);
+	});
+
+
+	test("Workspace.json package.dir", async function()
+	{
+		//
+		// Remove packages.dir property
+		//
+		insertDocContent("", toRange(11, 8, 11, 70));
+		await workspace.saveAll();
+		await waitForValidation();
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		// Now remove packages property
+		//
+		insertDocContent("", toRange(8, 5, 13, 5));
+		await workspace.saveAll();
+		await waitForValidation();
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		// Reset
+		//
+		insertDocContent(`,
+    "packages":
+    {
+        "dir": "\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg",
+        "extract": "\${workspace.dir}/packages/remote"
+    }`, toRange(8, 5, 8, 5));
+		await workspace.saveAll();
+		await waitForValidation();
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
+	test("Re-index files", async () =>
+	{
+		await commands.executeCommand("vscode-extjs:indexFiles");
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 });

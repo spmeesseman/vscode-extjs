@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, waitForValidation } from "./helper";
 import { configuration } from "../../common/configuration";
+import { timeout } from "../../../../common/src/utils";
 
 
 suite("Hover Tests", () =>
@@ -117,10 +118,40 @@ suite("Hover Tests", () =>
 		await testHover(docUri, new vscode.Position(144, 24), "physiciandropdown");
 	});
 
+
+	test("No definition", async () =>
+    {
+		await testHover(docUri, new vscode.Position(150, 3));
+    });
+
+
+	test("Non-ExtJS document", async () =>
+	{   //
+		// Open non extjs doc inside of a classpath
+		//
+		const jssUri = getDocUri("app/js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		//
+		// Line 145
+		// let cmp = this.down('physiciandropdown');
+		//
+		await testHover(jssUri, new vscode.Position(5, 12));
+
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+	});
+
 });
 
 
-async function testHover(docUri: vscode.Uri, position: vscode.Position, commentString: string)
+async function testHover(docUri: vscode.Uri, position: vscode.Position, commentString?: string, retry = 0)
 {
 	const actualHoverList = (await vscode.commands.executeCommand(
 		"vscode.executeHoverProvider",
@@ -135,7 +166,7 @@ async function testHover(docUri: vscode.Uri, position: vscode.Position, commentS
 	{
 		for (const c of (hover.contents as vscode.MarkdownString[]))
 		{
-			if (c.value.toString().indexOf("@") !== -1 || c.value.toString().indexOf(commentString) !== -1) {
+			if (c.value.toString().includes("@") || (commentString && c.value.toString().includes(commentString))) {
 				hasTag = true;
 				break;
 			}
@@ -143,5 +174,16 @@ async function testHover(docUri: vscode.Uri, position: vscode.Position, commentS
 		if (hasTag) { break; }
 	}
 
-	assert.ok(hasTag === true, new Error(`Tag not found in hover doc - ${commentString}`));
+	if (!hasTag && commentString && retry === 0) {
+		await timeout(500);
+		await testHover(docUri, position, commentString, ++retry);
+	}
+	else {
+		if (commentString) {
+			assert.ok(hasTag === true, new Error(`Tag not found in hover doc - ${commentString}`));
+		}
+		else {
+			assert.ok(hasTag === false, new Error(`Tag found in hover doc - ${commentString}`));
+		}
+	}
 }

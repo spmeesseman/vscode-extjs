@@ -267,6 +267,17 @@ suite("Definition Tests", () =>
 		}]);
 	});
 
+
+	test("No definition", async () =>
+    {
+		//
+		// app.js Line 151
+		// me.test3 = AppUtils.alertError("test");
+		// 'me' is not set
+		//
+		await testDefinition(docUri, new vscode.Position(150, 3), []);
+    });
+
 });
 
 

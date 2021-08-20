@@ -93,7 +93,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
             if (!ns) {
                 ns = cls;
             }
-            const cmp = extjsLangMgr.getComponent(cls, ns, true) || extjsLangMgr.getComponentInstance(cls, ns, position, fsPath);
+            const cmp = extjsLangMgr.getComponent(cls, ns, "   ", 2) || extjsLangMgr.getComponentInstance(cls, ns, position, fsPath, "   ", 2);
 
             if (isComponent(cmp))
             {

@@ -108,7 +108,7 @@ class ExtJsHoverProvider implements HoverProvider
             }
             else if (cmpType === ComponentType.Class)
             {
-                const cmp = extjsLangMgr.getComponent(cmpClass, nameSpace, true, "   ");
+                const cmp = extjsLangMgr.getComponent(cmpClass, nameSpace, "   ");
                 if (isComponent(cmp))
                 {
                     log.value("   provide class hover info", property, 2);
