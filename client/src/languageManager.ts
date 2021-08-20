@@ -7,7 +7,7 @@ import {
 } from "vscode";
 import {
     IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType,
-    IVariable, VariableType, IExtJsBase, IPrimitive, IRequire
+    IVariable, VariableType, IExtJsBase, IPrimitive, IRequire, IParameter
 } from  "../../common";
 
 import {
@@ -28,7 +28,7 @@ import { showReIndexButton } from "./commands/indexFiles";
 
 export interface ILineProperties
 {
-    property?: string;
+    property: string;
     cmpClass?: string;
     cmp?: IComponent;
     callee?: string;
@@ -36,6 +36,7 @@ export interface ILineProperties
     thisClass?: string;
     thisCmp?: IComponent;
     cmpType?: ComponentType;
+    text: string;
 }
 
 
@@ -364,7 +365,7 @@ class ExtjsLanguageManager
                 {
                     if (isPositionInRange(position, toVscodeRange(method.start, method.end)))
                     {
-                        let variable = method.variables?.find(v => v.name === property);
+                        let variable: IVariable | IParameter | undefined = method.variables?.find(v => v.name === property);
                         if (!variable) {
                             variable = method.params?.find(v => v.name === property);
                             if (variable?.type !== VariableType._class) {
@@ -481,6 +482,7 @@ class ExtjsLanguageManager
         let lineText = allLineText.replace(/[\s\w.\[\]]+=[\s]*(new)*\s*/, "").replace(/[\s\w]*if\s*\(\s*[!]{0,2}/, ""),
             property = document.getText(range),
             cmpType: ComponentType = ComponentType.None;
+        const text = property;
 
         log.value("   trimmed line text", lineText, logLevel + 1, logPad);
         log.value("   property", property, logLevel + 1, logPad);
@@ -497,7 +499,8 @@ class ExtjsLanguageManager
                 thisCmp,
                 cmpClass: thisCmp?.componentClass,
                 cmpType: ComponentType.Class,
-                property
+                property,
+                text
             };
         }
 
@@ -512,7 +515,8 @@ class ExtjsLanguageManager
                 thisCmp,
                 cmpClass: undefined,
                 cmpType: ComponentType.Class,
-                property
+                property,
+                text
             };
         }
 
@@ -730,7 +734,8 @@ class ExtjsLanguageManager
             property,
             thisCmp,
             thisClass: thisCmp?.componentClass,
-            callee
+            callee,
+            text
         };
     }
 
@@ -786,23 +791,18 @@ class ExtjsLanguageManager
 
         const component = this.components.filter((c) => c.componentClass === componentClass)[0];
         if (component) {
-            methods = !isStatic ? component.methods : component.statics.filter((c) => utils.isMethod(c)) as IMethod[];
+            const privateMethods = component.privates.filter((c) => utils.isMethod(c)) as IMethod[];
+            methods = !isStatic ? [...component.methods, ...privateMethods ] :
+                                  component.statics.filter((c) => utils.isMethod(c)) as IMethod[];
         }
 
-        if (methods)
-        {
-            for (let c = 0; c < methods.length; c++)
-            {
-                if (methods[c].name === property) {
-                    log.write("   found method", logLevel + 2, logPad);
-                    log.value("      name", methods[c].name, logLevel + 2, logPad);
-                    log.value("      start (line/col)",  methods[c].start.line + ", " + methods[c].start.column, logLevel + 2, logPad);
-                    log.value("      end (line/col)", methods[c].end.line + ", " + methods[c].end.column, logLevel + 2, logPad);
-                    method = methods[c];
-                    break;
-                }
-            }
-        }
+        methods?.filter((m) => m.name === property).forEach((m) => {
+            log.write("   found method", logLevel + 2, logPad);
+            log.value("      name", m.name, logLevel + 2, logPad);
+            log.value("      start (line/col)",  m.start.line + ", " + m.start.column, logLevel + 2, logPad);
+            log.value("      end (line/col)", m.end.line + ", " + m.end.column, logLevel + 2, logPad);
+            method = m;
+        });
 
         log.methodDone("get method by property", logLevel, logPad, false, [["method", method?.name]]);
         return method;
@@ -937,23 +937,20 @@ class ExtjsLanguageManager
 
         const component = this.components.filter((c) => c.componentClass === componentClass)[0];
         if (component) {
-            properties = !isStatic ? component.properties : component.statics.filter((c) => utils.isProperty(c));
+            const privateProperties = component.privates.filter((c) => utils.isProperty(c)) as IProperty[];
+            properties = !isStatic ? [...component.properties, ...privateProperties ] :
+                                  component.statics.filter((c) => utils.isProperty(c)) as IMethod[];
         }
 
-        if (properties) {
-            for (let c = 0; c < properties.length; c++) {
-                if (properties[c].name === property) {
-                    log.write("   found property", logLevel + 2, logPad);
-                    log.value("      name", properties[c].name, logLevel + 3, logPad);
-                    log.value("      start (line/col)",  properties[c].start.line + ", " + properties[c].start.column, logLevel + 3, logPad);
-                    log.value("      end (line/col)", properties[c].end.line + ", " + properties[c].end.column, logLevel + 3, logPad);
-                    prop = properties[c];
-                    break;
-                }
-            }
-        }
+        properties?.filter((p) => p.name === property).forEach((p) => {
+            log.write("   found property", logLevel + 2, logPad);
+            log.value("      name", p.name, logLevel + 3, logPad);
+            log.value("      start (line/col)",  p.start.line + ", " + p.start.column, logLevel + 3, logPad);
+            log.value("      end (line/col)", p.end.line + ", " + p.end.column, logLevel + 3, logPad);
+            prop = p;
+        });
 
-        log.methodDone("get property by component class", logLevel, logPad);
+        log.methodDone("get property by component class", logLevel, logPad, false, [["property", prop?.name]]);
         return prop;
     }
 
@@ -1658,13 +1655,13 @@ class ExtjsLanguageManager
                 this.components.push(cmp);
             }
 
-            log.write("      parsed component parts:", logLevel + 1);
+            log.write("      parsed component parts:", logLevel + 2);
             log.values([
                 [ "configs", JSON.stringify(this.configToClsMapping[componentClass], undefined, 3)],
                 [ "methods", JSON.stringify(this.methodToClsMapping[componentClass], undefined, 3)],
                 [ "property", JSON.stringify(this.propertyToClsMapping[componentClass], undefined, 3)],
                 [ "widget", JSON.stringify(this.widgetToClsMapping[componentClass], undefined, 3)]
-            ], logLevel, logPad + "   ");
+            ], logLevel + 2, logPad + "   ");
             log.write("   done processing component " + componentClass, logLevel + 1);
         });
 

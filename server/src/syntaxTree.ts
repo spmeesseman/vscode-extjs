@@ -267,19 +267,19 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (isObjectProperty(propertyPrivates))
                         {
-                            componentInfo.privates.push(...parsePropertyBlock(propertyPrivates, componentInfo.componentClass, false, text, fsPath));
+                            componentInfo.privates.push(...parsePropertyBlock(propertyPrivates, componentInfo.componentClass, false, true, text, fsPath));
                         }
                         logProperties("privates", componentInfo.privates);
 
                         if (isObjectProperty(propertyStatics))
                         {
-                            componentInfo.statics.push(...parsePropertyBlock(propertyStatics, componentInfo.componentClass, true, text, fsPath));
+                            componentInfo.statics.push(...parsePropertyBlock(propertyStatics, componentInfo.componentClass, true, false, text, fsPath));
                         }
                         logProperties("statics", componentInfo.statics);
 
                         if (propertyProperty && propertyProperty.length)
                         {
-                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass, false));
+                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass, false, false));
                         }
                         logProperties("properties", componentInfo.properties);
 
@@ -296,7 +296,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
 
                         if (propertyMethod && propertyMethod.length)
                         {
-                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, false, fsPath));
+                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, false, false, fsPath));
                             componentInfo.methods.forEach((m) => {
                                 componentInfo.objectRanges.push(...m.objectRanges);
                             });
@@ -679,7 +679,7 @@ function getVariableType(cls: string): VariableType
 }
 
 
-function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, fsPath: string): IMethod[]
+function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, isPrivate: boolean, fsPath: string): IMethod[]
 {
     const methods: IMethod[] = [];
 
@@ -711,12 +711,12 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     variables,
                     returns: getReturns(doc),
                     since: getSince(doc),
-                    private: doc?.includes("@private"),
+                    private: doc?.includes("@private") || isPrivate,
                     deprecated: doc?.includes("@deprecated"),
                     objectRanges: getMethodObjectRanges(m, propertyName),
                     bodyStart: m.value.loc!.start,
                     bodyEnd: m.value.loc!.end,
-                    static: isStatic
+                    static: doc?.includes("@static") || isStatic
                 });
             }
         }
@@ -756,7 +756,7 @@ function parseMixins(propertyMixins: ObjectProperty)
 }
 
 
-function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, isStatic: boolean): IProperty[]
+function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, isStatic: boolean, isPrivate: boolean): IProperty[]
 {
     const properties: IProperty[] = [];
     propertyProperties.forEach((m) =>
@@ -772,10 +772,10 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
                     start: m.loc!.start,
                     end: m.loc!.end,
                     since: getSince(doc),
-                    private: doc?.includes("@private"),
+                    private: doc?.includes("@private") || isPrivate,
                     deprecated: doc?.includes("@deprecated"),
                     componentClass,
-                    static: isStatic
+                    static: doc?.includes("@static") || isStatic
                 });
             }
         }
@@ -824,7 +824,6 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
             {
                 params.push({
                     name: p.name,
-                    declaration: DeclarationType.var,
                     start: p.loc!.start,
                     end: p.loc!.end,
                     methodName,
@@ -860,18 +859,18 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
 }
 
 
-function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: string, isStatic: boolean, text: string | undefined, fsPath: string)
+function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: string, isStatic: boolean, isPrivate: boolean, text: string | undefined, fsPath: string)
 {
-    const statics: (IMethod| IProperty)[] = [];
+    const block: (IMethod| IProperty)[] = [];
     if (isObjectExpression(staticsConfig.value))
     {
         const propertyMethod = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
         const propertyProperty = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
 
-        statics.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, isStatic, fsPath));
-        statics.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, isStatic));
+        block.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, isStatic, isPrivate, fsPath));
+        block.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, isStatic, isPrivate));
     }
-    return statics;
+    return block;
 }
 
 

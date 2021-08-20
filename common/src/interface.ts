@@ -127,7 +127,7 @@ export interface IMethod extends IProperty
     objectRanges: IObjectRange[];
     params: IParameter[];
     variables: IVariable[];
-    returns: any;
+    returns: string | undefined;
 }
 
 
@@ -142,8 +142,7 @@ export interface IParameter extends IExtJsBase
     doc?: string;
     markdown?: any;
     methodName: string;
-    declaration?: DeclarationType;
-    type?: VariableType;
+    type: VariableType;
 }
 
 
@@ -164,8 +163,8 @@ export interface IPropertyBase extends IExtJsBase
 {
     doc?: string;
     markdown?: any;
-    private?: boolean;
-    deprecated?: boolean;
+    private: boolean;
+    deprecated: boolean;
     since?: string;
 }
 
@@ -208,7 +207,7 @@ export interface IUses extends IRequires {}
 export interface IVariable extends IExtJsBase
 {
     methodName: string;
-    declaration?: DeclarationType;
+    declaration: DeclarationType;
     type?: VariableType;
 }
 
