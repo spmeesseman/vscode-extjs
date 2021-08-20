@@ -1770,7 +1770,7 @@ class ExtjsLanguageManager
                 // Validate document
                 //
                 if (components && components.length > 0) {
-                    this.validateDocument(document, ns);
+                    await this.validateDocument(document, ns);
                 }
             }
         }
