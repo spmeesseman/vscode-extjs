@@ -101,6 +101,16 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 {
                     if (_add(m) === true) break;
                 }
+                if (params.length === 0) // check privates
+                {
+                    for (const p of cmp.privates)
+                    {
+                        if (utils.isMethod(p))
+                        {
+                            if (_add(p) === true) break;
+                        }
+                    }
+                }
                 if (params.length === 0) // check statics
                 {
                     for (const s of cmp.statics)
