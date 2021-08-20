@@ -24,6 +24,7 @@ suite("Document Tests", () =>
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
 		await configuration.update("ignoreErrors", []);
 		await activate(docUri);
+		await waitForValidation();
 	});
 
 
@@ -31,8 +32,9 @@ suite("Document Tests", () =>
     {   //
 		// Reset validation delay setting back to original value
 		//
-		await configuration.update("validationDelay", validationDelay || undefined);
+		await configuration.update("validationDelay", validationDelay || 1250);
 		await configuration.update("ignoreErrors", ignoreErrors);
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
 
@@ -88,8 +90,7 @@ suite("Document Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await waitForValidation();
-		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
 		//
@@ -104,8 +105,7 @@ suite("Document Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await waitForValidation();
-		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
 	});
@@ -124,8 +124,7 @@ suite("Document Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await waitForValidation();
-		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
 	});

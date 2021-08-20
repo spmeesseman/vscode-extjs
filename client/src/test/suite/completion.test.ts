@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation } from "./helper";
+import { getDocUri, activate, waitForValidation, insertDocContent, toRange } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
@@ -11,6 +11,7 @@ suite("Completion Tests", () =>
 	const docUri = getDocUri("app/shared/src/app.js");
 	let quickSuggest: boolean | undefined;
 	let ignoreErrors: any[];
+	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
@@ -20,6 +21,11 @@ suite("Completion Tests", () =>
 		await config.update("editor.quickSuggestions", false);
 		ignoreErrors = configuration.get<any[]>("ignoreErrors", []);
 		await configuration.update("ignoreErrors", []);
+		//
+		// Set debounce to minimum for test
+		//
+		validationDelay = configuration.get<number>("validationDelay");
+		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await activate(docUri);
 		await waitForValidation();
 	});
@@ -29,9 +35,7 @@ suite("Completion Tests", () =>
     {
 		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
 		await configuration.update("ignoreErrors", ignoreErrors);
-		//
-		// Wait for validation (debounce is 250ms)
-		//
+		await configuration.update("validationDelay", validationDelay || 1250);
 		await waitForValidation();
 	});
 
@@ -41,14 +45,14 @@ suite("Completion Tests", () =>
 		//
 		// Inside function
 		//
-		await testCompletion(docUri, new vscode.Position(95, 8), "", {
+		await testCompletion(docUri, new vscode.Position(95, 3), "", {
 			items: [
 				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class },
 				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
 				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 			]
-		});
+		}, true, "inline property start");
 
 		//
 		// Inside function - beginning of line
@@ -88,6 +92,26 @@ suite("Completion Tests", () =>
 		});
 
 		//
+		// After semi-colon ended statement same line
+		// Line 75
+		// VSCodeExtJS.common.PhysicianDropdown.create();
+		// After create(); i.e. .create( ... ); AppUtils.
+		//
+		await testCompletion(docUri, new vscode.Position(74, 48), "", {
+			items: [
+				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class },
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
+				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
+				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 48), "A", {
+			items: [
+				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+
+		//
 		// Inside object - 'u' trigger
 		// Line 121-123
 		// const phys = Ext.create('VSCodeExtJS.common.PatientDropdown', {
@@ -98,7 +122,7 @@ suite("Completion Tests", () =>
 			items: [
 				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
 			]
-		});
+		}, true, "inherited define properties inside patient object");
 		//
 		// Inside object
 		// Line 124-126
@@ -111,7 +135,7 @@ suite("Completion Tests", () =>
 				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property },
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
 			]
-		});
+		}, true, "inherited define properties inside physician object");
 	});
 
 
@@ -203,18 +227,38 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Static properties and methods", async () =>
+	test("Statics block properties and methods", async () =>
 	{
 		//
 		// Line 193
-		// VSCodeExtJS.common.PhysicianDropdown.saveAll
+		// VSCodeExtJS.common.PhysicianDropdown.stopAll
 		//
 		await testCompletion(docUri, new vscode.Position(192, 38), ".", {
 			items: [
-				{ label: "stopAll (static) (since v1.3.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "stopAll (static) (since v0.4.0)", kind: vscode.CompletionItemKind.Method },
 				{ label: "staticVariable (static)", kind: vscode.CompletionItemKind.Property }
 			]
-		}, true, "static properties and methods");
+		}, true, "statics block properties and methods");
+	});
+
+
+	test("Privates block properties and methods", async () =>
+	{
+		const incPrivate = configuration.get<boolean>("intellisenseIncludePrivate");
+		await configuration.update("intellisenseIncludePrivate", true);
+		//
+		// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
+		// Line 83
+		// phys.*
+		//
+		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
+			items: [
+				{ label: "stopAllPriv (private) (since v0.5.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "privateVariable (private)", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "privates block properties and methods");
+
+		await configuration.update("intellisenseIncludePrivate", incPrivate);
 	});
 
 
@@ -324,7 +368,7 @@ suite("Completion Tests", () =>
 			items: [
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property },
 			]
-		});
+		}, true, "inherited xtype properties inside physician object");
 
 		//
 		// And 171 for patientdropdown
@@ -338,7 +382,7 @@ suite("Completion Tests", () =>
 			items: [
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property },
 			]
-		});
+		}, true, "inherited xtype properties inside patient object");
 
 		//
 		// And 175 for userdropdown (props are defined on userdropdown, not inherited)
@@ -400,6 +444,31 @@ suite("Completion Tests", () =>
 		});
 	});
 
+
+	test("Behind comments", async () =>
+	{
+		//
+		// Should show nothing behind a comment...
+		//
+		// 1 /**
+		// 2  * @class VSCodeExtJS
+		// 3  *
+		// 4  * The VSCodeExtJS app root namespace.
+		// 5  */
+		//
+		await insertDocContent("VSCodeExtJS", toRange(2, 3, 2, 3));
+		await waitForValidation();
+
+		await testCompletion(docUri, new vscode.Position(2, 14), ".", {
+			items: []
+		}, true, "behind comment method");
+		//
+		// Remove added text, set document back to initial state
+		//
+		await insertDocContent("", toRange(2, 3, 2, 14));
+		await waitForValidation();
+	});
+
 });
 
 
@@ -413,9 +482,9 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		triggerChar
 	)) as vscode.CompletionList;
 
-	// const logKind = "Method";
-	// const logDesc = "static properties and methods";
-	// if (testDesc === logDesc)
+	// const logKind = "Class";
+	// const logDescRgx = /inherited (?:define|xtype) properties inside patient object/;
+	// if (testDesc && logDescRgx.test(testDesc))
 	// {
 	// 	console.log("####################################");
 	// 	console.log(docUri.path);
@@ -423,9 +492,9 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	// 	console.log("expected items length", expectedCompletionList.items.length);
 	// 	console.log("####################################");
 	// 	actualCompletionList.items.forEach((actualItem) => {
-	// 		if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
+	// 		// if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
 	// 			console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
-	// 		}
+	// 		// }
 	// 	});
 	// }
 

@@ -4,7 +4,11 @@ Ext.define('VSCodeExtJS.view.users.Users',
     xtype: 'users',
     
     requires: [
-        'VSCodeExtJS..view.users.Grid'
+        'VSCodeExtJS.view.users.Grid'
+    ],
+
+    mixins: [
+        'VSCodeExtJS.mixins.ColorLogger'
     ],
 
     border:false,

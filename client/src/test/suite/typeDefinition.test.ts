@@ -1,18 +1,33 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation } from "./helper";
+import { configuration } from "../../common/configuration";
 
 
 suite("Type Definition Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
+	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
-    {
+    {   //
+		// Set debounce to minimum for test
+		//
+		validationDelay = configuration.get<number>("validationDelay");
+		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await activate(docUri);
+		await waitForValidation();
+	});
+
+
+	suiteTeardown(async () =>
+    {   //
+		// Reset validation delay setting back to original value
+		//
+		await configuration.update("validationDelay", validationDelay || 1250);
 	});
 
 

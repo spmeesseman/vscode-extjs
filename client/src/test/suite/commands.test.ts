@@ -36,12 +36,13 @@ suite("Command Tests", () =>
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250);
 		await activate(docUri);
+		await waitForValidation();
 	});
 
 
 	suiteTeardown(async () =>
     {
-		await configuration.update("validationDelay", validationDelay || undefined);
+		await configuration.update("validationDelay", validationDelay || 1250);
 		await configuration.update("debugClient", logEnabled);
 		await configuration.update("ignoreErrors", ignoreErrors);
 	});
@@ -58,11 +59,6 @@ suite("Command Tests", () =>
 		// Edge no params shouldexit gracefully w/ no processing
 		//
 		await testCommand("ignoreError");
-		//
-		// For local dev environment test, read the ignoreErrors setting so that it can be restored
-		// when the tests are finished, since "Ignore error" test will set this via vscode command
-		//
-		const ignoreErrors = configuration.get<any[]>("ignoreErrors");
 		await configuration.update("ignoreErrors", []);
 		//
 		// File only
@@ -113,11 +109,8 @@ suite("Command Tests", () =>
 		} catch (e) {
 			console.error(e);
 		}
-		//
-		// Wait for validation (debounce is 250ms)
-		//
 		await waitForValidation();
-		await testCommand("ensureRequire", "userdropdown"); //  toRange(37, 9, 39, 23));
+		await testCommand("ensureRequire", "userdropdown"); //  toRange(37, 9, 37, 23));
 		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the requires array
@@ -126,6 +119,20 @@ suite("Command Tests", () =>
 		await vscode.commands.executeCommand("vscode-extjs:replaceText", "", toRange(8, 4, 11, 0));
 		await waitForValidation();
 
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		//
+		// Test a file that has an xtype ref where the xtype doesnt exist
+		//
+		try {
+			const doc = await vscode.workspace.openTextDocument(getDocUri("app/classic/src/main/BadXType.js"));
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await testCommand("ensureRequire", "comboisnotanywhere"); //  toRange(17, 9, 17, 29));
+		await waitForValidation();
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
@@ -136,10 +143,6 @@ suite("Command Tests", () =>
 			this.timeout(45 * 1000);
 		}
 
-		//
-		// For local dev environment test, read the ignoreErrors setting so that it can be restored
-		// when the tests are finished, since "Ignore error" test will set this via vscode command
-		//
 		await configuration.update("ignoreErrors", []);
 
 		//
@@ -192,8 +195,5 @@ suite("Command Tests", () =>
 async function testCommand(command: string, ...args: any[])
 {
 		await vscode.commands.executeCommand("vscode-extjs:" + command, ...args);
-		//
-		// Wait again for validation (debounce is 250ms)
-		//
 		await waitForValidation();
 }

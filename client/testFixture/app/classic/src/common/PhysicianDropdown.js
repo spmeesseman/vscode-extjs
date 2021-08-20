@@ -62,8 +62,8 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 		staticVariable: true,
 
 		/**
-		 * @method saveAll
-		 * @since 1.3.0
+		 * @method stopAll
+		 * @since 0.4.0
 		 * @param {String} defaultName default name
 		 * @param {Boolean} force Force
 		 * @param {Boolean} exitOnError exit on error
@@ -71,7 +71,29 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 		 */
 		stopAll: function(defaultName, force, exitOnError)
 		{
-			return false;
+			return staticVariable;
+		}
+	},
+
+	privates:
+	{
+		/**
+		 * @property {Boolean} privateVariable
+		 * Test a private property
+		 */
+		privateVariable: "VariableProperty",
+
+		/**
+		 * @method stopAllPriv
+		 * @since 0.5.0
+		 * @param {String} defaultName default name
+		 * @param {Boolean} force Force
+		 * @param {Boolean} exitOnError exit on error
+		 * @returns {String} The value of `privateProperty`
+		 */
+		stopAllPriv: function(defaultName, force, exitOnError)
+		{
+			return privateVariable;
 		}
 	}
 

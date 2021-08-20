@@ -13,13 +13,13 @@ suite("Method Signature Tests", () =>
 
 
 	suiteSetup(async () =>
-    {
-		await activate(docUri);
-		//
+    {   //
 		// Set debounce to minimum for test
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
+		await activate(docUri);
+		await waitForValidation();
 	});
 
 
@@ -27,7 +27,7 @@ suite("Method Signature Tests", () =>
     {   //
 		// Reset validation delay setting back to original value
 		//
-		await configuration.update("validationDelay", validationDelay || undefined);
+		await configuration.update("validationDelay", validationDelay || 1250);
 	});
 
 
@@ -79,9 +79,6 @@ suite("Method Signature Tests", () =>
 		// on parameter #2...
 		//
 		await insertDocContent("\"me\",", toRange(72, 22, 72, 22));
-		//
-		// Wait for validation (debounce is 250ms)
-		//
 		await waitForValidation();
 
 		await testSignature(docUri, new vscode.Position(72, 27), ",", {
@@ -91,9 +88,6 @@ suite("Method Signature Tests", () =>
 		});
 
 		await insertDocContent("", toRange(72, 22, 72, 27));
-		//
-		// Wait for validation (debounce is 250ms)
-		//
 		await waitForValidation();
 	});
 
@@ -102,7 +96,7 @@ suite("Method Signature Tests", () =>
 	{
 		//
 		// Line 193
-		// VSCodeExtJS.common.PhysicianDropdown.saveAll("Test", false, false)
+		// VSCodeExtJS.common.PhysicianDropdown.stopAll("Test", false, false)
 		//
 		await testSignature(docUri, new vscode.Position(192, 47), "(", {
 			activeParameter: 0,

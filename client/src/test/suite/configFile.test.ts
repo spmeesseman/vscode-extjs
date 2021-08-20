@@ -37,7 +37,7 @@ suite("Config File Tests", () =>
     {   //
 		// Reset validation delay setting back to original value
 		//
-		await configuration.update("validationDelay", validationDelay || undefined);
+		await configuration.update("validationDelay", validationDelay || 1250);
 	});
 
 
@@ -110,9 +110,6 @@ suite("Config File Tests", () =>
 		//
 		insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
 		await workspace.saveAll();
-		//
-		// Wait for validation x3
-		//
 		await waitForValidation();
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
@@ -131,9 +128,6 @@ suite("Config File Tests", () =>
 		extjsLangMgr.setTests(false);
 		insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
 		await workspace.saveAll();
-		//
-		// Wait for validation x3
-		//
 		await waitForValidation();
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");

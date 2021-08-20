@@ -24,7 +24,6 @@ suite("Hover Tests", () =>
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await activate(docUri);
 		await waitForValidation();
-		await waitForValidation();
 	});
 
 
@@ -75,34 +74,34 @@ suite("Hover Tests", () =>
 		// Line 74 - Primitive
 		// const str = this.testFn5();
 		//
-		await testHover(docUri, new vscode.Position(73, 9), "{String}");
+		await testHover(docUri, new vscode.Position(73, 9), "string");
 		//
 		// Line 82
 		// const pin = phys.getPinNumber();
 		//
-		await testHover(docUri, new vscode.Position(81, 9), "{String}");
+		await testHover(docUri, new vscode.Position(81, 9), "string");
 		//
 		// Line 82 - Primitive
 		// const pin = phys.getPinNumber();
 		//
-		await testHover(docUri, new vscode.Position(81, 15), "{VSCodeExtJS.common.PhysicianDropdown}");
+		await testHover(docUri, new vscode.Position(81, 15), "VSCodeExtJS.common.PhysicianDropdown");
 		//
 		// Line 82 - Primitive
 		// const pin = phys.getPinNumber();
 		//
-		await testHover(docUri, new vscode.Position(81, 21), "{String}");
+		await testHover(docUri, new vscode.Position(81, 21), "string");
 		//
 		// Line 83
 		// phys.delete();
 		//
-		await testHover(docUri, new vscode.Position(82, 3), "{VSCodeExtJS.common.PhysicianDropdown}");
+		await testHover(docUri, new vscode.Position(82, 3), "VSCodeExtJS.common.PhysicianDropdown");
 	});
 
 
 	test("This keyword", async () =>
 	{
-		await testHover(docUri, new vscode.Position(108, 3), "{VSCodeExtJS}");
-		await testHover(docUri, new vscode.Position(109, 3), "{VSCodeExtJS}");
+		await testHover(docUri, new vscode.Position(108, 3), "VSCodeExtJS");
+		await testHover(docUri, new vscode.Position(109, 3), "VSCodeExtJS");
 	});
 
 
