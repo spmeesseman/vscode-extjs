@@ -11,7 +11,7 @@ import {
 } from  "../../common";
 
 import {
-    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded
+    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded, documentEol
 } from "./common/clientUtils";
 import * as log from "./common/log";
 import * as path from "path";
@@ -52,8 +52,7 @@ class ExtjsLanguageManager
 
     private config: IConf[] = [];
     private serverRequest: ServerRequest;
-    private reIndexTaskId: NodeJS.Timeout | undefined;
-    private saveTaskId: NodeJS.Timeout | undefined;
+    private reIndexTaskIds: Map<string, NodeJS.Timeout | undefined> = new Map();
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
     private commentParser: CommentParser;
     private configParser: ConfigParser;
@@ -597,7 +596,7 @@ class ExtjsLanguageManager
         //
         // else if (lineText.match(new RegExp(`${property}\\s*\\((?:\\)|\\s*[\\w_ ,\\{\\}.:\\r\\n]+)`)))
         // else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
-        else if (lineText.match(new RegExp(`${property}\\s*\\(`)))
+        else if (new RegExp(`${property}\\s*\\(`).test(lineText))
         {
             cmpType = ComponentType.Method;
         }
@@ -613,8 +612,8 @@ class ExtjsLanguageManager
         //
         // Hovering over 'VSCodeExtJS' should yield 'class' type.
         //
-        else if (lineText.match(new RegExp(`.${property}\\s*[;\\)]{1,2}\\s*$`)) ||
-                 allLineText.match(new RegExp(`(\\s*(const|var|let){0,1}\\s+|^)${property}\\s*[=.]{1}\\s*[ \\W\\w\\{\\(]*\\s*$`)))
+        else if (new RegExp(`.${property}\\s*[;\\)]{1,2}\\s*$`).test(lineText) ||
+                 new RegExp(`(\\s*(const|var|let){0,1}\\s+|^)${property}\\s*[=.]{1}\\s*[ \\W\\w\\{\\(]*\\s*$`).test(allLineText))
         {
             if (!this.getComponent(property, thisCmp.nameSpace, logPad + "   ", logLevel)) {
                 cmpType = ComponentType.Property;
@@ -626,7 +625,7 @@ class ExtjsLanguageManager
         //
         // Classes and property class instances (non string literal)
         //
-        else if (lineText.match(new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`)))
+        else if (new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`).test(lineText))
         {
             cmpType = ComponentType.Class;
         }
@@ -1054,60 +1053,6 @@ class ExtjsLanguageManager
     }
 
 
-    private handleDeleteFile(fsPath: string)
-    {
-        log.methodStart("handle delete file", 1, "", true, [["path", fsPath]]);
-
-        const componentClass = this.getClassFromFile(fsPath),
-              componentNs = componentClass ? this.getNamespaceFromClass(componentClass) : undefined;
-        if (componentClass && componentNs)
-        {
-            log.value("   component class", componentClass, 2);
-
-            const component = this.getComponent(componentClass, componentNs, "   ", 2);
-            if (component)
-            {
-                component.configs.forEach((config) => {
-                    delete this.configToClsMapping[componentNs][config.name];
-                });
-
-                component.methods.forEach((method) => {
-                    delete this.methodToClsMapping[componentNs][method.name];
-                    method.variables?.forEach((v) => {
-                        delete this.variablesToComponentMapping[componentNs][v.name];
-                    });
-                });
-
-                component.properties.forEach((property) => {
-                    delete this.propertyToClsMapping[componentNs][property.name];
-                });
-
-                component.widgets.forEach((widget) => {
-                    delete this.widgetToClsMapping[componentNs][widget];
-                });
-            }
-
-            delete this.fileToComponentClassMapping[fsPath];
-
-            delete this.componentClassToWidgetsMapping[componentNs][componentClass];
-            delete this.componentClassToFilesMapping[componentClass];
-            delete this.componentClassToRequiresMapping[componentNs][componentClass];
-            delete this.clsToConfigsMapping[componentNs][componentClass];
-            delete this.clsToMethodsMapping[componentNs][componentClass];
-            delete this.componentClassToVariablesMapping[componentNs][componentClass];
-
-            //
-            // Update memory cache
-            //
-            this.components.filter((c, i) => c.componentClass === componentClass).forEach((c, i) => {
-                this.components.splice(i, 1);
-            });
-        }
-
-        log.methodDone("handle delete file", 1);
-    }
-
-
     private async indexAll(progress?: Progress<any>, project?: string, logPad = "", logLevel = 1)
     {
         log.methodStart("index all", logLevel, logPad, true, [
@@ -1183,7 +1128,7 @@ class ExtjsLanguageManager
                             message: ": Indexing " + pct + "%"
                         });
                     }
-                    this.processComponents(components, "   ", logLevel);
+                    this.processComponents(components, undefined, "   ", logLevel + 1);
                     progress?.report({
                         increment,
                         message: Math.round(++currentCfgIdx * cfgPct) + "%"
@@ -1289,7 +1234,8 @@ class ExtjsLanguageManager
         //
         if (wsPath)
         {
-            for (const c of this.config) {
+            for (const c of this.config)
+            {
                 if (c.buildDir) {
                     const buildUriPath = Uri.file(path.join(wsPath, c.buildDir)).path;
                     if (uriFile.path.includes(buildUriPath)) {
@@ -1325,6 +1271,26 @@ class ExtjsLanguageManager
         }
 
         //
+        // Get components for this file from the Language Server
+        //
+        let text: string | undefined;
+        if (document instanceof Uri) {
+            text = (await workspace.fs.readFile(document)).toString();
+        }
+        else {
+            text = document.getText();
+        }
+
+        //
+        // Check to make sure this is an ExtJs file.  Caller will have already checked to see if
+        // it's a javascript file if necessary (file watchers only watch classpath js files, so if
+        // this is a filewatcher event it's guaranteed to be a js file).)
+        //
+        if (!utils.isExtJsFile(text)) {
+            return false;
+        }
+
+        //
         // Set 'indexing' flag, hide toolbar indexing button
         // The 'oneCall' flag is set when the indexing is being done on the active document only
         // For bulk indexing, this is handled by caller
@@ -1335,26 +1301,15 @@ class ExtjsLanguageManager
         }
 
         //
-        // Get components for this file from the Language Server
-        //
-        let text: string | undefined;
-        if (document instanceof Uri) {
-            text = (await workspace.fs.readFile(document)).toString();
-        }
-        else {
-            text = document.getText();
-        }
-        if (!utils.isExtJsFile(text)) {
-            return false;
-        }
-
-        //
         // Request 'parse file' from server
         //
-        const components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
-        this.processComponents(components, logPad + "   ", logLevel);
+        const components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text),
+              cached = this.processComponents(components, fsPath, logPad + "   ", logLevel + 1);
 
-        if (components && saveToCache)
+        //
+        // Save to fs cache if caller has specified to, and if we parsed some components
+        //
+        if (cached && components && saveToCache)
         {
             const baseDir = this.getAppJsonDir(fsPath),
                   storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
@@ -1449,7 +1404,7 @@ class ExtjsLanguageManager
     {
         this.fsStoragePath = context.globalStoragePath;
         await this.initializeInternal();
-        return this.registerWatchers(context);
+        return this.watcherRegister(context);
     }
 
 
@@ -1459,19 +1414,21 @@ class ExtjsLanguageManager
     }
 
 
-    private processComponents(components: IComponent[] | undefined, logPad = "", logLevel = 1)
+    private processComponents(components: IComponent[] | undefined, fsPath?: string, logPad = "", logLevel = 1)
     {
+        let cached = true;
+
         //
         // If no components, then bye
         //
         if (!components || components.length === 0) {
-            return;
+            return false;
         }
 
-        log.methodStart("process components", logLevel, logPad, true, [[ "# of stored components", components.length ]]);
+        log.methodStart("process components", logLevel, logPad, true, [[ "# of stored components", components.length ], ["fs path", fsPath ]]);
 
         //
-        // Log the list of components and create component mappings
+        // Process the specified component(s) / update memory cache
         //
         for (const cmp of components)
         {
@@ -1479,12 +1436,33 @@ class ExtjsLanguageManager
                 componentClass, requires, widgets, xtypes, methods, configs, properties, aliases, nameSpace
             } = cmp;
 
+            //
+            // In a case where a user can copy the contents of a file and paste it into a new
+            // file, or when copying an entire file, the file will share the same class name as
+            // the source file.  In these cases, we do not want to overwrite the originally
+            // parsed component.  So check to make sure the extracted class name's mapped
+            // filesystem is the same as the method param fsPath. The 'fsPath' argument will be
+            // undefined when the processing is being done after reading the fs cache
+            //
+            if (fsPath)
+            {
+                const shouldBeFsPath = this.componentClassToFilesMapping[componentClass];
+                if (shouldBeFsPath && shouldBeFsPath !== fsPath)
+                {
+                    log.write("   ignoring duplicate component " + componentClass, logLevel + 1, logPad);
+                    log.write("   filesystem path already mapped to " + shouldBeFsPath, logLevel + 1, logPad);
+                    cached = false;
+                    break;
+                }
+            }
+
             log.write("   process component " + componentClass, logLevel + 1, logPad);
             log.values([
                 ["namespace", nameSpace], ["# of widgets", widgets.length], ["# of xtypes", xtypes.length],
                 ["# of methods", methods.length], ["# of configs", configs.length], ["# of properties", properties.length],
                 ["# of aliases", aliases.length]
-            ], logLevel + 2, logPad + "      ");
+            ], logLevel + 1, logPad + "      ");
+
             //
             // The components documentation.  Defined at the very top of the class file, e.g.:
             //
@@ -1504,7 +1482,7 @@ class ExtjsLanguageManager
                 cmp.markdown = this.commentParser.toMarkdown(componentClass, cmp.doc, logPad + "   ");
             }
 
-            log.write("      map classes to components", logLevel + 3, logPad);
+            log.write("      map classes to components", logLevel + 1, logPad);
 
             //
             // Map the component class to the various component types found
@@ -1543,7 +1521,7 @@ class ExtjsLanguageManager
                 this.componentClassToRequiresMapping[nameSpace][componentClass] = requires.value;
             }
 
-            log.write("      map components to classes", logLevel + 3, logPad);
+            log.write("      map components to classes", logLevel + 1, logPad);
 
             //
             // Map widget/alias/xtype types found to the component class
@@ -1554,6 +1532,8 @@ class ExtjsLanguageManager
             widgets.forEach(widget => {
                 this.widgetToClsMapping[nameSpace][widget] = componentClass;
             });
+
+            log.write("      map methods and variables to classes", logLevel + 1, logPad);
 
             //
             // Map methods found to the component class
@@ -1593,6 +1573,8 @@ class ExtjsLanguageManager
                 }
             });
 
+            log.write("      map configs to classes", logLevel + 1, logPad);
+
             //
             // Map config properties found to the component class
             //
@@ -1603,6 +1585,8 @@ class ExtjsLanguageManager
                 config.markdown = this.commentParser.toMarkdown(config.name, config.doc, logPad + "   ");
                 this.configToClsMapping[nameSpace][config.name] = componentClass;
             });
+
+            log.write("      map properties to classes", logLevel + 1, logPad);
 
             //
             // Map properties found to the component class
@@ -1615,31 +1599,27 @@ class ExtjsLanguageManager
                 this.propertyToClsMapping[nameSpace][property.name] = componentClass;
             });
 
+            log.write("      update memory cache", logLevel + 1, logPad);
+
             //
             // Update memory cache
             //
-            let idx = -1;
-            const cacheCmp = this.components.filter((c, i) => {
-                if (c.componentClass === componentClass) {
-                    idx = i;
-                    return true;
-                }
-            });
-            if (cacheCmp.length > 0) {
+            const idx = this.components.findIndex((c) => c.componentClass === componentClass);
+            if (idx >= 0) {
                 this.components.splice(idx, 1, cmp);
             }
             else {
                 this.components.push(cmp);
             }
 
-            log.write("      parsed component parts:", logLevel + 2);
+            log.write("      parsed component parts:", logLevel + 3);
             log.values([
                 [ "configs", JSON.stringify(this.configToClsMapping[componentClass], undefined, 3)],
                 [ "methods", JSON.stringify(this.methodToClsMapping[componentClass], undefined, 3)],
                 [ "property", JSON.stringify(this.propertyToClsMapping[componentClass], undefined, 3)],
                 [ "widget", JSON.stringify(this.widgetToClsMapping[componentClass], undefined, 3)]
-            ], logLevel + 2, logPad + "   ");
-            log.write("   done processing component " + componentClass, logLevel + 2, logPad);
+            ], logLevel + 3, logPad + "   ");
+            log.write("   done processing component " + componentClass, logLevel + 1, logPad);
         }
 
         log.methodDone("process components", logLevel, logPad);
@@ -1657,179 +1637,6 @@ class ExtjsLanguageManager
         }
     }
 
-
-    private async processDocumentChange(e: Uri)
-    {
-        await this.indexFile(e.fsPath, this.getNamespace(e), true, e);
-    }
-
-
-    private processOpenDocumentChange(e: TextDocumentChangeEvent)
-    {
-        if (e.contentChanges.length === 0) {
-            return;
-        }
-
-        let debounceMs = configuration.get<number>("validationDelay", 1250);
-        const textDocument = e.document;
-        //
-        // Clear debounce timeout if still pending
-        //
-        if (this.reIndexTaskId) {
-            clearTimeout(this.reIndexTaskId);
-        }
-
-        if (textDocument.languageId === "javascript" && utils.isExtJsFile(textDocument.getText()))
-        {   //
-            // On enter/return key, validate immediately as the line #s for all range definitions
-            // underneath the edit have just shifted by one line
-            //
-            for (const change of e.contentChanges)
-            {
-                if (change.text.includes(EOL)) {
-                    debounceMs = 0;
-                }
-            }
-            //
-            // Debounce!!
-            //
-            this.reIndexTaskId = setTimeout(async () =>
-            {
-                this.reIndexTaskId = undefined;
-                const ns = this.getNamespace(textDocument);
-                //
-                // Index the file
-                //
-                const components = await this.indexFile(textDocument.uri.fsPath, ns, false, textDocument);
-                //
-                // Validate document
-                //
-                if (components && components.length > 0) {
-                    await this.validateDocument(textDocument, ns);
-                }
-            }, debounceMs);
-        }
-    }
-
-
-    private async processDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
-    {
-        this.handleDeleteFile(uri.fsPath);
-        const activeTextDocument = window.activeTextEditor?.document;
-        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-    }
-
-
-    private async processEditorChange(e: TextEditor | undefined)
-    {
-        await this.validateDocument(e?.document, this.getNamespace(e?.document));
-    }
-
-
-    private async processSettingsChange(e: ConfigurationChangeEvent)
-    {
-        if (e.affectsConfiguration("extjsIntellisense.ignoreErrors"))
-        {
-            this.reIndexTaskId = undefined;
-            const document = window.activeTextEditor?.document,
-                  fsPath = document?.uri.fsPath,
-                  ns = this.getNamespace(document);
-            if (document && fsPath)
-            {   //
-                // Clear
-                //
-                this.handleDeleteFile(fsPath);
-                //
-                // Index the file
-                //
-                const components = await this.indexFile(fsPath, ns, false, document);
-                //
-                // Validate document
-                //
-                if (components && components.length > 0) {
-                    await this.validateDocument(document, ns);
-                }
-            }
-        }
-    }
-
-
-    /**
-     * @method registerWatchers
-     *
-     * Register application event watchers - Document open/change/delete, config file filesystem,
-     * settings/config
-     *
-     * @private
-     *
-     * @param context VSCode extension context
-     */
-    private registerWatchers(context: ExtensionContext): Disposable[]
-    {
-        log.methodStart("Register file watchers", 1, "", true);
-        log.write("   Build file watcher glob", 2);
-        //
-        // Build watcher glob from classpaths
-        //
-        const classPaths = [];
-        for (const c of this.config)
-        {
-            if (typeof(c.classpath) === "string" || c.classpath instanceof String)
-            {
-                log.write(`      Adding classpath ${c.classpath}`, 3);
-                classPaths.push(c.classpath.replace("\\", "/"));
-            }
-            else {
-                for (const cp of c.classpath) {
-                    log.write(`      Adding classpath ${cp}`, 3);
-                    classPaths.push(cp.replace("\\", "/"));
-                }
-            }
-        }
-
-        const clsPathGlob = `**/{${classPaths.join(",")}}/**/*.js`.replace("//**", "/");
-        log.write("   file watcher glob:", 2);
-        log.write(`   ${clsPathGlob}`, 2);
-
-        //
-        // rc/conf file / app.json
-        //
-        const disposables: Disposable[] = [],
-              jsWatcher = workspace.createFileSystemWatcher(clsPathGlob),
-              confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json,workspace.json}");
-
-        //
-        // Config watcher
-        //
-        disposables.push(confWatcher.onDidChange(async (e) => { await this.processConfigChange(e); }, this));
-        disposables.push(confWatcher.onDidDelete(async (e) => { await this.processConfigChange(e); }, this));
-        disposables.push(confWatcher.onDidCreate(async (e) => { await this.processConfigChange(e); }, this));
-
-        //
-        // Open document text change
-        //
-        disposables.push(workspace.onDidChangeTextDocument((e) => { this.processOpenDocumentChange(e); }, this));
-        // disposables.push(workspace.onDidChangeTextDocument((e) => this.processDocumentChange));
-        //
-        // Javascript watchers
-        //
-        disposables.push(jsWatcher.onDidChange(async (e) => { await this.processDocumentChange(e); }, this));
-        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
-        disposables.push(jsWatcher.onDidDelete(async (e) => { await this.processDocumentDelete(e); }, this));
-        //
-        // Active editor changed (processes open-document too)
-        //
-        disposables.push(window.onDidChangeActiveTextEditor(async (e) => { await this.processEditorChange(e); }, this));
-        //
-        // Register configurations/settings change watcher
-        //
-        disposables.push(workspace.onDidChangeConfiguration(async (e) => { await this.processSettingsChange(e); }, this));
-
-        context.subscriptions.push(...disposables);
-
-        log.methodDone("Register file watchers", 1);
-        return disposables;
-    }
 
     /**
      * For tests
@@ -1871,6 +1678,210 @@ class ExtjsLanguageManager
             // }
             showReIndexButton(true);
             this.isValidating = false;
+        }
+    }
+
+
+    private async watcherDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
+    {
+        const fsPath = uri.fsPath;
+
+        log.methodStart("handle delete file", 1, "", true, [["path", fsPath]]);
+
+        const componentClass = this.getClassFromFile(fsPath),
+              componentNs = componentClass ? this.getNamespaceFromClass(componentClass) : undefined;
+
+        if (componentClass && componentNs)
+        {
+            log.value("   component class", componentClass, 2);
+
+            const component = this.getComponent(componentClass, componentNs, "   ", 2);
+            if (component)
+            {
+                component.configs.forEach((config) => {
+                    delete this.configToClsMapping[componentNs][config.name];
+                });
+
+                component.methods.forEach((method) => {
+                    delete this.methodToClsMapping[componentNs][method.name];
+                    method.variables?.forEach((v) => {
+                        delete this.variablesToComponentMapping[componentNs][v.name];
+                    });
+                });
+
+                component.properties.forEach((property) => {
+                    delete this.propertyToClsMapping[componentNs][property.name];
+                });
+
+                component.widgets.forEach((widget) => {
+                    delete this.widgetToClsMapping[componentNs][widget];
+                });
+            }
+
+            delete this.fileToComponentClassMapping[fsPath];
+
+            delete this.componentClassToWidgetsMapping[componentNs][componentClass];
+            delete this.componentClassToFilesMapping[componentClass];
+            delete this.componentClassToRequiresMapping[componentNs][componentClass];
+            delete this.clsToConfigsMapping[componentNs][componentClass];
+            delete this.clsToMethodsMapping[componentNs][componentClass];
+            delete this.componentClassToVariablesMapping[componentNs][componentClass];
+
+            //
+            // Update memory cache
+            //
+            this.components.filter((c, i) => c.componentClass === componentClass).forEach((c, i) => {
+                this.components.splice(i, 1);
+            });
+        }
+
+        const activeTextDocument = window.activeTextEditor?.document;
+        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+
+        log.methodDone("handle delete file", 1);
+    }
+
+
+    private watcherOpenDocumentChange(e: TextDocumentChangeEvent)
+    {
+        if (e.contentChanges.length > 0 && e.document.languageId === "javascript" && utils.isExtJsFile(e.document.getText()))
+        {
+            //
+            // Clear debounce timeout if still pending
+            //
+            const taskId = this.reIndexTaskIds.get(e.document.uri.fsPath);
+            if (taskId) {
+                clearTimeout(taskId);
+                this.reIndexTaskIds.delete(e.document.uri.fsPath);
+            }
+
+            //
+            // Check the change
+            //
+            let debounceMs = configuration.get<number>("validationDelay", 1250);
+            for (const change of e.contentChanges)
+            {   //
+                // On enter/return key, validate immediately as the line #s for all range definitions
+                // underneath the edit have just shifted by one line
+                //
+                if (change.text.includes(EOL)) {
+                    debounceMs = 0;
+                }
+                //
+                // If the 'Ext.define' line is being edited, ignore this event
+                //
+                else if (e.document.lineAt(change.range.start).text.includes("Ext.define")) {
+                    return;
+                }
+            }
+            //
+            // Debounce!!
+            //
+            const reIndexTaskId = setTimeout(async (document) =>
+            {
+                this.reIndexTaskIds.delete(document.uri.fsPath);
+                const ns = this.getNamespace(document);
+                //
+                // Index the file, don't save to fs cache, we'll persist to fs cache when the
+                // document is saved
+                //
+                const components = await this.indexFile(document.uri.fsPath, ns, false, document);
+                //
+                // Validate document
+                //
+                if (components && components.length > 0) {
+                    await this.validateDocument(document, ns);
+                }
+            }, debounceMs, e.document);
+
+            this.reIndexTaskIds.set(e.document.uri.fsPath, reIndexTaskId);
+        }
+    }
+
+
+    /**
+     * @method watcherRegister
+     *
+     * Register application event watchers - Document open/change/delete, config file filesystem,
+     * settings/config
+     *
+     * @private
+     *
+     * @param context VSCode extension context
+     */
+    private watcherRegister(context: ExtensionContext): Disposable[]
+    {
+        log.methodStart("Register file watchers", 1, "", true);
+        log.write("   Build file watcher glob", 2);
+        //
+        // Build watcher glob from classpaths
+        //
+        const classPaths = [];
+        for (const c of this.config)
+        {
+            if (typeof(c.classpath) === "string" || c.classpath instanceof String)
+            {
+                log.write(`      Adding classpath ${c.classpath}`, 3);
+                classPaths.push(c.classpath.replace("\\", "/"));
+            }
+            else {
+                for (const cp of c.classpath) {
+                    log.write(`      Adding classpath ${cp}`, 3);
+                    classPaths.push(cp.replace("\\", "/"));
+                }
+            }
+        }
+
+        const clsPathGlob = `**/{${classPaths.join(",")}}/**/*.js`.replace("//**", "/");
+        log.write("   file watcher glob:", 2);
+        log.write(`   ${clsPathGlob}`, 2);
+
+        //
+        // rc/conf file / app.json
+        //
+        const disposables: Disposable[] = [],
+              jsWatcher = workspace.createFileSystemWatcher(clsPathGlob),
+              confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json,workspace.json}");
+        //
+        // Config watcher
+        //
+        disposables.push(confWatcher.onDidChange(async (e) => { await this.processConfigChange(e); }, this));
+        disposables.push(confWatcher.onDidDelete(async (e) => { await this.processConfigChange(e); }, this));
+        disposables.push(confWatcher.onDidCreate(async (e) => { await this.processConfigChange(e); }, this));
+        //
+        // disposables.push(workspace.onDidChangeTextDocument((e) => this.processDocumentChange));
+        //
+        // Javascript watchers
+        //
+        disposables.push(jsWatcher.onDidChange(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
+        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
+        disposables.push(jsWatcher.onDidDelete(async (e) => { await this.watcherDocumentDelete(e); }, this));
+        //
+        // Active editor changed (processes open-document too)
+        //
+        disposables.push(window.onDidChangeActiveTextEditor(async (e) => { await this.validateDocument(e?.document, this.getNamespace(e?.document)); }, this));
+        //
+        // Open document text change
+        //
+        disposables.push(workspace.onDidChangeTextDocument((e) => { this.watcherOpenDocumentChange(e); }, this));
+        //
+        // Register configurations/settings change watcher
+        //
+        disposables.push(workspace.onDidChangeConfiguration(async (e) => { await this.watcherSettingsChange(e); }, this));
+
+        context.subscriptions.push(...disposables);
+
+        log.methodDone("Register file watchers", 1);
+        return disposables;
+    }
+
+
+    private async watcherSettingsChange(e: ConfigurationChangeEvent)
+    {
+        if (e.affectsConfiguration("extjsIntellisense.ignoreErrors"))
+        {
+            const document = window.activeTextEditor?.document;
+            await this.validateDocument(document, this.getNamespace(document));
         }
     }
 
