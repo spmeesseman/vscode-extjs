@@ -36,6 +36,7 @@ export interface ILineProperties
     thisCmp?: IComponent;
     cmpType?: ComponentType;
     text: string;
+    lineText: string;
 }
 
 
@@ -43,7 +44,7 @@ class ExtjsLanguageManager
 {   //
     // When an update requires a re-index, change the name of this flag
     //
-    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.5";
+    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.6.0";
 
     private isIndexing = false;
     private isValidating = false;
@@ -496,7 +497,8 @@ class ExtjsLanguageManager
                 cmpClass: thisCmp?.componentClass,
                 cmpType: ComponentType.Class,
                 property,
-                text
+                text,
+                lineText: allLineText
             };
         }
 
@@ -512,7 +514,8 @@ class ExtjsLanguageManager
                 cmpClass: undefined,
                 cmpType: ComponentType.Class,
                 property,
-                text
+                text,
+                lineText: allLineText
             };
         }
 
@@ -736,7 +739,8 @@ class ExtjsLanguageManager
             thisCmp,
             thisClass: thisCmp?.componentClass,
             callee,
-            text
+            text,
+            lineText: allLineText
         };
     }
 
@@ -749,6 +753,14 @@ class ExtjsLanguageManager
             Object.keys(this.widgetToClsMapping).every(async (ns) => {
                 if (this.widgetToClsMapping[ns][property]) {
                     cls = this.widgetToClsMapping[ns][property];
+                    return ns !== nameSpace;
+                }
+            });
+        }
+        if (!cmpType || cmpType === ComponentType.Store) {
+            Object.keys(this.widgetToClsMapping).every(async (ns) => {
+                if (this.widgetToClsMapping[ns]["store." + property]) {
+                    cls = this.widgetToClsMapping[ns]["store." + property];
                     return ns !== nameSpace;
                 }
             });
@@ -807,6 +819,16 @@ class ExtjsLanguageManager
 
         log.methodDone("get method by property", logLevel, logPad, false, [["method", method?.name]]);
         return method;
+    }
+
+
+    getModelTypeNames(): string[]
+    {
+        const types: string[] = [];
+        this.components.forEach((c) => {
+            types.push(...c.aliases.filter(a => !types.includes(a.name) && a.name.startsWith("model.")).map(a => a.name));
+        });
+        return types;
     }
 
 
@@ -1014,15 +1036,21 @@ class ExtjsLanguageManager
     }
 
 
+    getStoreTypeNames(): string[]
+    {
+        const types: string[] = [];
+        this.components.forEach((c) => {
+            types.push(...c.aliases.filter(a => !types.includes(a.name) && a.name.startsWith("store.")).map(a => a.name));
+        });
+        return types;
+    }
+
+
     getXtypeNames(): string[]
     {
         const xtypes: string[] = [];
         this.components.forEach((c) => {
-            c.xtypes.forEach((x) => {
-                if (!xtypes.includes(x.name)) {
-                    xtypes.push(x.name);
-                }
-            });
+            xtypes.push(...c.xtypes.filter(x => !xtypes.includes(x.name)).map(x => x.name.replace("widget.", "")));
         });
         return xtypes;
     }

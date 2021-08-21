@@ -191,6 +191,22 @@ Ext.define('VSCodeExtJS',
 		});
 
 		VSCodeExtJS.common.PhysicianDropdown.stopAll();
+	},
+
+	viewModel:
+	{
+		stores:
+		{
+			store1:
+			{
+				type: "users",
+				
+			},
+			store2:
+			{
+				
+			}
+		}
 	}
 
 });

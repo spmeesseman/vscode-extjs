@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import { Range, Position, TextDocument, EndOfLine, Uri } from "vscode";
-import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive } from "../../../common";
+import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive, IObjectRange } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
 
@@ -84,27 +84,20 @@ export function isPrimitive(object: any): object is IPrimitive
 
 
 export function getMethodByPosition(position: Position, component: IComponent)
-{
-    let method: IMethod | undefined;
-    for (const m of component.methods)
-    {
-        if (isPositionInRange(position, toVscodeRange(m.start, m.end))) {
-            method = m;
-            break;
-        }
-    }
-    return method;
+{   //
+    // Return first found, this will be the outer function object
+    //
+    return component.methods.find(m => isPositionInRange(position, toVscodeRange(m.start, m.end)));
 }
 
 
 export function getObjectRangeByPosition(position: Position, component: IComponent)
-{
-    for (const o of component.objectRanges)
-    {
-        if (isPositionInRange(position, toVscodeRange(o.start, o.end))) {
-            return o;
-        }
-    }
+{   //
+    // Return last found, this will be the most inner object
+    //
+    const ranges: IObjectRange[] = [];
+    ranges.push(...component.objectRanges.filter(o => isPositionInRange(position, toVscodeRange(o.start, o.end))));
+    return ranges.length > 0 ? ranges[ranges.length - 1] : undefined;
 }
 
 

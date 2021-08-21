@@ -6,7 +6,9 @@ export enum ComponentType
     Method = 1 << 1,
     Property = 1 << 2,
     Widget = 1 << 3,
-    Class = 1 << 4
+    Class = 1 << 4,
+    Model = 1 << 5,
+    Store = 1 << 6
 }
 
 
@@ -15,16 +17,6 @@ export enum DeclarationType
     const,
     let,
     var
-}
-
-
-export enum ObjectRangeType
-{
-    MethodParameterArray,
-    MethodParameterObject,
-    MethodParameterVariable,
-    PropertyArray,
-    PropertyObject
 }
 
 
@@ -133,7 +125,8 @@ export interface IMethod extends IProperty
 
 export interface IObjectRange extends IRange
 {
-    type: ObjectRangeType;
+    name?: string; // empty if method parameter
+    type: "ObjectMethod" | "ObjectProperty" | "ObjectExpression" | "SpreadElement";
 }
 
 

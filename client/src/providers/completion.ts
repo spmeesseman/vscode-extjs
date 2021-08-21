@@ -4,7 +4,7 @@ import { extjsLangMgr } from "../extension";
 import { configuration } from "../common/configuration";
 import {
     ComponentType, DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty,
-    IRange, ObjectRangeType, utils, ast, IObjectRange
+    utils, ast, IObjectRange
 } from "../../../common";
 import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
@@ -677,9 +677,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         //     xtype: ''
         //
-        if (lineTextLeft && lineTextLeft.match(new RegExp(`xtype\\s*:\\s*${quote}${quote}$`)))
+        if (lineTextLeft && new RegExp(`x?type\\s*:\\s*${quote}${quote}$`).test(lineTextLeft))
         {
-            completionItems.push(...this.getObjectRangeCompletionItems(undefined, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
+            completionItems.push(...this.getObjectRangeCompletionItems(undefined, text, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
         }
         //
         // Depending on the current position, provide the completion items...
@@ -746,7 +746,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                             // all properties/configs of the xtype 'userdropdowns' that start with the text
                             // 'user', i.e. userName, etc
                             //
-                            completionItems.push(...this.getObjectRangeCompletionItems(undefined, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
+                            completionItems.push(...this.getObjectRangeCompletionItems(undefined, text, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
                         }
                         break;
                     }
@@ -775,10 +775,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     {
                         const [_, property ] = m;
                         log.write("   add inline property completion", 1);
-                        completionItems.push(...this.getObjectRangeCompletionItems(property, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
+                        completionItems.push(...this.getObjectRangeCompletionItems(property, text, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
                     }
                     else {
-                        completionItems.push(...this.getObjectRangeCompletionItems(undefined, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
+                        completionItems.push(...this.getObjectRangeCompletionItems(undefined, text, document, position, thisCmp, logPad + "   ", logLevel, _addProps));
                     }
                 }
             }
@@ -884,7 +884,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getObjectRangeCompletionItems(property: string | undefined, document: TextDocument, position: Position, thisCmp: IComponent, logPad: string, logLevel: number, addFn: (arg: IComponent) => void)
+    private getObjectRangeCompletionItems(property: string | undefined, text: string | undefined, document: TextDocument, position: Position, thisCmp: IComponent, logPad: string, logLevel: number, addFn: (arg: IComponent) => void)
     {
         log.methodStart("get object range completion Items", logLevel, logPad);
 
@@ -924,7 +924,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         else //
         {   //
-            let hasXtype = "";
+            let hasXtype: { name: string | undefined; type: string | undefined } | undefined;
             // Check to see if there's already an xtype definition within the object block
             //
             const objectRange = getObjectRangeByPosition(position, thisCmp);
@@ -934,9 +934,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // will be sent to the parser, since it'll probably be invalid syntax during an edit.
                 // Remove the current line and store the result in objectRangeText` for AST parsing.
                 //
-                if (objectRange.type === ObjectRangeType.MethodParameterVariable) {
-                    return completionItems;
-                }
+                // if (objectRange.type === "MethodParameterVariable") {
+                //     return completionItems;
+                // }
                 const eol = documentEol(document),
                       vsRange = toVscodeRange(objectRange.start, objectRange.end),
                       innerPositionLine = position.line - vsRange.start.line;
@@ -950,21 +950,19 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 }
                 objectRangeText = objectRangeText.replace(objectRangeTextCut, "").trim();
                 //
-                // Only show xtype completion if an xtype is not already defined within the current object
+                // Only show xtype completion if an (x)type is not already defined within the current object
                 // block... before or after the current line otherwise this would have been a little easier,
                 // so we'll use the ast parser here
                 //
-                if (objectRange.type === ObjectRangeType.MethodParameterArray || objectRange.type === ObjectRangeType.MethodParameterObject) {
-                    objectRangeText = "a: [" + objectRangeText + "]";
-                }
                 hasXtype = this.getObjectXType(objectRangeText, objectRange, position);
             }
 
-            if (hasXtype)
+            if (hasXtype && hasXtype.name)
             {   //
                 // Add the objects `xtype` properties and configs
                 //
-                const cls = extjsLangMgr.getMappedClass(hasXtype, thisCmp.nameSpace, ComponentType.Widget),
+                const cmpType = hasXtype.type === "type" ? ComponentType.Store :  ComponentType.Widget,
+                      cls = extjsLangMgr.getMappedClass(hasXtype.name, thisCmp.nameSpace, cmpType),
                       xComponent = cls ? extjsLangMgr.getComponent(cls, thisCmp.nameSpace, logPad + "   ", logLevel + 1) : undefined;
                 if (xComponent) {
                     if (!property) {
@@ -979,16 +977,16 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             {   //
                 //  An `xtype` is not defined on this object, add the complete `xtype` list
                 //
-                const xtypes = extjsLangMgr.getXtypeNames();
-                for (const xtype of xtypes)
+                const xtypes = [];
+                if (text?.startsWith("x"))      { xtypes.push(...extjsLangMgr.getXtypeNames()); }
+                else if (text?.startsWith("t")) { xtypes.push(...extjsLangMgr.getStoreTypeNames()); }
+                else { xtypes.push(...[...extjsLangMgr.getXtypeNames(), ...extjsLangMgr.getStoreTypeNames() ]); }
+                xtypes.filter(x => !addedItems.includes(x)).forEach((xtype) =>
                 {
-                    if (!addedItems.includes(xtype))
-                    {
-                        const xtypeCompletion = this.getXTypeCompletionItem(xtype, position, document);
-                        completionItems.push(xtypeCompletion);
-                        addedItems.push(xtype);
-                    }
-                }
+                    const xtypeCompletion = this.getXTypeCompletionItem(xtype, position, document, xtype.includes("store.") ? "type" : "xtype");
+                    completionItems.push(xtypeCompletion);
+                    addedItems.push(xtype);
+                });
             }
         }
 
@@ -999,7 +997,15 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
     private getObjectXType(objectRangeText: string, objectRange: IObjectRange, position: Position)
     {
-        let xtype = "";
+        let xtype: { name: string | undefined; type: string | undefined } | undefined;
+
+        if (objectRange.type === "ObjectExpression") {
+            objectRangeText = "a: [" + objectRangeText + "]";
+        }
+        else if (objectRange.type === "ObjectProperty") {
+            objectRangeText = "a: [" + objectRangeText.substring(objectRangeText.indexOf("{"), objectRangeText.lastIndexOf("}") + 1) + "]";
+        }
+
         //
         // Use AST parser to determine if there's a defined `xtype` within the object, either
         // before or after the current position.
@@ -1012,19 +1018,25 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 if (isObjectExpression(e) && e.loc)
                 {
                     const relativePosition = new Position(position.line - objectRange.start.line, position.character);
-                    if (toVscodeRange(e.loc.start, e.loc.end).contains(relativePosition))
+                    if (toVscodeRange(e.loc.start, { line: e.loc.end.line, column: 10000 }).contains(relativePosition))
                     {
                         for (const p of e.properties)
                         {
-                            if (isObjectProperty(p) && isIdentifier(p.key) && (p.key.name === "xtype" || p.key.name === "extend") && isStringLiteral(p.value))
+                            if (isObjectProperty(p) && isIdentifier(p.key) &&
+                                (p.key.name === "type" || p.key.name === "xtype" || p.key.name === "extend") &&
+                                isStringLiteral(p.value))
                             {
-                                xtype = p.value.value;
+                                xtype = {
+                                    name: p.value.value,
+                                    type: p.key.name
+                                };
                             }
                         }
                     }
                 }
             }
         }
+
         return xtype;
     }
 
@@ -1100,23 +1112,24 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getXTypeCompletionItem(xtype: string, position: Position, document: TextDocument)
+    private getXTypeCompletionItem(xtype: string, position: Position, document: TextDocument, type = "xtype")
     {
-        const xtypeCompletion = new CompletionItem(`xtype: ${xtype}`),
+        const xtypeCompletion = new CompletionItem(`${type}: ${xtype}`),
                 lineText = document.lineAt(position).text.trimRight(),
                 useXTypeEol = configuration.get<boolean>("intellisenseXtypeEol", true),
                 eol = documentEol(document),
-                quote = quoteChar();
+                quote = quoteChar(),
+                shortXType = xtype.replace("store.", "").replace("model.", "");
 
-        xtypeCompletion.insertText = `xtype: ${quote}${xtype}${quote},${useXTypeEol ? eol : ""}`;
-        xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire"};
+        xtypeCompletion.insertText = `${type}: ${quote}${shortXType}${quote},${useXTypeEol ? eol : ""}`;
+        xtypeCompletion.command = {command: "vscode-extjs:ensureRequire", title: "ensureRequire", arguments: [ type ]};
         //
         // If user has already typed in `xtype[: '""]` then do an additional edit and remove
         // what would be a double xtype considering the insertText.
         //
-        if (lineText.includes("xtype"))
+        if (lineText.includes(type))
         {
-            const xTypeIdx = lineText.indexOf("xtype"),
+            const xTypeIdx = lineText.indexOf(type),
                   quoteIdx = lineText.indexOf(quote, xTypeIdx), // dealing with surrounding quotes
                   preRange =  new Range(new Position(position.line, xTypeIdx),
                                         new Position(position.line, xTypeIdx + 6 + (quoteIdx !== -1 ? 2 : 0)));
