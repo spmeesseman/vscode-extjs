@@ -591,8 +591,13 @@ class ExtjsLanguageManager
         //     testFn();
         //     testFn2(a, b);
         //     testFn2(a, { x: 0, y: 1});
+        //     testFn2(a, {
+        //         x: 0, y: 1
+        //     });
         //
-        else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
+        // else if (lineText.match(new RegExp(`${property}\\s*\\((?:\\)|\\s*[\\w_ ,\\{\\}.:\\r\\n]+)`)))
+        // else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
+        else if (lineText.match(new RegExp(`${property}\\s*\\(`)))
         {
             cmpType = ComponentType.Method;
         }
