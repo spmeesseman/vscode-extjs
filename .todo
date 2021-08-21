@@ -1,26 +1,26 @@
 
 Completion:
 
-	☐ xtype cmopletion is displaying outside of blocks, i.e. comments
+	✔ xtype cmopletion is displaying outside of blocks, i.e. comments @done(21-08-20 23:51)
 	✔ xtype selection is double printing xtype if already typed in and into the string part @done(21-08-15 19:17)
 	✔ Add mixin config to syntax tree parsing @done(21-08-13 14:35)
 		Process as an extended class for properties/configs/methods
 	☐ When writing method parameters, and they are line broken (i.e. object param), method signature breaks
 	✔ Inline does not work when preceded by 'await ' (or probably any other word) @done(21-08-13 17:08)
 	✔ Main namespace inline does not work.  e.g. 'Ext', or 'VSCodeExtJS', 'GEMS' @done(21-08-17 23:44)
-	☐ For instance properties, the 'go to definition' should go to the declaration, not the definition
+	✔ For instance properties, the 'go to definition' should go to the declaration, not the definition @done(21-08-21 08:55)
 		the 'go to type definition' works as intended and goes to the definition
 	☐ The 'this' property needs to check for function scope, currently 'this' is always the main cmp instance
-	☐ dot completion - doesnt work if there are characters to the right
+	✔ dot completion - doesnt work if there are characters to the right @done(21-08-21 08:53)
 		e.g.: app.js line 85, remove some of 'PhysicianDropdown' and try typing it in again
 		it will only work if the typing is coming left to right and there are no chars to the right
 		remove it to the left dot, then it gives instance components.  fix weird things here.
-	☐ Instance properties should not show when the class name is typed
+	✔ Instance properties should not show when the class name is typed @done(21-08-21 08:54)
 		i.e. "VSCodeExtJS." should not display "testFn" unless it was a singleton or the method was in a 'statics' block
-	☐ Implement 'singleton' - display on classname typing, not instance
+	✔ Implement 'singleton' - display on classname typing, not instance @done(21-08-21 08:54)
 	✔ Implement 'statics' block - display on classname typing, not instance @done(21-08-18 20:35)
 	☐ Should work for a string in a requires/uses/models/stores block should display the doc for that class
-	☐ The 'privates' block should be applied to instance components
+	✔ The 'privates' block should be applied to instance components @done(21-08-21 03:51)
 	☐ Model property getter/setter when using associations
 
 Diagnostics:
@@ -48,7 +48,7 @@ Miscellaneous:
 
 	✔ add 'clear ast cache' or 'reindex' task for chance becomes corrupt @done(21-08-08 14:15)
 	☐ goto definition for jsdoc parameter types (surrounded with{})
-	☐ Configs and variable level cache mappings need to be separated by a 3rd dimension @high
+	☐ Configs and variable level cache mappings need to be separated by a 3rd project dimension @high
 		Separate again using project name (workspace dir name)
 		currently only [namespace][componentname].  needs to be [project][namespace][componentname]
 	✔ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json) @done(21-08-13 16:52)
@@ -58,6 +58,7 @@ Stores:
 
 	☐ AST parsing (property 'type' and mappings)
 	☐ diagnostics for 'type' same as 'xtype'
+	☐ diagnostic for 'model' field
 	☐ completion for 'type' same as 'xtype'
 	☐ go to definition for 'type' same as 'xtype'
 	☐ go to type definition for 'type' same as 'xtype'
