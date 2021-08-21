@@ -124,6 +124,9 @@ export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?
             for (const [ n, v, l ] of params) {
                 value(logPad + "   " + n, v, l || lLevel + 1);
             }
+            if (doLogBlank === true) {
+                blank(lLevel);
+            }
         }
         write("*done* " + msg, lLevel, logPad);
     }

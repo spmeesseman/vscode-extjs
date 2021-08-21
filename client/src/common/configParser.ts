@@ -90,7 +90,7 @@ export class ConfigParser
             await this.parseAppDotJson(uri, config, "   ");
         }
 
-        log.methodDone("get extjs configuration", 1, "", true, [["   # of configured projects found", config.length]]);
+        log.methodDone("get extjs configuration", 1, "", true, [["# of configured projects found", config.length]]);
 
         return config;
     }

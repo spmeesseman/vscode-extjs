@@ -34,7 +34,7 @@ export async function clearAst(project?: string, force = false, logPad = "")
         log.write("   did not run command", 1, logPad);
     }
 
-    log.methodStart("clear ast command", 1, logPad);
+    log.methodDone("clear ast command", 1, logPad);
 }
 
 
