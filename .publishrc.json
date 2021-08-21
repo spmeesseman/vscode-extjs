@@ -8,7 +8,7 @@
     ],
     "changelogFile":            "CHANGELOG.md",
     "deployCommand":            "npx vsce publish",
-    "deployPostCommand":        "bash.exe tools/codecov.sh -t ${CODECOV_TOKEN2}",
+    "deployPostCommand":        "tools/codecov.exe -t ${CODECOV_TOKEN2}",
     "githubAssets": [
         "CHANGELOG.md|Changelog File",
         "vscode-extjs-$(VERSION).vsix|VSIX Installer"
