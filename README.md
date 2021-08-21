@@ -40,6 +40,7 @@ _**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The
   - [Diagnostics](#diagnostics)
   - [ESLint Tips](#eslint-tips)
   - [Caching](#caching)
+  - [App-Publisher](#app-publisher)
   - [Thank You](#thank-you)
   - [Feedback & Contributing](#feedback--contributing)
     - [Rate It - Leave Some Stars](#rate-it---leave-some-stars)
@@ -300,6 +301,12 @@ Linting is dynamic as you edit files.  But also create a task in package.json fo
 ## Caching
 
 The first time the extension activates, it will index all ExtJS files found within the workspace.  This could take a while depending on the # of ExtJS projects/files found.  The ExtJS Language Server will cache the syntax tree after the initial build, improving startup performance by > 10x.
+
+## App-Publisher
+
+![app-publisher-cmdline-banner](https://github.com/spmeesseman/app-publisher/blob/master/res/readme/cmdline-banner.png?raw=true)
+
+This extension is released with the [app-publisher](https://github.com/spmeesseman/app-publisher) tool.
 
 ## Thank You
 
