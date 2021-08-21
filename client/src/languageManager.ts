@@ -1,12 +1,12 @@
 
 import {
     Disposable, ExtensionContext, Progress, TextDocumentChangeEvent, Range, Position,
-    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri, FileDeleteEvent,
+    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri,
     ConfigurationChangeEvent,
     commands
 } from "vscode";
 import {
-    IAlias, IConfig, IComponent, IMethod, IConf, IProperty, IXtype, utils, ComponentType,
+    IConfig, IComponent, IMethod, IConf, IProperty, utils, ComponentType,
     IVariable, VariableType, IExtJsBase, IPrimitive, IRequire, IParameter
 } from  "../../common";
 
@@ -53,6 +53,7 @@ class ExtjsLanguageManager
     private config: IConf[] = [];
     private serverRequest: ServerRequest;
     private reIndexTaskId: NodeJS.Timeout | undefined;
+    private saveTaskId: NodeJS.Timeout | undefined;
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
     private commentParser: CommentParser;
     private configParser: ConfigParser;
@@ -1118,23 +1119,12 @@ class ExtjsLanguageManager
         //
         const needsReIndex = storage.get<string>(this.forceReIndexOnUpdateFlag, "false") !== "true";
         if (needsReIndex) {
-            await commands.executeCommand("vscode-extjs:clearAst", undefined, true, "   ");
+            await commands.executeCommand("vscode-extjs:clearAst", undefined, true, logPad + "   ");
         }
 
         const _isIndexed = ((dir: string) =>
         {
-            for (const d of processedDirs)
-            {   //
-                // Don't process dirs already processed.  If dirs in a user's config overlap eachother
-                // then something might get missed so it's on the user to make sure their paths are
-                // set correctly, in app.json and/or .extjsrc files.
-                //
-                // if (d === dir || d.indexOf(dir) !== -1 || dir.indexOf(d) !== -1) {
-                if (d === dir) {
-                    return true;
-                }
-            }
-            return false;
+            return !!processedDirs.find((d) => d === dir);
         });
 
         for (const conf of this.config)
@@ -1143,12 +1133,11 @@ class ExtjsLanguageManager
                   forceProjectAstIndexing = !(await pathExists(path.join(this.fsStoragePath, projectName)));
             let currentFileIdx = 0,
                 numFiles = 0,
-                dirs: string[] = [],
                 increment: number | undefined;
 
-            log.write("   process config", 1, logPad);
+            log.value("   process config", conf.name, 1, logPad);
             log.values([
-                ["projectName", projectName], ["confName", conf.name], ["wsDir", conf.wsDir],
+                ["projectName", projectName], ["wsDir", conf.wsDir],
                 ["baseWsDir", conf.baseWsDir], ["baseDir", conf.baseDir], ["classpath", conf.classpath.toString()]
             ], 2, logPad + "   ");
 
@@ -1189,7 +1178,7 @@ class ExtjsLanguageManager
                             message: ": Indexing " + pct + "%"
                         });
                     }
-                    await this.processComponents(components, "   ", logLevel);
+                    this.processComponents(components, "   ", logLevel);
                     progress?.report({
                         increment,
                         message: Math.round(++currentCfgIdx * cfgPct) + "%"
@@ -1198,15 +1187,9 @@ class ExtjsLanguageManager
             }
             else // index the file via the language server
             {
+                let currentDir = 0,
+                    currentFile = 0;
                 components = []; // clear component defs from last loop iteration
-
-                if (typeof conf.classpath === "string")
-                {
-                    dirs = [ conf.classpath ];
-                }
-                else {
-                    dirs = conf.classpath;
-                }
 
                 //
                 // Status bar
@@ -1216,7 +1199,7 @@ class ExtjsLanguageManager
                 // statusBarSpace.text = getStatusString(0);
                 // statusBarSpace.show();
 
-                for (const dir of dirs)
+                for (const dir of conf.classpath)
                 {
                     if (!_isIndexed(dir))
                     {
@@ -1228,19 +1211,23 @@ class ExtjsLanguageManager
                 increment = Math.round(1 / numFiles * cfgPct);
 
                 log.blank();
-                log.value("   # of files to index", numFiles, logLevel, logPad);
+                log.write(`   Indexing ${numFiles} files in ${conf.classpath.length} classpath directories`, logLevel, logPad);
 
-                for (const dir of dirs)
+                for (const dir of conf.classpath)
                 {
                     if (!_isIndexed(dir))
                     {
+                        log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, 2, logPad);
+
                         const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
                         for (const uri of uris)
-                        {   //
+                        {
+                            log.write(`   Index file ${++currentFile} of ${numFiles}`, 2, logPad);
+                            //
                             // Index this file and process its components
                             //
                             try {
-                                const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, false, "   ", logLevel);
+                                const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, false, logPad + "   ", logLevel);
                                 if (cmps) {
                                     components.push(...cmps);
                                 }
@@ -1278,7 +1265,7 @@ class ExtjsLanguageManager
             }
         }
 
-        storage.update(this.forceReIndexOnUpdateFlag, "true");
+        await storage.update(this.forceReIndexOnUpdateFlag, "true");
 
         log.methodDone("index all", logLevel, logPad, true);
     }
@@ -1360,7 +1347,7 @@ class ExtjsLanguageManager
         // Request 'parse file' from server
         //
         const components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text);
-        await this.processComponents(components, logPad + "   ", logLevel);
+        this.processComponents(components, logPad + "   ", logLevel);
 
         if (components && saveToCache)
         {
@@ -1401,7 +1388,7 @@ class ExtjsLanguageManager
 
 
     /**
-     * @method indexFiles
+     * @method indexFiles Wraps `indexAll` with progress indicator
      *
      * Public initializer
      */
@@ -1467,7 +1454,7 @@ class ExtjsLanguageManager
     }
 
 
-    private async processComponents(components: IComponent[] | undefined, logPad = "", logLevel = 1)
+    private processComponents(components: IComponent[] | undefined, logPad = "", logLevel = 1)
     {
         //
         // If no components, then bye
@@ -1481,7 +1468,7 @@ class ExtjsLanguageManager
         //
         // Log the list of components and create component mappings
         //
-        await utils.forEachAsync(components, (cmp: IComponent) =>
+        for (const cmp of components)
         {
             const {
                 componentClass, requires, widgets, xtypes, methods, configs, properties, aliases, nameSpace
@@ -1647,8 +1634,8 @@ class ExtjsLanguageManager
                 [ "property", JSON.stringify(this.propertyToClsMapping[componentClass], undefined, 3)],
                 [ "widget", JSON.stringify(this.widgetToClsMapping[componentClass], undefined, 3)]
             ], logLevel + 2, logPad + "   ");
-            log.write("   done processing component " + componentClass, logLevel + 1);
-        });
+            log.write("   done processing component " + componentClass, logLevel + 2, logPad);
+        }
 
         log.methodDone("process components", logLevel, logPad);
     }
@@ -1708,7 +1695,7 @@ class ExtjsLanguageManager
                 //
                 // Index the file
                 //
-                const components = await this.indexFile(textDocument.uri.fsPath, ns, true, textDocument);
+                const components = await this.indexFile(textDocument.uri.fsPath, ns, false, textDocument);
                 //
                 // Validate document
                 //
