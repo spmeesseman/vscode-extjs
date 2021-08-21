@@ -160,7 +160,7 @@
                 "extjsIntellisense.debugServer": {
                     "type": "boolean",
                     "default": false,
-                    "markdownDescription": "Turn on client logging at the specified `#extjsIntellisense.debugLevel#`."
+                    "markdownDescription": "Turn on server logging at the specified `#extjsIntellisense.debugLevel#`."
                 },
                 "extjsIntellisense.debugLevel": {
                     "type": "number",
