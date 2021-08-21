@@ -193,7 +193,7 @@ function getDefaultUserDataPath(platform?: string)
 }
 
 
-export function isPositionInObject(position: Position, component: IComponent)
+export function isPositionInObjectRange(position: Position, component: IComponent)
 {
     let isInObject = false;
 

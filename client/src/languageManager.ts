@@ -193,6 +193,10 @@ class ExtjsLanguageManager
                 return ns !== nameSpace;
             }
         });
+        // if (!cls) {
+        //     const aliasName = this.getAliasNames();
+        //     cls = aliasName.find((aliasName) => aliasName.replace("widget.", "") === alias);
+        // }
         if (cls) {
             log.value("   component class", cls, logLevel + 1, logPad);
             component = this.getComponent(cls, nameSpace, logPad + "   ", logLevel, false);

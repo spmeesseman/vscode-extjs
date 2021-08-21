@@ -541,3 +541,15 @@ export class CommentParser
     }
 
 }
+
+
+export function getTypeFromDoc(name: string, doc: string, tag: "property" | "param" | "cfg")
+{
+    let paramType;
+    const match = doc.match(new RegExp(`@${tag}\\s+\\{(\\w+)\\s*\\}\\s+${name}`));
+    if (match) {
+        const [ _, pType ] = match;
+        paramType = pType;
+    }
+    return paramType;
+}

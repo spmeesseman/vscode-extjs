@@ -10,7 +10,7 @@ Ext.define('VSCodeExtJS.common.UserDropdown',
 	alias: 'widget.userdropdown',
 
 	/**
-	 * @property readOnly
+	 * @property {Boolean} readOnly
 	 * Test variable readOnly property, set to `true` to not allow changing
 	 * current selection
 	 */
@@ -19,7 +19,7 @@ Ext.define('VSCodeExtJS.common.UserDropdown',
 	config:
 	{
 		/**
-		 * @cfg userName
+		 * @cfg {String} userName
 		 * System username
 		 */
 		userName: undefined
