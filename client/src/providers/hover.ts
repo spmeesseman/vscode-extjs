@@ -21,7 +21,7 @@ class ExtJsHoverProvider implements HoverProvider
             return;
         }
 
-        const { cmpType, property, cmpClass, thisClass, thisCmp, callee, text } = extjsLangMgr.getLineProperties(document, position, "   ");
+        const { cmpType, property, cmpClass, thisClass, thisCmp, callee, text, lineText } = extjsLangMgr.getLineProperties(document, position, "   ");
 
         log.values([
             ["component class", cmpClass], ["this class", thisClass], ["callee", callee],
@@ -113,11 +113,17 @@ class ExtJsHoverProvider implements HoverProvider
                 {
                     log.value("   provide class hover info", property, 2);
                     let typeName = "class";
-                    if (extjsLangMgr.getXtypeNames().find((x) => x === text)) {
+                    if (!lineText.includes("type:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
                         typeName = "xtype";
                     }
                     else if (cmp.singleton) {
                         typeName = "singleton";
+                    }
+                    else if (!lineText.includes("xtype:") && extjsLangMgr.getStoreTypeNames().find((x) => x.replace("store.", "") === text)) {
+                        typeName = "store";
+                    }
+                    else if (!lineText.includes("xtype:") && extjsLangMgr.getModelTypeNames().find((m) => m.replace("model.", "") === text)) {
+                        typeName = "model";
                     }
                     hover = new Hover(new MarkdownString().appendCodeblock(`${typeName} ${text}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
                 }
