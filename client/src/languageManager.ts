@@ -16,7 +16,6 @@ import {
 import * as log from "./common/log";
 import * as path from "path";
 import ServerRequest from "./common/ServerRequest";
-import { EOL } from "os";
 import { pathExists } from "../../common/lib/fs";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
@@ -1404,6 +1403,15 @@ class ExtjsLanguageManager
     {
         this.fsStoragePath = context.globalStoragePath;
         await this.initializeInternal();
+        //
+        // TODO - Cache cleanup task
+        // Create a task that will run every minute and clean up any hanging items in
+        // both the memory and fs cache
+        //
+        // setTimeout(async () =>
+        // {
+        //     //
+        // }, 60000);
         return this.watcherRegister(context);
     }
 
@@ -1626,67 +1634,11 @@ class ExtjsLanguageManager
     }
 
 
-    private async processConfigChange(e: Uri)
-    {
-        const project = this.getWorkspaceProjectName(e.fsPath),
-              msg = `${project} config file modified, re-index all files?`,
-              action = !this.isTests ? await window.showInformationMessage(msg, "Yes", "No") : "Yes";
-        if (action === "Yes") {
-            commands.executeCommand("vscode-extjs:clearAst", project);
-            await this.initializeInternal();
-        }
-    }
-
-
-    /**
-     * For tests
-     */
-    setBusy(busy: boolean)
-    {
-        this.isIndexing = busy;
-    }
-
-
-    /**
-     * For tests
-     */
-    setTests(tests: boolean)
-    {
-        this.isTests = tests;
-    }
-
-
-    async validateDocument(textDocument: TextDocument | undefined, nameSpace: string)
-    {
-        const text = textDocument?.getText();
-        //
-        // Check to make sure it's an ExtJs file
-        //
-        if (!text || !textDocument || textDocument.languageId !== "javascript" || !utils.isExtJsFile(text))
-        {
-            showReIndexButton(false);
-        }
-        else //
-        {   // Validate
-            //
-            this.isValidating = true;
-            if (await pathExists(path.join(this.fsStoragePath, this.getWorkspaceProjectName(textDocument.uri.fsPath)))) {
-                await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
-            }
-            // else {
-            //     await this.indexFiles(this.getWorkspaceProjectName(textDocument.uri.fsPath));
-            // }
-            showReIndexButton(true);
-            this.isValidating = false;
-        }
-    }
-
-
-    private async watcherDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
+    private async removeComponentFromCache(uri: Uri) // || componentClass: string)
     {
         const fsPath = uri.fsPath;
 
-        log.methodStart("handle delete file", 1, "", true, [["path", fsPath]]);
+        log.methodStart("remove file from cache", 1, "", true, [["path", fsPath]]);
 
         const componentClass = this.getClassFromFile(fsPath),
               componentNs = componentClass ? this.getNamespaceFromClass(componentClass) : undefined;
@@ -1735,10 +1687,77 @@ class ExtjsLanguageManager
             });
         }
 
+        log.methodDone("remove file from cache", 1);
+    }
+
+
+    /**
+     * For tests
+     *
+     * @private
+     * @since 0.3.0
+     */
+    setBusy(busy: boolean)
+    {
+        this.isIndexing = busy;
+    }
+
+
+    /**
+     * For tests
+     *
+     * @private
+     * @since 0.3.0
+     */
+    setTests(tests: boolean)
+    {
+        this.isTests = tests;
+    }
+
+
+    async validateDocument(textDocument: TextDocument | undefined, nameSpace: string)
+    {
+        const text = textDocument?.getText();
+        //
+        // Check to make sure it's an ExtJs file
+        //
+        if (!text || !textDocument || textDocument.languageId !== "javascript" || !utils.isExtJsFile(text))
+        {
+            showReIndexButton(false);
+        }
+        else //
+        {   // Validate
+            //
+            this.isValidating = true;
+            if (await pathExists(path.join(this.fsStoragePath, this.getWorkspaceProjectName(textDocument.uri.fsPath)))) {
+                await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
+            }
+            // else {
+            //     await this.indexFiles(this.getWorkspaceProjectName(textDocument.uri.fsPath));
+            // }
+            showReIndexButton(true);
+            this.isValidating = false;
+        }
+    }
+
+
+    private async watcherConfigChange(e: Uri)
+    {
+        const project = this.getWorkspaceProjectName(e.fsPath),
+              msg = `${project} config file modified, re-index all files?`,
+              action = !this.isTests ? await window.showInformationMessage(msg, "Yes", "No") : "Yes";
+        if (action === "Yes") {
+            commands.executeCommand("vscode-extjs:clearAst", project);
+            await this.initializeInternal();
+        }
+    }
+
+
+    private async watcherDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
+    {
+        await this.removeComponentFromCache(uri);
         const activeTextDocument = window.activeTextEditor?.document;
         await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
-
-        log.methodDone("handle delete file", 1);
     }
 
 
@@ -1749,10 +1768,18 @@ class ExtjsLanguageManager
             //
             // Clear debounce timeout if still pending
             //
-            const taskId = this.reIndexTaskIds.get(e.document.uri.fsPath);
+            let taskId = this.reIndexTaskIds.get(e.document.uri.fsPath);
             if (taskId) {
                 clearTimeout(taskId);
                 this.reIndexTaskIds.delete(e.document.uri.fsPath);
+            }
+            //
+            // Clear 'Ext.define edited' timeout if still pending
+            //
+            taskId = this.reIndexTaskIds.get("Ext.Define-" + e.document.uri.fsPath);
+            if (taskId) {
+                clearTimeout(taskId);
+                this.reIndexTaskIds.delete("Ext.Define-" + e.document.uri.fsPath);
             }
 
             //
@@ -1764,20 +1791,22 @@ class ExtjsLanguageManager
                 // On enter/return key, validate immediately as the line #s for all range definitions
                 // underneath the edit have just shifted by one line
                 //
-                if (change.text.includes(EOL)) {
+                if (change.text.includes(documentEol(e.document))) {
                     debounceMs = 0;
                 }
                 //
-                // If the 'Ext.define' line is being edited, ignore this event
+                // If the 'Ext.define' line is being edited, so clear out any cache info for this
+                // file, since the component class name is changing
                 //
-                else if (e.document.lineAt(change.range.start).text.includes("Ext.define")) {
-                    return;
+                else if (e.document.lineAt(change.range.start).text.includes("Ext.define"))
+                {
+                    this.removeComponentFromCache(e.document.uri);
                 }
             }
             //
             // Debounce!!
             //
-            const reIndexTaskId = setTimeout(async (document) =>
+            taskId = setTimeout(async (document) =>
             {
                 this.reIndexTaskIds.delete(document.uri.fsPath);
                 const ns = this.getNamespace(document);
@@ -1794,7 +1823,7 @@ class ExtjsLanguageManager
                 }
             }, debounceMs, e.document);
 
-            this.reIndexTaskIds.set(e.document.uri.fsPath, reIndexTaskId);
+            this.reIndexTaskIds.set(e.document.uri.fsPath, taskId);
         }
     }
 
@@ -1845,9 +1874,9 @@ class ExtjsLanguageManager
         //
         // Config watcher
         //
-        disposables.push(confWatcher.onDidChange(async (e) => { await this.processConfigChange(e); }, this));
-        disposables.push(confWatcher.onDidDelete(async (e) => { await this.processConfigChange(e); }, this));
-        disposables.push(confWatcher.onDidCreate(async (e) => { await this.processConfigChange(e); }, this));
+        disposables.push(confWatcher.onDidChange(async (e) => { await this.watcherConfigChange(e); }, this));
+        disposables.push(confWatcher.onDidDelete(async (e) => { await this.watcherConfigChange(e); }, this));
+        disposables.push(confWatcher.onDidCreate(async (e) => { await this.watcherConfigChange(e); }, this));
         //
         // disposables.push(workspace.onDidChangeTextDocument((e) => this.processDocumentChange));
         //
