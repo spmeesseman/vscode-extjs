@@ -1,5 +1,27 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.5.0 (August 21st, 2021)
+
+### Bug Fixes
+
+- **General:** updating the configuration multiple times within a few seconnds can corrupt the runtime cache
+- **Completion:** inline does not work behind semi-colon ended statement on same line
+- **Indexer:** if a file is modified outside the editor, the intellisense does not update until a ful re-indexing or VSCode restart
+
+### Documentation
+
+- **Readme:** add some jsdoc hover screenshots
+- **Readme:** update configuration and jsdoc sections
+
+### Features
+
+- **Completion:** add basic property value completion within xtype defined object blocks
+- **Signature:** add support for privates block
+- **Completion:** add support for privates block
+- **Hover:** reworked jsdoc parsing for better hover docs
+- **Signature:** add support for statics
+- **Completion:** handle statics
+
 ## Version 0.4.5 (August 17th, 2021)
 
 ### Refactoring
