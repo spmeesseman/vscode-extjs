@@ -5,9 +5,8 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation } from "./helper";
+import { getDocUri, activate, waitForValidation, sleep } from "./helper";
 import { configuration } from "../../common/configuration";
-import { timeout } from "../../../../common/src/utils";
 
 
 suite("Hover Tests", () =>
@@ -175,7 +174,7 @@ async function testHover(docUri: vscode.Uri, position: vscode.Position, commentS
 	}
 
 	if (!hasTag && commentString && retry === 0) {
-		await timeout(500);
+		await sleep(500);
 		await testHover(docUri, position, commentString, ++retry);
 	}
 	else {
