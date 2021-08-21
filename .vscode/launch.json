@@ -43,7 +43,7 @@
 				"--disable-extensions",
                 "--disable-workspace-trust",
 				"--extensionDevelopmentPath=${workspaceRoot}",
-				"${workspaceRoot}/../GEMS2"
+				"${workspaceRoot}/../../GEMS2"
 			],
 			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
 			"stopOnEntry": false,
@@ -59,7 +59,7 @@
 				"--disable-extensions",
                 "--disable-workspace-trust",
 				"--extensionDevelopmentPath=${workspaceRoot}",
-				"${workspaceRoot}/../GEMS2"
+				"${workspaceRoot}/../../GEMS2"
 			],
 			"outFiles": ["${workspaceRoot}/dist/client/**/*.js"],
 			"stopOnEntry": false,

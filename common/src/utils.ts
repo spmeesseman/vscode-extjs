@@ -12,28 +12,6 @@ export function btoa(str: string): string
 }
 
 
-export async function forEachAsync(array: any, callback: any)
-{
-    for (let index = 0; index < array.length; index++) {
-        const result = await callback(array[index], index, array);
-        if (result === false) {
-            break;
-        }
-    }
-}
-
-
-export async function forEachMapAsync(map: any, callback: any)
-{
-    for (const entry of map.entries()) {
-        const result = await callback(entry[1], entry[0], map);
-        if (result === false) {
-            break;
-        }
-    }
-}
-
-
 export function isConfig(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IConfig
 {
     return !!component && "getter" in component;
