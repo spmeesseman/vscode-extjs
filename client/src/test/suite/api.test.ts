@@ -18,25 +18,19 @@ suite("API Tests", () =>
 	});
 
 
-	test("Generic api commands with no active document", async () =>
+	test("Clear AST", async function()
 	{
-		await commands.executeCommand("vscode-extjs:waitReady");
-		await commands.executeCommand("vscode-extjs:ignoreError");
-		await commands.executeCommand("vscode-extjs:ensureRequire");
-		await commands.executeCommand("vscode-extjs:ensureRequire", "physiciandropdown");
-		await commands.executeCommand("vscode-extjs:replaceText", "text");
-		await commands.executeCommand("vscode-extjs:replaceText");
-	});
-
-
-	test("Indexing api command", async function()
-	{
-		this.timeout(75 * 1000);
 		await commands.executeCommand("vscode-extjs:clearAst", "testFixture");
 		await waitForValidation();
 		extjsLangMgr.setBusy(true);
 		await commands.executeCommand("vscode-extjs:clearAst", "testFixture");
 		await commands.executeCommand("vscode-extjs:clearAst", "testFixture", true);
+	});
+
+
+	test("Indexing", async function()
+	{
+		this.timeout(60 * 1000);
 		await commands.executeCommand("vscode-extjs:indexFiles");
 		extjsLangMgr.setBusy(false);
 		await commands.executeCommand("vscode-extjs:indexFiles");

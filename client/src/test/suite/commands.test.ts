@@ -175,8 +175,23 @@ suite("Command Tests", () =>
 		await waitForValidation();
 	});
 
+
 	test("Replace text no-parameter edge case", async () =>
 	{
+		await testCommand("replaceText", "text");
+		await testCommand("replaceText");
+	});
+
+
+	test("No active document", async () =>
+	{
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitForValidation();
+
+		await testCommand("waitReady");
+		await testCommand("ignoreError");
+		await testCommand("ensureRequire");
+		await testCommand("ensureRequire", "physiciandropdown");
 		await testCommand("replaceText", "text");
 		await testCommand("replaceText");
 	});
