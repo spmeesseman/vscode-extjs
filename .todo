@@ -52,7 +52,9 @@ Miscellaneous:
 		Separate again using project name (workspace dir name)
 		currently only [namespace][componentname].  needs to be [project][namespace][componentname]
 	✔ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json) @done(21-08-13 16:52)
-	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index them
+	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index 
+	☐ FS cache - check to see if can get away with not persisting object range info
+		i think this is only used on the active document, which is always re-indexed anyway when opened
 
 Stores:
 

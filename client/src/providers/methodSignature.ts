@@ -4,7 +4,7 @@ import {
     TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation, commands
 } from "vscode";
 import { extjsLangMgr } from "../extension";
-import { isComponent } from "../common/clientUtils";
+import { getWorkspaceProjectName, isComponent } from "../common/clientUtils";
 import * as log from "../common/log";
 import { IComponent, IMethod, utils } from "../../../common";
 
@@ -74,7 +74,8 @@ class MethodSignatureProvider implements SignatureHelpProvider
 		let signature = "";
         const params: ParameterInformation[] = [],
 			  matches = lineText.match(/([\w]+\.)/g),
-              methodName = lineText.substring(lineText.lastIndexOf(".") + 1, lineText.indexOf("("));
+              methodName = lineText.substring(lineText.lastIndexOf(".") + 1, lineText.indexOf("(")),
+              project = getWorkspaceProjectName(fsPath);
 
 		//
 		// Create signature parameter information
@@ -103,7 +104,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
             if (!ns) {
                 ns = cls;
             }
-            const cmp = extjsLangMgr.getComponent(cls, ns, "   ", 2) || extjsLangMgr.getComponentInstance(cls, ns, position, fsPath, "   ", 2);
+            const cmp = extjsLangMgr.getComponent(cls, ns, project, "   ", 2) || extjsLangMgr.getComponentInstance(cls, ns, project, position, fsPath, "   ", 2);
 
             if (isComponent(cmp))
             {

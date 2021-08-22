@@ -2,7 +2,7 @@
 import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
-import { Range, Position, TextDocument, EndOfLine, Uri } from "vscode";
+import { Range, Position, TextDocument, EndOfLine, Uri, workspace } from "vscode";
 import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive, IObjectRange } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
@@ -33,6 +33,17 @@ export function documentEol(document: TextDocument)
          }
      }
      return false;
+ }
+
+
+export function getWorkspaceProjectName(fsPath: string)
+ {
+     let project = path.basename(fsPath);
+     const wsf = workspace.getWorkspaceFolder(Uri.file(fsPath));
+     if (wsf) {
+         project = path.basename(wsf.uri.fsPath);
+     }
+     return project;
  }
 
 

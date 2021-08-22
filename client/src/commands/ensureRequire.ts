@@ -3,15 +3,19 @@ import * as json5 from "json5";
 import * as log from "../common/log";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
 import { ComponentType, IPosition, IRequire, utils } from "../../../common";
-import { quoteChar, toVscodePosition, toVscodeRange } from "../common/clientUtils";
+import { getWorkspaceProjectName, quoteChar, toVscodePosition, toVscodeRange } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
 
 
 export async function ensureRequires(xtype: string | undefined, type: "type" | "xtype")
 {
-	const document = window.activeTextEditor?.document,
-		  fsPath = document?.uri.fsPath,
+	const document = window.activeTextEditor?.document;
+	if (!document) {
+		return;
+	}
+	const fsPath = document.uri.fsPath,
+		  project = getWorkspaceProjectName(fsPath),
 		  ns = fsPath ? extjsLangMgr.getNamespaceFromFile(fsPath) : undefined,
 		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, false, document) : undefined,
 		  workspaceEdit = new WorkspaceEdit(),
@@ -19,7 +23,7 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 
 	log.methodStart("Command - Ensure requires", 1, "", true, [ [ "namespace", ns ], [ "fs path", fsPath ] ]);
 
-	if (document && components)
+	if (components)
 	{
 		log.write(`   Found ${components.length} components in class`, 2);
 
@@ -30,14 +34,14 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 			const componentClasses = new Set<string>();
 			for (const x of component.xtypes)
 			{
-				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, ComponentType.Widget);
+				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, project, ComponentType.Widget);
 				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping()) && (!xtype || xtype === x.name)) {
 					componentClasses.add(c);
 				}
 			}
 			for (const x of component.types)
 			{
-				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, ComponentType.Store);
+				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, project, ComponentType.Store);
 				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping()) && (!xtype || xtype === x.name)) {
 					componentClasses.add(c);
 				}

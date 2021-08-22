@@ -25,7 +25,7 @@ class ExtJsDefinitionProvider implements DefinitionProvider
         // Indexer finished, proceed...
         //
 
-        const { cmpType, property, cmpClass, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
+        const { cmpType, property, cmpClass, thisClass, project } = extjsLangMgr.getLineProperties(document, position, "   ");
 
         if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
         {
@@ -34,8 +34,8 @@ class ExtJsDefinitionProvider implements DefinitionProvider
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),
-                      ns = extjsLangMgr.getNamespaceFromClass(cmpClass, undefined, "   ", 2),
-                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, ns, false, "   ", 2),
+                      ns = extjsLangMgr.getNamespaceFromClass(cmpClass, project, undefined, "   ", 2),
+                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, ns, project, false, "   ", 2),
                       range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
                 //
