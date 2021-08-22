@@ -121,9 +121,33 @@ class ExtjsLanguageManager
     }
 
 
-    getClassFromFile(fsPath: string): string | undefined
+    getClsByPath(fsPath: string): string | undefined
     {
         return this.components.find(c => c.fsPath === fsPath)?.componentClass;
+    }
+
+
+    getClsByProperty(property: string, nameSpace: string, project: string, cmpType: ComponentType): string | undefined
+    {
+        let cls: string | undefined;
+
+        if (cmpType === ComponentType.Widget) {
+            cls = this.components.find(c =>
+                /* c.nameSpace === nameSpace && */ getWorkspaceProjectName(c.fsPath) === project && c.xtypes.find(x => x.name.replace("widget.", "") === property)
+            )?.componentClass;
+            if (!cls)
+            {
+                cls = this.components.find(c =>
+                    /* c.nameSpace === nameSpace && */ getWorkspaceProjectName(c.fsPath) === project && c.aliases.find(a => a.name.replace("widget.", "") === property)
+                )?.componentClass;
+            }
+        }
+        else if (cmpType === ComponentType.Store) {
+            cls = this.components.find(c =>
+                /* c.nameSpace === nameSpace && */ getWorkspaceProjectName(c.fsPath) === project && c.aliases.find(t => t.name === `store.${property}`)
+            )?.componentClass;
+        }
+        return cls;
     }
 
 
@@ -180,12 +204,15 @@ class ExtjsLanguageManager
         // Get namespace component
         //
         let cls: string | undefined;
-        Object.keys(this.widgetToClsMapping).every(async (ns) => {
-            if (this.widgetToClsMapping[ns][alias]) {
-                cls = this.widgetToClsMapping[project][ns][alias];
-                return ns !== nameSpace;
-            }
+        Object.keys(this.widgetToClsMapping).every(async (p) => {
+            Object.keys(this.widgetToClsMapping[p]).every(async (ns) => {
+                if (this.widgetToClsMapping[p][ns][alias]) {
+                    cls = this.widgetToClsMapping[p][ns][alias];
+                    return ns !== nameSpace;
+                }
+            });
         });
+        // cls = this.components.find(c => c.nameSpace === nameSpace && project === getWorkspaceProjectName(c.fsPath))
         // if (!cls) {
         //     const aliasName = this.getAliasNames();
         //     cls = aliasName.find((aliasName) => aliasName.replace("widget.", "") === alias);
@@ -203,7 +230,7 @@ class ExtjsLanguageManager
     {
         let component: IComponent | undefined;
         log.methodStart("get component by file", logLevel, logPad, false, [["component file", fsPath]]);
-        const cls = this.getClassFromFile(fsPath),
+        const cls = this.getClsByPath(fsPath),
               project = getWorkspaceProjectName(fsPath);
         if (cls) {
             log.value("   component class", cls, logLevel + 1, logPad);
@@ -298,11 +325,13 @@ class ExtjsLanguageManager
         {   // Check aliases/alternate class names
             //
             let aliasClass: string | undefined;
-            Object.keys(this.widgetToClsMapping).every(async (ns) => {
-                if (this.widgetToClsMapping[ns][cmpClass]) {
-                    aliasClass = this.widgetToClsMapping[project][ns][cmpClass];
-                    return ns !== nameSpace;
-                }
+            Object.keys(this.widgetToClsMapping).every(async (p) => {
+                Object.keys(this.widgetToClsMapping[p]).every(async (ns) => {
+                    if (this.widgetToClsMapping[p][ns][cmpClass]) {
+                        aliasClass = this.widgetToClsMapping[p][ns][cmpClass];
+                        return ns !== nameSpace;
+                    }
+                });
             });
             if (aliasClass) {
                 cmpClass = aliasClass;
@@ -329,7 +358,7 @@ class ExtjsLanguageManager
     {
         log.methodStart("get component instance", logLevel, logPad, false, [["property", property], ["namespace", nameSpace]]);
 
-        const thisCls = this.getClassFromFile(fsPath);
+        const thisCls = this.getClsByPath(fsPath);
 
         if (thisCls)
         {
@@ -580,11 +609,13 @@ class ExtjsLanguageManager
             // Set the property to the last piece of the xtypes class name.
             //
             let xtypeCmp: string | undefined;
-            Object.keys(this.widgetToClsMapping).every(async (ns) => {
-                if (this.widgetToClsMapping[ns][lineText]) {
-                    xtypeCmp = this.widgetToClsMapping[project][ns][lineText];
-                    return ns !== thisCmp.nameSpace;
-                }
+            Object.keys(this.widgetToClsMapping).every(async (p) => {
+                Object.keys(this.widgetToClsMapping[p]).every(async (ns) => {
+                    if (this.widgetToClsMapping[p][ns][lineText]) {
+                        xtypeCmp = this.widgetToClsMapping[p][ns][lineText];
+                        return ns !== thisCmp.nameSpace;
+                    }
+                });
             });
             if (xtypeCmp) {
                 const strParts = xtypeCmp.split(".");
@@ -684,7 +715,9 @@ class ExtjsLanguageManager
                 // check the methods mapping to see if it exists on the main component or not.  If it doesn't
                 // then check if its a config property getter/setter fn
                 //
-                const classHasMethod = !!this.components.find(c => c.fsPath === thisPath)?.methods?.find(x => x.name === property);
+                const classHasMethod = !!this.components.find(c =>
+                    c.componentClass === cmpClass && project === getWorkspaceProjectName(c.fsPath)
+                )?.methods?.find(x => x.name === property);
                 if (!classHasMethod && utils.isGetterSetter(property))
                 {   //
                     // A config property:
@@ -708,18 +741,23 @@ class ExtjsLanguageManager
             }
         }
         else // ComponentType.Property / ComponentType.Config | variable / parameter
-        {
-            const cmp = this.getComponentInstance(property, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel),
-                  cfgCls = this.getMappedClass(property, thisCmp.nameSpace, project, ComponentType.Config);
-            cmpClass = cmp?.componentClass || this.getComponentClass(property, thisCmp.nameSpace, project, position, lineText, thisPath, logPad + "   ", logLevel);
+        {   //
+            cmpClass = this.getComponentInstance(property, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel)?.componentClass;
+            // else {
+            //     cmpClass = this.getComponentClass(property, thisCmp.nameSpace, project, position, lineText, thisPath, logPad + "   ", logLevel);
+            // }
             //
             // If this is a property, check for a config property...
             //
-            if (cmpType === ComponentType.Property && cfgCls)
+            if (!cmpClass && cmpType === ComponentType.Property)
             {
-                log.write("   property not found, got config", logLevel + 1, logPad);
-                cmpType = ComponentType.Config;
-                cmpClass = cfgCls;
+                cmpClass = this.components.find(c =>
+                    /* c.nameSpace === nameSpace && */ getWorkspaceProjectName(c.fsPath) === project && c.componentClass === thisCmp.componentClass && c.configs.find(c => c.name === property)
+                )?.componentClass;
+                if (cmpClass) {
+                    log.write("   property not found, got config", logLevel + 1, logPad);
+                    cmpType = ComponentType.Config;
+                }
             }
         }
 
@@ -745,29 +783,6 @@ class ExtjsLanguageManager
     }
 
 
-    getMappedClass(property: string, nameSpace: string, project: string, cmpType: ComponentType): string | undefined
-    {
-        let cls: string | undefined;
-
-        if (cmpType === ComponentType.Widget) {
-            cls = this.components.find(c =>
-                c.nameSpace === nameSpace && getWorkspaceProjectName(c.fsPath) === project && c.widgets.find(w => w === property)
-            )?.componentClass;
-        }
-        else if (cmpType === ComponentType.Store) {
-            cls = this.components.find(c =>
-                c.nameSpace === nameSpace && getWorkspaceProjectName(c.fsPath) === project && c.widgets.find(w => w === `store.${property}`)
-            )?.componentClass;
-        }
-        else if (cmpType === ComponentType.Config) {
-            cls = this.components.find(c =>
-                c.nameSpace === nameSpace && getWorkspaceProjectName(c.fsPath) === project && c.configs.find(c => c.name === property)
-            )?.componentClass;
-        }
-        return cls;
-    }
-
-
     getMethod(componentClass: string, property: string, nameSpace: string, project: string, isStatic: boolean, logPad = "", logLevel = 1): IMethod| undefined
     {
         log.methodStart("get method by property", logLevel, logPad, false, [
@@ -777,7 +792,7 @@ class ExtjsLanguageManager
         let method: IMethod | undefined,
             methods: IMethod[] | undefined;
 
-        const component = this.components.filter((c) => c.componentClass === componentClass)[0];
+        const component = this.components.filter((c) => c.componentClass === componentClass && project === getWorkspaceProjectName(c.fsPath))[0];
         if (component) {
             const privateMethods = component.privates.filter((c) => utils.isMethod(c)) as IMethod[];
             methods = !isStatic ? [...component.methods, ...privateMethods ] :
@@ -844,7 +859,7 @@ class ExtjsLanguageManager
         {
             defaultNs = componentClass.substring(0, componentClass.indexOf("."));
         }
-        else if (!this.widgetToClsMapping[componentClass])
+        else if (!this.widgetToClsMapping[project][componentClass])
         {
             let aCmp = this.getComponentByAlias(componentClass, defaultNs, project, logPad + "   ", logLevel);
             if (!aCmp) {
@@ -869,7 +884,7 @@ class ExtjsLanguageManager
     {
         let ns: string | undefined;
         log.methodStart("get namespace from file", logLevel, logPad, false, [["file", fsPath]]);
-        const cls = this.getClassFromFile(fsPath);
+        const cls = this.getClsByPath(fsPath);
         if (cls){
             log.value("   found base class", cls, logLevel + 2, logPad);
             ns = cls.split(".")[part ?? 0];
@@ -1015,7 +1030,7 @@ class ExtjsLanguageManager
     {
         const types: string[] = [];
         this.components.forEach((c) => {
-            types.push(...c.aliases.filter(a => !types.includes(a.name) && a.name.startsWith("store.")).map(a => a.name));
+            types.push(...c.aliases.filter(a => !types.includes(a.name) && /\bstore\./.test(a.name)).map(a => a.name));
         });
         return types;
     }
@@ -1024,8 +1039,22 @@ class ExtjsLanguageManager
     getXtypeNames(): string[]
     {
         const xtypes: string[] = [];
-        this.components.forEach((c) => {
-            xtypes.push(...c.xtypes.filter(x => !xtypes.includes(x.name)).map(x => x.name.replace("widget.", "")));
+        this.components.forEach((c) =>
+        {
+            if (c.componentClass === "Ext.grid.Panel") {
+                console.log("1");
+            }
+            xtypes
+            .push(
+                ...c.xtypes.filter(x => !xtypes.includes(x.name.replace("widget.", ""))
+            )
+            .map(x => x.name.replace("widget.", "")));
+
+            xtypes
+            .push(
+                ...c.aliases.filter(a => !xtypes.includes(a.name.replace("widget.", "")) && /\bwidget\./.test(a.name)
+            )
+            .map(a => a.name.replace("widget.", "")));
         });
         return xtypes;
     }
@@ -1110,7 +1139,7 @@ class ExtjsLanguageManager
                     //
                     for (const c of components)
                     {
-                        await this.serverRequest.loadExtJsComponent(JSON.stringify([c]));
+                        await this.serverRequest.loadExtJsComponent(JSON.stringify([c]), projectName);
                         processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
                         const pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
@@ -1119,7 +1148,7 @@ class ExtjsLanguageManager
                             message: ": Indexing " + pct + "%"
                         });
                     }
-                    this.processComponents(components, projectName, undefined, "   ", logLevel + 1);
+                    this.processComponents(components, projectName, false, "   ", logLevel + 1);
                     progress?.report({
                         increment,
                         message: Math.round(++currentCfgIdx * cfgPct) + "%"
@@ -1311,8 +1340,9 @@ class ExtjsLanguageManager
         //
         // Request 'parse file' from server
         //
-        const components = await this.serverRequest.parseExtJsFile(fsPath, nameSpace, text),
-              cached = this.processComponents(components, fsPath, getWorkspaceProjectName(fsPath), logPad + "   ", logLevel + 1);
+        const project = getWorkspaceProjectName(fsPath),
+              components = await this.serverRequest.parseExtJsFile(fsPath, project, nameSpace, text),
+              cached = this.processComponents(components, project, oneCall, logPad + "   ", logLevel + 1);
 
         //
         // Save to fs cache if caller has specified to, and if we parsed some components
@@ -1445,18 +1475,15 @@ class ExtjsLanguageManager
     }
 
 
-    private processComponents(components: IComponent[] | undefined, project: string, fsPath?: string, logPad = "", logLevel = 1)
-    {
-        let cached = true;
-
-        //
-        // If no components, then bye
+    private processComponents(components: IComponent[] | undefined, project: string, isFileEdit: boolean, logPad = "", logLevel = 1)
+    {   //
+        // If no components, then bye bye
         //
         if (!components || components.length === 0) {
             return false;
         }
 
-        log.methodStart("process components", logLevel, logPad, true, [[ "# of stored components", components.length ], ["fs path", fsPath ]]);
+        log.methodStart("process components", logLevel, logPad, true, [[ "# of stored components", components.length ]]);
 
         //
         // Process the specified component(s) / update memory cache
@@ -1464,7 +1491,7 @@ class ExtjsLanguageManager
         for (const cmp of components)
         {
             const {
-                componentClass, requires, widgets, xtypes, methods, configs, properties, aliases, nameSpace
+                componentClass, widgets, xtypes, methods, configs, properties, aliases, nameSpace, fsPath
             } = cmp;
 
             //
@@ -1472,18 +1499,17 @@ class ExtjsLanguageManager
             // file, or when copying an entire file, the file will share the same class name as
             // the source file.  In these cases, we do not want to overwrite the originally
             // parsed component.  So check to make sure the extracted class name's mapped
-            // filesystem is the same as the method param fsPath. The 'fsPath' argument will be
-            // undefined when the processing is being done from indexAll() after reading the fs cache
+            // filesystem is the same as the method param fsPath. The 'isFileEdit' argument will be
+            // `false`` when the processing is being done from indexAll().
             //
-            if (fsPath)
+            if (isFileEdit)
             {
                 const shouldBeFsPath = this.clsToFilesMapping[project] ? this.clsToFilesMapping[project][componentClass] : undefined;
                 if (shouldBeFsPath && shouldBeFsPath !== fsPath)
                 {
                     log.write("   ignoring duplicate component " + componentClass, logLevel + 1, logPad);
                     log.write("   filesystem path already mapped to " + shouldBeFsPath, logLevel + 1, logPad);
-                    cached = false;
-                    break;
+                    continue;
                 }
             }
 
@@ -1491,7 +1517,7 @@ class ExtjsLanguageManager
             log.values([
                 ["namespace", nameSpace], ["# of widgets", widgets.length], ["# of xtypes", xtypes.length],
                 ["# of methods", methods.length], ["# of configs", configs.length], ["# of properties", properties.length],
-                ["# of aliases", aliases.length]
+                ["# of aliases", aliases.length], ["fs path", fsPath ]
             ], logLevel + 1, logPad + "      ");
 
             //
@@ -1524,7 +1550,7 @@ class ExtjsLanguageManager
             if (!this.clsToWidgetsMapping[project][nameSpace]) {
                 this.clsToWidgetsMapping[project][nameSpace] = {};
             }
-            this.clsToWidgetsMapping[project][nameSpace][componentClass] = widgets;
+            this.clsToWidgetsMapping[project][nameSpace][componentClass] = widgets.map(w => w.name);
 
             //
             // Map the filesystem path <-> component class.  Do a check to see if there are duplicate
@@ -1558,8 +1584,11 @@ class ExtjsLanguageManager
             if (!this.widgetToClsMapping[project][nameSpace]) {
                 this.widgetToClsMapping[project][nameSpace] = {};
             }
-            widgets.forEach(widget => {
-                this.widgetToClsMapping[project][nameSpace][widget] = componentClass;
+            xtypes.forEach(xtype => {
+                this.widgetToClsMapping[project][nameSpace][xtype.name] = componentClass;
+            });
+            aliases.filter(a => /\b(?:widget|store|model)\./.test(a.name)).map(a => a.name.replace(/\bwidget\./, "")).forEach(alias => {
+                this.widgetToClsMapping[project][nameSpace][alias] = componentClass;
             });
 
             log.write(`      map ${methods.length} methods`, logLevel + 1, logPad);
@@ -1604,7 +1633,7 @@ class ExtjsLanguageManager
             //
             // Update memory cache
             //
-            const idx = this.components.findIndex((c) => c.componentClass === componentClass);
+            const idx = this.components.findIndex((c) => c.componentClass === componentClass && project === getWorkspaceProjectName(c.fsPath));
             if (idx >= 0) {
                 this.components.splice(idx, 1, cmp);
             }
@@ -1626,14 +1655,14 @@ class ExtjsLanguageManager
     }
 
 
-    private async removeComponentFromCache(uri: Uri)
+    private async removeComponentsFromCache(uri: Uri)
     {
         const fsPath = uri.fsPath,
                project = getWorkspaceProjectName(fsPath);
 
         log.methodStart("remove file from cache", 1, "", true, [["path", fsPath]]);
 
-        const componentClass = this.getClassFromFile(fsPath),
+        const componentClass = this.getClsByPath(fsPath),
               componentNs = componentClass ? this.getNamespaceFromClass(componentClass, project, undefined, "   ", 2) : undefined;
 
         if (componentClass && componentNs)
@@ -1645,7 +1674,7 @@ class ExtjsLanguageManager
             {
                 log.write(`      remove ${component.widgets.length} widgets from mappings`, 3);
                 component.widgets.forEach((widget) => {
-                    delete this.widgetToClsMapping[project][componentNs][widget];
+                    delete this.widgetToClsMapping[project][componentNs][widget.name];
                 });
             }
 
@@ -1655,7 +1684,7 @@ class ExtjsLanguageManager
             //
             // Update memory cache
             //
-            this.components.filter((c, i) => c.componentClass === componentClass).forEach((c, i) => {
+            this.components.filter((c) => c.fsPath === uri.fsPath).forEach((c, i) => {
                 this.components.splice(i, 1);
             });
         }
@@ -1702,9 +1731,10 @@ class ExtjsLanguageManager
         else //
         {   // Validate
             //
+            const project = getWorkspaceProjectName(textDocument.uri.fsPath);
             this.isValidating = true;
-            if (await pathExists(path.join(this.fsStoragePath, getWorkspaceProjectName(textDocument.uri.fsPath)))) {
-                await this.serverRequest.validateExtJsFile(textDocument.uri.path, nameSpace, text);
+            if (await pathExists(path.join(this.fsStoragePath, project))) {
+                await this.serverRequest.validateExtJsFile(textDocument.uri.path, project, nameSpace, text);
             }
             // else {
             //     await this.indexFiles(this.getWorkspaceProjectName(textDocument.uri.fsPath));
@@ -1729,7 +1759,7 @@ class ExtjsLanguageManager
 
     private async watcherDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
     {
-        await this.removeComponentFromCache(uri);
+        await this.removeComponentsFromCache(uri);
         const activeTextDocument = window.activeTextEditor?.document;
         await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
     }
@@ -1774,7 +1804,7 @@ class ExtjsLanguageManager
                 //
                 else if (e.document.lineAt(change.range.start).text.includes("Ext.define"))
                 {
-                    this.removeComponentFromCache(e.document.uri);
+                    this.removeComponentsFromCache(e.document.uri);
                 }
             }
             //
