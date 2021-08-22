@@ -32,20 +32,13 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 			log.write(`   Processing component '${component.name}'`, 3);
 
 			const componentClasses = new Set<string>();
-			for (const x of component.xtypes)
+			component.widgets.filter(w => w.type === type).forEach(w =>
 			{
-				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, project, ComponentType.Widget);
-				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping(project)) && (!xtype || xtype === x.name)) {
+				const c = extjsLangMgr.getClsByProperty(w.name, component.nameSpace, project, type === "type" ? ComponentType.Store : ComponentType.Widget);
+				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping(project)) && (!xtype || xtype === w.name)) {
 					componentClasses.add(c);
 				}
-			}
-			for (const x of component.types)
-			{
-				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, project, ComponentType.Store);
-				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping(project)) && (!xtype || xtype === x.name)) {
-					componentClasses.add(c);
-				}
-			}
+			});
 			log.value(`      # of ${type}s to add`, componentClasses.size, 3);
 
 			if (componentClasses.size > 0)

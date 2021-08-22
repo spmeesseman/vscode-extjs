@@ -99,11 +99,11 @@ export async function validateExtJsDocument(textDocument: TextDocument, connecti
  */
 export async function validateExtJsFile(options: any, connection: Connection, diagRelatedInfoCapability: boolean)
 {
-	const components = await parseExtJsFile(options.path, options.text);
+	log.methodStart("validate extjs file text", 1, "", true);
+
+	const components = await parseExtJsFile(options.path, options.text, options.project, options.nameSpace);
 	const diagnostics: Diagnostic[] = [];
 	const textObj = TextDocument.create(options.path, "javascript", 2, options.text);
-
-	log.methodStart("validate extjs file text", 1, "", true);
 
 	//
 	// For each component found, perform the following validations:
@@ -118,12 +118,9 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		//
 		if (globalSettings.validateXTypes)
 		{
-			for (const xtype of cmp.xtypes) {
-				validateXtype("xtype", xtype.name, cmp, toVscodeRange(xtype.start, xtype.end), diagRelatedInfoCapability, textObj, diagnostics);
-			}
-			for (const type of cmp.types) {
-				validateXtype("type", type.name, cmp, toVscodeRange(type.start, type.end), diagRelatedInfoCapability, textObj, diagnostics);
-			}
+			cmp.widgets.filter(w => w.type !== "alias").forEach((w) => {
+				validateXtype(w.type, w.name, cmp, toVscodeRange(w.start, w.end), diagRelatedInfoCapability, textObj, diagnostics);
+			});
 		}
 
 		//
@@ -193,7 +190,7 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 function validateXtype(propertyName: string, xtype: string, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
 	const cmpRequires = cmp.requires,
-		  xtypeId = propertyName === "type" ? "store." + xtype : xtype,
+		  xtypeId = (propertyName === "type" ? "store." + xtype : xtype).replace("widget.", ""),
 		  thisWidgetCls = widgetToComponentClassMapping[cmp.nameSpace][xtypeId] || widgetToComponentClassMapping.Ext[xtypeId],
 		  fsPath = URI.file(document.uri).fsPath,
 		  eNotFoundCode = propertyName === "type" ? ErrorCode.typeNotFound : ErrorCode.xtypeNotFound,

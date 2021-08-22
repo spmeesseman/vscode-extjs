@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange
+    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
@@ -36,16 +36,19 @@ export async function loadExtJsComponent(ast: string | undefined)
                 componentClassToWidgetsMapping[c.nameSpace] = {};
                 widgetToComponentClassMapping[c.nameSpace] = {};
             }
-            componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = c.widgets;
-            c.widgets.forEach((xtype: string) => {
-                widgetToComponentClassMapping[c.nameSpace][xtype] = c.componentClass;
+            componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = c.widgets.map(w => w.name);
+            c.xtypes.forEach((w) => {
+                widgetToComponentClassMapping[c.nameSpace][w.name] = c.componentClass;
+            });
+            c.aliases.forEach((w) => {
+                widgetToComponentClassMapping[c.nameSpace][w.name.replace("widget.", "")] = c.componentClass;
             });
         }
     }
 }
 
 
-export async function parseExtJsFile(fsPath: string, text: string, project?: string)
+export async function parseExtJsFile(fsPath: string, text: string, project: string, nameSpace: string)
 {
     const components: IComponent[] = [],
           nodeAst = ast.getComponentsAst(text, log.error);
@@ -85,10 +88,11 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                               baseNameSpace = dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value;
 
                         const componentInfo: IComponent = {
-                            name: project || args[0].value,
+                            name: args[0].value || nameSpace,
                             baseNameSpace,
                             fsPath,
-                            nameSpace: project || baseNameSpace,
+                            project,
+                            nameSpace: nameSpace || baseNameSpace,
                             componentClass: args[0].value,
                             aliases: [],
                             configs: [],
@@ -175,84 +179,32 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         if (isObjectProperty(propertyMixins))
                         {
                             componentInfo.mixins.push(...parseMixins(propertyMixins));
-                            logProperties("mixins", componentInfo.requires?.value);
+                            logProperties("mixins", componentInfo.mixins);
                         }
 
                         if (isObjectProperty(propertyAlias))
                         {
-                            const widgets = parseClassDefProperties(propertyAlias, componentInfo.componentClass);
-                            const sWidgets: string[] = [],
-                                  sAliases: string[] = [];
-                            widgets[0].forEach((w) => {
-                                if (!sWidgets.includes(w.name)) {
-                                    sWidgets.push(w.name);
-                                }
-                            });
-                            widgets[1].forEach((w) => {
-                                if (!sAliases.includes(w.name)) {
-                                    sAliases.push(w.name);
-                                }
-                            });
-                            componentInfo.widgets.push(...sWidgets.filter((w) => {
-                                return !componentInfo.widgets.includes(w);
-                            })); // xtype array
-                            componentInfo.widgets.push(...sAliases.filter((w) => {
-                                return !componentInfo.widgets.includes(w);
-                            })); // alias array
-                            componentInfo.aliases.push(...widgets[1].filter((x) => {
-                                for (const a of componentInfo.aliases) {
-                                    if (a.name === x.name) {
-                                        return false;
-                                    }
-                                }
-                                return true;
-                            })); // alias array
-                        }
-
-                        if (isObjectProperty(propertyAlternateCls))
-                        {
-                            const widgets = parseClassDefProperties(propertyAlternateCls, componentInfo.componentClass);
-                            const sWidgets: string[] = [],
-                                  sAliases: string[] = [];
-                            widgets[0].forEach((w) => {
-                                if (!sWidgets.includes(w.name)) {
-                                    sWidgets.push(w.name);
-                                }
-                            });
-                            widgets[1].forEach((w) => {
-                                if (!sAliases.includes(w.name)) {
-                                    sAliases.push(w.name);
-                                }
-                            });
-                            componentInfo.widgets.push(...sWidgets.filter((w) => {
-                                return !componentInfo.widgets.includes(w);
-                            })); // xtype array
-                            componentInfo.widgets.push(...sAliases.filter((w) => {
-                                return !componentInfo.widgets.includes(w);
-                            })); // alias array
-                            componentInfo.aliases.push(...widgets[1].filter((x) => {
-                                for (const a of componentInfo.aliases) {
-                                    if (a.name === x.name) {
-                                        return false;
-                                    }
-                                }
-                                return true;
-                            })); // alias array
+                            componentInfo.aliases.push(...parseClassDefProperties(propertyAlias, componentInfo.componentClass)[1] as IAlias[]);
+                            logProperties("aliases", componentInfo.aliases);
                         }
 
                         if (isObjectProperty(propertyXtype))
                         {
-                            const sXtypes: string[] = [];
-                            const xtypes = parseClassDefProperties(propertyXtype, componentInfo.componentClass);
-                            xtypes[0].forEach((x) => {
-                                if (!sXtypes.includes(x.name)) {
-                                    sXtypes.push(x.name);
-                                }
-                            });
-                            componentInfo.widgets.push(...sXtypes);
+                            componentInfo.xtypes.push(...parseClassDefProperties(propertyXtype, componentInfo.componentClass)[0] as IXtype[]);
+                            logProperties("xtypes", componentInfo.xtypes);
                         }
 
-                        logProperties("widgets", componentInfo.widgets);
+                        if (isObjectProperty(propertyAlternateCls))
+                        {
+                            componentInfo.aliases.push(...parseClassDefProperties(propertyAlternateCls, componentInfo.componentClass)[1] as IAlias[]);
+                            logProperties("aliases (w/ alternateCls)", componentInfo.aliases);
+                        }
+
+                        if (isObjectProperty(propertyType))
+                        {
+                            componentInfo.types.push(...parseClassDefProperties(propertyType, componentInfo.componentClass)[2] as IType[]);
+                            logProperties("types", componentInfo.types);
+                        }
 
                         if (isObjectProperty(propertyConfig))
                         {
@@ -292,7 +244,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                         }
                         logProperties("methods", componentInfo.methods);
 
-                        componentInfo.xtypes.push(...parseXTypes(args[1], text, componentInfo).filter((x) => {
+                        componentInfo.widgets.push(...parseWidgets(args[1], text, componentInfo, "xtype").filter((x) => {
                             for (const x2 of componentInfo.xtypes) {
                                 if (x.name === x2.name) {
                                     return false;
@@ -300,27 +252,15 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             }
                             return true;
                         }));
-                        logProperties("xtypes", componentInfo.xtypes);
-
-                        componentInfo.types.push(...parseXTypes(args[1], text, componentInfo, "type").filter((t) => {
-                            for (const t2 of componentInfo.types) {
-                                if (t.name === t2.name) {
+                        componentInfo.widgets.push(...parseWidgets(args[1], text, componentInfo, "type").filter((x) => {
+                            for (const x2 of componentInfo.xtypes) {
+                                if (x.name === x2.name) {
                                     return false;
                                 }
                             }
                             return true;
                         }));
-                        logProperties("types", componentInfo.types);
-
-                        componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo, "alias").filter((x) => {
-                            for (const a of componentInfo.aliases) {
-                                if (a.name === x.name) {
-                                    return false;
-                                }
-                            }
-                            return true;
-                        }));
-                        logProperties("aliases", componentInfo.aliases);
+                        logProperties("widgets", componentInfo.aliases);
                     }
 
                     log.methodDone("parse extjs file", 1, "", true);
@@ -335,9 +275,16 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
             componentClassToWidgetsMapping[c.nameSpace] = {};
             widgetToComponentClassMapping[c.nameSpace] = {};
         }
-        componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = c.widgets;
-        c.widgets.forEach((xtype: string) => {
-            widgetToComponentClassMapping[c.nameSpace][xtype] = c.componentClass;
+        componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = [];
+        componentClassToWidgetsMapping[c.nameSpace][c.componentClass]?.push(...c.widgets.map(w => w.name));
+        componentClassToWidgetsMapping[c.nameSpace][c.componentClass]?.push(
+            ...c.aliases.filter(a => /\b(?:widget|store|model)\./.test(a.name)
+        ).map(w => w.name.replace(/\bwidget\./, "")));
+        c.xtypes.forEach((w) => {
+            widgetToComponentClassMapping[c.nameSpace][w.name] = c.componentClass;
+        });
+        c.aliases.forEach((w) => {
+            widgetToComponentClassMapping[c.nameSpace][w.name.replace("widget.", "")] = c.componentClass;
         });
     }
 
@@ -438,7 +385,7 @@ function isJsDocObject(object: any): object is (IMethod | IProperty | IConfig)
 }
 
 
-function logProperties(property: string, properties: (IMethod | IProperty | IConfig | IXtype | IRequire | string)[] | undefined)
+function logProperties(property: string, properties: (IMethod | IProperty | IConfig | IXtype | IRequire | IAlias | IXtype | IWidget | string)[] | undefined)
 {
     if (properties)
     {
@@ -461,11 +408,11 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 }
 
 
-function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string)
+function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string): IWidget[][]
 {
-    const xtypes: IXtype[] = [];
+    const xtypes: IWidget[] = [];
     const aliases: IAlias[] = [];
-    const types: IXtype[] = [];
+    const types: IType[] = [];
     const aliasNodes: StringLiteral[] = [];
 
     if (isStringLiteral(propertyNode.value)) {
@@ -492,7 +439,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                     name: propertyValue,
                     start: it.loc!.start,
                     end: it.loc!.end,
-                    componentClass
+                    componentClass,
+                    type: propertyName
                 });
                 break;
             case "type":
@@ -500,7 +448,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                     name: propertyValue,
                     start: it.loc!.start,
                     end: it.loc!.end,
-                    componentClass
+                    componentClass,
+                    type: propertyName
                 });
                 break;
             case "alias":
@@ -508,33 +457,24 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                 const m = propertyValue.match(/(.+)\.(.+)/);
                 if (m) {
                     const [_, namespace, name] = m;
-                    switch (namespace) {
-                        case "widget":
-                            xtypes.push({
-                                name,
-                                start: it.loc!.start,
-                                end: it.loc!.end,
-                                componentClass
-                            });
-                            break;
-                        default:
-                            aliases.push({
-                                name: propertyValue,
-                                start: it.loc!.start,
-                                end: it.loc!.end,
-                                componentClass
-                            });
-                            break;
+                    if (namespace === "widget")
+                    {
+                        xtypes.push({
+                            name,
+                            start: it.loc!.start,
+                            end: it.loc!.end,
+                            componentClass,
+                            type: "xtype"
+                        });
                     }
                 }
-                else {
-                    aliases.push({
-                        name: propertyValue,
-                        start: it.loc!.start,
-                        end: it.loc!.end,
-                        componentClass
-                    });
-                }
+                aliases.push({
+                    name: propertyValue,
+                    start: it.loc!.start,
+                    end: it.loc!.end,
+                    componentClass,
+                    type: propertyName
+                });
                 break;
             default:
                 break;
@@ -970,42 +910,6 @@ function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: strin
 }
 
 
-function parseStoreDefProperties(propertyNode: ObjectProperty): string[]
-{
-    const types: string[] = [];
-    const typeNodes: StringLiteral[] = [];
-
-    if (isStringLiteral(propertyNode.value)) {
-        typeNodes.push(propertyNode.value);
-    }
-
-    if (isArrayExpression(propertyNode.value))
-    {
-        propertyNode.value.elements.forEach(it => {
-            if (isStringLiteral(it)) {
-                typeNodes.push(it);
-            }
-        });
-    }
-
-    typeNodes.forEach(it =>
-    {
-        const propertyValue = it.value;
-        const propertyName = isIdentifier(propertyNode.key) ? propertyNode.key.name : undefined;
-        switch (propertyName)
-        {
-            case "type":
-                types.push(propertyValue);
-                break;
-            default:
-                break;
-        }
-    });
-
-    return types;
-}
-
-
 function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, lineOffset: number, params?: IParameter[]): IVariable[]
 {
     const variables: IVariable[] = [];
@@ -1260,9 +1164,9 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
 }
 
 
-function parseXTypes(objEx: ObjectExpression, text: string, component: IComponent, nodeName = "xtype"): IXtype[]
+function parseWidgets(objEx: ObjectExpression, text: string, component: IComponent, nodeName: "type" | "xtype")
 {
-    const xType: IXtype[] = [];
+    const xType: IWidget[] = [];
     const line = objEx.loc!.start.line - 1;
     const column = objEx.loc!.start.column;
 
@@ -1282,6 +1186,20 @@ function parseXTypes(objEx: ObjectExpression, text: string, component: IComponen
         //     return;
         // }
 
+        //
+        // Don't add the main xtype/type declaration (do main 'type' decs exist??)
+        //
+        if (nodeName === "type") {
+            if (component.types.find(t => t.name === v.value)) {
+                return;
+            }
+        }
+        else if (nodeName === "xtype") {
+            if (component.xtypes.find(x => x.name === v.value)) {
+                return;
+            }
+        }
+
         const start = v.loc!.start;
         const end = v.loc!.end;
 
@@ -1300,7 +1218,8 @@ function parseXTypes(objEx: ObjectExpression, text: string, component: IComponen
             name: v.value,
             start,
             end,
-            componentClass: component.componentClass
+            componentClass: component.componentClass,
+            type: nodeName
         });
     });
 

@@ -125,7 +125,7 @@ connection.onRequest("parseExtJsFile", async (param: any) =>
 {
     try {
         const jso = JSON.parse(param);
-        return await parseExtJsFile(jso?.fsPath, jso?.text, jso?.nameSpace);
+        return await parseExtJsFile(jso?.fsPath, jso?.text, jso?.project, jso?.nameSpace);
     }
     catch (error)
     {
@@ -152,10 +152,11 @@ connection.onRequest("validateExtJsFile", async (param: any) =>
 });
 
 
-connection.onRequest("loadExtJsComponent", async (ast: string) =>
+connection.onRequest("loadExtJsComponent", async (param: any) =>
 {
     try {
-        await loadExtJsComponent(ast);
+        const jso = JSON.parse(param);
+        await loadExtJsComponent(jso.ast);
     }
     catch (error)
     {

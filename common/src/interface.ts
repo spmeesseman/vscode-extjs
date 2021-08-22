@@ -38,7 +38,10 @@ export interface IExtJsBase extends IRange
 }
 
 
-export interface IAlias extends IExtJsBase {}
+export interface IAlias extends IWidget
+{
+    type: "alias" | "alternateClassName";
+}
 
 
 export interface IComponent extends IExtJsBase
@@ -59,14 +62,15 @@ export interface IComponent extends IExtJsBase
     objectRanges: IObjectRange[];
     private?: boolean;
     privates: (IProperty | IMethod)[];
+    project: string;
     properties: IProperty[];
     requires?: IRequires;
     since?: string;
     singleton: boolean;
     statics: (IProperty | IMethod)[];
-    types: IXtype[];
+    types: IType[];
     uses?: IRequires;
-    widgets: string[];
+    widgets: IWidget[];
     xtypes: IXtype[];
 }
 
@@ -191,6 +195,12 @@ export interface IRequire
 }
 
 
+export interface IType extends IWidget
+{
+    type: "type";
+}
+
+
 export interface IUse extends IRequire {}
 
 
@@ -205,4 +215,13 @@ export interface IVariable extends IExtJsBase
 }
 
 
-export interface IXtype extends IExtJsBase {}
+export interface IWidget extends IExtJsBase
+{
+    type: "alias" | "type" | "xtype" | "alternateClassName";
+}
+
+
+export interface IXtype extends IWidget
+{
+    type: "xtype";
+}

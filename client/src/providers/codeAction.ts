@@ -84,7 +84,7 @@ class ExtjsCodeActionProvider implements CodeActionProvider
                             command: {
                                 title: `Fix the 'requires' array for this declared ${propertyName}`,
                                 command: "vscode-extjs:ensureRequire",
-                                arguments: [ document.getText(range).replace(/["']/g, "") ]
+                                arguments: [ document.getText(range).replace(/["']/g, ""), propertyName ]
                             }
                         },
                         {
@@ -93,7 +93,8 @@ class ExtjsCodeActionProvider implements CodeActionProvider
                             kind: CodeActionKind.QuickFix,
                             command: {
                                 title: `Fix the 'requires' array for all declared ${propertyName}s`,
-                                command: "vscode-extjs:ensureRequire"
+                                command: "vscode-extjs:ensureRequire",
+                                arguments: [ undefined, propertyName ]
                             }
                         }]);
                     }

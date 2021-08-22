@@ -12,19 +12,19 @@ class ServerRequest
         this.client = client;
     }
 
-    async loadExtJsComponent(ast: string)
+    async loadExtJsComponent(ast: string, project: string)
     {
-        await this.client.sendRequest("loadExtJsComponent", ast);
+        await this.client.sendRequest("loadExtJsComponent", JSON.stringify({ ast, project }));
     }
 
-    async parseExtJsFile(fsPath: string, nameSpace: string, text: string)
+    async parseExtJsFile(fsPath: string, project: string, nameSpace: string, text: string)
     {
-        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", JSON.stringify({ fsPath, text, nameSpace }));
+        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", JSON.stringify({ fsPath, project, text, nameSpace }));
     }
 
-    async validateExtJsFile(path: string, nameSpace: string, text: string): Promise<Diagnostic[]>
+    async validateExtJsFile(path: string, project: string, nameSpace: string, text: string): Promise<Diagnostic[]>
     {
-        return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify({ path, nameSpace, text }));
+        return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify({ path, project, nameSpace, text }));
     }
 }
 

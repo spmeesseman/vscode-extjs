@@ -110,7 +110,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             else {
                 log.write("   do dot completion", 1);
                 let methodName: string | undefined;
-                const thisCls = extjsLangMgr.getClassFromFile(document.uri.fsPath);
+                const thisCls = extjsLangMgr.getClsByPath(document.uri.fsPath);
                 if (thisCls) {
                     const nameSpace = extjsLangMgr.getNamespaceFromClass(thisCls, project, undefined, "   ", 2),
                             thisCmp = extjsLangMgr.getComponent(thisCls, nameSpace, project, "   ", 2),
@@ -1002,7 +1002,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // Add the objects `xtype` properties and configs
                 //
                 const cmpType = hasXtype.type === "type" ? ComponentType.Store :  ComponentType.Widget,
-                      cls = extjsLangMgr.getMappedClass(hasXtype.name, thisCmp.nameSpace, getWorkspaceProjectName(document.uri.fsPath), cmpType),
+                      cls = extjsLangMgr.getClsByProperty(hasXtype.name, thisCmp.nameSpace, getWorkspaceProjectName(document.uri.fsPath), cmpType),
                       xComponent = cls ? extjsLangMgr.getComponent(cls, thisCmp.nameSpace, project, logPad + "   ", logLevel + 1) : undefined;
                 if (xComponent) {
                     if (!property) {
