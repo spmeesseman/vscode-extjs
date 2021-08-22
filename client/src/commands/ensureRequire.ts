@@ -35,14 +35,14 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 			for (const x of component.xtypes)
 			{
 				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, project, ComponentType.Widget);
-				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping()) && (!xtype || xtype === x.name)) {
+				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping(project)) && (!xtype || xtype === x.name)) {
 					componentClasses.add(c);
 				}
 			}
 			for (const x of component.types)
 			{
 				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, project, ComponentType.Store);
-				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping()) && (!xtype || xtype === x.name)) {
+				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping(project)) && (!xtype || xtype === x.name)) {
 					componentClasses.add(c);
 				}
 			}
@@ -64,7 +64,7 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 					}
 
 					const _requires = component.requires.value
-											   .filter((it: IRequire) => utils.isNeedRequire(it.name, extjsLangMgr.getClsToWidgetMapping()))
+											   .filter((it: IRequire) => utils.isNeedRequire(it.name, extjsLangMgr.getClsToWidgetMapping(project)))
 											   .map((it: IRequire) => { return it.name; })
 											   .concat(Array.from(componentClasses))
 											   .sort();

@@ -31,7 +31,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
         if (property && cmpClass && (cmpType === ComponentType.Property || cmpType === ComponentType.Class))
         {
             log.value("   component class", cmpClass, 2);
-            const fsPath = extjsLangMgr.getFilePath(cmpClass);
+            const fsPath = extjsLangMgr.getFilePath(cmpClass, project, "   ", 2);
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),
