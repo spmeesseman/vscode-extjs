@@ -696,20 +696,16 @@ class ExtjsLanguageManager
         else // ComponentType.Property / ComponentType.Config | variable / parameter
         {   //
             cmpClass = this.getComponentInstance(property, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel)?.componentClass;
-            // else {
-            //     cmpClass = this.getComponentClass(property, thisCmp.nameSpace, project, position, lineText, thisPath, logPad + "   ", logLevel);
-            // }
-            //
-            // If this is a property, check for a config property...
-            //
-            if (!cmpClass && cmpType === ComponentType.Property)
-            {
-                cmpClass = this.components.find(c =>
-                    /* c.nameSpace === nameSpace && */ getWorkspaceProjectName(c.fsPath) === project && c.componentClass === thisCmp.componentClass && c.configs.find(c => c.name === property)
-                )?.componentClass;
-                if (cmpClass) {
-                    log.write("   property not found, got config", logLevel + 1, logPad);
-                    cmpType = ComponentType.Config;
+            if (!cmpClass) {
+                const cmp = this.components.find(c => /* c.nameSpace === nameSpace && */
+                                    getWorkspaceProjectName(c.fsPath) === project && c.componentClass === thisCmp.componentClass && c.properties.find(p => p.name === property)) ||
+                            this.components.find(c => /* c.nameSpace === nameSpace && */
+                                    getWorkspaceProjectName(c.fsPath) === project && c.componentClass === thisCmp.componentClass && c.configs.find(cfg => cfg.name === property));
+                if (cmp) {
+                    cmpClass = cmp.componentClass;
+                    if (cmp.configs.find(c => c.name === property)) {
+                        cmpType = ComponentType.Config;
+                    }
                 }
             }
         }
@@ -745,7 +741,7 @@ class ExtjsLanguageManager
         let method: IMethod | undefined,
             methods: IMethod[] | undefined;
 
-        const component = this.components.filter((c) => c.componentClass === componentClass && project === getWorkspaceProjectName(c.fsPath))[0];
+        const component = this.getComponent(componentClass, nameSpace, project, logPad + "   ", logLevel);
         if (component) {
             const privateMethods = component.privates.filter((c) => utils.isMethod(c)) as IMethod[];
             methods = !isStatic ? [...component.methods, ...privateMethods ] :

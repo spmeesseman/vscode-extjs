@@ -1,7 +1,7 @@
 
 import {
     CancellationToken, TypeDefinitionProvider, ExtensionContext, languages, Location,
-    LocationLink, Position, ProviderResult, TextDocument, Uri, commands
+    Position, TextDocument, Uri, commands
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
@@ -21,14 +21,13 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
         // what triggers thecompletion item request, so wait for it to finish b4 proceeding
         //
         await commands.executeCommand("vscode-extjs:waitReady", "   ");
-
         //
         // Indexer finished, proceed...
         //
 
         const { cmpClass, cmpType, property, thisClass, project } = extjsLangMgr.getLineProperties(document, position, "   ");
 
-        if (property && cmpClass && (cmpType === ComponentType.Property || cmpType === ComponentType.Class))
+        if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
         {
             log.value("   component class", cmpClass, 2);
             const fsPath = extjsLangMgr.getFilePath(cmpClass, project, "   ", 2);
