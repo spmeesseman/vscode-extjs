@@ -178,7 +178,7 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(33, 11), [
         {
             uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-            range: toRange(6, 0, 55, 2)
+            range: toRange(6, 0, 99, 2)
         }]);
 		//
 		// Line 43 - ext component
@@ -206,7 +206,7 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(144, 24), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-			range: toRange(6, 0, 55, 2)
+			range: toRange(6, 0, 99, 2)
 		}]);
 		// await testHover(docUri, new vscode.Position(45, 3), "component");
 		//
@@ -216,7 +216,7 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(156, 16), [
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
-			range: toRange(6, 0, 55, 2)
+			range: toRange(6, 0, 99, 2)
 		}]);
 	});
 

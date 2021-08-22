@@ -205,6 +205,7 @@ Ext.define('VSCodeExtJS',
 					property: "userid",
 
 				}],
+				
 				sorters: [
 				{
 

@@ -313,10 +313,7 @@ suite("Completion Tests", () =>
 
 
 	test("Full xtype lines", async () =>
-	{
-		const quoteCharacter = configuration.get<string>("quoteCharacter", "single");
-		await configuration.update("quoteCharacter", "single");
-		//
+	{   //
 		// Line 187 - 191
 		// const grid = Ext.create({
 		//	   hidden: false,
@@ -345,16 +342,11 @@ suite("Completion Tests", () =>
 		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
 			items: []
 		});
-
-		await configuration.update("quoteCharacter", quoteCharacter);
 	});
 
 
 	test("Full type lines", async () =>
-	{
-		const quoteCharacter = configuration.get<string>("quoteCharacter", "single");
-		await configuration.update("quoteCharacter", "single");
-		//
+	{   //
 		// Line 187 - 191
 		// const grid = Ext.create({
 		//	   hidden: false,
@@ -381,13 +373,11 @@ suite("Completion Tests", () =>
 		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
 			items: []
 		});
-
-		await configuration.update("quoteCharacter", quoteCharacter);
 	});
 
 
 
-	test("Class object configs and properties", async () =>
+	test("Object 'xtype' configs and properties", async () =>
 	{   //
 		// Line 167
 		// Within main object
@@ -479,6 +469,44 @@ suite("Completion Tests", () =>
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property },
 			]
 		});
+	});
+
+
+
+	test("Object 'type' configs and properties", async () =>
+	{   //
+		// Line 203 - 207 Store filter object
+		// Within main object
+		// 199
+		// 200    store2:
+		// 201    {
+		// 202        type: "users",
+		// 203        filters: [
+		// 204        {
+		// 205            property: "userid",
+		// 206
+		// 207        }],
+		// 208
+		// 209        sorters: [
+		// 210        {
+		// 211           ...
+		//
+		// await testCompletion(docUri, new vscode.Position(205, 5), "", {
+		// 	items: [
+		// 		{ label: "operator", kind: vscode.CompletionItemKind.Property },
+		// 		{ label: "property", kind: vscode.CompletionItemKind.Property },
+		// 		{ label: "value", kind: vscode.CompletionItemKind.Property }
+		// 	]
+		// });
+		await testCompletion(docUri, new vscode.Position(207, 4), "a", {
+			items: [
+				{ label: "autoDestroy AbstractStore config", kind: vscode.CompletionItemKind.Property },
+				{ label: "autoFilter AbstractStore config", kind: vscode.CompletionItemKind.Property },
+				{ label: "autoSort AbstractStore config", kind: vscode.CompletionItemKind.Property },
+				{ label: "autoLoad ProxyStore config", kind: vscode.CompletionItemKind.Property },
+				{ label: "autoSync ProxyStore config", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "object 'type' configs and properties");
 	});
 
 
