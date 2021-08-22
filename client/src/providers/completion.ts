@@ -627,7 +627,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         {   //
             // See if the typed text is inclusive in this class name (cls)...
             //
-            if (cls.toLowerCase().includes(text.toLowerCase()))
+            if (cls.toLowerCase().includes(text.toLowerCase())) // startWith() for exact match??
             {
                 const cCls = cls.split(".")[0], // first part of classpath for inline completion
                       ns = extjsLangMgr.getNamespaceFromClass(cls, project, thisCmp.nameSpace, logPad + "   ", logLevel + 1);
@@ -711,7 +711,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Check special property cases
         //
-        // xtype - Check for 2 quotes, as when the user types the 1st one, Code editor will auto insert the 2nd
+        // xtype/type - Check for 2 quotes, as when the user types the 1st one, Code editor will auto
+        // insert the 2nd
         //
         //     xtype: ''
         //

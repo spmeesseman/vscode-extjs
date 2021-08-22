@@ -1,13 +1,13 @@
 
 import {
     Disposable, ExtensionContext, Progress, TextDocumentChangeEvent, Range, Position,
-    ProgressLocation, TextDocument, TextEditor, window, workspace, Uri,
+    ProgressLocation, TextDocument, window, workspace, Uri,
     ConfigurationChangeEvent,
     commands
 } from "vscode";
 import {
     IConfig, IComponent, IMethod, IConf, IProperty, utils, ComponentType,
-    IVariable, VariableType, IExtJsBase, IPrimitive, IRequire, IParameter
+    IVariable, VariableType, IExtJsBase, IPrimitive, IParameter
 } from  "../../common";
 
 import {
@@ -23,7 +23,6 @@ import { configuration } from "./common/configuration";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
-import { interfaceExtends } from "@babel/types";
 
 
 export interface ILineProperties
@@ -157,21 +156,12 @@ class ExtjsLanguageManager
     }
 
 
-    getComponent(componentClass: string, nameSpace: string, project: string, logPad = "", logLevel = 1, fromGetAlias = false): IComponent | undefined
+    getComponent(componentClass: string, nameSpace: string, project: string, logPad = "", logLevel = 1): IComponent | undefined
     {
         log.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["namespace", nameSpace]]);
 
-        //
-        // Get component from mapping
-        //
-        let component: IComponent | undefined;
-        component = this.components.find((c) => c.componentClass === componentClass && (!project || project === getWorkspaceProjectName(c.fsPath)));
-
-        if (!component && !fromGetAlias)
-        {
-            component = this.getComponentByAlias(componentClass, nameSpace, project, logPad + "   ", logLevel);
-        }
-
+        const component = this.components.find((c) => c.componentClass === componentClass && project === getWorkspaceProjectName(c.fsPath)) ||
+                          this.getComponentByAlias(componentClass, nameSpace, project, logPad + "   ", logLevel);
         if (component)
         {
             log.write("   found component", logLevel + 1, logPad);
@@ -198,30 +188,10 @@ class ExtjsLanguageManager
 
     getComponentByAlias(alias: string, nameSpace: string, project: string, logPad = "", logLevel = 1): IComponent | undefined
     {
-        let component: IComponent | undefined;
         log.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace]]);
-        //
-        // Get namespace component
-        //
-        let cls: string | undefined;
-        Object.keys(this.widgetToClsMapping).every(async (p) => {
-            Object.keys(this.widgetToClsMapping[p]).every(async (ns) => {
-                if (this.widgetToClsMapping[p][ns][alias]) {
-                    cls = this.widgetToClsMapping[p][ns][alias];
-                    return ns !== nameSpace;
-                }
-            });
-        });
-        // cls = this.components.find(c => c.nameSpace === nameSpace && project === getWorkspaceProjectName(c.fsPath))
-        // if (!cls) {
-        //     const aliasName = this.getAliasNames();
-        //     cls = aliasName.find((aliasName) => aliasName.replace("widget.", "") === alias);
-        // }
-        if (cls) {
-            log.value("   component class", cls, logLevel + 1, logPad);
-            component = this.getComponent(cls, nameSpace, project, logPad + "   ", logLevel, false);
-        }
-        log.methodDone("get component by alias", logLevel, logPad);
+        const component = this.components.find((c) => c.aliases.find(a => a.name.replace(/\b(?:widget|store|model)\./, "") === alias) &&
+                                                      project === getWorkspaceProjectName(c.fsPath));
+        log.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
         return component;
     }
 
@@ -321,27 +291,10 @@ class ExtjsLanguageManager
                 cmpClass = this.getComponentByFile(fsPath, logPad + "   ", logLevel)?.componentClass || "";
             }
         }
-        else //
-        {   // Check aliases/alternate class names
-            //
-            let aliasClass: string | undefined;
-            Object.keys(this.widgetToClsMapping).every(async (p) => {
-                Object.keys(this.widgetToClsMapping[p]).every(async (ns) => {
-                    if (this.widgetToClsMapping[p][ns][cmpClass]) {
-                        aliasClass = this.widgetToClsMapping[p][ns][cmpClass];
-                        return ns !== nameSpace;
-                    }
-                });
-            });
-            if (aliasClass) {
-                cmpClass = aliasClass;
-            }
-        }
-
         //
         // Instances
         //
-        if (fsPath && !this.getComponent(cmpClass, nameSpace, project, logPad + "   ", logLevel))
+        else if (!this.getComponent(cmpClass, nameSpace, project, logPad + "   ", logLevel) && fsPath)
         {
             const instance = this.getComponentInstance(cmpClass, nameSpace, project, position, fsPath, logPad + "   ", logLevel);
             if (isComponent(instance)) {
@@ -638,7 +591,7 @@ class ExtjsLanguageManager
         // else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
         else if (new RegExp(`${property}\\s*\\(`).test(lineText))
         {
-            cmpType = ComponentType.Method;
+            cmpType = this.getComponent(lineText.replace(/[^a-z0-9\.]/gi, "").trim(), project, project, logPad + "   ", logLevel + 1) ? ComponentType.Class : ComponentType.Method;
         }
         //
         // Properties / configs / variables / parameters / class expressions, e.g.:
@@ -1041,9 +994,6 @@ class ExtjsLanguageManager
         const xtypes: string[] = [];
         this.components.forEach((c) =>
         {
-            if (c.componentClass === "Ext.grid.Panel") {
-                console.log("1");
-            }
             xtypes
             .push(
                 ...c.xtypes.filter(x => !xtypes.includes(x.name.replace("widget.", ""))

@@ -239,6 +239,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                         {
                             componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, false, false, fsPath));
                             componentInfo.methods.forEach((m) => {
+                                // componentInfo.objectRanges.push({ start: m.bodyStart, end: m.bodyEnd, type: "ObjectExpression" });
                                 componentInfo.objectRanges.push(...m.objectRanges);
                             });
                         }
@@ -408,7 +409,7 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 }
 
 
-function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string): IWidget[][]
+function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string): (IWidget | IXtype | IType | IAlias)[][]
 {
     const xtypes: IWidget[] = [];
     const aliases: IAlias[] = [];

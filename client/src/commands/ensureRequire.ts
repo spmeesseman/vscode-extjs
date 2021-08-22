@@ -8,7 +8,7 @@ import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
 
 
-export async function ensureRequires(xtype: string | undefined, type: "type" | "xtype")
+export async function ensureRequires(xtype: string | undefined, type: "type" | "xtype" = "xtype")
 {
 	const document = window.activeTextEditor?.document;
 	if (!document) {
