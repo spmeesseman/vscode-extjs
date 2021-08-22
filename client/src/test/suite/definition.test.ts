@@ -169,7 +169,7 @@ suite("Definition Tests", () =>
         }]);
 	});
 
-	test("xtypes", async () =>
+	test("Component xtypes", async () =>
 	{
 		//
 		// Line 34 - app component
@@ -217,6 +217,22 @@ suite("Definition Tests", () =>
 		{
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
 			range: toRange(6, 0, 55, 2)
+		}]);
+	});
+
+
+	test("Store types", async () =>
+	{
+		//
+		// Line 202
+		// type: "users"
+		// Is of type VSCodeExtJS.store.user.Users, not VSCodeExtJS.view.users.Users, which
+		// is also of (x)type "users"
+		//
+		await testDefinition(docUri, new vscode.Position(201, 13), [
+		{
+			uri: getDocUri("app/shared/src/store/user/Users.js"),
+			range: toRange(1, 0, 47, 2)
 		}]);
 	});
 

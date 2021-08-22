@@ -1,7 +1,7 @@
 
 import * as log from "../common/log";
 import {
-    CancellationToken, CodeActionProvider, ExtensionContext, languages, ProviderResult,
+    CancellationToken, CodeActionProvider, ExtensionContext, languages, commands,
     TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind, DiagnosticRelatedInformation
 } from "vscode";
 import { ErrorCode } from "../../../common";
@@ -10,9 +10,19 @@ import { quoteChar } from "../common/clientUtils";
 
 class ExtjsCodeActionProvider implements CodeActionProvider
 {
-    provideCodeActions(document: TextDocument, range: Range | Selection, context: CodeActionContext, token: CancellationToken): ProviderResult<(Command | CodeAction)[]>
+    async provideCodeActions(document: TextDocument, range: Range | Selection, context: CodeActionContext, token: CancellationToken)
     {
         const actions: CodeAction[] = [];
+
+        //
+        // ** IMPORTANT **
+        // It's possible the indexer initiated a re-indexing since editing the document is
+        // what triggers thecompletion item request, so wait for it to finish b4 proceeding
+        //
+        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        //
+        // Indexer finished, proceed...
+        //
 
         if (!context.only || context.only?.value === CodeActionKind.QuickFix.value)
         {
@@ -59,25 +69,30 @@ class ExtjsCodeActionProvider implements CodeActionProvider
                     {
                         addSuggestedActions(d.relatedInformation, "xtype", range, actions);
                     }
-                    else if (d.code === ErrorCode.xtypeNoRequires)
+                    else if (d.code === ErrorCode.typeNotFound && d.relatedInformation)
                     {
+                        addSuggestedActions(d.relatedInformation, "type", range, actions);
+                    }
+                    else if (d.code === ErrorCode.typeNoRequires || d.code === ErrorCode.xtypeNoRequires)
+                    {
+                        const propertyName = d.code === ErrorCode.typeNoRequires ? "type" : "xtype";
                         actions.push(...[
                         {
-                            title: "Fix the 'requires' array for this declared xtype",
+                            title: `Fix the 'requires' array for this declared ${propertyName}`,
                             isPreferred: true,
                             kind: CodeActionKind.QuickFix,
                             command: {
-                                title: "Fix the 'requires' array for this declared xtype",
+                                title: `Fix the 'requires' array for this declared ${propertyName}`,
                                 command: "vscode-extjs:ensureRequire",
                                 arguments: [ document.getText(range).replace(/["']/g, "") ]
                             }
                         },
                         {
-                            title: "Fix the 'requires' array for all declared xtypes",
+                            title: `Fix the 'requires' array for all declared ${propertyName}s`,
                             isPreferred: true,
                             kind: CodeActionKind.QuickFix,
                             command: {
-                                title: "Fix the 'requires' array for all declared xtypes",
+                                title: `Fix the 'requires' array for all declared ${propertyName}s`,
                                 command: "vscode-extjs:ensureRequire"
                             }
                         }]);

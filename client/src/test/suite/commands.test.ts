@@ -204,6 +204,14 @@ suite("Command Tests", () =>
 		await testCommand("waitReady");
 	});
 
+
+	test("Wait-Ready variations", async () =>
+	{
+		await testCommand("waitReady");
+		await testCommand("waitReady", "   ");
+		await testCommand("waitReady", "   ", 1000);
+	});
+
 });
 
 

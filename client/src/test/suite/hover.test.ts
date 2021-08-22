@@ -105,7 +105,7 @@ suite("Hover Tests", () =>
 	});
 
 
-	test("Xtypes", async () =>
+	test("Component xtypes", async () =>
 	{
 		await testHover(docUri, new vscode.Position(33, 11), "physiciandropdown");
 		await testHover(docUri, new vscode.Position(39, 11), "userdropdown");
@@ -115,6 +115,18 @@ suite("Hover Tests", () =>
 		// let cmp = this.down('physiciandropdown');
 		//
 		await testHover(docUri, new vscode.Position(144, 24), "physiciandropdown");
+	});
+
+
+	test("Store types", async () =>
+	{
+		//
+		// Line 202
+		// type: "users"
+		// Is of type VSCodeExtJS.store.user.Users, not VSCodeExtJS.view.users.Users, which
+		// is also of (x)type "users"
+		//
+		await testHover(docUri, new vscode.Position(201, 13), "users: VSCodeExtJS.store.user.Users");
 	});
 
 

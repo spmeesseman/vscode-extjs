@@ -252,15 +252,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             componentInfo.widgets.push(...sXtypes);
                         }
 
-                        if (isObjectProperty(propertyType))
-                        {
-                            const types = parseStoreDefProperties(propertyType);
-                            componentInfo.types.push(...types);
-                            componentInfo.widgets.push(...types.filter((t) => {
-                                return !componentInfo.widgets.includes(t);
-                            }));
-                        }
-
                         logProperties("widgets", componentInfo.widgets);
 
                         if (isObjectProperty(propertyConfig))
@@ -310,6 +301,16 @@ export async function parseExtJsFile(fsPath: string, text: string, project?: str
                             return true;
                         }));
                         logProperties("xtypes", componentInfo.xtypes);
+
+                        componentInfo.types.push(...parseXTypes(args[1], text, componentInfo, "type").filter((t) => {
+                            for (const t2 of componentInfo.types) {
+                                if (t.name === t2.name) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        }));
+                        logProperties("types", componentInfo.types);
 
                         componentInfo.aliases.push(...parseXTypes(args[1], text, componentInfo, "alias").filter((x) => {
                             for (const a of componentInfo.aliases) {
@@ -464,6 +465,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
 {
     const xtypes: IXtype[] = [];
     const aliases: IAlias[] = [];
+    const types: IXtype[] = [];
     const aliasNodes: StringLiteral[] = [];
 
     if (isStringLiteral(propertyNode.value)) {
@@ -487,6 +489,14 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
         {
             case "xtype":
                 xtypes.push({
+                    name: propertyValue,
+                    start: it.loc!.start,
+                    end: it.loc!.end,
+                    componentClass
+                });
+                break;
+            case "type":
+                types.push({
                     name: propertyValue,
                     start: it.loc!.start,
                     end: it.loc!.end,
@@ -531,7 +541,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
         }
     });
 
-    return [ xtypes, aliases ];
+    return [ xtypes, aliases, types ];
 }
 
 

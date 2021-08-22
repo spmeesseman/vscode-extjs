@@ -4,28 +4,27 @@ import * as log from "../common/log";
 import { commands, ExtensionContext } from "vscode";
 import { extjsLangMgr } from "../extension";
 
-let fsStoragePath: string;
 
-
-export async function waitReady(logPad = "")
+export async function waitReady(logPad = "", timeout = 120000)
 {
-    log.methodStart("wait ready command", 1, logPad, true, [["cache path", fsStoragePath]]);
+    log.methodStart("wait ready command", 1, logPad);
 
     let ct = 0;
-    while ((extjsLangMgr.isBusy() || ct === 0) && ct < 120) {
-        ++ct;
-        await util.timeout(250);
+    const sleepPeriod = 250;
+
+    while ((extjsLangMgr.isBusy() || ct === 0) && ct < timeout) {
+        ct += sleepPeriod;
+        await util.timeout(sleepPeriod);
     }
 
-    log.methodStart("clear ast command", 1, logPad);
+    log.methodDone("wait ready command", 1, logPad);
 }
 
 
 function registerWaitReadyCommand(context: ExtensionContext)
 {
-    fsStoragePath = context.globalStoragePath;
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:waitReady", async (logPad = "") => { await waitReady(logPad); })
+        commands.registerCommand("vscode-extjs:waitReady", async (logPad?: string, timeout?: number) => { await waitReady(logPad, timeout); })
     );
 }
 

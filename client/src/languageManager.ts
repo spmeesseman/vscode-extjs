@@ -23,6 +23,7 @@ import { configuration } from "./common/configuration";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
+import { interfaceExtends } from "@babel/types";
 
 
 export interface ILineProperties
@@ -34,7 +35,7 @@ export interface ILineProperties
     calleeCmp?: IExtJsBase;
     thisClass?: string;
     thisCmp?: IComponent;
-    cmpType?: ComponentType;
+    cmpType: ComponentType;
     text: string;
     lineText: string;
 }
@@ -58,6 +59,7 @@ class ExtjsLanguageManager
     private configParser: ConfigParser;
     private components: IComponent[] = [];
     private isTests = false;
+    private currentLineCount = 0;
 
     //
     // TODO - Mappings rework
@@ -213,7 +215,7 @@ class ExtjsLanguageManager
         const cls = this.getClassFromFile(fsPath);
         if (cls) {
             log.value("   component class", cls, logLevel + 1, logPad);
-            component = this.getComponent(cls, this.getNamespaceFromClass(cls), logPad);
+            component = this.getComponent(cls, this.getNamespaceFromClass(cls, undefined, logPad, logLevel + 1), logPad, logLevel + 1);
         }
         log.methodDone("get component by file", logLevel, logPad);
         return component;
@@ -537,10 +539,14 @@ class ExtjsLanguageManager
         //     Ext.create("Ext.panel.Panel", {
         //     requires: [ "MyApp.common.Utilities" ]let cmp = this.down('physiciandropdown');
         //
-        if (lineText.match(new RegExp(`["']{1}[\\w.]*\\.${property}[\\w.]*["']{1}`)) ||
-            lineText.match(new RegExp(`["']{1}[\\w.]*${property}\\.[\\w.]*["']{1}`)))
+        if (new RegExp(`["']{1}[\\w.]*\\.${property}[\\w.]*["']{1}`).test(lineText) || new RegExp(`["']{1}[\\w.]*${property}\\.[\\w.]*["']{1}`).test(lineText))
         {
-            cmpType = ComponentType.Class;
+            if (/^type: [\"']{1}[\\w.]/.test(lineText)) {
+                cmpType = ComponentType.Class | ComponentType.Store;
+            }
+            else {
+                cmpType = ComponentType.Class;
+            }
             //
             // Strip off everything outside the quotes to get our full class name, i.e.
             //
@@ -560,7 +566,12 @@ class ExtjsLanguageManager
         //
         else if (lineText.match(new RegExp(`\\.(up|down|next|prev)\\(\\s*["']{1}${property}["']{1}\\s*\\)`)))
         {
-            cmpType = ComponentType.Class;
+            if (/\btype: [\"']{1}[\\w.]/.test(lineText)) {
+                cmpType = ComponentType.Class | ComponentType.Store;
+            }
+            else {
+                cmpType = ComponentType.Class;
+            }
             //
             // Strip off everything outside the quotes to get our xtype, i.e.
             //
@@ -629,7 +640,12 @@ class ExtjsLanguageManager
         //
         else if (new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`).test(lineText))
         {
-            cmpType = ComponentType.Class;
+            if (/\btype: ["']{1}[\w.]/.test(lineText)) {
+                cmpType = ComponentType.Class | ComponentType.Store;
+            }
+            else {
+                cmpType = ComponentType.Class;
+            }
         }
 
         let cmpClass: string | undefined;
@@ -638,11 +654,12 @@ class ExtjsLanguageManager
         log.value("   property (recalculated)", property, logLevel + 1, logPad);
         log.value("   component type", cmpType, logLevel + 1, logPad);
 
-        if (cmpType === ComponentType.Class)
+        if (cmpType & ComponentType.Class)
         {
             cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
             let cls: string | IComponent | undefined = this.variablesToComponentMapping[thisCmp.nameSpace][property];
-            if (cls && cls.name) {
+            if (cls && cls.name)
+            {
                 let variable: IVariable | undefined;
                 if (this.componentClassToVariablesMapping[thisCmp.nameSpace]) {
                     variable = this.componentClassToVariablesMapping[thisCmp.nameSpace][cls.name]?.find(v => v.name === property);
@@ -654,20 +671,21 @@ class ExtjsLanguageManager
                 }
             }
             else {
-                cls = this.widgetToClsMapping[thisCmp.nameSpace] ? this.widgetToClsMapping[thisCmp.nameSpace][property] : undefined;
+                const tProperty = cmpType & ComponentType.Store ? "store." + property : property;
+                cls = this.widgetToClsMapping[thisCmp.nameSpace] ? this.widgetToClsMapping[thisCmp.nameSpace][tProperty] : undefined;
                 if (!cls) {
-                    cls = this.widgetToClsMapping.Ext[property];
+                    cls = this.widgetToClsMapping.Ext[tProperty];
                 }
                 if (cls) {
                     cmpClass = cls;
                 }
                 else {
-                    let cmp = this.getComponent(property, thisCmp.nameSpace, logPad + "   ", logLevel);
+                    let cmp = this.getComponent(tProperty, thisCmp.nameSpace, logPad + "   ", logLevel);
                     if (cmp) {
                         cmpClass = cmp.componentClass;
                     }
                     else {
-                        const iCmp = this.getComponentInstance(property, thisCmp.nameSpace, position, document.uri.fsPath, logPad + "   ", logLevel);
+                        const iCmp = this.getComponentInstance(tProperty, thisCmp.nameSpace, position, document.uri.fsPath, logPad + "   ", logLevel);
                         if (isComponent(iCmp)) {
                             cmp = iCmp;
                             cmpClass = cmp.componentClass;
@@ -734,7 +752,7 @@ class ExtjsLanguageManager
 
         return {
             cmpClass,
-            cmpType,
+            cmpType: cmpType || ComponentType.None,
             property,
             thisCmp,
             thisClass: thisCmp?.componentClass,
@@ -1248,6 +1266,23 @@ class ExtjsLanguageManager
     }
 
 
+    async indexAndValidateFile(document: TextDocument)
+    {
+        const ns = this.getNamespace(document);
+        //
+        // Index the file, don't save to fs cache, we'll persist to fs cache when the
+        // document is saved
+        //
+        const components = await this.indexFile(document.uri.fsPath, ns, false, document);
+        //
+        // Validate document
+        //
+        if (components && components.length > 0) {
+            await this.validateDocument(document, ns);
+        }
+    }
+
+
     async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall = true, logPad = "", logLevel = 1): Promise<IComponent[] | false | undefined>
     {
         log.methodStart("indexing " + fsPath, logLevel, logPad, true, [[ "namespace", nameSpace ]]);
@@ -1405,11 +1440,12 @@ class ExtjsLanguageManager
             }
         });
         //
-        // Validate active js document if there is one
+        // Validate and index the active js document, if there is one
         //
         const activeTextDocument = window.activeTextEditor?.document;
-        if (activeTextDocument && activeTextDocument.languageId === "javascript") {
-            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        if (activeTextDocument && activeTextDocument.languageId === "javascript")
+        {
+            await this.indexAndValidateFile(activeTextDocument);
         }
         this.isIndexing = false;
         showReIndexButton();
@@ -1417,12 +1453,17 @@ class ExtjsLanguageManager
 
 
     private async initializeInternal()
-    {
+    {   //
+        // Get configuration from app.json, .extjsrc, and settings
+        //
         this.config = await this.configParser.getConfig();
         if (this.config.length === 0) {
             window.showInformationMessage("Could not find any app.json or .extjsrc.json files");
             return [];
         }
+        //
+        // Index files, loading from fs cache if available
+        //
         await this.indexFiles();
     }
 
@@ -1430,9 +1471,14 @@ class ExtjsLanguageManager
     async initialize(context: ExtensionContext): Promise<Disposable[]>
     {
         this.fsStoragePath = context.globalStoragePath;
+        //
+        // The `initializeInternal` method will get the configuration from  app.json, .extjsrc, and
+        // settings, and start indexing of all files, loading from fs cache if available
+        //
         await this.initializeInternal();
         //
         // TODO - Cache cleanup task
+        //
         // Create a task that will run every minute and clean up any hanging items in
         // both the memory and fs cache
         //
@@ -1440,6 +1486,9 @@ class ExtjsLanguageManager
         // {
         //     //
         // }, 60000);
+        //
+        // Return disposable watchers list...
+        //
         return this.watcherRegister(context);
     }
 
@@ -1518,7 +1567,7 @@ class ExtjsLanguageManager
                 cmp.markdown = this.commentParser.toMarkdown(componentClass, cmp.doc, logPad + "   ");
             }
 
-            log.write("      map classes to components", logLevel + 1, logPad);
+            log.write(`      map ${cmp.aliases.length} aliases to file`, logLevel + 1, logPad);
 
             //
             // Map the component class to the various component types found
@@ -1539,13 +1588,11 @@ class ExtjsLanguageManager
             //
             // Map the filesystem path <-> component class
             //
-            if (cmp.fsPath) {
-                this.fileToComponentClassMapping[cmp.fsPath] = componentClass;
-                this.componentClassToFilesMapping[componentClass] = cmp.fsPath;
-                cmp.aliases.forEach((a) => {
-                    this.componentClassToFilesMapping[a.name] = cmp.fsPath;
-                });
-            }
+            this.fileToComponentClassMapping[cmp.fsPath] = componentClass;
+            this.componentClassToFilesMapping[componentClass] = cmp.fsPath;
+            cmp.aliases.forEach((a) => {
+                this.componentClassToFilesMapping[a.name] = cmp.fsPath;
+            });
 
             //
             // Map the component class to any requires strings found
@@ -1557,7 +1604,7 @@ class ExtjsLanguageManager
                 this.componentClassToRequiresMapping[nameSpace][componentClass] = requires.value;
             }
 
-            log.write("      map components to classes", logLevel + 1, logPad);
+            log.write(`      map ${widgets.length} widgets`, logLevel + 1, logPad);
 
             //
             // Map widget/alias/xtype types found to the component class
@@ -1569,7 +1616,7 @@ class ExtjsLanguageManager
                 this.widgetToClsMapping[nameSpace][widget] = componentClass;
             });
 
-            log.write("      map methods and variables to classes", logLevel + 1, logPad);
+            log.write(`      map ${methods.length} methods`, logLevel + 1, logPad);
 
             //
             // Map methods found to the component class
@@ -1582,6 +1629,7 @@ class ExtjsLanguageManager
                 this.methodToClsMapping[nameSpace][method.name] = componentClass;
                 if (method.params)
                 {
+                    log.write(`         map ${method.params.length} parameters`, logLevel + 2, logPad);
                     for (const p of method.params)
                     {
                         if (p.doc) {
@@ -1609,7 +1657,7 @@ class ExtjsLanguageManager
                 }
             });
 
-            log.write("      map configs to classes", logLevel + 1, logPad);
+            log.write(`      map ${configs.length} configs`, logLevel + 1, logPad);
 
             //
             // Map config properties found to the component class
@@ -1622,7 +1670,7 @@ class ExtjsLanguageManager
                 this.configToClsMapping[nameSpace][config.name] = componentClass;
             });
 
-            log.write("      map properties to classes", logLevel + 1, logPad);
+            log.write(`      map ${properties.length} properties`, logLevel + 1, logPad);
 
             //
             // Map properties found to the component class
@@ -1662,26 +1710,28 @@ class ExtjsLanguageManager
     }
 
 
-    private async removeComponentFromCache(uri: Uri) // || componentClass: string)
+    private async removeComponentFromCache(uri: Uri)
     {
         const fsPath = uri.fsPath;
 
         log.methodStart("remove file from cache", 1, "", true, [["path", fsPath]]);
 
         const componentClass = this.getClassFromFile(fsPath),
-              componentNs = componentClass ? this.getNamespaceFromClass(componentClass) : undefined;
+              componentNs = componentClass ? this.getNamespaceFromClass(componentClass, undefined, "   ", 2) : undefined;
 
         if (componentClass && componentNs)
         {
-            log.value("   component class", componentClass, 2);
+            log.value("   removing component class", componentClass, 2);
 
             const component = this.getComponent(componentClass, componentNs, "   ", 2);
             if (component)
             {
+                log.write(`      remove ${component.configs.length} configs from mappings`, 3);
                 component.configs.forEach((config) => {
                     delete this.configToClsMapping[componentNs][config.name];
                 });
 
+                log.write(`      remove ${component.methods.length} methods from mappings`, 3);
                 component.methods.forEach((method) => {
                     delete this.methodToClsMapping[componentNs][method.name];
                     method.variables?.forEach((v) => {
@@ -1689,10 +1739,12 @@ class ExtjsLanguageManager
                     });
                 });
 
+                log.write(`      remove ${component.properties.length} properties from mappings`, 3);
                 component.properties.forEach((property) => {
                     delete this.propertyToClsMapping[componentNs][property.name];
                 });
 
+                log.write(`      remove ${component.widgets.length} widgets from mappings`, 3);
                 component.widgets.forEach((widget) => {
                     delete this.widgetToClsMapping[componentNs][widget];
                 });
@@ -1715,7 +1767,7 @@ class ExtjsLanguageManager
             });
         }
 
-        log.methodDone("remove file from cache", 1);
+        log.methodDone("remove file from cache", 1, "", true);
     }
 
 
@@ -1746,6 +1798,7 @@ class ExtjsLanguageManager
     async validateDocument(textDocument: TextDocument | undefined, nameSpace: string)
     {
         const text = textDocument?.getText();
+        this.currentLineCount = textDocument?.lineCount || 0
         //
         // Check to make sure it's an ExtJs file
         //
@@ -1819,7 +1872,7 @@ class ExtjsLanguageManager
                 // On enter/return key, validate immediately as the line #s for all range definitions
                 // underneath the edit have just shifted by one line
                 //
-                if (change.text.includes(documentEol(e.document))) {
+                if (change.text.includes(documentEol(e.document)) || e.document.lineCount !== this.currentLineCount) {
                     debounceMs = 0;
                 }
                 //
@@ -1832,23 +1885,18 @@ class ExtjsLanguageManager
                 }
             }
             //
-            // Debounce!!
+            // Set current line count.  It allows to track if we will debounce the indexing or not,
+            // because if the line count changes, whether it's from a new EOL, or, and EOL that was
+            // removed, we need to re-index right away to reset the class's object ranges
+            //
+            this.currentLineCount = e.document.lineCount;
+            //
+            // Debounce!!  Or not!!  We don't debounce if there was an EOL involved in the edit
             //
             taskId = setTimeout(async (document) =>
             {
                 this.reIndexTaskIds.delete(document.uri.fsPath);
-                const ns = this.getNamespace(document);
-                //
-                // Index the file, don't save to fs cache, we'll persist to fs cache when the
-                // document is saved
-                //
-                const components = await this.indexFile(document.uri.fsPath, ns, false, document);
-                //
-                // Validate document
-                //
-                if (components && components.length > 0) {
-                    await this.validateDocument(document, ns);
-                }
+                await this.indexAndValidateFile(document);
             }, debounceMs, e.document);
 
             this.reIndexTaskIds.set(e.document.uri.fsPath, taskId);

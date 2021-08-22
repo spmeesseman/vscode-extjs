@@ -8,7 +8,7 @@ import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
 
 
-export async function ensureRequires(xtype: string | undefined)
+export async function ensureRequires(xtype: string | undefined, type: "type" | "xtype")
 {
 	const document = window.activeTextEditor?.document,
 		  fsPath = document?.uri.fsPath,
@@ -35,7 +35,14 @@ export async function ensureRequires(xtype: string | undefined)
 					componentClasses.add(c);
 				}
 			}
-			log.value("      # of xtypes to add", componentClasses.size, 3);
+			for (const x of component.types)
+			{
+				const c = extjsLangMgr.getMappedClass(x.name, component.nameSpace, ComponentType.Store);
+				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping()) && (!xtype || xtype === x.name)) {
+					componentClasses.add(c);
+				}
+			}
+			log.value(`      # of ${type}s to add`, componentClasses.size, 3);
 
 			if (componentClasses.size > 0)
 			{
@@ -93,14 +100,14 @@ export async function ensureRequires(xtype: string | undefined)
 		}
 	}
 
-	log.methodDone("Command - Ensure requires", 1);
+	log.methodDone("Command - Ensure requires", 1, "", true);
 }
 
 
 function registerEnsureRequiresCommand(context: ExtensionContext)
 {
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:ensureRequire", async (xtype) => { await ensureRequires(xtype); })
+        commands.registerCommand("vscode-extjs:ensureRequire", async (xtype, type) => { await ensureRequires(xtype, type); })
     );
 }
 

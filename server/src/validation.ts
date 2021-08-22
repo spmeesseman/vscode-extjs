@@ -119,7 +119,10 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		if (globalSettings.validateXTypes)
 		{
 			for (const xtype of cmp.xtypes) {
-				validateXtype(xtype.name, cmp, toVscodeRange(xtype.start, xtype.end), diagRelatedInfoCapability, textObj, diagnostics);
+				validateXtype("xtype", xtype.name, cmp, toVscodeRange(xtype.start, xtype.end), diagRelatedInfoCapability, textObj, diagnostics);
+			}
+			for (const type of cmp.types) {
+				validateXtype("type", type.name, cmp, toVscodeRange(type.start, type.end), diagRelatedInfoCapability, textObj, diagnostics);
 			}
 		}
 
@@ -187,11 +190,14 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 }
 
 
-function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+function validateXtype(propertyName: string, xtype: string, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
 	const cmpRequires = cmp.requires,
-		  thisWidgetCls = widgetToComponentClassMapping[cmp.nameSpace][xtype] || widgetToComponentClassMapping.Ext[xtype],
-		  fsPath = URI.file(document.uri).fsPath;
+		  xtypeId = propertyName === "type" ? "store." + xtype : xtype,
+		  thisWidgetCls = widgetToComponentClassMapping[cmp.nameSpace][xtypeId] || widgetToComponentClassMapping.Ext[xtypeId],
+		  fsPath = URI.file(document.uri).fsPath,
+		  eNotFoundCode = propertyName === "type" ? ErrorCode.typeNotFound : ErrorCode.xtypeNotFound,
+		  eNoRequiresCode = propertyName === "type" ? ErrorCode.typeNoRequires : ErrorCode.xtypeNoRequires;
 
 	//
 	// Check ignored line (previous line), e.g.:
@@ -217,14 +223,14 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 	//
 	// First check to make sure we have the widget/xtype/alias indexed
 	//
-	if (!thisWidgetCls && ignoreText !== `/** vscode-extjs-ignore-${ErrorCode.xtypeNotFound} */`)
+	if (!thisWidgetCls && ignoreText !== `/** vscode-extjs-ignore-${eNotFoundCode} */`)
 	{   //
 		// Check global/file ignore for this error type
 		//
 		let ignore = false;
 		if (globalSettings.ignoreErrors && globalSettings.ignoreErrors.length > 0) {
 			for (const iErr of globalSettings.ignoreErrors) {
-				if (iErr.code === ErrorCode.xtypeNotFound) {
+				if (iErr.code === eNotFoundCode) {
 					if (!iErr.fsPath || fsPath === iErr.fsPath) {
 						ignore = true;
 						break;
@@ -238,9 +244,9 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 			const diagnostic: Diagnostic = {
 				severity: DiagnosticSeverity.Error,
 				range,
-				message: `The referenced xtype "${xtype}" was not found.`,
+				message: `The referenced ${propertyName} "${xtype}" was not found.`,
 				source: "vscode-extjs",
-				code: ErrorCode.xtypeNotFound
+				code: eNotFoundCode
 			};
 
 			if (diagRelatedInfoCapability) {
@@ -251,14 +257,14 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 		}
 	}
 
-	if (utils.isNeedRequire(thisWidgetCls, componentClassToWidgetsMapping) && ignoreText !== `/** vscode-extjs-ignore-${ErrorCode.xtypeNoRequires} */`)
+	if (utils.isNeedRequire(thisWidgetCls, componentClassToWidgetsMapping) && ignoreText !== `/** vscode-extjs-ignore-${eNoRequiresCode} */`)
 	{   //
 		// Check global/file ignore for this error type
 		//
 		let ignore = false;
 		if (globalSettings.ignoreErrors && globalSettings.ignoreErrors.length > 0) {
 			for (const iErr of globalSettings.ignoreErrors) {
-				if (iErr.code === ErrorCode.xtypeNoRequires) {
+				if (iErr.code === eNoRequiresCode) {
 					if (!iErr.fsPath || fsPath === iErr.fsPath) {
 						ignore = true;
 						break;
@@ -299,9 +305,9 @@ function validateXtype(xtype: string, cmp: IComponent, range: Range, diagRelated
 				const diagnostic: Diagnostic = {
 					severity: DiagnosticSeverity.Warning,
 					range,
-					message: `The referenced xtype "${xtype}" does not have a corresponding requires directive.`,
+					message: `The referenced ${propertyName} "${xtype}" does not have a corresponding requires directive.`,
 					source: "vscode-extjs",
-					code: ErrorCode.xtypeNoRequires
+					code: eNoRequiresCode
 				};
 				diagnostics.push(diagnostic);
 			}

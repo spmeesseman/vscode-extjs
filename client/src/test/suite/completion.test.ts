@@ -350,6 +350,43 @@ suite("Completion Tests", () =>
 	});
 
 
+	test("Full type lines", async () =>
+	{
+		const quoteCharacter = configuration.get<string>("quoteCharacter", "single");
+		await configuration.update("quoteCharacter", "single");
+		//
+		// Line 187 - 191
+		// const grid = Ext.create({
+		//	   hidden: false,
+		//	   disabled: true,
+		//
+		// });
+		//
+		await testCompletion(docUri, new vscode.Position(189, 3), "t", {
+			items: [
+				{ label: "type: users", kind: vscode.CompletionItemKind.Property },
+				{ label: "type: appadmin", kind: vscode.CompletionItemKind.Property },
+				{ label: "type: array", kind: vscode.CompletionItemKind.Property },
+				{ label: "type: store", kind: vscode.CompletionItemKind.Property }
+			]
+		});
+		//
+		// Line 121-123 - should return nothing, since the component is defined
+		// in the 1st argument to Ext.create
+		//
+		// const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
+		//
+		// });
+		//
+		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
+			items: []
+		});
+
+		await configuration.update("quoteCharacter", quoteCharacter);
+	});
+
+
+
 	test("Class object configs and properties", async () =>
 	{   //
 		// Line 167

@@ -64,7 +64,7 @@ export interface IComponent extends IExtJsBase
     since?: string;
     singleton: boolean;
     statics: (IProperty | IMethod)[];
-    types: string[];
+    types: IXtype[];
     uses?: IRequires;
     widgets: string[];
     xtypes: IXtype[];

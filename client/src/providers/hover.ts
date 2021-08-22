@@ -1,7 +1,7 @@
 
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
-    ProviderResult, TextDocument, MarkdownString, Range
+    ProviderResult, TextDocument, MarkdownString, Range, commands
 } from "vscode";
 import * as log from "../common/log";
 import { ComponentType, DeclarationType, VariableType } from "../../../common";
@@ -10,9 +10,18 @@ import { isPrimitive, isComponent, getMethodByPosition } from "../common/clientU
 
 class ExtJsHoverProvider implements HoverProvider
 {
-    provideHover(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Hover>
+    async provideHover(document: TextDocument, position: Position, token: CancellationToken)
     {
         log.methodStart("provide hover", 2, "", true, [["file", document.uri.fsPath]]);
+
+        //
+        // It's possible the indexer initiated a re-indexing since editing the document is
+        // what triggers thecompletion item request, so wait for it to finish b4 proceeding
+        //
+        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        //
+        // Indexer finished, proceed...
+        //
 
         let hover: Hover | undefined;
         const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath, undefined, "   ");
@@ -106,7 +115,7 @@ class ExtJsHoverProvider implements HoverProvider
                     hover = new Hover(new MarkdownString().appendCodeblock(`config ${text}: ${config.componentClass}`).appendMarkdown(config.markdown ? config.markdown.value : ""));
                 }
             }
-            else if (cmpType === ComponentType.Class)
+            else if (cmpType & ComponentType.Class)
             {
                 const cmp = extjsLangMgr.getComponent(cmpClass, nameSpace, "   ");
                 if (isComponent(cmp))

@@ -31,6 +31,22 @@ suite("Type Definition Tests", () =>
 	});
 
 
+	test("Store types", async () =>
+	{
+		//
+		// Line 202
+		// type: "users"
+		// Is of type VSCodeExtJS.store.user.Users, not VSCodeExtJS.view.users.Users, which
+		// is also of (x)type "users"
+		//
+		await testTypeDefinition(docUri, new vscode.Position(201, 13), [
+		{
+			uri: getDocUri("app/shared/src/store/user/Users.js"),
+			range: toRange(1, 0, 47, 2)
+		}]);
+	});
+
+
 	test("Function instance variables", async () =>
 	{
 		//

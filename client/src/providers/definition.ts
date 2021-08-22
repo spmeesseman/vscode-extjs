@@ -1,7 +1,7 @@
 
 import {
-    CancellationToken, DefinitionProvider, ExtensionContext, languages, Location,
-    LocationLink, Position, ProviderResult, TextDocument, Uri
+    CancellationToken, commands, DefinitionProvider, ExtensionContext, languages, Location,
+    Position, TextDocument, Uri
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import { ComponentType } from "../../../common";
@@ -10,11 +10,20 @@ import * as log from "../common/log";
 
 class ExtJsDefinitionProvider implements DefinitionProvider
 {
-    provideDefinition(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<Location | Location[] | LocationLink[]>
+    async provideDefinition(document: TextDocument, position: Position, token: CancellationToken)
     {
         let location: Location | undefined;
 
         log.methodStart("provide definition", 1, "", true);
+
+        //
+        // It's possible the indexer initiated a re-indexing since editing the document is
+        // what triggers thecompletion item request, so wait for it to finish b4 proceeding
+        //
+        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        //
+        // Indexer finished, proceed...
+        //
 
         const { cmpType, property, cmpClass, thisClass } = extjsLangMgr.getLineProperties(document, position, "   ");
 

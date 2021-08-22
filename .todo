@@ -57,8 +57,8 @@ Miscellaneous:
 Stores:
 
 	✔ AST parsing (property 'type' and mappings) @done(21-08-21 09:22)
-	☐ diagnostics for 'type' same as 'xtype'
+	✔ diagnostics for 'type' same as 'xtype' @done(21-08-22 00:01)
 	☐ diagnostic for 'model' field
 	✔ completion for 'type' same as 'xtype' @done(21-08-21 14:19)
-	☐ go to definition for 'type' same as 'xtype'
-	☐ go to type definition for 'type' same as 'xtype'
+	✔ go to definition for 'type' same as 'xtype' @done(21-08-21 18:54)
+	✔ go to type definition for 'type' same as 'xtype' @done(21-08-21 18:54)

@@ -200,8 +200,17 @@ Ext.define('VSCodeExtJS',
 			store1:
 			{
 				type: "users",
-				
+				filters: [
+				{
+					property: "userid",
+
+				}],
+				sorters: [
+				{
+
+				}]
 			},
+
 			store2:
 			{
 				

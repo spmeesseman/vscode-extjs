@@ -1,7 +1,7 @@
 
 import {
     ExtensionContext, languages, Position, CancellationToken, ProviderResult, ParameterInformation,
-    TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation
+    TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation, commands
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import { isComponent } from "../common/clientUtils";
@@ -11,9 +11,19 @@ import { IComponent, IMethod, utils } from "../../../common";
 
 class MethodSignatureProvider implements SignatureHelpProvider
 {
-	provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelp>
+	async provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext)
 	{
         const sigHelp = new SignatureHelp();
+
+        //
+        // It's possible the indexer initiated a re-indexing since editing the document is
+        // what triggers thecompletion item request, so wait for it to finish b4 proceeding
+        //
+        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        //
+        // Indexer finished, proceed...
+        //
+
         let lineText = document.lineAt(position).text.substr(0, position.character),
             pLoc = lineText.lastIndexOf("(");
 
