@@ -36,7 +36,10 @@ suite("Completion Tests", () =>
 		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
 		await configuration.update("ignoreErrors", ignoreErrors);
 		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
 	});
 
 
@@ -531,6 +534,15 @@ suite("Completion Tests", () =>
 		// Remove added text, set document back to initial state
 		//
 		await insertDocContent("", toRange(2, 3, 2, 14));
+		await waitForValidation();
+	});
+
+
+	test("No completion", async () =>
+	{
+		await testCompletion(docUri, new vscode.Position(222, 1), "V", {
+			items: []
+		}, true, "outside completion ranges");
 		await waitForValidation();
 	});
 

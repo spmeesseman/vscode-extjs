@@ -45,6 +45,10 @@ suite("Command Tests", () =>
 		await configuration.update("validationDelay", validationDelay || 1250);
 		await configuration.update("debugClient", logEnabled);
 		await configuration.update("ignoreErrors", ignoreErrors);
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
 	});
 
 

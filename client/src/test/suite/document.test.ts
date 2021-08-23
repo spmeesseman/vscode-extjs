@@ -34,7 +34,10 @@ suite("Document Tests", () =>
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
 		await configuration.update("ignoreErrors", ignoreErrors);
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
 	});
 
 

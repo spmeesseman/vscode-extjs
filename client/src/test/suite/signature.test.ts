@@ -28,6 +28,10 @@ suite("Method Signature Tests", () =>
 		// Reset validation delay setting back to original value
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
 	});
 
 
@@ -164,6 +168,16 @@ suite("Method Signature Tests", () =>
 		await waitForValidation();
 	});
 
+
+	test("No signature", async () =>
+    {
+		await testSignature(docUri, new vscode.Position(222, 1), "(", {
+			activeParameter: 0,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+    });
+
 });
 
 
@@ -179,7 +193,7 @@ function getSigInfo(sigLine: string): vscode.SignatureInformation[]
 }
 
 
-async function testSignature(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedSignatureHelp: vscode.SignatureHelp)
+async function testSignature(docUri: vscode.Uri, position: vscode.Position, triggerChar: string, expectedSignatureHelp: vscode.SignatureHelp, shouldHave = true)
 {
 	const actualSignatureHelp = (await vscode.commands.executeCommand(
 		"vscode.executeSignatureHelpProvider",
@@ -206,6 +220,6 @@ async function testSignature(docUri: vscode.Uri, position: vscode.Position, trig
 				found = true;
 			}
 		});
-		assert.strictEqual(found, true);
+		assert.strictEqual(found, shouldHave);
 	});
 }

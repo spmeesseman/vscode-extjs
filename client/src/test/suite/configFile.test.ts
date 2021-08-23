@@ -39,6 +39,10 @@ suite("Config File Tests", () =>
 		// Reset validation delay setting back to original value
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
+		try {
+			await commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
 	});
 
 
@@ -87,7 +91,7 @@ suite("Config File Tests", () =>
 	});
 
 
-	test("Extjsrc config restore", async () =>
+	test("Extjsrc restore", async () =>
 	{
 		await writeFile(
             extjsrcPath,
@@ -177,6 +181,7 @@ suite("Config File Tests", () =>
 
 	test("Workspace.json package.dir", async function()
 	{
+		this.timeout(45 * 1000);
 		//
 		// Remove packages.dir property
 		//

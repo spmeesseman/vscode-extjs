@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation } from "./helper";
-import { ErrorCode, utils } from "../../../../common";
+import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
 
 
@@ -24,6 +24,10 @@ suite("Code Action Tests", () =>
 	suiteTeardown(async () =>
     {
 		await configuration.update("ignoreErrors", ignoreErrors);
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
 	});
 
 
