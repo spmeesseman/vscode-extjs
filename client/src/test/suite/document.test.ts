@@ -52,7 +52,7 @@ suite("Document Tests", () =>
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the text we just inserted
 		//
-		await vscode.commands.executeCommand("vscode-extjs:replaceText", "\t\t", toRange(95, 0, 95, 56));
+		await vscode.commands.executeCommand("vscode-extjs:replaceText", "        ", toRange(95, 0, 95, 56));
 		await waitForValidation();
 	});
 
