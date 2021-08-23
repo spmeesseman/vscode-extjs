@@ -279,6 +279,7 @@ suite("Config File Tests", () =>
 		await deleteFile(appJsonPath);
 		renameSync(path.join(path.dirname(appJsonPath), "_app.json"), appJsonPath);
 		extjsLangMgr.setTests(true);
+		await waitForValidation();
 	});
 
 
