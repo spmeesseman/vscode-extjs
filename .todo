@@ -55,12 +55,34 @@ Miscellaneous:
 	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index 
 	☐ FS cache - check to see if can get away with not persisting object range info
 		i think this is only used on the active document, which is always re-indexed anyway when opened
+	☐ New command to create Ext.define file from template
+		Prompt for dir/filename
+		Map to shourtcut key
+	☐ New command to insert an Ext.create('Ext.util.DelayedTask')...
+		Maybe a setting to use either Ext.create or 'new Ext.util.DelayedTask'
+		Map to shourtcut key
+	☐ Namespace can be removed from mapping references throughout code
+	☐ Packages referenced from app.json should have own cache location
+		use pkg namespace name extracted from pacage.json in pkg dir
+		currently get stored in main app namespace storage file
+	☐ Object ranges don't have to persist to cache.
+		Can be parsed for active document only (I think).
+		remove todo comment in the code
+
+Models:
+
+	☐ AST parsing any additional properties
+	☐ completion for associations
+	☐ go to definition for 'type' same as 'xtype'
+	☐ go to type definition for 'type' same as 'xtype'
+	☐ object completion showing model fields as opposed to properties/configs
 
 Stores:
 
 	✔ AST parsing (property 'type' and mappings) @done(21-08-21 09:22)
 	✔ diagnostics for 'type' same as 'xtype' @done(21-08-22 00:01)
 	☐ diagnostic for 'model' field
+	☐ completion/signature for static create()
 	✔ completion for 'type' same as 'xtype' @done(21-08-21 14:19)
 	✔ go to definition for 'type' same as 'xtype' @done(21-08-21 18:54)
 	✔ go to type definition for 'type' same as 'xtype' @done(21-08-21 18:54)
