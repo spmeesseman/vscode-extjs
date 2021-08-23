@@ -51,11 +51,12 @@
 		},
 		{
 			"label": "Publish to Codecov",
-			"type": "process",
-			"command": "tools\\codecov.exe",
+			"type": "shell",
+			"command": "${env:CODE_HOME}\\git\\bin\\bash.exe",
 			"args": [
+				"tools/codecov.sh",
 				"-t",
-				"${env:CODECOV_TOKEN_VSCODE_EXTJS}"
+				"${env:CODECOV_TOKEN2}"
 			],
 			"group": "build",
 			"presentation": {
