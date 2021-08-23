@@ -42,7 +42,7 @@ suite("Completion Tests", () =>
 		catch {}
 	});
 
-/*
+
 	test("Inline property start", async () =>
 	{
 		//
@@ -512,7 +512,7 @@ suite("Completion Tests", () =>
 		}, true, "object 'type' configs and properties");
 	});
 
-*/
+
 	test("Property values", async () =>
 	{   //
 		// Line 167
