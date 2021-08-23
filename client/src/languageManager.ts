@@ -1272,26 +1272,8 @@ class ExtjsLanguageManager
         //
         // Save to fs cache if caller has specified to, and if we parsed some components
         //
-        if (cached && components && saveToCache)
-        {
-            const baseDir = this.getAppJsonDir(fsPath),
-                  storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
-                  storedComponents: IComponent[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
-
-            for (const component of components)
-            {
-                for (let i = 0; i < storedComponents.length; i++)
-                {
-                    if (storedComponents[i].fsPath === fsPath)
-                    {
-                        storedComponents[i] = component;
-                        break;
-                    }
-                }
-            }
-
-            await fsStorage.update(storageKey, JSON.stringify(storedComponents));
-            await storage.update(storageKey + "_TIMESTAMP", new Date());
+        if (cached && components.length > 0 && saveToCache) {
+            this.persistComponent(fsPath, nameSpace, components[0]);
         }
 
         //
@@ -1397,6 +1379,26 @@ class ExtjsLanguageManager
     isBusy()
     {
         return this.isIndexing || this.isValidating;
+    }
+
+
+    private async persistComponent(fsPath: string, nameSpace: string, component: IComponent)
+    {
+        const baseDir = this.getAppJsonDir(fsPath),
+              storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
+              storedComponents: IComponent[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
+
+        for (let i = 0; i < storedComponents.length; i++)
+        {
+            if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
+            {
+                storedComponents[i] = component;
+                break;
+            }
+        }
+
+        await fsStorage.update(storageKey, JSON.stringify(storedComponents));
+        await storage.update(storageKey + "_TIMESTAMP", new Date());
     }
 
 

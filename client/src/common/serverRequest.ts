@@ -19,7 +19,7 @@ class ServerRequest
 
     async parseExtJsFile(fsPath: string, project: string, nameSpace: string, text: string)
     {
-        return this.client.sendRequest<IComponent[] | undefined>("parseExtJsFile", JSON.stringify({ fsPath, project, text, nameSpace }));
+        return this.client.sendRequest<IComponent[]>("parseExtJsFile", JSON.stringify({ fsPath, project, text, nameSpace }));
     }
 
     async validateExtJsFile(path: string, project: string, nameSpace: string, text: string): Promise<Diagnostic[]>
