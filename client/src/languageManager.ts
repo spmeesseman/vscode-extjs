@@ -1598,6 +1598,7 @@ class ExtjsLanguageManager
         }
 
         log.methodDone("process components", logLevel, logPad);
+        return true;
     }
 
 
