@@ -1052,7 +1052,6 @@ class ExtjsLanguageManager
                     //
                     for (const c of components)
                     {
-                        await this.serverRequest.loadExtJsComponent(JSON.stringify([c]), projectName);
                         processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
                         const pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
@@ -1061,7 +1060,7 @@ class ExtjsLanguageManager
                             message: ": Indexing " + pct + "%"
                         });
                     }
-                    this.processComponents(components, projectName, false, "   ", logLevel + 1);
+                    await this.processComponents(components, projectName, false, "   ", logLevel + 1);
                     progress?.report({
                         increment,
                         message: Math.round(++currentCfgIdx * cfgPct) + "%"
@@ -1255,7 +1254,7 @@ class ExtjsLanguageManager
         //
         const project = getWorkspaceProjectName(fsPath),
               components = await this.serverRequest.parseExtJsFile(fsPath, project, nameSpace, text),
-              cached = this.processComponents(components, project, oneCall, logPad + "   ", logLevel + 1);
+              cached = await this.processComponents(components, project, oneCall, logPad + "   ", logLevel + 1);
 
         //
         // Save to fs cache if caller has specified to, and if we parsed some components
@@ -1388,7 +1387,7 @@ class ExtjsLanguageManager
     }
 
 
-    private processComponents(components: IComponent[] | undefined, project: string, isFileEdit: boolean, logPad = "", logLevel = 1)
+    private async processComponents(components: IComponent[] | undefined, project: string, isFileEdit: boolean, logPad = "", logLevel = 1)
     {   //
         // If no components, then bye bye
         //
@@ -1516,7 +1515,7 @@ class ExtjsLanguageManager
                 this.components.push(cmp);
             }
 
-            log.write("      parsed component parts:", logLevel + 3);
+            log.write("      parsed component parts:", logLevel + 3, logPad);
             log.values([
                 [ "configs", JSON.stringify(cmp.configs, undefined, 3)],
                 [ "methods", JSON.stringify(cmp.methods, undefined, 3)],
@@ -1525,6 +1524,9 @@ class ExtjsLanguageManager
             ], logLevel + 3, logPad + "   ");
             log.write("   done processing component " + componentClass, logLevel + 1, logPad);
         }
+
+        log.write("   update server cache", logLevel, logPad);
+        await this.serverRequest.loadExtJsComponent(JSON.stringify(components), project);
 
         log.methodDone("process components", logLevel, logPad);
         return true;
