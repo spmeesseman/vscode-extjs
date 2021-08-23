@@ -6,7 +6,7 @@ import {
 import { extjsLangMgr } from "../extension";
 import { getWorkspaceProjectName, isComponent } from "../common/clientUtils";
 import * as log from "../common/log";
-import { IComponent, IMethod, utils } from "../../../common";
+import { IMethod, extjs } from "../../../common";
 
 
 class MethodSignatureProvider implements SignatureHelpProvider
@@ -116,7 +116,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 {
                     for (const p of cmp.privates)
                     {
-                        if (utils.isMethod(p))
+                        if (extjs.isMethod(p))
                         {
                             if (_add(p) === true) break;
                         }
@@ -126,7 +126,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 {
                     for (const s of cmp.statics)
                     {
-                        if (utils.isMethod(s))
+                        if (extjs.isMethod(s))
                         {
                             if (_add(s) === true) break;
                         }

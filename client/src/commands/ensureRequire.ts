@@ -2,7 +2,7 @@
 import * as json5 from "json5";
 import * as log from "../common/log";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
-import { ComponentType, IPosition, IRequire, utils } from "../../../common";
+import { ComponentType, IRequire, extjs } from "../../../common";
 import { getWorkspaceProjectName, quoteChar, toVscodePosition, toVscodeRange } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
 import { EOL } from "os";
@@ -35,7 +35,7 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 			component.widgets.filter(w => w.type === type).forEach(w =>
 			{
 				const c = extjsLangMgr.getClsByProperty(w.name, component.nameSpace, project, type === "type" ? ComponentType.Store : ComponentType.Widget);
-				if (c !== undefined && utils.isNeedRequire(c, extjsLangMgr.getClsToWidgetMapping(project)) && (!xtype || xtype === w.name)) {
+				if (c !== undefined && extjs.isNeedRequire(c, extjsLangMgr.getComponents()) && (!xtype || xtype === w.name)) {
 					componentClasses.add(c);
 				}
 			});
@@ -57,7 +57,7 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 					}
 
 					const _requires = component.requires.value
-											   .filter((it: IRequire) => utils.isNeedRequire(it.name, extjsLangMgr.getClsToWidgetMapping(project)))
+											   .filter((it: IRequire) => extjs.isNeedRequire(it.name, extjsLangMgr.getComponents()))
 											   .map((it: IRequire) => { return it.name; })
 											   .concat(Array.from(componentClasses))
 											   .sort();

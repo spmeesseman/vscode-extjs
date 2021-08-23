@@ -11,7 +11,7 @@ import {
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
-    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement
+    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression
 } from "@babel/types";
 
 /**
@@ -21,40 +21,24 @@ const ignoreProperties = [
     "config", "requires", "privates", "statics", "uses"
 ];
 
-export const widgetToComponentClassMapping: { [nameSpace: string]: { [widget: string]: string | undefined }} = {};
-export const componentClassToWidgetsMapping: { [nameSpace: string]: { [componentClass: string]: string[] | undefined }} = {};
+export const components: IComponent[] = [];
 
 
 export async function loadExtJsComponent(ast: string | undefined)
 {
-    if (ast)
-    {
-        const components: IComponent[] = JSON.parse(ast);
-        for (const c of components)
-        {
-            if (!widgetToComponentClassMapping[c.nameSpace]) {
-                componentClassToWidgetsMapping[c.nameSpace] = {};
-                widgetToComponentClassMapping[c.nameSpace] = {};
-            }
-            componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = c.widgets.map(w => w.name);
-            c.xtypes.forEach((w) => {
-                widgetToComponentClassMapping[c.nameSpace][w.name] = c.componentClass;
-            });
-            c.aliases.forEach((w) => {
-                widgetToComponentClassMapping[c.nameSpace][w.name.replace("widget.", "")] = c.componentClass;
-            });
-        }
+    if (ast) {
+        cacheComponents(JSON.parse(ast));
     }
 }
 
 
 export async function parseExtJsFile(fsPath: string, text: string, project: string, nameSpace: string)
 {
-    const components: IComponent[] = [],
+    const parsedComponents: IComponent[] = [],
           nodeAst = ast.getComponentsAst(text, log.error);
 
     if (!nodeAst) {
-        return components;
+        return parsedComponents;
     }
 
     //
@@ -119,7 +103,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                             componentInfo.deprecated = componentInfo.doc?.includes("@deprecated");
                         }
 
-                        components.push(componentInfo);
+                        parsedComponents.push(componentInfo);
 
                         log.blank(1);
                         log.value("   Component", args[0].value, 1);
@@ -270,26 +254,24 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
         }
     });
 
-    for (const c of components)
-    {
-        if (!widgetToComponentClassMapping[c.nameSpace]) {
-            componentClassToWidgetsMapping[c.nameSpace] = {};
-            widgetToComponentClassMapping[c.nameSpace] = {};
-        }
-        componentClassToWidgetsMapping[c.nameSpace][c.componentClass] = [];
-        componentClassToWidgetsMapping[c.nameSpace][c.componentClass]?.push(...c.widgets.map(w => w.name));
-        componentClassToWidgetsMapping[c.nameSpace][c.componentClass]?.push(
-            ...c.aliases.filter(a => /\b(?:widget|store|model)\./.test(a.name)
-        ).map(w => w.name.replace(/\bwidget\./, "")));
-        c.xtypes.forEach((w) => {
-            widgetToComponentClassMapping[c.nameSpace][w.name] = c.componentClass;
-        });
-        c.aliases.forEach((w) => {
-            widgetToComponentClassMapping[c.nameSpace][w.name.replace("widget.", "")] = c.componentClass;
-        });
-    }
+    cacheComponents(parsedComponents);
 
-    return components;
+    return parsedComponents;
+}
+
+
+function cacheComponents(componentsToCache: IComponent[])
+{
+    for (const c of componentsToCache)
+    {
+        const idx = components.findIndex((cc) => cc.componentClass === c.componentClass && c.project === cc.project);
+        if (idx >= 0) {
+            components.splice(idx, 1, c);
+        }
+        else {
+            components.push(c);
+        }
+    }
 }
 
 
@@ -409,9 +391,9 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 }
 
 
-function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string): (IWidget | IXtype | IType | IAlias)[][]
+function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string): (IXtype | IAlias | IType)[][]
 {
-    const xtypes: IWidget[] = [];
+    const xtypes: IXtype[] = [];
     const aliases: IAlias[] = [];
     const types: IType[] = [];
     const aliasNodes: StringLiteral[] = [];
@@ -441,7 +423,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                     start: it.loc!.start,
                     end: it.loc!.end,
                     componentClass,
-                    type: propertyName
+                    type: propertyName,
+                    parentProperty: ""
                 });
                 break;
             case "type":
@@ -450,7 +433,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                     start: it.loc!.start,
                     end: it.loc!.end,
                     componentClass,
-                    type: propertyName
+                    type: propertyName,
+                    parentProperty: ""
                 });
                 break;
             case "alias":
@@ -465,7 +449,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                             start: it.loc!.start,
                             end: it.loc!.end,
                             componentClass,
-                            type: "xtype"
+                            type: "xtype",
+                            parentProperty: ""
                         });
                     }
                 }
@@ -1167,11 +1152,12 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
 
 function parseWidgets(objEx: ObjectExpression, text: string, component: IComponent, nodeName: "type" | "xtype")
 {
-    const xType: IWidget[] = [];
+    let lastProperty = "Ext.define";
+    const xType: (IXtype | IType)[] = [];
     const line = objEx.loc!.start.line - 1;
     const column = objEx.loc!.start.column;
 
-    const _add = ((v: StringLiteral) =>
+    const _add = ((v: StringLiteral, parentProperty: string) =>
     {   //
         // CHeck the widgets we parsed on this component so we don't add something
         // that the user is currently typing in
@@ -1213,16 +1199,44 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
         start.line += line;
         end.line += line;
 
-        log.write("   push xtype " + v.value, 3);
+        log.write(`   push ${nodeName} ${v.value}`, 3);
 
         xType.push({
             name: v.value,
             start,
             end,
             componentClass: component.componentClass,
-            type: nodeName
+            type: nodeName,
+            parentProperty
         });
     });
+
+    const _process = (n: ObjectProperty, v: any) =>
+    {
+        if (!isIdentifier(n.key)) {
+            return;
+        }
+
+        if (n.key.name !== nodeName || !isStringLiteral(v)) { // && !isArrayExpression(v))) {
+            lastProperty = n.key.name;
+            return;
+        }
+
+        if (isStringLiteral(v)) {
+            _add(v, lastProperty);
+        }
+        // else
+        // {
+        //     v.elements.forEach(it => {
+        //         if (isStringLiteral(it)) {
+        //             _add(it, lastProperty);
+        //         }
+        //         // else {
+        //         //     _process(it);
+        //         // }
+        //     });
+        // }
+    };
 
     //
     // Get the substring from the doc text, just the jso w/o the Ext.define() wrap so we can
@@ -1239,38 +1253,9 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
     //    }
     //
     const subText = "a(" + text.substring(objEx.start!, objEx.end!) + ")";
-
-    const _ast = parse(subText);
-    traverse(_ast,
-    {
-        ObjectProperty(_path)
-        {
-            const _node = _path.node;
-            const valueNode = _node.value;
-
-            if (!isIdentifier(_node.key)) {
-                return;
-            }
-
-            if (_node.key.name !== nodeName) {
-                return;
-            }
-
-            if (!isStringLiteral(valueNode) && !isArrayExpression(valueNode)) {
-                return;
-            }
-
-            if (isStringLiteral(valueNode)) {
-                _add(valueNode);
-            }
-            else
-            {
-                valueNode.elements.forEach(it => {
-                    if (isStringLiteral(it)) {
-                        _add(it);
-                    }
-                });
-            }
+    traverse(parse(subText), {
+        ObjectProperty(_path) {
+            _process(_path.node, _path.node.value);
         }
     });
 
