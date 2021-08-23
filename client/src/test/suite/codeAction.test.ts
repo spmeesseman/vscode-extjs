@@ -55,14 +55,50 @@ suite("Code Action Tests", () =>
 			command: {
 				title: "Fix the 'requires' array for this declared xtype",
 				command: "vscode-extjs:ensureRequire",
-				arguments: [ "userdropdown" ]
+				arguments: [ "userdropdown", "xtype" ]
 			}
         },
 		{
 			title: "Fix the 'requires' array for all declared xtypes",
             command: {
 				title: "Fix the 'requires' array for all declared xtypes",
-				command: "vscode-extjs:ensureRequire"
+				command: "vscode-extjs:ensureRequire",
+				arguments: [ undefined, "xtype" ]
+			}
+        }]);
+
+		await configuration.update("quoteCharacter", quoteCharacter);
+	});
+
+
+	test("Requires for types", async () =>
+	{
+		const quoteCharacter = configuration.get<string>("quoteCharacter", "single");
+		await configuration.update("quoteCharacter", "single");
+		//
+		// Line 203 - 207 Store type object
+		// 199
+		// 200    store2:
+		// 201    {
+		// 202        type: "users",
+		// 203        filters: [
+		// 204        {
+		// 205
+		await testCodeAction(docUri, toRange(201, 11, 201, 17), [
+        {
+			title: "Fix the 'requires' array for this declared type",
+			command: {
+				title: "Fix the 'requires' array for this declared type",
+				command: "vscode-extjs:ensureRequire",
+				arguments: [ "userdropdown", "type" ]
+			}
+        },
+		{
+			title: "Fix the 'requires' array for all declared types",
+            command: {
+				title: "Fix the 'requires' array for all declared types",
+				command: "vscode-extjs:ensureRequire",
+				arguments: [ undefined, "type" ]
 			}
         }]);
 

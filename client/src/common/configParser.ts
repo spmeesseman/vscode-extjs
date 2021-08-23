@@ -1,5 +1,5 @@
 
-import { Uri, workspace } from "vscode";
+import { Uri, window, workspace } from "vscode";
 import { configuration } from "./configuration";
 import { IConf } from  "../../../common";
 import * as log from "./log";
@@ -42,6 +42,9 @@ export class ConfigParser
                     wsDir: workspace.getWorkspaceFolder(Uri.file(pathParts[1]))?.uri.fsPath || "",
                 });
             }
+            else {
+                window.showWarningMessage(`Invalid include path ${path} - must be 'namespace|path'`);
+            }
         }
 
         //
@@ -54,7 +57,7 @@ export class ConfigParser
                   conf: IConf = json5.parse(confJson);
             if (conf.classpath && conf.name)
             {
-                if (typeof conf.classpath === "string") {
+                if (!(conf.classpath instanceof Array)) {
                     conf.classpath = [ conf.classpath ];
                 }
                 log.value("   add .extjsrc path", fileSystemPath, 1);
@@ -121,7 +124,7 @@ export class ConfigParser
         {
             conf.classpath = [];
         }
-        else if (typeof conf.classpath === "string")
+        else if (!(conf.classpath instanceof Array))
         {
             conf.classpath = [ conf.classpath ];
         }

@@ -81,6 +81,17 @@ suite("Type Definition Tests", () =>
 		}]);
 	});
 
+
+	test("No type definition", async () =>
+    {
+		//
+		// app.js Line 151
+		// me.test3 = AppUtils.alertError("test");
+		// 'me' is not set
+		//
+		await testTypeDefinition(docUri, new vscode.Position(150, 3), []);
+    });
+
 });
 
 

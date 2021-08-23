@@ -24,8 +24,8 @@ _**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The
   - [Description](#description)
   - [File Indexing](#file-indexing)
   - [Configuration](#configuration)
-    - [Configuration - The app.json ExtJs Project File](#configuration---the-appjson-extjs-project-file)
-    - [Configuration - The .extjsrc.json Configuration File](#configuration---the-extjsrcjson-configuration-file)
+    - [Configuration - The `app.json` ExtJs Project File](#configuration---the-appjson-extjs-project-file)
+    - [Configuration - The `.extjsrc.json` Configuration File](#configuration---the-extjsrcjson-configuration-file)
     - [Configuration - The `name` Setting (Required)](#configuration---the-name-setting-required)
     - [Configuration - The `classpath` Setting (Required)](#configuration---the-classpath-setting-required)
     - [Configuration - The `exclude` Setting](#configuration---the-exclude-setting)
@@ -81,11 +81,11 @@ This language server looks at your entire workspace, whether single or multi roo
 
 Whether or not an [app.json](#the-appjson-extjs-project-file), [.extjsrc.json](#the-extjsrcjson-configuration-file), or [include](#configuration---the-include-setting) path is used, there are two required properties that must be present for any of the configuration types.  For **include** paths, see the [section below](#configuration---the-include-setting) describing how to specify both of these properties in the Settings entries.  These two properties are [name](#configuration---the-name-setting-required)) and [classpath](#configuration---the-classpath-setting-require).
 
-### Configuration - The app.json ExtJs Project File
+### Configuration - The `app.json` ExtJs Project File
 
 The **app.json** file is a part of all Sencha Cmd and Sencha ext-gen generated Open Tooling projects.  If an **app.json** file is located, the namespaces and classpaths are extracted and added to indexing.  If a corresponding **workspace.json** file is located in the same directory as an **app.json** file, classpaths are extracted from the *packages.dir* property and added to indexing.  The *packages.dir* property should be a comma delimited string of package paths included in the application classpath, these normally specify the paths to the packages included in the *requires* array property of the **app.json** file.
 
-### Configuration - The .extjsrc.json Configuration File
+### Configuration - The `.extjsrc.json` Configuration File
 
 The **.extjsrc.json** / **.extjsrc** file is a custom file that can be placed into any directory.  If an **.extjsrc** file is located, the namespace and classpaths are extracted and added to indexing.
 
@@ -93,6 +93,8 @@ The **.extjsrc** file can contain any of the defined properties of a Sencha ExtJ
 
 1. name
 2. classpath
+
+See [here](https://github.com/spmeesseman/app-publisher/blob/master/client/testFixture/.extjsrc.json?raw=true) for a simplified example .extjsrc file.
 
 ### Configuration - The `name` Setting (Required)
 
@@ -241,6 +243,8 @@ Examples:
 ## Code Completion
 
 TODO
+
+![completion-img1](resources/readme/../../res/readme/completion-store-type.png)
 
 ## GoTo Definitions
 

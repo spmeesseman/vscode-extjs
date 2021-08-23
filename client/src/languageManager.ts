@@ -1697,7 +1697,7 @@ class ExtjsLanguageManager
               msg = `${project} config file modified, re-index all files?`,
               action = !this.isTests ? await window.showInformationMessage(msg, "Yes", "No") : "Yes";
         if (action === "Yes") {
-            commands.executeCommand("vscode-extjs:clearAst", project);
+            await commands.executeCommand("vscode-extjs:clearAst", project);
             await this.initializeInternal();
         }
     }
@@ -1856,6 +1856,15 @@ class ExtjsLanguageManager
         {
             const document = window.activeTextEditor?.document;
             await this.validateDocument(document, this.getNamespace(document));
+        }
+        else if (e.affectsConfiguration("extjsIntellisense.include") || e.affectsConfiguration("extjsIntellisense.frameworkDirectory"))
+        {
+            const msg = "Path settings modified, re-index all files in all projects?",
+                  action = !this.isTests ? await window.showInformationMessage(msg, "Yes", "No") : "Yes";
+            if (action === "Yes") {
+                await commands.executeCommand("vscode-extjs:clearAst");
+                await this.initializeInternal();
+            }
         }
     }
 

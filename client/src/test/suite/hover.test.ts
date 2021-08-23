@@ -35,6 +35,14 @@ suite("Hover Tests", () =>
 	});
 
 
+	test("Re-index files", async () =>
+	{
+		await vscode.commands.executeCommand("vscode-extjs:indexFiles");
+		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
 	test("Classes", async () =>
 	{
 		await waitForValidation();
@@ -162,7 +170,7 @@ suite("Hover Tests", () =>
 });
 
 
-async function testHover(docUri: vscode.Uri, position: vscode.Position, commentString?: string, retry = 0)
+async function testHover(docUri: vscode.Uri, position: vscode.Position, commentString?: string, testDesc?: string, retry = 0)
 {
 	const actualHoverList = (await vscode.commands.executeCommand(
 		"vscode.executeHoverProvider",
@@ -187,14 +195,14 @@ async function testHover(docUri: vscode.Uri, position: vscode.Position, commentS
 
 	if (!hasTag && commentString && retry === 0) {
 		await sleep(500);
-		await testHover(docUri, position, commentString, ++retry);
+		await testHover(docUri, position, commentString, testDesc, ++retry);
 	}
 	else {
 		if (commentString) {
-			assert.ok(hasTag === true, new Error(`Tag not found in hover doc - ${commentString}`));
+			assert.ok(hasTag === true, new Error(`${testDesc ? testDesc + " - " : ""}Tag not found in hover doc - ${commentString}`));
 		}
 		else {
-			assert.ok(hasTag === false, new Error(`Tag found in hover doc - ${commentString}`));
+			assert.ok(hasTag === false, new Error(`${testDesc ? testDesc + " - " : ""}Tag found in hover doc`));
 		}
 	}
 }
