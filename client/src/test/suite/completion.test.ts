@@ -43,6 +43,15 @@ suite("Completion Tests", () =>
 	});
 
 
+	test("Dummy stage for p.o.s. random fails on first test", async () =>
+	{
+		await testCompletion(docUri, new vscode.Position(222, 1), "V", {
+			items: []
+		}, true, "no_fail");
+		await waitForValidation();
+	});
+
+
 	test("Inline property start", async () =>
 	{
 		//
@@ -606,15 +615,18 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	// 	});
 	// }
 
-	assert.ok(actualCompletionList.items.length >= expectedCompletionList.items.length);
+	if (testDesc !== "no_fail")
+	{
+		assert.ok(actualCompletionList.items.length >= expectedCompletionList.items.length);
 
-	expectedCompletionList.items.forEach((expectedItem, i) => {
-		assert.strictEqual(
-			actualCompletionList.items.filter((item) =>
-			{
-				return item.kind === expectedItem.kind && (item.label.replace(/ /g, "") === expectedItem.label.replace(/ /g, "") ||
-						item.insertText?.toString().replace(/ /g, "") === expectedItem.insertText?.toString().replace(/ /g, ""));
-			}).length, shouldShow ? 1 : 0, expectedItem.label + " not found" + (testDesc ? ` (${testDesc})` : "")
-		);
-	});
+		expectedCompletionList.items.forEach((expectedItem, i) => {
+			assert.strictEqual(
+				actualCompletionList.items.filter((item) =>
+				{
+					return item.kind === expectedItem.kind && (item.label.replace(/ /g, "") === expectedItem.label.replace(/ /g, "") ||
+							item.insertText?.toString().replace(/ /g, "") === expectedItem.insertText?.toString().replace(/ /g, ""));
+				}).length, shouldShow ? 1 : 0, expectedItem.label + " not found" + (testDesc ? ` (${testDesc})` : "")
+			);
+		});
+	}
 }
