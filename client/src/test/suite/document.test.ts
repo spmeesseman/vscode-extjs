@@ -3,7 +3,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import { deleteFile, writeFile } from "../../../../common/lib/fs";
 import { configuration } from "../../common/configuration";
-import { getDocUri, waitForValidation, activate, toRange, getDocPath } from "./helper";
+import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocContent } from "./helper";
 
 
 suite("Document Tests", () =>
@@ -69,6 +69,32 @@ suite("Document Tests", () =>
             "    }\r\n" +
             "});\r\n"
         );
+		await waitForValidation();
+	});
+
+
+	test("Change classname", async () =>
+	{   //
+		// Open non extjs doc outside of a classpath
+		//
+		await activate(getDocUri(newDocPath));
+		await waitForValidation();
+
+		insertDocContent("22", toRange(0, 25, 0, 25));
+		await waitForValidation();
+		await waitForValidation();
+
+		insertDocContent("33", toRange(0, 25, 0, 25));
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:waitReady");
+
+		insertDocContent("", toRange(0, 0, 6, 3));
+		await vscode.workspace.saveAll();
+		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:waitReady");
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
 	});
 

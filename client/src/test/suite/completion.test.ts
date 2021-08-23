@@ -42,7 +42,7 @@ suite("Completion Tests", () =>
 		catch {}
 	});
 
-
+/*
 	test("Inline property start", async () =>
 	{
 		//
@@ -512,6 +512,37 @@ suite("Completion Tests", () =>
 		}, true, "object 'type' configs and properties");
 	});
 
+*/
+	test("Property values", async () =>
+	{   //
+		// Line 167
+		// Within main object
+		// dockedItems: [
+		// {
+		//     xtype: "physiciandropdown"
+		// }...
+		//
+		await insertDocContent("\t\treadOnly:", toRange(166, 0, 166, 11));
+		await waitForValidation();
+
+		await testCompletion(docUri, new vscode.Position(166, 11), ":", {
+			items: [
+				{ label: "false", kind: vscode.CompletionItemKind.Value },
+				{ label: "true", kind: vscode.CompletionItemKind.Value }
+			]
+		}, true, "readOnly property values");
+
+		await insertDocContent("\t\tuserName:", toRange(166, 0, 166, 11));
+		await waitForValidation();
+
+		await testCompletion(docUri, new vscode.Position(166, 11), ":", {
+			items: [
+				{ label: "String Value", kind: vscode.CompletionItemKind.Value }
+			]
+		}, true, "userName property value");
+	});
+
+
 
 	test("Behind comments", async () =>
 	{
@@ -559,8 +590,8 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		triggerChar
 	)) as vscode.CompletionList;
 
-	// const logKind = "Class";
-	// const logDescRgx = /inherited (?:define|xtype) properties inside patient object/;
+	// const logKind = "Value";
+	// const logDescRgx = / property value/;
 	// if (testDesc && logDescRgx.test(testDesc))
 	// {
 	// 	console.log("####################################");

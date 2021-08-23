@@ -202,9 +202,10 @@ async function testSignature(docUri: vscode.Uri, position: vscode.Position, trig
 		triggerChar
 	)) as vscode.SignatureHelp;
 
-	assert.ok(actualSignatureHelp.signatures.length >= expectedSignatureHelp.signatures.length);
-	assert.ok(actualSignatureHelp.activeParameter === expectedSignatureHelp.activeParameter);
-	assert.ok(actualSignatureHelp.activeSignature === expectedSignatureHelp.activeSignature);
+	assert.ok(shouldHave ? actualSignatureHelp.signatures.length >= expectedSignatureHelp.signatures.length :
+						   actualSignatureHelp.signatures.length <= expectedSignatureHelp.signatures.length);
+	assert.ok(shouldHave ? actualSignatureHelp.activeParameter === expectedSignatureHelp.activeParameter : true);
+	assert.ok(shouldHave ? actualSignatureHelp.activeSignature === expectedSignatureHelp.activeSignature : true);
 
 	expectedSignatureHelp.signatures.forEach((expectedItem, i) =>
 	{
