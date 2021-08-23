@@ -227,9 +227,9 @@ suite("Config File Tests", () =>
 		// Reset
 		//
 		insertDocContent(`"frameworks":
-	{
-		"ext": "extjs"
-	},`, toRange(1, 4, 1, 4));
+    {
+        "ext": "extjs"
+    },`, toRange(1, 4, 1, 4));
 		await workspace.saveAll();
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
