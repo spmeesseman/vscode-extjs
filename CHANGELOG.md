@@ -1,5 +1,31 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.6.0 (August 23rd, 2021)
+
+### Bug Fixes
+
+- **Cache:** if an editor is closed within 'vaidationDelay' seconds after editing, changes are not persisted to fs cache
+- **Cache:** multiple projects that define xtypes and widgets with same name cause mappings to collide. remove all old mappings in favor of runtime cache filtering.
+- **Cache:** if component classes have the same namespace, defined xtypes and/or widgets in different projects in the same workspace, intellisenssnse breaks for those components.
+- **Parser:** editing the Ext.define class name causes multiple cache entries to be created, and does not remove the previous class name before having modified it.
+- **Parser:** if an ExtJs component definition file is copied and pasted or the entire contents is copied an pasted to another, the cache becomes corrupt.
+- **Hover:** methods with parameters on multiple lines show no hover doc
+- **Settings:** server logging level description reads 'set client logging level to...'
+
+### Documentation
+
+- **Readme:** add app-publisher plug section
+
+### Features
+
+- **General:** full intellisense for store 'type'
+- **Completion:** add support for store type hover
+- **Completion:** add support for store object completion by 'type' property.
+
+### Performance Enhancements
+
+- **Cache:** memory cache persists to fs cache only on document save
+
 ## Version 0.5.0 (August 21st, 2021)
 
 ### Bug Fixes
