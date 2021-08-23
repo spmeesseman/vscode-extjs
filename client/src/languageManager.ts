@@ -1045,6 +1045,7 @@ class ExtjsLanguageManager
             {
                 if (!_isIndexed(conf.baseDir))
                 {
+                    let pct = 0;
                     components = JSON.parse(storedComponents);
                     increment = Math.round(1 / components.length * cfgPct);
                     //
@@ -1054,12 +1055,24 @@ class ExtjsLanguageManager
                     {
                         processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
-                        const pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
+                        pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
                         progress?.report({
                             increment,
                             message: ": Indexing " + pct + "%"
                         });
                     }
+                    ++currentCfgIdx;
+                    const nextInc = (currentCfgIdx * cfgPct) - 1,
+                          nextInc2 = (currentCfgIdx * cfgPct) - 2;
+                    progress?.report({
+                        increment,
+                        message: ": Caching " + Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct)) + "%"
+                    });
+                    await this.serverRequest.loadExtJsComponent(JSON.stringify(components), projectName);
+                    progress?.report({
+                        increment,
+                        message: ": Caching " + Math.round(nextInc > pct ? nextInc : pct) + "%"
+                    });
                     await this.processComponents(components, projectName, false, "   ", logLevel + 1);
                     progress?.report({
                         increment,
@@ -1524,9 +1537,6 @@ class ExtjsLanguageManager
             ], logLevel + 3, logPad + "   ");
             log.write("   done processing component " + componentClass, logLevel + 1, logPad);
         }
-
-        log.write("   update server cache", logLevel, logPad);
-        await this.serverRequest.loadExtJsComponent(JSON.stringify(components), project);
 
         log.methodDone("process components", logLevel, logPad);
         return true;
