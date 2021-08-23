@@ -103,7 +103,9 @@ export function methodStart(msg: string, level?: number, logPad = "", doLogBlank
         write(logPad + "*start* " + msg, lLevel);
         if (params)
         {
-            blank(lLevel + 1);
+            if (doLogBlank === true) {
+                blank(lLevel);
+            }
             for (const [ n, v, l ] of params) {
                 value(logPad + "   " + n, v, l || lLevel + 1);
             }
