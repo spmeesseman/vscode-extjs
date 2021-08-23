@@ -11,7 +11,7 @@ import {
 } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, loadExtJsComponent } from "./syntaxTree";
 import { ISettings, defaultSettings } from  "../../common";
-import { validateExtJsDocument, validateExtJsFile } from "./validation";
+import { validateExtJsSyntax, validateExtJsFile } from "./validation";
 
 
 //
@@ -41,7 +41,7 @@ let globalSettings: ISettings = defaultSettings;
 //
 //
 documents.onDidChangeContent(change => {
-	validateExtJsDocument(change.document, connection, hasDiagnosticRelatedInformationCapability);
+	validateExtJsSyntax(change.document, connection, hasDiagnosticRelatedInformationCapability);
 });
 
 

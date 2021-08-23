@@ -4,7 +4,7 @@ import { extjsLangMgr } from "../extension";
 import { configuration } from "../common/configuration";
 import {
     ComponentType, DeclarationType, IComponent, IConfig, IExtJsBase, IMethod, IProperty,
-    utils, ast, IObjectRange
+    utils, ast, IObjectRange, extjs
 } from "../../../common";
 import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
@@ -576,7 +576,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
                 component.privates.filter((c) => !addedItems.includes(c.name)).forEach((c: IProperty | IMethod) =>
                 {
-                    const kind = utils.isProperty(c) ? CompletionItemKind.Property : CompletionItemKind.Method;
+                    const kind = extjs.isProperty(c) ? CompletionItemKind.Property : CompletionItemKind.Method;
                     completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, project, kind, false, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                     addedItems.push(c.name);
                     log.write("   added privates dot completion method", logLevel + 2);
@@ -589,7 +589,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             log.write("   Processing statics", logLevel + 1, logPad);
             component.statics.filter((c) => !addedItems.includes(c.name)).forEach((c: IProperty | IMethod) =>
             {
-                const kind = utils.isProperty(c) ? CompletionItemKind.Property : CompletionItemKind.Method;
+                const kind = extjs.isProperty(c) ? CompletionItemKind.Property : CompletionItemKind.Method;
                 completionItems.push(...this.createCompletionItem(c.name, c.componentClass, component.nameSpace, project, kind, true, false, false, undefined, position, document, logPad + "   ", logLevel + 1));
                 addedItems.push(c.name);
                 log.write("   added statics dot completion method", logLevel + 2);
@@ -1221,7 +1221,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // If it's a config and not a property
         //
-        if (utils.isConfig(cmp))
+        if (extjs.isConfig(cmp))
         {
             tagText += "config ";
             if (property.startsWith("get")) {
@@ -1254,7 +1254,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // Show/hide private properties according to user settings (default false)
         // If this property is hidden by user preference, this method exited already above.
         //
-        if ((utils.isProperty(cmp) || utils.isMethod(cmp)) && cmp.static)
+        if ((extjs.isProperty(cmp) || extjs.isMethod(cmp)) && cmp.static)
         {
             tagText += "(static) ";
         }

@@ -8,7 +8,10 @@ export enum ComponentType
     Widget = 1 << 3,
     Class = 1 << 4,
     Model = 1 << 5,
-    Store = 1 << 6
+    Store = 1 << 6,
+    Type = 1 << 7,
+    XType = 1 << 8,
+    Layout = 1 << 9
 }
 
 
@@ -116,6 +119,17 @@ export interface IConfig extends IPropertyBase
 }
 
 
+export interface ILogger
+{
+    error: (msg: string | (string|Error)[] | Error, params?: (string|any)[][]) => void;
+    methodStart: (msg: string, level?: number, logPad?: string, doLogBlank?: boolean, params?: (string|any)[][]) => void;
+    methodDone: (msg: string, level?: number, logPad?: string, doLogBlank?: boolean, params?: (string|any)[][]) => void;
+    write: (msg: string, level?: number, logPad?: string, force?: boolean) => void;
+    value: (msg: string, value: any, level?: number, logPad?: string) => void;
+    values: (values: (string|any)[][], level?: number, logPad?: string, doLogBlank?: boolean) => void;
+}
+
+
 export interface IMethod extends IProperty
 {
     bodyStart: IPosition;
@@ -198,6 +212,7 @@ export interface IRequire
 export interface IType extends IWidget
 {
     type: "type";
+    parentProperty: string;
 }
 
 
@@ -224,4 +239,5 @@ export interface IWidget extends IExtJsBase
 export interface IXtype extends IWidget
 {
     type: "xtype";
+    parentProperty: string;
 }

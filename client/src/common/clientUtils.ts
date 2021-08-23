@@ -102,6 +102,20 @@ export function getMethodByPosition(position: Position, component: IComponent)
 }
 
 
+export function getObjectRangePropertyValue(property: string, objectRange: IObjectRange, document: TextDocument)
+{   //
+    // Return last found, this will be the most inner object
+    //
+    const jso: any = {};
+    try {
+        JSON.parse(document.getText(toVscodeRange(objectRange.start, objectRange.end)));
+    }
+    catch {}
+    return jso[property];
+
+}
+
+
 export function getObjectRangeByPosition(position: Position, component: IComponent)
 {   //
     // Return last found, this will be the most inner object

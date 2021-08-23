@@ -217,6 +217,11 @@ Ext.define('VSCodeExtJS',
 				
 			}
 		}
+	},
+
+	layout:
+	{
+		type: 'vbox'
 	}
 
 });

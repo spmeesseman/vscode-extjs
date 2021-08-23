@@ -26,10 +26,10 @@ export function getComponentByAlias(alias: string, nameSpace: string, project: s
 				matched = a.name === alias;
 			}
 			else if (isAlias(a)) {
-				matched = a.name === alias || a.name === "widget." + alias;
+				matched = a.name === "widget." + alias;
 			}
 			else if (isType(a)) {
-				matched = a.name === alias || a.name === "store." + alias || a.name === "layout." + alias;
+				matched = a.name === "store." + alias || a.name === "layout." + alias;
 			}
 		}
 		return matched;
@@ -38,8 +38,8 @@ export function getComponentByAlias(alias: string, nameSpace: string, project: s
 	logger?.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace], ["project", project]]);
 
 	const component = components.find(c => c.aliases.find(a => _match(c, a))) ||
-					  components.find(c => c.xtypes.find(x => _match(c, x))) ||
-					  components.find(c => c.types.find(t => _match(c, t)));
+					  components.find(c => c.types.find(t => _match(c, t))) ||
+					  components.find(c => c.xtypes.find(x => _match(c, x)));
 
 	logger?.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
 	return component;

@@ -1,13 +1,21 @@
-export const extjsError = 1;
+const extjsError = 1;
+const xtypeNotFound = 2;
+const xtypeNoRequires = 3;
+const typeNotFound = 4;
+const typeNoRequires = 5;
+const classError = 8;
+const classNotFound = 9;
+const syntax = 1024;
+const syntaxAllCaps = 1025;
 
-export const xtypeNotFound = 2;
-export const xtypeNoRequires = 3;
-
-export const typeNotFound = 4;
-export const typeNoRequires = 5;
-
-export const classError = 8;
-export const classNotFound = 9;
-
-export const syntax = 1024;
-export const syntaxAllCaps = 1025;
+export {
+	extjsError,
+	xtypeNotFound,
+    xtypeNoRequires,
+    typeNotFound,
+    typeNoRequires,
+    classError,
+    classNotFound,
+    syntax,
+    syntaxAllCaps
+};

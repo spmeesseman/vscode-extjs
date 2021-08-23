@@ -101,7 +101,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 {
 	log.methodStart("validate extjs file text", 1, "", true);
 
-	const components = await parseExtJsFile(options.path, options.text, options.project, options.nameSpace);
+	const parsedComponents = await parseExtJsFile(options.path, options.text, options.project, options.nameSpace);
 	const diagnostics: Diagnostic[] = [];
 	const textObj = TextDocument.create(options.path, "javascript", 2, options.text);
 
@@ -111,7 +111,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 	//     1. xTypes
 	//     1. Method variables
 	//
-	components?.forEach(cmp =>
+	parsedComponents?.forEach(cmp =>
 	{
 		//
 		// Validate all the widget references for this class
@@ -192,11 +192,10 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 
 function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
-	const cmpRequires = cmp.requires,
-		  thisWidgetCls = extjs.getComponent(widget.name, cmp.nameSpace, cmp.project, components)?.componentClass,
+	const thisWidgetCls = extjs.getComponent(widget.name, cmp.nameSpace, cmp.project, components)?.componentClass,
 		  fsPath = URI.file(document.uri).fsPath,
-		  eNotFoundCode = widget.type === "type" ? ErrorCode.typeNotFound : ErrorCode.xtypeNotFound,
-		  eNoRequiresCode = widget.type === "type" ? ErrorCode.typeNoRequires : ErrorCode.xtypeNoRequires;
+		  eNotFoundCode = (ErrorCode as any)[`${widget.type}NotFound`],
+		  eNoRequiresCode = (ErrorCode as any)[`${widget.type}NoRequires`];
 	//
 	// Check ignored line (previous line), e.g.:
 	//
@@ -276,7 +275,7 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 			const requires = [],
 				  requiredXtypes: string[] = [];
 			let thisXType: string | undefined;
-			requires.push(...(cmpRequires?.value || []));
+			requires.push(...(cmp.requires?.value || []));
 
 			//
 			// Ignore if this is the defined xtype of the component itself
@@ -286,11 +285,17 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 			}
 			else if (requires.length > 0)
 			{
-				const requiredXtypes: string[] = [];
+				// const requiredXtypes: string[] = [];
 				for (const require of requires)
 				{
 					if (require.name !== thisWidgetCls) {
-						requiredXtypes.push(...(components.find(c => c.componentClass === require.name && c.project === cmp.project)?.widgets.map(w => w.name) || []));
+						const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
+						const requiredCmp = components.find(c => c.componentClass === require.name && c.project === cmp.project);
+						if (requiredCmp) {
+							requiredXtypes.push(...(requiredCmp.aliases.map(s => s.name.replace(aliasNsReplaceRegex, "")) || []));
+							requiredXtypes.push(...(requiredCmp.types.map(t => t.name.replace(aliasNsReplaceRegex, "")) || []));
+							requiredXtypes.push(...(requiredCmp.xtypes.map(x => x.name.replace(aliasNsReplaceRegex, "")) || []));
+						}
 					}
 					else {
 						thisXType = widget.name;
@@ -388,41 +393,55 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument)
 {
 	const suggestions: string[] = [];
+	const _add = (aliases: IWidget[]) =>
+	{
+		aliases.map(a => a.name).forEach(a =>
+		{   //
+			// Don''t expect the user to misspell by more than a character or two, so apply
+			// a 2 character threshold on the length of the strings that we should compare
+			//
+			// Max 5 suggestions
+			//
+			if (a.length < text.length - 2 || a.length > text.length + 2 || suggestions.length >= 5) {
+				return;
+			}
+
+			const componentPart1 = a.substring(0, a.length / 2),
+				componentPart2 = a.substring(a.length / 2),
+				textPart1 = text.substring(0, text.length / 2),
+				textPart2 = text.substring(text.length / 2);
+
+			if (a.indexOf(text) === 0) {
+				suggestions.push(a);
+			}
+			else if (text.indexOf(a) === 0) {
+				suggestions.push(a);
+			}
+			else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
+				suggestions.push(a);
+			}
+			else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
+				suggestions.push(a);
+			}
+			else if (a.match(new RegExp(`${textPart1}[\\w]+`))) {
+				suggestions.push(a);
+			}
+			else if (a.match(new RegExp(`[\\w]+${textPart2}`))) {
+				suggestions.push(a);
+			}
+		});
+	};
+
 	//
 	// See if some suggestions can be made...
 	//
-	components.map(c => c.componentClass).every(component =>
-	{   //
-		// Don''t expect the user to misspell by more than a character or two, so apply
-		// a 2 character threshold on the length of the strings that we should compare
-		//
-		// Max 5 suggestions
-		//
-		if (component.length < text.length - 2 || component.length > text.length + 2 || suggestions.length >= 5) {
-			return false;
-		}
-		const componentPart1 = component.substring(0, component.length / 2),
-			componentPart2 = component.substring(component.length / 2),
-			textPart1 = text.substring(0, text.length / 2),
-			textPart2 = text.substring(text.length / 2);
-
-		if (component.indexOf(text) === 0) {
-			suggestions.push(component);
-		}
-		else if (text.indexOf(component) === 0) {
-			suggestions.push(component);
-		}
-		else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
-			suggestions.push(component);
-		}
-		else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
-			suggestions.push(component);
-		}
-		else if (component.match(new RegExp(`${textPart1}[\\w]+`))) {
-			suggestions.push(component);
-		}
-		else if (component.match(new RegExp(`[\\w]+${textPart2}`))) {
-			suggestions.push(component);
+	components.forEach(component =>
+	{
+		if (suggestions.length < 5)
+		{
+			_add(component.aliases);
+			_add(component.types);
+			_add(component.xtypes);
 		}
 	});
 
