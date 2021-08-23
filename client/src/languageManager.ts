@@ -986,7 +986,7 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexAll(progress?: Progress<any>, project?: string, logPad = "", logLevel = 1)
+    private async indexAll(progress: Progress<any>, project?: string, logPad = "", logLevel = 1)
     {
         log.methodStart("index all", logLevel, logPad, true, [
             [ "project", project ], [ "# of configs", this.config.length ]
@@ -1031,7 +1031,7 @@ class ExtjsLanguageManager
                 }
             }
 
-            progress?.report({
+            progress.report({
                 increment: 0,
                 message: `: Scanning project ${projectName}`
             });
@@ -1056,7 +1056,7 @@ class ExtjsLanguageManager
                         processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
                         pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
-                        progress?.report({
+                        progress.report({
                             increment,
                             message: ": Indexing " + pct + "%"
                         });
@@ -1064,17 +1064,17 @@ class ExtjsLanguageManager
                     ++currentCfgIdx;
                     const nextInc = (currentCfgIdx * cfgPct) - 1,
                           nextInc2 = (currentCfgIdx * cfgPct) - 2;
-                    progress?.report({
+                    progress.report({
                         increment,
                         message: ": Caching " + Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct)) + "%"
                     });
                     await this.serverRequest.loadExtJsComponent(JSON.stringify(components), projectName);
-                    progress?.report({
+                    progress.report({
                         increment,
                         message: ": Caching " + Math.round(nextInc > pct ? nextInc : pct) + "%"
                     });
                     await this.processComponents(components, projectName, false, "   ", logLevel + 1);
-                    progress?.report({
+                    progress.report({
                         increment,
                         message: Math.round(++currentCfgIdx * cfgPct) + "%"
                     });
@@ -1135,7 +1135,7 @@ class ExtjsLanguageManager
                             // Report progress
                             //
                             const pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
-                            progress?.report({
+                            progress.report({
                                 increment,
                                 message: ": Indexing " + pct + "%"
                             });
@@ -1153,7 +1153,7 @@ class ExtjsLanguageManager
                     await storage.update(storageKey + "_TIMESTAMP", new Date());
                 }
 
-                progress?.report({
+                progress.report({
                     increment,
                     message: ": Indexing " + Math.round(++currentCfgIdx * cfgPct) + "%"
                 });
