@@ -1,8 +1,8 @@
 
 import { Connection, Diagnostic, DiagnosticSeverity, Range, DocumentUri } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { parseExtJsFile, componentClassToWidgetsMapping, widgetToComponentClassMapping } from "./syntaxTree";
-import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses } from "../../common";
+import { parseExtJsFile, components } from "./syntaxTree";
+import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, extjs, IWidget } from "../../common";
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
 import * as log from "./log";
@@ -36,7 +36,7 @@ function isErrorIgnored(code: number, fsPath: string): boolean
  * @param connection Client connection object
  * @param diagRelatedInfoCapability Specifies if the client has diagnostic related information capability
  */
-export async function validateExtJsDocument(textDocument: TextDocument, connection: Connection, diagRelatedInfoCapability: boolean, sendToClient?: boolean): Promise<Diagnostic[]>
+export async function validateExtJsSyntax(textDocument: TextDocument, connection: Connection, diagRelatedInfoCapability: boolean, sendToClient?: boolean): Promise<Diagnostic[]>
 {
 	const text = textDocument.getText(),
 		  diagnostics: Diagnostic[] = [];
@@ -114,12 +114,15 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 	components?.forEach(cmp =>
 	{
 		//
-		// Validate xtypes
+		// Validate all the widget references for this class
 		//
 		if (globalSettings.validateXTypes)
 		{
-			cmp.widgets.filter(w => w.type !== "alias").forEach((w) => {
-				validateXtype(w.type, w.name, cmp, toVscodeRange(w.start, w.end), diagRelatedInfoCapability, textObj, diagnostics);
+			cmp.widgets.filter(w => w.type === "xtype").forEach((w) => {
+				validateXtype(w, cmp, toVscodeRange(w.start, w.end), diagRelatedInfoCapability, textObj, diagnostics);
+			});
+			cmp.widgets.filter(w => w.type === "type").forEach((w) => {
+				validateXtype(w, cmp, toVscodeRange(w.start, w.end), diagRelatedInfoCapability, textObj, diagnostics);
 			});
 		}
 
@@ -153,7 +156,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 	//
 	// General syntax processing
 	//
-	const locDiag = await validateExtJsDocument(textObj, connection, diagRelatedInfoCapability, false);
+	const locDiag = await validateExtJsSyntax(textObj, connection, diagRelatedInfoCapability, false);
 	if (locDiag.length > 0) {
 		diagnostics.push(...locDiag);
 	}
@@ -187,15 +190,13 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 }
 
 
-function validateXtype(propertyName: string, xtype: string, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
 	const cmpRequires = cmp.requires,
-		  xtypeId = (propertyName === "type" ? "store." + xtype : xtype).replace("widget.", ""),
-		  thisWidgetCls = widgetToComponentClassMapping[cmp.nameSpace][xtypeId] || widgetToComponentClassMapping.Ext[xtypeId],
+		  thisWidgetCls = extjs.getComponent(widget.name, cmp.nameSpace, cmp.project, components)?.componentClass,
 		  fsPath = URI.file(document.uri).fsPath,
-		  eNotFoundCode = propertyName === "type" ? ErrorCode.typeNotFound : ErrorCode.xtypeNotFound,
-		  eNoRequiresCode = propertyName === "type" ? ErrorCode.typeNoRequires : ErrorCode.xtypeNoRequires;
-
+		  eNotFoundCode = widget.type === "type" ? ErrorCode.typeNotFound : ErrorCode.xtypeNotFound,
+		  eNoRequiresCode = widget.type === "type" ? ErrorCode.typeNoRequires : ErrorCode.xtypeNoRequires;
 	//
 	// Check ignored line (previous line), e.g.:
 	//
@@ -241,20 +242,20 @@ function validateXtype(propertyName: string, xtype: string, cmp: IComponent, ran
 			const diagnostic: Diagnostic = {
 				severity: DiagnosticSeverity.Error,
 				range,
-				message: `The referenced ${propertyName} "${xtype}" was not found.`,
+				message: `The referenced ${widget.type} "${widget.name}" was not found.`,
 				source: "vscode-extjs",
 				code: eNotFoundCode
 			};
 
 			if (diagRelatedInfoCapability) {
-				addSuggestions(diagnostic, xtype, document, widgetToComponentClassMapping);
+				addSuggestions(diagnostic, widget.name, document);
 			}
 
 			diagnostics.push(diagnostic);
 		}
 	}
 
-	if (utils.isNeedRequire(thisWidgetCls, componentClassToWidgetsMapping) && ignoreText !== `/** vscode-extjs-ignore-${eNoRequiresCode} */`)
+	if (extjs.isNeedRequire(thisWidgetCls, components) && ignoreText !== `/** vscode-extjs-ignore-${eNoRequiresCode} */`)
 	{   //
 		// Check global/file ignore for this error type
 		//
@@ -281,7 +282,7 @@ function validateXtype(propertyName: string, xtype: string, cmp: IComponent, ran
 			// Ignore if this is the defined xtype of the component itself
 			//
 			if (thisWidgetCls === cmp.componentClass) {
-				requiredXtypes.push(xtype);
+				requiredXtypes.push(widget.name);
 			}
 			else if (requires.length > 0)
 			{
@@ -289,20 +290,20 @@ function validateXtype(propertyName: string, xtype: string, cmp: IComponent, ran
 				for (const require of requires)
 				{
 					if (require.name !== thisWidgetCls) {
-						requiredXtypes.push(...(componentClassToWidgetsMapping[cmp.nameSpace][require.name] || componentClassToWidgetsMapping.Ext[require.name] || []));
+						requiredXtypes.push(...(components.find(c => c.componentClass === require.name && c.project === cmp.project)?.widgets.map(w => w.name) || []));
 					}
 					else {
-						thisXType = xtype;
+						thisXType = widget.name;
 					}
 				}
 			}
 
-			if (!requiredXtypes.includes(xtype) && xtype !== thisXType)
+			if (!requiredXtypes.includes(widget.name) && widget.name !== thisXType)
 			{
 				const diagnostic: Diagnostic = {
 					severity: DiagnosticSeverity.Warning,
 					range,
-					message: `The referenced ${propertyName} "${xtype}" does not have a corresponding requires directive.`,
+					message: `The referenced ${widget.type} "${widget.name}" does not have a corresponding requires directive.`,
 					source: "vscode-extjs",
 					code: eNoRequiresCode
 				};
@@ -340,8 +341,7 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 
 	for (const require of requires)
 	{
-		const thisWidgetCls = componentClassToWidgetsMapping[cmp.nameSpace][require.name] || componentClassToWidgetsMapping.Ext[require.name] ||
-		                      widgetToComponentClassMapping[cmp.nameSpace][require.name] || widgetToComponentClassMapping.Ext[require.name];
+		const thisWidgetCls = extjs.getComponent(require.name, cmp.nameSpace, cmp.project, components)?.componentClass;
 		if (thisWidgetCls) { // if we have a mapping, then no diagnostic
 			continue;
 		}
@@ -377,7 +377,7 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 				code: ErrorCode.classNotFound
 			};
 			if (diagRelatedInfoCapability) {
-				addSuggestions(diagnostic, require.name, document, componentClassToWidgetsMapping);
+				addSuggestions(diagnostic, require.name, document);
 			}
 			diagnostics.push(diagnostic);
 		}
@@ -385,53 +385,46 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 }
 
 
-function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument, mapping: { [nameSpace: string]: { [widget: string]:  (string[]|string) | undefined }})
+function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument)
 {
 	const suggestions: string[] = [];
 	//
 	// See if some suggestions can be made...
 	//
-	for (const nameSpace in mapping)
-	{
-		for (const component in mapping[nameSpace])
-		{   //
-			// Don''t expect the user to misspell by more than a character or two, so apply
-			// a 2 character threshold on the length of the strings that we should compare
-			//
-			if (component.length < text.length - 2 || component.length > text.length + 2) {
-				continue;
-			}
-			const componentPart1 = component.substring(0, component.length / 2),
-				componentPart2 = component.substring(component.length / 2),
-				textPart1 = text.substring(0, text.length / 2),
-				textPart2 = text.substring(text.length / 2);
-
-			if (component.indexOf(text) === 0) {
-				suggestions.push(component);
-			}
-			else if (text.indexOf(component) === 0) {
-				suggestions.push(component);
-			}
-			else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
-				suggestions.push(component);
-			}
-			else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
-				suggestions.push(component);
-			}
-			else if (component.match(new RegExp(`${textPart1}[\\w]+`))) {
-				suggestions.push(component);
-			}
-			else if (component.match(new RegExp(`[\\w]+${textPart2}`))) {
-				suggestions.push(component);
-			}
-			//
-			// Max 5 suggestions
-			//
-			if (suggestions.length >= 5) {
-				break;
-			}
+	components.map(c => c.componentClass).every(component =>
+	{   //
+		// Don''t expect the user to misspell by more than a character or two, so apply
+		// a 2 character threshold on the length of the strings that we should compare
+		//
+		// Max 5 suggestions
+		//
+		if (component.length < text.length - 2 || component.length > text.length + 2 || suggestions.length >= 5) {
+			return false;
 		}
-	}
+		const componentPart1 = component.substring(0, component.length / 2),
+			componentPart2 = component.substring(component.length / 2),
+			textPart1 = text.substring(0, text.length / 2),
+			textPart2 = text.substring(text.length / 2);
+
+		if (component.indexOf(text) === 0) {
+			suggestions.push(component);
+		}
+		else if (text.indexOf(component) === 0) {
+			suggestions.push(component);
+		}
+		else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
+			suggestions.push(component);
+		}
+		else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
+			suggestions.push(component);
+		}
+		else if (component.match(new RegExp(`${textPart1}[\\w]+`))) {
+			suggestions.push(component);
+		}
+		else if (component.match(new RegExp(`[\\w]+${textPart2}`))) {
+			suggestions.push(component);
+		}
+	});
 
 	if (suggestions.length > 0)
 	{

@@ -1,4 +1,9 @@
 
+AST Parser:
+
+	✔ Store property 'type' and mappings @done(21-08-21 09:22)
+	☐ Additional roperties needed for models
+
 Completion:
 
 	✔ xtype cmopletion is displaying outside of blocks, i.e. comments @done(21-08-20 23:51)
@@ -19,9 +24,18 @@ Completion:
 		i.e. "VSCodeExtJS." should not display "testFn" unless it was a singleton or the method was in a 'statics' block
 	✔ Implement 'singleton' - display on classname typing, not instance @done(21-08-21 08:54)
 	✔ Implement 'statics' block - display on classname typing, not instance @done(21-08-18 20:35)
+	✔ Completion for store 'type' same as 'xtype' @done(21-08-21 14:19)
 	☐ Should work for a string in a requires/uses/models/stores block should display the doc for that class
+	☐ Static create() for stores/models/?
 	✔ The 'privates' block should be applied to instance components @done(21-08-21 03:51)
+	☐ Models.  And the special config applied to 'fields'.
+		object completion showing model fields as opposed to properties/configs
 	☐ Model property getter/setter when using associations
+
+Definition:
+
+	✔ Store - go to definition for 'type' same as 'xtype' @done(21-08-21 18:54)
+	☐ Models
 
 Diagnostics:
 
@@ -32,15 +46,23 @@ Diagnostics:
 	✔ Requires - marks onvalid when a class reference is to an alternateClassName @done(21-08-13 15:33)
 		e.g. App.model.user.User as alternate but namespace sees App.model.User
 	☐ Method parameter validation against types in jsdoc
+	✔ Store diagnostics for 'type' same as 'xtype' @done(21-08-22 00:01)
 	☐ The 'models' and 'stores' property in Application.js should be validated like 'requires' and 'uses'
 	☐ the 'uses' validation should have separate error code from 'requires'
 	☐ 'mixins' property.  same validation as for requires[] and uses[].  separate error code. (see above too)
+	☐ Store - for 'model' field
+	☐ The 'type' property is not validated right if not a store, i.e. 'layout' config "type: 'vbox'"
+		map type aliases i.e. 'store.', 'layout.', etc
+	☐ Model fields
+	☐ Don't use inline Ext.define in controller files
 
 JsDoc:
 
 	☐ If jsdoc isn't present for an overridden method, then check for parent method jsdoc
 	☐ Handle the @inheritdoc tag
 	☐ Handle links
+	☐ Make type doc line class part a link
+		i.e. 'class component: Ext.Component', make Ext.Component a gotto def link 
 	☐ Hovering over a string in a requires/uses/models/stores block should display the doc for that class
 		GoTo Def does.
 
@@ -48,7 +70,7 @@ Miscellaneous:
 
 	✔ add 'clear ast cache' or 'reindex' task for chance becomes corrupt @done(21-08-08 14:15)
 	☐ goto definition for jsdoc parameter types (surrounded with{})
-	☐ Configs and variable level cache mappings need to be separated by a 3rd project dimension @high
+	✔ Configs and variable level cache mappings need to be separated by a 3rd project dimension @high @done(21-08-23 16:00)
 		Separate again using project name (workspace dir name)
 		currently only [namespace][componentname].  needs to be [project][namespace][componentname]
 	✔ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json) @done(21-08-13 16:52)
@@ -69,20 +91,11 @@ Miscellaneous:
 		Can be parsed for active document only (I think).
 		remove todo comment in the code
 
-Models:
+Signature:
 
-	☐ AST parsing any additional properties
-	☐ completion for associations
-	☐ go to definition for 'type' same as 'xtype'
-	☐ go to type definition for 'type' same as 'xtype'
-	☐ object completion showing model fields as opposed to properties/configs
+	☐ Static create() for stores/models/?
 
-Stores:
+Type Definition:
 
-	✔ AST parsing (property 'type' and mappings) @done(21-08-21 09:22)
-	✔ diagnostics for 'type' same as 'xtype' @done(21-08-22 00:01)
-	☐ diagnostic for 'model' field
-	☐ completion/signature for static create()
-	✔ completion for 'type' same as 'xtype' @done(21-08-21 14:19)
-	✔ go to definition for 'type' same as 'xtype' @done(21-08-21 18:54)
 	✔ go to type definition for 'type' same as 'xtype' @done(21-08-21 18:54)
+	☐ Models

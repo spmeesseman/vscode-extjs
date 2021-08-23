@@ -1,4 +1,4 @@
-import { IComponent, IConfig, IMethod, IProperty } from "./interface";
+import { IAlias, IComponent, IConfig, IMethod, IProperty, IType, IWidget, IXtype } from "./interface";
 
 export function atob(str: string): string
 {
@@ -9,12 +9,6 @@ export function atob(str: string): string
 export function btoa(str: string): string
 {
     return Buffer.from(str, "binary").toString("base64");
-}
-
-
-export function isConfig(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IConfig
-{
-    return !!component && "getter" in component;
 }
 
 
@@ -37,18 +31,6 @@ export function isLowerCase(value: string)
 }
 
 
-export function isMethod(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IMethod
-{
-    return !!component && "variables" in component;
-}
-
-
-export function isNeedRequire(componentClass: string | undefined, mapping: { [nameSpace: string]: { [cls: string]:  (string[]|string) | undefined }})
-{
-    return !(!componentClass || (componentClass.startsWith("Ext.") && mapping.Ext[componentClass]));
-}
-
-
 export function isNumeric(value: string | number): boolean
 {
     try {
@@ -64,12 +46,6 @@ export function isNumeric(value: string | number): boolean
 export function isObject(value: any): value is string
 {
     return value && value instanceof Object || typeof value === "object";
-}
-
-
-export function isProperty(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IProperty
-{
-    return !!component && !("variables" in component) && !("getter" in component);
 }
 
 
