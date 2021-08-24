@@ -247,7 +247,7 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 			};
 
 			if (diagRelatedInfoCapability) {
-				addSuggestions(diagnostic, widget.name, document);
+				addXTypeSuggestions(diagnostic, widget.name, document);
 			}
 
 			diagnostics.push(diagnostic);
@@ -381,7 +381,7 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 				code: ErrorCode.classNotFound
 			};
 			if (diagRelatedInfoCapability) {
-				addSuggestions(diagnostic, require.name, document);
+				addClassSuggestions(diagnostic, require.name, document);
 			}
 			diagnostics.push(diagnostic);
 		}
@@ -389,46 +389,78 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 }
 
 
-function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument)
+function addSuggestion(a: string, text: string, suggestions: string[])
+{
+	//
+	// Don''t expect the user to misspell by more than a character or two, so apply
+	// a 2 character threshold on the length of the strings that we should compare
+	//
+	// Max 5 suggestions
+	//
+	if (a.length < text.length - 2 || a.length > text.length + 2 || suggestions.length >= 5) {
+		return;
+	}
+
+	const componentPart1 = a.substring(0, a.length / 2),
+		componentPart2 = a.substring(a.length / 2),
+		textPart1 = text.substring(0, text.length / 2),
+		textPart2 = text.substring(text.length / 2);
+
+	if (a.indexOf(text) === 0) {
+		suggestions.push(a);
+	}
+	else if (text.indexOf(a) === 0) {
+		suggestions.push(a);
+	}
+	else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
+		suggestions.push(a);
+	}
+	else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
+		suggestions.push(a);
+	}
+	else if (a.match(new RegExp(`${textPart1}[\\w]+`))) {
+		suggestions.push(a);
+	}
+	else if (a.match(new RegExp(`[\\w]+${textPart2}`))) {
+		suggestions.push(a);
+	}
+}
+
+
+function addClassSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument)
 {
 	const suggestions: string[] = [];
 	const _add = (aliases: IWidget[]) =>
 	{
-		aliases.map(a => a.name).forEach(a =>
-		{   //
-			// Don''t expect the user to misspell by more than a character or two, so apply
-			// a 2 character threshold on the length of the strings that we should compare
-			//
-			// Max 5 suggestions
-			//
-			if (a.length < text.length - 2 || a.length > text.length + 2 || suggestions.length >= 5) {
-				return;
-			}
+		aliases.map(a => a.name).forEach(a => addSuggestion(a, text, suggestions));
+	};
 
-			const componentPart1 = a.substring(0, a.length / 2),
-				componentPart2 = a.substring(a.length / 2),
-				textPart1 = text.substring(0, text.length / 2),
-				textPart2 = text.substring(text.length / 2);
+	//
+	// See if some suggestions can be made...
+	//
+	components.map(c => c.componentClass).forEach(cls => addSuggestion(cls, text, suggestions));
 
-			if (a.indexOf(text) === 0) {
-				suggestions.push(a);
-			}
-			else if (text.indexOf(a) === 0) {
-				suggestions.push(a);
-			}
-			else if (text.match(new RegExp(`${componentPart1}[\\w]+`))) {
-				suggestions.push(a);
-			}
-			else if (text.match(new RegExp(`[\\w]+${componentPart2}`))) {
-				suggestions.push(a);
-			}
-			else if (a.match(new RegExp(`${textPart1}[\\w]+`))) {
-				suggestions.push(a);
-			}
-			else if (a.match(new RegExp(`[\\w]+${textPart2}`))) {
-				suggestions.push(a);
-			}
-		});
+	if (suggestions.length > 0)
+	{
+		diagnostic.relatedInformation = [
+		{
+			location: {
+				uri: document.uri,
+				range: { ...diagnostic.range }
+			},
+			message: "Did you mean: " + suggestions.join(", ")
+		}];
+	}
+}
+
+
+
+function addXTypeSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument)
+{
+	const suggestions: string[] = [];
+	const _add = (aliases: IWidget[]) =>
+	{
+		aliases.map(a => a.name).forEach(a => addSuggestion(a, text, suggestions));
 	};
 
 	//
