@@ -33,7 +33,8 @@ if (process.platform === "linux")
 
 export async function run(): Promise<void>
 {
-    const testsRoot = path.resolve(__dirname, "..", "..", "..");
+    // const testsRoot = path.resolve(__dirname, "..", "..", "..");
+    const testsRoot = __dirname;
     // Setup coverage pre-test, including post-test hook to report
     const nyc = new NYC(
     {
