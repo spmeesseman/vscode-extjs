@@ -222,6 +222,14 @@ Ext.define('VSCodeExtJS',
 	layout:
 	{
 		type: 'vbox'
+	},
+
+	testFn11: function()
+	{
+		VSCodeExtJS.common.PhysicianDropdown.stopAllPriv();
+		someMethod();
+		someClass.someMethod();
+		VSCodeExtJS.common.PhysicianDropdown.badFnToCall();
 	}
 
 });

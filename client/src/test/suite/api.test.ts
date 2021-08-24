@@ -1,4 +1,6 @@
 import { commands } from "vscode";
+import { configuration } from "../../common/configuration";
+import { quoteChar } from "../../common/clientUtils";
 import { extjsLangMgr } from "../../extension";
 import { activate, waitForValidation } from "./helper";
 
@@ -46,6 +48,19 @@ suite("API Tests", () =>
 		await waitForValidation();
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
+	test("Configuration", async() =>
+	{   //
+		// Do some settings manipulation that'll improve coverage...
+		//
+		const qChar = configuration.get<string>("quoteCharacter", "single");
+		await configuration.update("quoteCharacter", "single");
+		quoteChar();
+		await configuration.update("quoteCharacter", "double");
+		quoteChar();
+		await configuration.update("quoteCharacter", qChar);
 	});
 
 });

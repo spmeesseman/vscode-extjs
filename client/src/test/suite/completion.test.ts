@@ -45,7 +45,7 @@ suite("Completion Tests", () =>
 
 	test("Dummy stage for p.o.s. random fails on first test", async () =>
 	{
-		await testCompletion(docUri, new vscode.Position(222, 1), "V", {
+		await testCompletion(docUri, new vscode.Position(95, 3), "", {
 			items: []
 		}, true, "no_fail");
 		await waitForValidation();

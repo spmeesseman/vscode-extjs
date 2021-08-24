@@ -126,7 +126,41 @@ suite("Method Signature Tests", () =>
 	});
 
 
-	test("Multi Inline method call", async () =>
+	test("Class private methods", async () =>
+	{
+		const incPrivate = configuration.get<boolean>("intellisenseIncludePrivate");
+		await configuration.update("intellisenseIncludePrivate", true);
+
+		//
+		// Line 229
+		// VSCodeExtJS.common.PhysicianDropdown.stopAllPriv();
+		//
+		await testSignature(docUri, new vscode.Position(228, 51), "(", {
+			activeParameter: 0,
+			activeSignature: 0,
+			signatures: getSigInfo("defaultName, force, exitOnError")
+		});
+		//
+		// Insert a first parameter, and trigger the signature helper again, we should then be
+		// on parameter #2...
+		//
+		await insertDocContent("\"me\",", toRange(228, 51, 228, 51));
+		await waitForValidation();
+
+		await testSignature(docUri, new vscode.Position(228, 56), ",", {
+			activeParameter: 1,
+			activeSignature: 0,
+			signatures: getSigInfo("defaultName, force, exitOnError")
+		});
+
+		await insertDocContent("", toRange(228, 51, 228, 56));
+		await waitForValidation();
+
+		await configuration.update("intellisenseIncludePrivate", incPrivate);
+	});
+
+
+	test("Method as a parameter", async () =>
 	{
 		//
 		// Line 109
@@ -176,6 +210,75 @@ suite("Method Signature Tests", () =>
 			activeSignature: 0,
 			signatures: getSigInfo("a, b")
 		}, false);
+
+		//
+		// Line 230
+		// someMethod();
+		//
+		await testSignature(docUri, new vscode.Position(229, 13), "(", {
+			activeParameter: 0,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+		//
+		// Insert a first parameter, and trigger the signature helper again
+		//
+		await insertDocContent("\"me\",", toRange(229, 13, 229, 13));
+		await waitForValidation();
+		await testSignature(docUri, new vscode.Position(229, 18), ",", {
+			activeParameter: 1,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+		await insertDocContent("", toRange(229, 13, 229, 18));
+		await waitForValidation();
+
+		//
+		// Line 231
+		// someClass.someMethod();
+		//
+		await testSignature(docUri, new vscode.Position(230, 23), "(", {
+			activeParameter: 0,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+		//
+		// Insert a first parameter, and trigger the signature helper again
+		//
+		await insertDocContent("\"me\",", toRange(230, 23, 230, 23));
+		await waitForValidation();
+		await testSignature(docUri, new vscode.Position(230, 28), ",", {
+			activeParameter: 1,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+		await insertDocContent("", toRange(230, 23, 230, 28));
+		await waitForValidation();
+
+		//
+		// Line 229
+		// VSCodeExtJS.common.PhysicianDropdown.badFnToCall();
+		//
+		await testSignature(docUri, new vscode.Position(231, 51), "(", {
+			activeParameter: 0,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+		//
+		// Insert a first parameter, and trigger the signature helper again, we should then be
+		// on parameter #2...
+		//
+		await insertDocContent("\"me\",", toRange(231, 51, 231, 51));
+		await waitForValidation();
+
+		await testSignature(docUri, new vscode.Position(231, 56), ",", {
+			activeParameter: 1,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+
+		await insertDocContent("", toRange(231, 51, 231, 56));
+		await waitForValidation();
     });
 
 });
