@@ -75,7 +75,7 @@ suite("Document Tests", () =>
 
 	test("Change classname", async () =>
 	{   //
-		// Open non extjs doc outside of a classpath
+		// Inline changing of class name in Ext.define()
 		//
 		await activate(getDocUri(newDocPath));
 		await waitForValidation();

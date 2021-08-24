@@ -95,6 +95,10 @@ Ext.define('VSCodeExtJS.common.PhysicianDropdown',
 		{
 			return privateVariable;
 		}
-	}
+	},
+
+    mixins: [
+        'VSCodeExtJS.mixins.ColorLogger'
+    ]
 
 });

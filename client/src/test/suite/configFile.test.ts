@@ -181,7 +181,7 @@ suite("Config File Tests", () =>
 
 	test("Workspace.json package.dir", async function()
 	{
-		this.timeout(45 * 1000);
+		this.timeout(60 * 1000);
 		//
 		// Remove packages.dir property
 		//
@@ -214,6 +214,7 @@ suite("Config File Tests", () =>
 
 	test("Workspace.json frameworks.ext", async function()
 	{
+		this.timeout(60 * 1000);
 		//
 		// Remove frameworks.ext property
 		//

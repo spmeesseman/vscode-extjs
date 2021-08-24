@@ -93,19 +93,7 @@
             ],
             "preLaunchTask": "npm: test:before",
             "postDebugTask": "npm: test:after"
-        },
-		{
-			"name": "Language Server E2E Test",
-			"type": "extensionHost",
-			"request": "launch",
-			"runtimeExecutable": "${execPath}",
-			"args": [
-				"--extensionDevelopmentPath=${workspaceRoot}",
-				"--extensionTestsPath=${workspaceFolder}/client/test/suite/index",
-				"${workspaceRoot}/client/testFixture"
-			],
-			"outFiles": ["${workspaceFolder}/dist/client/test/**/*.js"]
-		}
+        }
 
 		// {
 		// 	"type": "extensionHost",

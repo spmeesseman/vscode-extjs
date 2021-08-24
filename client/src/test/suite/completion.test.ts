@@ -234,6 +234,18 @@ suite("Completion Tests", () =>
 				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
+		//
+		// Line 82
+		// const pin = phys.getPinNumber();
+		//
+		await testCompletion(docUri, new vscode.Position(81, 19), ".", {
+			items: [
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method },
+				// { label: "getPinNumberInternal (private)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
+			]
+		});
 		await configuration.update("intellisenseIncludeDeprecated", incDeprecated);
 		await configuration.update("intellisenseIncludePrivate", incPrivate);
 	});
@@ -345,7 +357,7 @@ suite("Completion Tests", () =>
 		});
 		//
 		// Line 121-123 - should return nothing, since the component is defined
-		// in the 1st argument to Ext.create
+		// in the 1st argument to Ext.create, no 'xtype: ...' items
 		//
 		// const patient = Ext.create('VSCodeExtJS.common.PatientDropdown', {
 		//
@@ -579,10 +591,27 @@ suite("Completion Tests", () =>
 
 
 	test("No completion", async () =>
-	{
+	{	//
+		// Outside object range
+		//
 		await testCompletion(docUri, new vscode.Position(222, 1), "V", {
 			items: []
 		}, true, "outside completion ranges");
+		await waitForValidation();
+
+		//
+		// Open non extjs doc outside of a classpath
+		//
+		const jssUri = getDocUri("app/js/script1.js");
+		const doc = await vscode.workspace.openTextDocument(jssUri);
+		await vscode.window.showTextDocument(doc);
+		assert(vscode.window.activeTextEditor, "No active editor");
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(4, 0), "A", {
+			items: []
+		}, true, "non-extjs file");
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
 	});
 

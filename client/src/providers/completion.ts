@@ -357,24 +357,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             while (cmp)
             {
-                for (const mixin of cmp.mixins)
-                {
-                    const mixinCmp = extjsLangMgr.getComponent(mixin, project, "      ", logLevel + 1);
-                    if (mixinCmp) {
-                        _pushItems(instance, mixinCmp);
-                    }
+                for (const mixin of cmp.mixins) {
+                    _pushItems(instance, extjsLangMgr.getComponent(mixin, project, "      ", logLevel + 1));
                 }
                 if (cmp.extend) {
                     cmp = extjsLangMgr.getComponent(cmp.extend, project, "      ", logLevel + 1);
-                    if (cmp) {
-                        _pushItems(instance, cmp);
-                    }
-                }
-                else if (cmp.types.length > 0) {
-                    cmp = extjsLangMgr.getComponentByAlias(cmp.types[0].name, project, "      ", logLevel + 1);
-                    if (cmp) {
-                        _pushItems(instance, cmp);
-                    }
+                    _pushItems(instance, cmp);
                 }
                 else {
                     cmp = undefined;
