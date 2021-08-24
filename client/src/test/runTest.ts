@@ -2,7 +2,9 @@
 import { execSync } from "child_process";
 import * as path from "path";
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { runTests } from "vscode-test";
+// import { runTests } from "vscode-test";
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { runTests } from "@vscode/test-electron";
 
 
 async function main()

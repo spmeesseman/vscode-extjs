@@ -38,8 +38,10 @@ export async function run(): Promise<void>
     const nyc = new NYC(
     {
         extends: "@istanbuljs/nyc-config-typescript",
-        cwd: path.join(__dirname, "..", "..", "..", ".."),
-        reporter: ["text-summary", "html", "lcov", "cobertura" ],
+        // cwd: path.join(__dirname, "..", "..", "..", ".."),
+        // reporter: ["text-summary", "html", "lcov", "cobertura" ],
+        cwd: path.resolve(__dirname, "..", "..", "..", ".."),
+        reporter: ["text", "html", "lcov", "cobertura" ],
         all: true,
         silent: false,
         instrument: true,
@@ -75,15 +77,15 @@ export async function run(): Promise<void>
         ui: "tdd", // the TDD UI is being used in extension.test.ts (suite, test, etc.)
         color: true, // colored output from test results,
         timeout: 30000, // default timeout: 10 seconds
-        retries: 1,
-        reporter: "mocha-multi-reporters",
-        reporterOptions: {
-            reporterEnabled: "spec, mocha-junit-reporter",
-            mochaJunitReporterReporterOptions: {
-                mochaFile: __dirname + "/../../coverage/junit/extension_tests.xml",
-                suiteTitleSeparatedBy: ": "
-            }
-        }
+        retries: 0,
+        // reporter: "mocha-multi-reporters",
+        // reporterOptions: {
+        //     reporterEnabled: "spec, mocha-junit-reporter",
+        //     mochaJunitReporterReporterOptions: {
+        //         mochaFile: __dirname + "/../../coverage/junit/extension_tests.xml",
+        //         suiteTitleSeparatedBy: ": "
+        //     }
+        // }
     });
 
     //
