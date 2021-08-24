@@ -34,7 +34,7 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 			const componentClasses = new Set<string>();
 			component.widgets.filter(w => w.type === type).forEach(w =>
 			{
-				const c = extjsLangMgr.getClsByProperty(w.name, component.nameSpace, project, type === "type" ? ComponentType.Store : ComponentType.Widget);
+				const c = extjsLangMgr.getClsByProperty(w.name, project, type === "type" ? ComponentType.Store : ComponentType.Widget);
 				if (c !== undefined && extjs.isNeedRequire(c, extjsLangMgr.getComponents()) && (!xtype || xtype === w.name)) {
 					componentClasses.add(c);
 				}

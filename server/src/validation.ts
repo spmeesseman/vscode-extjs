@@ -192,7 +192,7 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 
 function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
-	const thisWidgetCls = extjs.getComponent(widget.name, cmp.nameSpace, cmp.project, components)?.componentClass,
+	const thisWidgetCls = extjs.getComponent(widget.name, cmp.project, components)?.componentClass,
 		  fsPath = URI.file(document.uri).fsPath,
 		  eNotFoundCode = (ErrorCode as any)[`${widget.type}NotFound`],
 		  eNoRequiresCode = (ErrorCode as any)[`${widget.type}NoRequires`];
@@ -345,7 +345,7 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 
 	for (const require of requires)
 	{
-		const thisWidgetCls = extjs.getComponent(require.name, cmp.nameSpace, cmp.project, components)?.componentClass;
+		const thisWidgetCls = extjs.getComponent(require.name, cmp.project, components)?.componentClass;
 		if (thisWidgetCls) { // if we have a mapping, then no diagnostic
 			continue;
 		}

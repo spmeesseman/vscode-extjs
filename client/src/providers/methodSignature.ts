@@ -81,7 +81,6 @@ class MethodSignatureProvider implements SignatureHelpProvider
 		//
         if (matches)
         {
-            let ns = extjsLangMgr.getNamespaceFromFile(fsPath);
             let cls = "";
             const _add = (method: IMethod) =>
             {
@@ -91,44 +90,44 @@ class MethodSignatureProvider implements SignatureHelpProvider
                     {
                         params.push(new ParameterInformation(p.name, p.markdown || p.doc));
                     }
-                    return true;
                 }
+                return method.name === methodName;
             };
 
-            for (const m of matches)
-            {
+            //
+            // Build entire classpath
+            //
+            for (const m of matches) {
                 cls += m;
             }
             cls = cls.substring(0, cls.length - 1); // remove trailing .
-            if (!ns) {
-                ns = cls;
-            }
-            const cmp = extjsLangMgr.getComponent(cls, ns, project, "   ", 2) ||
-                        extjsLangMgr.getComponentInstance(cls, ns, project, position, fsPath, "   ", 2);
+            const cmp = extjsLangMgr.getComponent(cls, project, "   ", 2) ||
+                        extjsLangMgr.getComponentInstance(cls, project, position, fsPath, "   ", 2);
 
             if (isComponent(cmp))
             {
+                let found = false;
                 for (const m of cmp.methods)
                 {
-                    if (_add(m) === true) break;
+                    if (found = _add(m) === true) break;
                 }
-                if (params.length === 0) // check privates
+                if (!found) // check privates
                 {
                     for (const p of cmp.privates)
                     {
                         if (extjs.isMethod(p))
                         {
-                            if (_add(p) === true) break;
+                            if (found = _add(p) === true) break;
                         }
                     }
                 }
-                if (params.length === 0) // check statics
+                if (!found) // check statics
                 {
                     for (const s of cmp.statics)
                     {
                         if (extjs.isMethod(s))
                         {
-                            if (_add(s) === true) break;
+                            if (found = _add(s) === true) break;
                         }
                     }
                 }
@@ -160,7 +159,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
 function registerMethodSignatureProvider(context: ExtensionContext)
 {
     context.subscriptions.push(
-        languages.registerSignatureHelpProvider("javascript", new MethodSignatureProvider())
+        languages.registerSignatureHelpProvider("javascript", new MethodSignatureProvider(), "(")
     );
 }
 

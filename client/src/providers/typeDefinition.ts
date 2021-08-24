@@ -35,7 +35,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
             {
                 const uri = Uri.file(fsPath),
                       ns = extjsLangMgr.getNamespaceFromClass(cmpClass, project, undefined, "   ", 2),
-                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, ns, project, false, "   ", 2),
+                      { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, project, false, "   ", 2),
                       range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
                 //

@@ -3,17 +3,17 @@ import * as utils from "./utils";
 import { IAlias, IComponent, IConfig, ILogger, IMethod, IPosition, IProperty, IType, IWidget, IXtype } from "./interface";
 
 
-export function getComponent(componentClass: string, nameSpace: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
+export function getComponent(componentClass: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
 {
-	logger?.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["namespace", nameSpace]]);
+	logger?.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["project", project]]);
 	const component = components.find(c => c.componentClass === componentClass && project === c.project) ||
-					  getComponentByAlias(componentClass, nameSpace, project, components, position, thisCmp, logger, logPad + "   ", logLevel);
+					  getComponentByAlias(componentClass, project, components, position, thisCmp, logger, logPad + "   ", logLevel);
 	logger?.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
 	return component;
 }
 
 
-export function getComponentByAlias(alias: string, nameSpace: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
+export function getComponentByAlias(alias: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
 {
 	// const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
 	const _match = (c: IComponent, a: IAlias|IXtype) =>
@@ -31,7 +31,7 @@ export function getComponentByAlias(alias: string, nameSpace: string, project: s
 		return matched;
 	};
 
-	logger?.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace], ["project", project]]);
+	logger?.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["project", project]]);
 
 	// const component = components.find(c => c.xtypes.find(x => _match(c, x))) ||
 	// 				  components.find(c => c.aliases.find(a => _match(c, a)));

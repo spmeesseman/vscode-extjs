@@ -124,7 +124,7 @@ class ExtjsLanguageManager
     }
 
 
-    getClsByProperty(property: string, nameSpace: string, project: string, cmpType: ComponentType): string | undefined
+    getClsByProperty(property: string, project: string, cmpType: ComponentType): string | undefined
     {
         let cls: string | undefined;
         if (cmpType === ComponentType.Widget) {
@@ -144,10 +144,10 @@ class ExtjsLanguageManager
     }
 
 
-    getComponent(componentClass: string, nameSpace: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
+    getComponent(componentClass: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
     {
-        log.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["namespace", nameSpace]]);
-        const component = extjs.getComponent(componentClass, nameSpace, project, this.components, position, thisCmp, undefined, logPad, logLevel);
+        log.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["project", project]]);
+        const component = extjs.getComponent(componentClass, project, this.components, position, thisCmp, undefined, logPad, logLevel);
         log.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
         return component;
     }
@@ -165,10 +165,10 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentByAlias(alias: string, nameSpace: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
+    getComponentByAlias(alias: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
     {
-        log.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace], ["project", project]]);
-        const component = extjs.getComponentByAlias(alias, nameSpace, project, this.components, position, thisCmp, undefined, logPad, logLevel);
+        log.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["project", project]]);
+        const component = extjs.getComponentByAlias(alias, project, this.components, position, thisCmp, undefined, logPad, logLevel);
         log.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
         return component;
     }
@@ -182,7 +182,7 @@ class ExtjsLanguageManager
               project = getWorkspaceProjectName(fsPath);
         if (cls) {
             log.value("   component class", cls, logLevel + 1, logPad);
-            component = this.getComponent(cls, this.getNamespaceFromClass(cls, project, undefined, logPad, logLevel + 1), project, logPad, logLevel + 1);
+            component = this.getComponent(cls, project, logPad, logLevel + 1);
         }
         log.methodDone("get component by file", logLevel, logPad);
         return component;
@@ -205,12 +205,12 @@ class ExtjsLanguageManager
      *
      * @returns {String}
      */
-    private getComponentClass(property: string, nameSpace: string, project: string, position: Position, lineText: string, fsPath: string | undefined, logPad = "", logLevel = 1): string | undefined
+    private getComponentClass(property: string, project: string, position: Position, lineText: string, fsPath: string | undefined, logPad = "", logLevel = 1): string | undefined
     {
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
 
-        log.methodStart("get component class", logLevel, logPad, false, [["property", property], ["namespace", nameSpace]]);
+        log.methodStart("get component class", logLevel, logPad, false, [["property", property], ["project", project]]);
 
         //
         // Get class name prependature to hovered property
@@ -272,9 +272,9 @@ class ExtjsLanguageManager
         //
         // Instances
         //
-        else if (!this.getComponent(cmpClass, nameSpace, project, logPad + "   ", logLevel, toIPosition(position)) && fsPath)
+        else if (!this.getComponent(cmpClass, project, logPad + "   ", logLevel, toIPosition(position)) && fsPath)
         {
-            const instance = this.getComponentInstance(cmpClass, nameSpace, project, position, fsPath, logPad + "   ", logLevel);
+            const instance = this.getComponentInstance(cmpClass, project, position, fsPath, logPad + "   ", logLevel);
             if (isComponent(instance)) {
                 cmpClass = instance.componentClass;
             }
@@ -285,15 +285,15 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentInstance(property: string, nameSpace: string, project: string, position: Position, fsPath: string, logPad = "", logLevel = 1): IComponent | IPrimitive | undefined
+    getComponentInstance(property: string, project: string, position: Position, fsPath: string, logPad = "", logLevel = 1): IComponent | IPrimitive | undefined
     {
-        log.methodStart("get component instance", logLevel, logPad, false, [["property", property], ["namespace", nameSpace]]);
+        log.methodStart("get component instance", logLevel, logPad, false, [["property", property], ["project", project]]);
 
         const thisCls = this.getClsByPath(fsPath);
 
         if (thisCls)
         {
-            const cmp = this.getComponent(thisCls, nameSpace, project, logPad + "   ", logLevel, toIPosition(position));
+            const cmp = this.getComponent(thisCls, project, logPad + "   ", logLevel, toIPosition(position));
 
             if (property === "this") {
                 log.methodDone("get component instance", logLevel, logPad, false, [["component class", "this"]]);
@@ -324,7 +324,7 @@ class ExtjsLanguageManager
                             }
                         }
                         if (variable) {
-                            const cmp = this.getComponent(variable.componentClass, nameSpace, project, logPad + "   ", logLevel, toIPosition(position));
+                            const cmp = this.getComponent(variable.componentClass, project, logPad + "   ", logLevel, toIPosition(position));
                             if (cmp) {
                                 log.methodDone("get component instance", logLevel, logPad);
                                 return cmp;
@@ -349,12 +349,12 @@ class ExtjsLanguageManager
     }
 
 
-    getConfig(componentClass: string, property: string, nameSpace: string, project: string, logPad = "", logLevel = 1): IConfig | undefined
+    getConfig(componentClass: string, property: string, project: string, logPad = "", logLevel = 1): IConfig | undefined
     {
         let config: IConfig | undefined;
 
         log.methodStart("get config by component class", logLevel, logPad, false, [
-            ["component class", componentClass], ["property", property], ["namespace", nameSpace]
+            ["component class", componentClass], ["property", property], ["project", project]
         ]);
 
         //
@@ -543,7 +543,7 @@ class ExtjsLanguageManager
             //
             // Set the property to the last piece of the xtypes class name.
             //
-            component = this.getComponent(lineText, thisCmp.nameSpace, project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
+            component = this.getComponent(lineText, project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
             if (component) {
                 const strParts = component.componentClass.split(".");
                 property = strParts[strParts.length - 1];
@@ -565,7 +565,7 @@ class ExtjsLanguageManager
         // else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
         else if (new RegExp(`${property}\\s*\\(`).test(lineText))
         {
-            component = this.getComponent(lineText.replace(/[^a-z0-9\.]/gi, "").trim(), project, project, logPad + "   ", logLevel + 1, toIPosition(position), thisCmp);
+            component = this.getComponent(lineText.replace(/[^a-z0-9\.]/gi, "").trim(), project, logPad + "   ", logLevel + 1, toIPosition(position), thisCmp);
             cmpType = component ? ComponentType.Class : ComponentType.Method;
         }
         //
@@ -583,7 +583,7 @@ class ExtjsLanguageManager
         else if (new RegExp(`.${property}\\s*[;\\)]{1,2}\\s*$`).test(lineText) ||
                  new RegExp(`(\\s*(const|var|let){0,1}\\s+|^)${property}\\s*[=.]{1}\\s*[ \\W\\w\\{\\(]*\\s*$`).test(allLineText))
         {
-            component = this.getComponent(property, thisCmp.nameSpace, project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
+            component = this.getComponent(property, project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
             cmpType = component ? ComponentType.Class : ComponentType.Property;
         }
         //
@@ -625,16 +625,16 @@ class ExtjsLanguageManager
         if (cmpType & ComponentType.Class)
         {
             cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
-            if (component = this.getComponent(property, thisCmp.nameSpace, project, logPad + "   ", logLevel, toIPosition(position), thisCmp)) {
+            if (component = this.getComponent(property, project, logPad + "   ", logLevel, toIPosition(position), thisCmp)) {
                 cmpClass = component.componentClass;
             }
-            else if (component = this.getComponentInstance(property, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
+            else if (component = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
                 cmpClass = component.componentClass;
             }
         }
         else if (cmpType === ComponentType.Method)
         {
-            cmpClass = this.getComponentClass(property, thisCmp.nameSpace, project, position, lineText, thisPath, logPad + "   ", logLevel);
+            cmpClass = this.getComponentClass(property, project, position, lineText, thisPath, logPad + "   ", logLevel);
             if (cmpClass)
             {   //
                 // getComponentClass() will return the file class if this is a config getter/setter, so
@@ -662,13 +662,13 @@ class ExtjsLanguageManager
                     property = utils.lowerCaseFirstChar(property.substring(3));
                     cmpType = ComponentType.Config;
                     log.value("      config name", property, logLevel + 1, logPad);
-                    // cmpClass = this.getComponentClass(property, thisCmp.nameSpace, position, lineText, thisPath);
+                    // cmpClass = this.getComponentClass(property, position, lineText, thisPath);
                 }
             }
         }
         else // ComponentType.Property / ComponentType.Config | variable / parameter
         {   //
-            cmpClass = this.getComponentInstance(property, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel)?.componentClass;
+            cmpClass = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel)?.componentClass;
             if (!cmpClass) {
                 const cmp = this.components.find(c => /* c.nameSpace === nameSpace && */
                                     c.project === project && c.componentClass === thisCmp.componentClass && c.properties.find(p => p.name === property)) ||
@@ -706,16 +706,16 @@ class ExtjsLanguageManager
     }
 
 
-    getMethod(componentClass: string, property: string, nameSpace: string, project: string, isStatic: boolean, logPad = "", logLevel = 1): IMethod| undefined
+    getMethod(componentClass: string, property: string, project: string, isStatic: boolean, logPad = "", logLevel = 1): IMethod| undefined
     {
         log.methodStart("get method by property", logLevel, logPad, false, [
-            ["component class", componentClass], ["property", property], ["namespace", nameSpace]
+            ["component class", componentClass], ["property", property], ["project", project]
         ]);
 
         let method: IMethod | undefined,
             methods: IMethod[] | undefined;
 
-        const component = this.getComponent(componentClass, nameSpace, project, logPad + "   ", logLevel);
+        const component = this.getComponent(componentClass, project, logPad + "   ", logLevel);
         if (component) {
             const privateMethods = component.privates.filter((c) => extjs.isMethod(c)) as IMethod[];
             methods = !isStatic ? [...component.methods, ...privateMethods ] :
@@ -810,18 +810,18 @@ class ExtjsLanguageManager
     }
 
 
-    getPropertyPosition(property: string, cmpType: ComponentType, componentClass: string, nameSpace: string, project: string, isStatic: boolean, logPad = "", logLevel = 1)
+    getPropertyPosition(property: string, cmpType: ComponentType, componentClass: string, project: string, isStatic: boolean, logPad = "", logLevel = 1)
     {
         let start = new Position(0, 0),
             end = new Position(0, 0);
 
         log.methodStart("get property position", logLevel, logPad, false, [
-            ["property", property], ["component class", componentClass], ["namespace", nameSpace]
+            ["property", property], ["component class", componentClass], ["project", project]
         ]);
 
-        const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property, nameSpace, project, isStatic, logPad + "   ") :
-                                      (cmpType === ComponentType.Config ? this.getConfig(componentClass, property, nameSpace, project, logPad + "   ", logLevel + 1) :
-                                                                          this.getProperty(componentClass, property, nameSpace, project, isStatic, logPad + "   ", logLevel + 1));
+        const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property, project, isStatic, logPad + "   ") :
+                                      (cmpType === ComponentType.Config ? this.getConfig(componentClass, property, project, logPad + "   ", logLevel + 1) :
+                                                                          this.getProperty(componentClass, property, project, isStatic, logPad + "   ", logLevel + 1));
 
         const _setPosition = ((o: IExtJsBase) =>
         {
@@ -844,7 +844,7 @@ class ExtjsLanguageManager
             // component file and search for the class position in the case where it is not 0,0.
             // Otherwise this is a class definition, and pObject (method, property, config) is undefined
             //
-            const mainCmp = this.getComponent(componentClass, nameSpace, project, logPad + "   ", logLevel);
+            const mainCmp = this.getComponent(componentClass, project, logPad + "   ", logLevel);
             if (mainCmp) {
                 _setPosition(mainCmp);
             }
@@ -855,10 +855,10 @@ class ExtjsLanguageManager
     }
 
 
-    getProperty(componentClass: string, property: string, nameSpace: string, project: string, isStatic: boolean, logPad = "", logLevel = 1): IProperty | undefined
+    getProperty(componentClass: string, property: string, project: string, isStatic: boolean, logPad = "", logLevel = 1): IProperty | undefined
     {
         log.methodStart("get property by component class", logLevel, logPad, false, [
-            ["component class", componentClass], ["property", property], ["namespace", nameSpace]
+            ["component class", componentClass], ["property", property], ["project", project]
         ]);
 
         let prop: IProperty | undefined;
