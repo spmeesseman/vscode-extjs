@@ -1,7 +1,7 @@
 
 import { parse } from "@babel/parser";
 import {
-    labeledStatement, identifier, expressionStatement, arrayExpression, Node
+    Node
 } from "@babel/types";
 
 
@@ -15,7 +15,7 @@ export function getLabeledStatementAst(text: string, logErrFn?: (arg: string | E
 		if (logErrFn) {
 			logErrFn(ex);
 		}
-		return labeledStatement(identifier("a"), expressionStatement(arrayExpression([])));
+		return parse("a:[]");
 	}
 	return ast;
 }
