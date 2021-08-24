@@ -22,7 +22,9 @@ export function getComponentByAlias(alias: string, nameSpace: string, project: s
 		if (project === c.project)
 		{
 			if (isAlias(a)) {
-				matched = a.name === "widget." + alias || a.name === "store." + alias || a.name === "layout." + alias;
+				// matched = (a.name === alias && a.type === "alternateClassName") || a.name === "widget." + alias ||
+				matched = a.name === alias || a.name === "widget." + alias ||
+				          a.name === "store." + alias || a.name === "layout." + alias;
 			}
 			else if (isXType(a) || isType(a)) {
 				matched = a.name === alias;
