@@ -16,17 +16,15 @@ export function getComponent(componentClass: string, nameSpace: string, project:
 export function getComponentByAlias(alias: string, nameSpace: string, project: string, components: IComponent[], logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
 {
 	// const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
-	const _match = (c: IComponent, a: IWidget) =>
+	const _match = (c: IComponent, a: IAlias|IXtype) =>
 	{
 		let matched = false;
 		if (project === c.project)
 		{
 			if (isAlias(a)) {
-				// matched = (a.name === alias && a.type === "alternateClassName") || a.name === "widget." + alias ||
-				matched = a.name === alias || a.name === "widget." + alias ||
-				          a.name === "store." + alias || a.name === "layout." + alias;
+				matched = a.name === alias || a.name === `${a.nameSpace}.${alias}`;
 			}
-			else if (isXType(a) || isType(a)) {
+			else if (isXType(a)) {
 				matched = a.name === alias;
 			}
 		}
@@ -35,9 +33,8 @@ export function getComponentByAlias(alias: string, nameSpace: string, project: s
 
 	logger?.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace], ["project", project]]);
 
-	const component = components.find(c => c.aliases.find(a => _match(c, a))) ||
-					  components.find(c => c.types.find(t => _match(c, t))) ||
-					  components.find(c => c.xtypes.find(x => _match(c, x)));
+	const component = components.find(c => c.xtypes.find(x => _match(c, x))) ||
+					  components.find(c => c.aliases.find(a => _match(c, a)));
 
 	logger?.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
 	return component;

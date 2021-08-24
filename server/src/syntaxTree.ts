@@ -441,8 +441,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
             case "alternateClassName":
                 const m = propertyValue.match(/(.+)\.(.+)/);
                 if (m) {
-                    const [_, namespace, name] = m;
-                    if (namespace === "widget")
+                    const [_, nameSpace, name] = m;
+                    if (nameSpace === "widget")
                     {
                         xtypes.push({
                             name,
@@ -453,14 +453,25 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                             parentProperty: ""
                         });
                     }
+                    aliases.push({
+                        name: propertyValue,
+                        start: it.loc!.start,
+                        end: it.loc!.end,
+                        componentClass,
+                        type: propertyName,
+                        nameSpace
+                    });
                 }
-                aliases.push({
-                    name: propertyValue,
-                    start: it.loc!.start,
-                    end: it.loc!.end,
-                    componentClass,
-                    type: propertyName
-                });
+                else {
+                    aliases.push({
+                        name: propertyValue,
+                        start: it.loc!.start,
+                        end: it.loc!.end,
+                        componentClass,
+                        type: propertyName,
+                        nameSpace: ""
+                    });
+                }
                 break;
             default:
                 break;

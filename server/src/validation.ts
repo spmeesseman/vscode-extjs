@@ -293,7 +293,6 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 						const requiredCmp = components.find(c => c.componentClass === require.name && c.project === cmp.project);
 						if (requiredCmp) {
 							requiredXtypes.push(...(requiredCmp.aliases.map(s => s.name.replace(aliasNsReplaceRegex, "")) || []));
-							requiredXtypes.push(...(requiredCmp.types.map(t => t.name.replace(aliasNsReplaceRegex, "")) || []));
 							requiredXtypes.push(...(requiredCmp.xtypes.map(x => x.name.replace(aliasNsReplaceRegex, "")) || []));
 						}
 					}
@@ -439,9 +438,8 @@ function addSuggestions(diagnostic: Diagnostic, text: string, document: TextDocu
 	{
 		if (suggestions.length < 5)
 		{
-			_add(component.aliases);
-			_add(component.types);
 			_add(component.xtypes);
+			_add(component.aliases);
 		}
 	});
 

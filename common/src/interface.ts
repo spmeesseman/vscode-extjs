@@ -44,6 +44,7 @@ export interface IExtJsBase extends IRange
 export interface IAlias extends IWidget
 {
     type: "alias" | "alternateClassName";
+    nameSpace: string;
 }
 
 
