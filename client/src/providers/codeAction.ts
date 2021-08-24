@@ -14,12 +14,14 @@ class ExtjsCodeActionProvider implements CodeActionProvider
     {
         const actions: CodeAction[] = [];
 
+        log.methodStart("provide code action", 1, "", true);
+
         //
         // ** IMPORTANT **
         // It's possible the indexer initiated a re-indexing since editing the document is
         // what triggers thecompletion item request, so wait for it to finish b4 proceeding
         //
-        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        await commands.executeCommand("vscode-extjs:waitReady", "   ", 3);
         //
         // Indexer finished, proceed...
         //
@@ -106,6 +108,7 @@ class ExtjsCodeActionProvider implements CodeActionProvider
             }
         }
 
+        log.methodDone("provide code action", 1, "", true);
         return actions;
     }
 

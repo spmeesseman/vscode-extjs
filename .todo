@@ -28,9 +28,17 @@ Completion:
 	☐ Should work for a string in a requires/uses/models/stores block should display the doc for that class
 	☐ Static create() for stores/models/?
 	✔ The 'privates' block should be applied to instance components @done(21-08-21 03:51)
-	☐ Models.  And the special config applied to 'fields'.
 		object completion showing model fields as opposed to properties/configs
+	☐ Snipper completion, i.e. sorte... and the completion item would be the entire sorter object
+		sorters: [{
+			property: "",
+			direction: "ASC"
+		}]
+		And place cursor into property value quotes. Can do for store filters, sorters, model fields, etc
+	☐ Models.  And the special config applied to 'fields'.
 	☐ Model property getter/setter when using associations
+	☐ Component store property string literal completion, like xtype/type
+	☐ Store model property string literal completion, like xtype/type
 
 Definition:
 
@@ -90,6 +98,12 @@ Miscellaneous:
 	☐ Object ranges don't have to persist to cache.
 		Can be parsed for active document only (I think).
 		remove todo comment in the code
+	☐ Max doc size for parsing.  configurable
+	☐ Add 'framework' property to extjsrc file
+		so can reference a framework per project, located somewhere outside of project, no app.json
+		same as setting multiple paths in classpath in array but will keep separate in storage, better perf
+	☐ Aliases should not be added to xtypes for widget scraping now that all is implemented
+		syntaxTree.js parseClassDef
 
 Signature:
 

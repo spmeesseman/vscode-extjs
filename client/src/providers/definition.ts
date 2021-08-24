@@ -20,7 +20,7 @@ class ExtJsDefinitionProvider implements DefinitionProvider
         // It's possible the indexer initiated a re-indexing since editing the document is
         // what triggers thecompletion item request, so wait for it to finish b4 proceeding
         //
-        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        await commands.executeCommand("vscode-extjs:waitReady", "   ", 3);
         //
         // Indexer finished, proceed...
         //

@@ -6,25 +6,25 @@ import {
 import * as log from "../common/log";
 import { ComponentType, DeclarationType, VariableType } from "../../../common";
 import { extjsLangMgr } from "../extension";
-import { isPrimitive, isComponent, getMethodByPosition, getWorkspaceProjectName } from "../common/clientUtils";
+import { isPrimitive, isComponent, getMethodByPosition, getWorkspaceProjectName, toVscodePosition, toIPosition } from "../common/clientUtils";
 
 class ExtJsHoverProvider implements HoverProvider
 {
     async provideHover(document: TextDocument, position: Position, token: CancellationToken)
     {
-        log.methodStart("provide hover", 2, "", true, [["file", document.uri.fsPath]]);
+        log.methodStart("provide hover", 1, "", true, [["file", document.uri.fsPath]]);
 
         //
         // It's possible the indexer initiated a re-indexing since editing the document is
         // what triggers thecompletion item request, so wait for it to finish b4 proceeding
         //
-        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        await commands.executeCommand("vscode-extjs:waitReady", "   ", 3);
         //
         // Indexer finished, proceed...
         //
 
         let hover: Hover | undefined;
-        const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath, undefined, "   ");
+        const nameSpace = extjsLangMgr.getNamespaceFromFile(document.uri.fsPath, undefined, "   ", 2);
         if (!nameSpace) {
             log.write("   hover disabled due to non extjs file", 2);
             return;
@@ -41,7 +41,7 @@ class ExtJsHoverProvider implements HoverProvider
         {
             if (cmpType === ComponentType.Method)
             {
-                const method = extjsLangMgr.getMethod(cmpClass, property, nameSpace, project, false, "   ");
+                const method = extjsLangMgr.getMethod(cmpClass, property, nameSpace, project, false, "   ", 2);
                 if (method) {
                     log.value("   provide class hover info", property, 2);
                     const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase(),
@@ -51,7 +51,7 @@ class ExtJsHoverProvider implements HoverProvider
             }
             else if (cmpType === ComponentType.Property)
             {
-                const prop = extjsLangMgr.getProperty(cmpClass, property, nameSpace, project, false, "   ");
+                const prop = extjsLangMgr.getProperty(cmpClass, property, nameSpace, project, false, "   ", 2);
                 if (prop) {
                     log.value("   provide property hover info", property, 2);
                     hover = new Hover(new MarkdownString().appendCodeblock(`property ${text}: ${prop.componentClass}`).appendMarkdown(prop.markdown ? prop.markdown.value : ""));
@@ -87,7 +87,7 @@ class ExtJsHoverProvider implements HoverProvider
                         // by 'callee' (getPinNumber)...
                         //
                         log.value("provide primitive instance hover info", property, 2);
-                        cmp = extjsLangMgr.getComponentInstance(cmp.componentClass, nameSpace, project, position, document.uri.fsPath, "   ");
+                        cmp = extjsLangMgr.getComponentInstance(cmp.componentClass, nameSpace, project, position, document.uri.fsPath, "   ", 2);
                         if (isComponent(cmp))
                         {
                             let varType = "any ";
@@ -109,7 +109,7 @@ class ExtJsHoverProvider implements HoverProvider
             }
             else if (cmpType === ComponentType.Config)
             {
-                const config = extjsLangMgr.getConfig(cmpClass, property, nameSpace, project, "   ");
+                const config = extjsLangMgr.getConfig(cmpClass, property, nameSpace, project, "   ", 2);
                 if (config) {
                     log.value("   provide class hover info", property, 2);
                     hover = new Hover(new MarkdownString().appendCodeblock(`config ${text}: ${config.componentClass}`).appendMarkdown(config.markdown ? config.markdown.value : ""));
@@ -117,7 +117,7 @@ class ExtJsHoverProvider implements HoverProvider
             }
             else if (cmpType & ComponentType.Class)
             {
-                const cmp = extjsLangMgr.getComponent(cmpClass, nameSpace, project, "   ");
+                const cmp = extjsLangMgr.getComponent(cmpClass, nameSpace, project, "   ", 2, toIPosition(position), thisCmp);
                 if (isComponent(cmp))
                 {
                     log.value("   provide class hover info", property, 2);
@@ -139,7 +139,7 @@ class ExtJsHoverProvider implements HoverProvider
             }
         }
 
-        log.methodDone("provide hover", 2, "", true);
+        log.methodDone("provide hover", 1, "", true);
         return hover;
     }
 

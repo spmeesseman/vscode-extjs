@@ -5,11 +5,11 @@ import {
 } from "vscode";
 import {
     IConfig, IComponent, IMethod, IConf, IProperty, utils, ComponentType,
-    IVariable, VariableType, IExtJsBase, IPrimitive, IParameter, IWidget, extjs
+    IVariable, VariableType, IExtJsBase, IPrimitive, IParameter, extjs, IPosition
 } from  "../../common";
 
 import {
-    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded, documentEol, getWorkspaceProjectName
+    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded, documentEol, getWorkspaceProjectName, toIPosition
 } from "./common/clientUtils";
 import * as log from "./common/log";
 import * as path from "path";
@@ -144,10 +144,10 @@ class ExtjsLanguageManager
     }
 
 
-    getComponent(componentClass: string, nameSpace: string, project: string, logPad = "", logLevel = 1): IComponent | undefined
+    getComponent(componentClass: string, nameSpace: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
     {
         log.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["namespace", nameSpace]]);
-        const component = extjs.getComponent(componentClass, nameSpace, project, this.components, undefined, logPad, logLevel);
+        const component = extjs.getComponent(componentClass, nameSpace, project, this.components, position, thisCmp, undefined, logPad, logLevel);
         log.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
         return component;
     }
@@ -165,10 +165,10 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentByAlias(alias: string, nameSpace: string, project: string, logPad = "", logLevel = 1): IComponent | undefined
+    getComponentByAlias(alias: string, nameSpace: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
     {
         log.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace], ["project", project]]);
-        const component = extjs.getComponentByAlias(alias, nameSpace, project, this.components, undefined, logPad, logLevel);
+        const component = extjs.getComponentByAlias(alias, nameSpace, project, this.components, position, thisCmp, undefined, logPad, logLevel);
         log.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
         return component;
     }
@@ -272,7 +272,7 @@ class ExtjsLanguageManager
         //
         // Instances
         //
-        else if (!this.getComponent(cmpClass, nameSpace, project, logPad + "   ", logLevel) && fsPath)
+        else if (!this.getComponent(cmpClass, nameSpace, project, logPad + "   ", logLevel, toIPosition(position)) && fsPath)
         {
             const instance = this.getComponentInstance(cmpClass, nameSpace, project, position, fsPath, logPad + "   ", logLevel);
             if (isComponent(instance)) {
@@ -293,7 +293,7 @@ class ExtjsLanguageManager
 
         if (thisCls)
         {
-            const cmp = this.getComponent(thisCls, nameSpace, project, logPad + "   ", logLevel);
+            const cmp = this.getComponent(thisCls, nameSpace, project, logPad + "   ", logLevel, toIPosition(position));
 
             if (property === "this") {
                 log.methodDone("get component instance", logLevel, logPad, false, [["component class", "this"]]);
@@ -324,7 +324,7 @@ class ExtjsLanguageManager
                             }
                         }
                         if (variable) {
-                            const cmp = this.getComponent(variable.componentClass, nameSpace, project, logPad + "   ", logLevel);
+                            const cmp = this.getComponent(variable.componentClass, nameSpace, project, logPad + "   ", logLevel, toIPosition(position));
                             if (cmp) {
                                 log.methodDone("get component instance", logLevel, logPad);
                                 return cmp;
@@ -335,7 +335,8 @@ class ExtjsLanguageManager
                                     name: variable.name,
                                     start: variable.start,
                                     end: variable.end,
-                                    componentClass: variable.componentClass
+                                    componentClass: variable.componentClass,
+                                    range: utils.toRange(variable.start, variable.end)
                                 };
                             }
                         }
@@ -542,7 +543,7 @@ class ExtjsLanguageManager
             //
             // Set the property to the last piece of the xtypes class name.
             //
-            component = this.getComponent(lineText, thisCmp.nameSpace, project, logPad + "   ", logLevel);
+            component = this.getComponent(lineText, thisCmp.nameSpace, project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
             if (component) {
                 const strParts = component.componentClass.split(".");
                 property = strParts[strParts.length - 1];
@@ -564,7 +565,7 @@ class ExtjsLanguageManager
         // else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
         else if (new RegExp(`${property}\\s*\\(`).test(lineText))
         {
-            component = this.getComponent(lineText.replace(/[^a-z0-9\.]/gi, "").trim(), project, project, logPad + "   ", logLevel + 1);
+            component = this.getComponent(lineText.replace(/[^a-z0-9\.]/gi, "").trim(), project, project, logPad + "   ", logLevel + 1, toIPosition(position), thisCmp);
             cmpType = component ? ComponentType.Class : ComponentType.Method;
         }
         //
@@ -582,7 +583,7 @@ class ExtjsLanguageManager
         else if (new RegExp(`.${property}\\s*[;\\)]{1,2}\\s*$`).test(lineText) ||
                  new RegExp(`(\\s*(const|var|let){0,1}\\s+|^)${property}\\s*[=.]{1}\\s*[ \\W\\w\\{\\(]*\\s*$`).test(allLineText))
         {
-            component = this.getComponent(property, thisCmp.nameSpace, project, logPad + "   ", logLevel);
+            component = this.getComponent(property, thisCmp.nameSpace, project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
             cmpType = component ? ComponentType.Class : ComponentType.Property;
         }
         //
@@ -624,7 +625,7 @@ class ExtjsLanguageManager
         if (cmpType & ComponentType.Class)
         {
             cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
-            if (component = this.getComponent(property, thisCmp.nameSpace, project, logPad + "   ", logLevel)) {
+            if (component = this.getComponent(property, thisCmp.nameSpace, project, logPad + "   ", logLevel, toIPosition(position), thisCmp)) {
                 cmpClass = component.componentClass;
             }
             else if (component = this.getComponentInstance(property, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
@@ -997,7 +998,9 @@ class ExtjsLanguageManager
             components: IComponent[] = [];
 
         //
-        // store.type and different cache paths were added in 0.4, re-index if it hasn't been done already
+        // The 'forceReIndexOnUpdateFlag' is set before a release in the case where a re-index
+        // needs to happen when the new version is run for the first time on the user machine.
+        // Clear the fs cache in the case where this flag is set but a re-indexing hasnt happened yet.
         //
         const needsReIndex = storage.get<string>(this.forceReIndexOnUpdateFlag, "false") !== "true";
         if (needsReIndex) {
@@ -1060,28 +1063,35 @@ class ExtjsLanguageManager
                             message: ": Indexing " + pct + "%"
                         });
                     }
+
                     ++currentCfgIdx;
                     const nextInc = (currentCfgIdx * cfgPct) - 1,
                           nextInc2 = (currentCfgIdx * cfgPct) - 2;
+
                     progress.report({
                         increment,
                         message: ": Caching " + Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct)) + "%"
                     });
+
                     await this.serverRequest.loadExtJsComponent(JSON.stringify(components), projectName);
+
                     progress.report({
                         increment,
                         message: ": Caching " + Math.round(nextInc > pct ? nextInc : pct) + "%"
                     });
+
                     await this.processComponents(components, projectName, false, "   ", logLevel + 1);
+
                     progress.report({
                         increment,
-                        message: Math.round(++currentCfgIdx * cfgPct) + "%"
+                        message: Math.round(currentCfgIdx * cfgPct) + "%"
                     });
                 }
             }
             else // index the file via the language server
             {
-                let currentDir = 0,
+                let pct = 0,
+                    currentDir = 0,
                     currentFile = 0;
                 components = []; // clear component defs from last loop iteration
 
@@ -1133,7 +1143,7 @@ class ExtjsLanguageManager
                             //
                             // Report progress
                             //
-                            const pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
+                            pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
                             progress.report({
                                 increment,
                                 message: ": Indexing " + pct + "%"
@@ -1144,8 +1154,18 @@ class ExtjsLanguageManager
                         this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
                     }
                 }
+
+                ++currentCfgIdx;
+                const nextInc = (currentCfgIdx * cfgPct) - 1,
+                      nextInc2 = (currentCfgIdx * cfgPct) - 2;
+
+                progress.report({
+                    increment,
+                    message: ": Caching " + Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct)) + "%"
+                });
+
                 //
-                // Update local storage
+                // Update entire component tree in fs cache
                 //
                 if (components.length > 0) {
                     await fsStorage.update(storageKey, JSON.stringify(components));
@@ -1154,11 +1174,16 @@ class ExtjsLanguageManager
 
                 progress.report({
                     increment,
-                    message: ": Indexing " + Math.round(++currentCfgIdx * cfgPct) + "%"
+                    message: ": Indexing " + Math.round(currentCfgIdx * cfgPct) + "%"
                 });
             }
         }
 
+        //
+        // The 'forceReIndexOnUpdateFlag' is set before a release in the case where a re-index
+        // needs to happen when the new version is run for the first time on the user machine.
+        // Set flag that indexing was done
+        //
         await storage.update(this.forceReIndexOnUpdateFlag, "true");
 
         log.methodDone("index all", logLevel, logPad, true);

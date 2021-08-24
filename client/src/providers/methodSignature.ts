@@ -4,7 +4,7 @@ import {
     TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation, commands
 } from "vscode";
 import { extjsLangMgr } from "../extension";
-import { getWorkspaceProjectName, isComponent } from "../common/clientUtils";
+import { getWorkspaceProjectName, isComponent, toIPosition } from "../common/clientUtils";
 import * as log from "../common/log";
 import { IMethod, extjs } from "../../../common";
 
@@ -14,12 +14,13 @@ class MethodSignatureProvider implements SignatureHelpProvider
 	async provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext)
 	{
         const sigHelp = new SignatureHelp();
+        log.methodStart("provide method signature", 1, "", true);
 
         //
         // It's possible the indexer initiated a re-indexing since editing the document is
         // what triggers thecompletion item request, so wait for it to finish b4 proceeding
         //
-        await commands.executeCommand("vscode-extjs:waitReady", "   ");
+        await commands.executeCommand("vscode-extjs:waitReady", "   ", 3);
         //
         // Indexer finished, proceed...
         //
@@ -43,9 +44,7 @@ class MethodSignatureProvider implements SignatureHelpProvider
         //    "editor.quickSuggestions": false
         //
         if (lineText && lineText.includes("(") && !lineText.endsWith(")"))
-        {
-            log.methodStart("provide method signature", 2, "", true, [["line text", lineText]]);
-            //
+        {   //
             // Create signature information
             //
             const sigInfo = this.getSignatureInfo(lineText, position, document.uri.fsPath);
@@ -62,9 +61,9 @@ class MethodSignatureProvider implements SignatureHelpProvider
                     commaIdx = lineText.indexOf(",", commaIdx + 1);
                 }
             }
-            log.methodDone("provide method signature", 2, "", true);
         }
 
+        log.methodDone("provide method signature", 1, "", true);
         return sigHelp;
     }
 
@@ -104,7 +103,8 @@ class MethodSignatureProvider implements SignatureHelpProvider
             if (!ns) {
                 ns = cls;
             }
-            const cmp = extjsLangMgr.getComponent(cls, ns, project, "   ", 2) || extjsLangMgr.getComponentInstance(cls, ns, project, position, fsPath, "   ", 2);
+            const cmp = extjsLangMgr.getComponent(cls, ns, project, "   ", 2) ||
+                        extjsLangMgr.getComponentInstance(cls, ns, project, position, fsPath, "   ", 2);
 
             if (isComponent(cmp))
             {

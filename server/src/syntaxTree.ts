@@ -93,7 +93,8 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                             bodyStart: args[1].loc!.start,
                             bodyEnd: args[1].loc!.end,
                             widgets: [],
-                            xtypes: []
+                            xtypes: [],
+                            range: utils.toRange(path.node.loc!.start, path.node.loc!.end)
                         };
 
                         if (isExpressionStatement(path.container)) {
@@ -424,7 +425,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                     end: it.loc!.end,
                     componentClass,
                     type: propertyName,
-                    parentProperty: ""
+                    parentProperty: "",
+                    range: utils.toRange(it.loc!.start, it.loc!.end)
                 });
                 break;
             case "type":
@@ -434,7 +436,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                     end: it.loc!.end,
                     componentClass,
                     type: propertyName,
-                    parentProperty: ""
+                    parentProperty: "",
+                    range: utils.toRange(it.loc!.start, it.loc!.end)
                 });
                 break;
             case "alias":
@@ -450,7 +453,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                             end: it.loc!.end,
                             componentClass,
                             type: "xtype",
-                            parentProperty: ""
+                            parentProperty: "",
+                            range: utils.toRange(it.loc!.start, it.loc!.end)
                         });
                     }
                     aliases.push({
@@ -459,7 +463,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                         end: it.loc!.end,
                         componentClass,
                         type: propertyName,
-                        nameSpace
+                        nameSpace,
+                        range: utils.toRange(it.loc!.start, it.loc!.end)
                     });
                 }
                 else {
@@ -469,7 +474,8 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                         end: it.loc!.end,
                         componentClass,
                         type: propertyName,
-                        nameSpace: ""
+                        nameSpace: "",
+                        range: utils.toRange(it.loc!.start, it.loc!.end)
                     });
                 }
                 break;
@@ -503,7 +509,8 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string)
                         end: it.loc!.end,
                         getter: "get" + utils.toProperCase(name),
                         setter: "set" + utils.toProperCase(name),
-                        componentClass
+                        componentClass,
+                        range: utils.toRange(it.loc!.start, it.loc!.end)
                     });
                 }
             }
@@ -749,7 +756,8 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     objectRanges: getMethodObjectRanges(m, propertyName),
                     bodyStart: m.value.loc!.start,
                     bodyEnd: m.value.loc!.end,
-                    static: doc?.includes("@static") || isStatic
+                    static: doc?.includes("@static") || isStatic,
+                    range: utils.toRange(m.loc!.start, m.loc!.end)
                 });
             }
         }
@@ -808,7 +816,8 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
                     private: doc?.includes("@private") || isPrivate,
                     deprecated: doc?.includes("@deprecated"),
                     componentClass,
-                    static: doc?.includes("@static") || isStatic
+                    static: doc?.includes("@static") || isStatic,
+                    range: utils.toRange(m.loc!.start, m.loc!.end)
                 });
             }
         }
@@ -861,7 +870,8 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
                     end: p.loc!.end,
                     methodName,
                     componentClass: parentCls,
-                    type: VariableType._any
+                    type: VariableType._any,
+                    range: utils.toRange(p.loc!.start, p.loc!.end)
                 });
             }
         }
@@ -1033,7 +1043,8 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
             start: node.declarations[0].loc!.start,
             end: node.declarations[0].loc!.end,
             componentClass: parentCls,
-            methodName
+            methodName,
+            range: utils.toRange(node.declarations[0].loc!.start, node.declarations[0].loc!.end)
         };
     }
     else if (isAwaitExpression(dec.init))
@@ -1156,7 +1167,8 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
         start: node.declarations[0].loc!.start,
         end: node.declarations[0].loc!.end,
         componentClass: instCls,
-        methodName
+        methodName,
+        range: utils.toRange(node.declarations[0].loc!.start, node.declarations[0].loc!.end)
     };
 }
 
@@ -1218,7 +1230,8 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
             end,
             componentClass: component.componentClass,
             type: nodeName,
-            parentProperty
+            parentProperty,
+            range: utils.toRange(start, end)
         });
     });
 

@@ -38,6 +38,7 @@ export interface IExtJsBase extends IRange
 {
     componentClass: string;
     name: string;
+    range: IRange;
 }
 
 

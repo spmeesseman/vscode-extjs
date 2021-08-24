@@ -5,9 +5,9 @@ import { commands, ExtensionContext } from "vscode";
 import { extjsLangMgr } from "../extension";
 
 
-export async function waitReady(logPad = "", timeout = 120000)
+export async function waitReady(logPad = "   ", timeout = 120000, logLevel = 3)
 {
-    log.methodStart("wait ready command", 1, logPad);
+    log.methodStart("wait ready command", logLevel, logPad);
 
     let ct = 0;
     const sleepPeriod = 250;
@@ -17,14 +17,14 @@ export async function waitReady(logPad = "", timeout = 120000)
         await util.timeout(sleepPeriod);
     }
 
-    log.methodDone("wait ready command", 1, logPad);
+    log.methodDone("wait ready command", logLevel, logPad);
 }
 
 
 function registerWaitReadyCommand(context: ExtensionContext)
 {
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:waitReady", async (logPad?: string, timeout?: number) => { await waitReady(logPad, timeout); })
+        commands.registerCommand("vscode-extjs:waitReady", async (logPad?: string, timeout?: number, logLevel?: number) => { await waitReady(logPad, timeout, logLevel); })
     );
 }
 

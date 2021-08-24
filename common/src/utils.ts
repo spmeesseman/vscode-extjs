@@ -1,4 +1,4 @@
-import { IAlias, IComponent, IConfig, IMethod, IProperty, IType, IWidget, IXtype } from "./interface";
+import { IAlias, IComponent, IConfig, IMethod, IPosition, IProperty, IRange, IType, IWidget, IXtype } from "./interface";
 
 export function atob(str: string): string
 {
@@ -46,6 +46,23 @@ export function isNumeric(value: string | number): boolean
 export function isObject(value: any): value is string
 {
     return value && value instanceof Object || typeof value === "object";
+}
+
+
+export function isPositionInRange(position: IPosition, range: IRange)
+{
+    if (position.line > range.start.line && position.line < range.end.line) {
+        return true;
+    }
+    else if (position.line === range.start.line)
+    {
+        return position.column >= range.start.column;
+    }
+    else if (position.line === range.end.line)
+    {
+        return position.column <= range.end.column;
+    }
+    return false;
 }
 
 
@@ -116,4 +133,12 @@ export function toProperCase(name: string)
 export function timeout(ms: number)
 {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+export function toRange(start: IPosition, end: IPosition): IRange
+{
+    return {
+        start, end
+    };
 }

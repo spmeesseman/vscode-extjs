@@ -1,19 +1,19 @@
 
-import { IAlias, IComponent, IConfig, ILogger, IMethod, IProperty, IType, IWidget, IXtype } from "./interface";
+import * as utils from "./utils";
+import { IAlias, IComponent, IConfig, ILogger, IMethod, IPosition, IProperty, IType, IWidget, IXtype } from "./interface";
 
 
-export function getComponent(componentClass: string, nameSpace: string, project: string, components: IComponent[], logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
+export function getComponent(componentClass: string, nameSpace: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
 {
 	logger?.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["namespace", nameSpace]]);
 	const component = components.find(c => c.componentClass === componentClass && project === c.project) ||
-					  getComponentByAlias(componentClass, nameSpace, project, components, logger, logPad + "   ", logLevel);
+					  getComponentByAlias(componentClass, nameSpace, project, components, position, thisCmp, logger, logPad + "   ", logLevel);
 	logger?.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
 	return component;
 }
 
 
-
-export function getComponentByAlias(alias: string, nameSpace: string, project: string, components: IComponent[], logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
+export function getComponentByAlias(alias: string, nameSpace: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
 {
 	// const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
 	const _match = (c: IComponent, a: IAlias|IXtype) =>
@@ -33,8 +33,61 @@ export function getComponentByAlias(alias: string, nameSpace: string, project: s
 
 	logger?.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["namespace", nameSpace], ["project", project]]);
 
-	const component = components.find(c => c.xtypes.find(x => _match(c, x))) ||
-					  components.find(c => c.aliases.find(a => _match(c, a)));
+	// const component = components.find(c => c.xtypes.find(x => _match(c, x))) ||
+	// 				  components.find(c => c.aliases.find(a => _match(c, a)));
+
+	let component: IComponent | undefined;
+	const xtypeComponents = components.filter(c => c.xtypes.find(x => _match(c, x))) || [],
+		  aliasComponents = components.filter(c => c.aliases.find(a => _match(c, a))) || [];
+
+	if (xtypeComponents.length > 0) {
+		component = xtypeComponents[0];
+	}
+
+	//
+	// Some tricky concepts here.
+	// The only true way to know what component we're looking at when referencing it by an
+	// alias is to examine the position in the current document, and then the parent object
+	// properties. For example, consider the parsed widget property:
+	//
+	//     layout: {
+	//         type: 'vbox',
+	//         align: 'stretch'
+	//     }
+	//
+	// To find the class definition for the type 'vbox', we scan the widgets on the current
+	// document component, find the object range that the current position lies within, and
+	// examine the defintiion of the widget that's found there fot it's nameSpace property.
+	// In this case, an alias name would be `layout.vbox`, `layout.hbox`, etc
+	//
+	// If no range and current document component were passed by the caller, the result
+	// could be invalid if there's an xtype in the application with the same alias short
+	// name `vbox`, or another alias of any namespace.
+	//
+	// In the case of a viewModel, we need to traverse up a couple objects to see if there's
+	// a `stores` property, which would behave the same as a `store` node as a 1st level
+	// object property.
+	//
+	// `Widgets` are parsed objects ina component/class file that are defined by either
+	// an `xtype` or `type` property.
+	//
+	if (aliasComponents)
+	{
+		if (position && thisCmp) {
+			for (const c of aliasComponents) {
+				for (const a of c.aliases) {
+					thisCmp.objectRanges.filter(r => utils.isPositionInRange(position, r)).forEach(r => {
+						if (r.name === a.nameSpace || r.name === "stores" && a.nameSpace === "store") {
+							component = c;
+						}
+					});
+				}
+			}
+		}
+		if (!component) {
+			component = aliasComponents[0];
+		}
+	}
 
 	logger?.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
 	return component;
