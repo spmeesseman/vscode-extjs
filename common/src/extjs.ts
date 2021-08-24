@@ -19,17 +19,13 @@ export function getComponentByAlias(alias: string, nameSpace: string, project: s
 	const _match = (c: IComponent, a: IWidget) =>
 	{
 		let matched = false;
-		const sameProject = project === c.project;
-		if (sameProject)
+		if (project === c.project)
 		{
-			if (isXType(a)) {
+			if (isAlias(a)) {
+				matched = a.name === "widget." + alias || a.name === "store." + alias || a.name === "layout." + alias;
+			}
+			else if (isXType(a) || isType(a)) {
 				matched = a.name === alias;
-			}
-			else if (isAlias(a)) {
-				matched = a.name === "widget." + alias;
-			}
-			else if (isType(a)) {
-				matched = a.name === "store." + alias || a.name === "layout." + alias;
 			}
 		}
 		return matched;

@@ -624,11 +624,10 @@ class ExtjsLanguageManager
         if (cmpType & ComponentType.Class)
         {
             cmpClass = lineText.substring(0, lineText.indexOf(property) + property.length);
-            const tProperty = cmpType & ComponentType.Store ? "store." + property : property;
-            if (component = this.getComponent(tProperty, thisCmp.nameSpace, project, logPad + "   ", logLevel)) {
+            if (component = this.getComponent(property, thisCmp.nameSpace, project, logPad + "   ", logLevel)) {
                 cmpClass = component.componentClass;
             }
-            else if (component = this.getComponentInstance(tProperty, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
+            else if (component = this.getComponentInstance(property, thisCmp.nameSpace, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
                 cmpClass = component.componentClass;
             }
         }
