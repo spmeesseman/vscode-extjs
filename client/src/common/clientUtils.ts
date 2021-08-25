@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import { Range, Position, TextDocument, EndOfLine, Uri, workspace } from "vscode";
-import { IPosition, IComponent, IMethod, IExtJsBase, IPrimitive, IObjectRange, IRange } from "../../../common";
+import { IPosition, IComponent, extjs, IExtJsBase, IPrimitive, IObjectRange } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
 
@@ -85,6 +85,7 @@ export function isPositionInRange(position: Position, range: Range)
         return position.character <= range.end.character;
     }
     return false;
+    // return extjs.isPositionInRange(toIPosition(position), toIRange(range));
 }
 
 

@@ -15,8 +15,11 @@ export function getComponent(componentClass: string, project: string, components
 
 export function getComponentByAlias(alias: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
 {
+	logger?.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["project", project]]);
+
+	const w = position && thisCmp ? getWidgetByPosition(position, thisCmp) : undefined;
 	// const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
-	const _match = (c: IComponent, a: IAlias|IXtype) =>
+	const _match = (c: IComponent, a: IAlias|IXtype|IType) =>
 	{
 		let matched = false;
 		if (project === c.project)
@@ -31,10 +34,9 @@ export function getComponentByAlias(alias: string, project: string, components: 
 		return matched;
 	};
 
-	logger?.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["project", project]]);
-
 	let component: IComponent | undefined;
-	const xtypeComponents = components.filter(c => c.xtypes.find(x => _match(c, x))) || [],
+	const xtypeComponents = w?.type !== "type" ? (components.filter(c => c.xtypes.find(x => _match(c, x))) || []) :
+												 (components.filter(c => c.types.find(t => _match(c, t))) || []),
 		  aliasComponents = components.filter(c => c.aliases.find(a => _match(c, a))) || [];
 
 	if (xtypeComponents.length > 0) {
@@ -47,7 +49,6 @@ export function getComponentByAlias(alias: string, project: string, components: 
 	// 'layout' is the namespace name.  This is only possible if `position` and `thisCmp`
 	// arguments were passed by the caller.
 	//
-	const w = position && thisCmp ? getWidgetByPosition(position, thisCmp) : undefined;
 	component = getAliasLookup(aliasComponents, position, !!(position && thisCmp && (!w || w.type === "type")), thisCmp) || component;
 
 	logger?.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
