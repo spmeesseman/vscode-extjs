@@ -158,7 +158,7 @@ export async function run(): Promise<void>
     //
     // Add all files to the test suite
     //
-    const files = glob.sync("**/hover.test.js", { cwd: testsRoot });
+    const files = glob.sync("**/*.test.js", { cwd: testsRoot });
     files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
 
     const failures: number = await new Promise(resolve => mocha.run(resolve));
