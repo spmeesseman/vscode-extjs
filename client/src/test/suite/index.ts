@@ -73,7 +73,9 @@ export async function run(): Promise<void>
     // const testsRoot = path.resolve(__dirname, "..", "..", "..");
     const testsRoot = __dirname,
           nycRoot = path.resolve(__dirname, "..", "..", "..", "..");
-
+    //
+    // NYC config
+    //
     const nycCfg = {
         extends: "@istanbuljs/nyc-config-typescript",
         // cwd: path.join(__dirname, "..", "..", "..", ".."),
@@ -93,12 +95,11 @@ export async function run(): Promise<void>
         // require: [ "c:\\Projects\\vscode\\vscode-extjs\\dist\\server\\server.js"]
     };
 
-    // Setup coverage pre-test, including post-test hook to report
+    //
+    // NYC instance
+    //
     const nyc = new NYC(nycCfg);
 
-    // await nyc.reset();
-
-    await nyc.wrap();
     //
     // Check the modules already loaded and warn in case of race condition
     // (ideally, at this point the require cache should only contain one file - this module)
@@ -119,6 +120,10 @@ export async function run(): Promise<void>
     // console.log('Glob verification', await nyc.exclude.glob(nyc.cwd));
     //
     await nyc.createTempDirectory();
+
+    // await nyc.reset();
+
+    await nyc.wrap();
 
     // const env = {
     //     NYC_CONFIG: JSON.stringify(nycCfg),
