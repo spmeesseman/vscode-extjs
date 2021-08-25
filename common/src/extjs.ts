@@ -39,17 +39,21 @@ export function getComponentByAlias(alias: string, project: string, components: 
 												 (components.filter(c => c.types.find(t => _match(c, t))) || []),
 		  aliasComponents = components.filter(c => c.aliases.find(a => _match(c, a))) || [];
 
-	if (xtypeComponents.length > 0) {
-		component = xtypeComponents[0];
-	}
-
 	//
 	// getAliasLookup() will examine parent object's property name of the widget in the
 	// current document and match it to it's namespace name i.e. 'layout.vbox', where
 	// 'layout' is the namespace name.  This is only possible if `position` and `thisCmp`
 	// arguments were passed by the caller.
 	//
-	component = getAliasLookup(aliasComponents, position, !!(position && thisCmp && (!w || w.type === "type")), thisCmp) || component;
+	if (position && thisCmp && w && w.type === "type") {
+		component = getAliasLookup(aliasComponents, position, thisCmp);
+	}
+	else if (xtypeComponents.length > 0) {
+		component = xtypeComponents[0];
+	}
+	else if (aliasComponents.length > 0) {
+		component = aliasComponents[0];
+	}
 
 	logger?.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
 	return component;
@@ -93,7 +97,7 @@ export function getComponentByAlias(alias: string, project: string, components: 
  * @param position The cursor position within the document
  * @param thisCmp The component class of the current document
  */
-export function getAliasLookup(components: IComponent[], position: IPosition | undefined, matchedParentOnly: boolean, thisCmp: IComponent | undefined)
+export function getAliasLookup(components: IComponent[], position: IPosition | undefined, thisCmp: IComponent | undefined)
 {
 	let component: IComponent | undefined;
 
@@ -109,9 +113,6 @@ export function getAliasLookup(components: IComponent[], position: IPosition | u
 					});
 				}
 			}
-		}
-		if (!component && !matchedParentOnly) {
-			component = components[0];
 		}
 	}
 
