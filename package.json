@@ -65,7 +65,7 @@
         "rebuild-webpack": "rimraf dist && npm run build-webpack",
         "test0": "npm run coverage-clean && npm run rebuild && node ./dist/client/test/runTest.js",
         "test": "npm run coverage-clean && npm run rebuild && node ./dist/client/test/runTest.js",
-        "test2": "nyc && node ./dist/client/test/runTest.js",
+        "test2": "npm run coverage-clean && npm run rebuild && nyc node ./dist/client/test/runTest.js",
         "test3": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run test",
         "test:after": "npm run coverage-full_off",
         "test:before": "npm run rebuild && npm run coverage-full_on",
