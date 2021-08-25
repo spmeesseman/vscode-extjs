@@ -159,7 +159,7 @@ async function run(context: ExtensionContext)
         // Register the server for JS documents
         //
         documentSelector: [{ scheme: "file", language: "javascript" } ],
-        diagnosticCollectionName: "ExtJs Language Server",
+        diagnosticCollectionName: "ExtJs Intellisense",
         outputChannel,
         synchronize: {
             //

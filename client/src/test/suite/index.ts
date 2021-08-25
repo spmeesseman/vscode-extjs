@@ -31,17 +31,54 @@ if (process.platform === "linux")
     }
 }
 
+export function run2(): Promise<void> {
+	// Create the mocha test
+	const mocha = new Mocha({
+		ui: "tdd",
+		color: true
+	});
+	mocha.timeout(100000);
+
+	const testsRoot = __dirname;
+
+	return new Promise((resolve, reject) => {
+		glob("hover.test.js", { cwd: testsRoot }, (err, files) => {
+			if (err) {
+				return reject(err);
+			}
+
+			// Add files to the test suite
+			files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+
+			try {
+				// Run the mocha test
+				mocha.run(failures => {
+					if (failures > 0) {
+						reject(new Error(`${failures} tests failed.`));
+					} else {
+						resolve();
+					}
+				});
+			} catch (err) {
+				console.error(err);
+				reject(err);
+			}
+		});
+	});
+}
+
+
 export async function run(): Promise<void>
 {
     // const testsRoot = path.resolve(__dirname, "..", "..", "..");
-    const testsRoot = __dirname;
-    // Setup coverage pre-test, including post-test hook to report
-    const nyc = new NYC(
-    {
+    const testsRoot = __dirname,
+          nycRoot = path.resolve(__dirname, "..", "..", "..", "..");
+
+    const nycCfg = {
         extends: "@istanbuljs/nyc-config-typescript",
         // cwd: path.join(__dirname, "..", "..", "..", ".."),
         // reporter: ["text-summary", "html", "lcov", "cobertura" ],
-        cwd: path.resolve(__dirname, "..", "..", "..", ".."),
+        cwd: nycRoot,
         reporter: ["text", "html", "lcov", "cobertura" ],
         all: true,
         silent: false,
@@ -49,10 +86,18 @@ export async function run(): Promise<void>
         hookRequire: true,
         hookRunInContext: true,
         hookRunInThisContext: true,
+        showProcessTree: true,
         useSpawnWrap: true,           // wrap language server spawn
-        include: ["dist/**/*.js"],
-        exclude: ["dist/client/test/**"]
-    });
+        include: ["dist/**/*.js", "common/lib/*.js"],
+        exclude: ["dist/client/test/**"] // ,
+        // require: [ "c:\\Projects\\vscode\\vscode-extjs\\dist\\server\\server.js"]
+    };
+
+    // Setup coverage pre-test, including post-test hook to report
+    const nyc = new NYC(nycCfg);
+
+    // await nyc.reset();
+
     await nyc.wrap();
     //
     // Check the modules already loaded and warn in case of race condition
@@ -65,11 +110,27 @@ export async function run(): Promise<void>
         console.warn("NYC initialized after modules were loaded", Object.keys(require.cache).filter(filterFn));
     }
 
+    // Object.keys(require.cache).forEach(f => {
+    //     console.log(f);
+    // });
+
     //
     // Debug which files will be included/excluded
     // console.log('Glob verification', await nyc.exclude.glob(nyc.cwd));
     //
     await nyc.createTempDirectory();
+
+    // const env = {
+    //     NYC_CONFIG: JSON.stringify(nycCfg),
+    //     NYC_CWD: nycRoot
+    // };
+
+    // const wrapper = require.resolve("./node_modules/nyc/bin/wrap.js");
+    // // Support running nyc as a user without HOME (e.g. linux 'nobody'),
+    // // https://github.com/istanbuljs/nyc/issues/951
+    // // env.SPAWN_WRAP_SHIM_ROOT = process.env.SPAWN_WRAP_SHIM_ROOT || process.env.XDG_CACHE_HOME || require('os').homedir()
+    // const sw = require("spawn-wrap");
+    // sw([wrapper], env);
 
     //
     // Create the mocha test
@@ -92,7 +153,7 @@ export async function run(): Promise<void>
     //
     // Add all files to the test suite
     //
-    const files = glob.sync("**/*.test.js", { cwd: testsRoot });
+    const files = glob.sync("**/hover.test.js", { cwd: testsRoot });
     files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
 
     const failures: number = await new Promise(resolve => mocha.run(resolve));

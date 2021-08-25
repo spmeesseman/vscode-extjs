@@ -34,6 +34,20 @@
         "color": "#EEEEEE",
         "theme": "light"
     },
+    "nyc": {
+        "extends": "@istanbuljs/nyc-config-typescript",
+        "reporter": ["text", "html", "lcov", "cobertura" ],
+        "all": true,
+        "silent": false,
+        "instrument": true,
+        "hookRequire": true,
+        "hookRunInContext": true,
+        "hookRunInThisContext": true,
+        "showProcessTree": true,
+        "useSpawnWrap": true,
+        "include": ["**/dist/client/*.js", "**/dist/server/*.js", "**/common/lib/*.js"],
+        "exclude": ["**/test/**"]
+    },
     "scripts": {
         "clean-ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs\\testFixture",
         "build-webpack": "npm run build-common && npm run webpack-build",
@@ -49,8 +63,10 @@
         "publish": "vsce publish",
         "rebuild": "rimraf dist && npm run build-tsc",
         "rebuild-webpack": "rimraf dist && npm run build-webpack",
+        "test0": "npm run coverage-clean && npm run rebuild && node ./dist/client/test/runTest.js",
         "test": "npm run coverage-clean && npm run rebuild && node ./dist/client/test/runTest.js",
-        "test:dev": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run test",
+        "test2": "nyc && node ./dist/client/test/runTest.js",
+        "test3": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run test",
         "test:after": "npm run coverage-full_off",
         "test:before": "npm run rebuild && npm run coverage-full_on",
         "test:openreport": "npm run coverage-open-report",
