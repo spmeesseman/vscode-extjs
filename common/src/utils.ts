@@ -1,4 +1,4 @@
-import { IAlias, IComponent, IConfig, IMethod, IPosition, IProperty, IRange, IType, IWidget, IXtype } from "./interface";
+import { IPosition, IRange } from ".";
 
 export function atob(str: string): string
 {

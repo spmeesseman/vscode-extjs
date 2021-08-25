@@ -6,7 +6,6 @@ import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, ex
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
 import * as log from "./log";
-import { getAliasLookup } from "../../common/src/extjs";
 
 
 function isErrorIgnored(code: number, fsPath: string): boolean
