@@ -76,7 +76,7 @@ export async function run(): Promise<void>
     //
     // NYC config
     //
-    const nycCfg = {
+    const nycCfg: any = {
         extends: "@istanbuljs/nyc-config-typescript",
         // cwd: path.join(__dirname, "..", "..", "..", ".."),
         // reporter: ["text-summary", "html", "lcov", "cobertura" ],
@@ -92,7 +92,7 @@ export async function run(): Promise<void>
         useSpawnWrap: true,           // wrap language server spawn
         include: ["dist/**/*.js", "common/lib/*.js"],
         exclude: ["dist/client/test/**"] // ,
-        // require: [ "c:\\Projects\\vscode\\vscode-extjs\\dist\\server\\server.js"]
+        // require: [ "bootstrap-fork"]
     };
 
     //
@@ -123,19 +123,43 @@ export async function run(): Promise<void>
 
     // await nyc.reset();
 
-    await nyc.wrap();
+    const env: any = {
+        NYC_CONFIG: JSON.stringify(nycCfg),
+        NYC_CWD: process.cwd() // nycRoot
+    };
 
-    // const env = {
-    //     NYC_CONFIG: JSON.stringify(nycCfg),
-    //     NYC_CWD: nycRoot
-    // };
+    if (nycCfg.addAllFiles) {
+        await nyc.addAllFiles();
+    }
 
-    // const wrapper = require.resolve("./node_modules/nyc/bin/wrap.js");
-    // // Support running nyc as a user without HOME (e.g. linux 'nobody'),
-    // // https://github.com/istanbuljs/nyc/issues/951
-    // // env.SPAWN_WRAP_SHIM_ROOT = process.env.SPAWN_WRAP_SHIM_ROOT || process.env.XDG_CACHE_HOME || require('os').homedir()
+    // const wrapper = require.resolve("./wrap.js");
+    // //Support running nyc as a user without HOME (e.g. linux 'nobody'),
+    // //https://github.com/istanbuljs/nyc/issues/951
+    // env.SPAWN_WRAP_SHIM_ROOT = process.env.SPAWN_WRAP_SHIM_ROOT || process.env.XDG_CACHE_HOME || require("os").homedir();
     // const sw = require("spawn-wrap");
     // sw([wrapper], env);
+
+    // nycCfg.isChildProcess = true;
+    //
+    // nycCfg._processInfo = {
+    //     pid: process.pid,
+    //     ppid: process.ppid,
+    //     parent: process.env.NYC_PROCESS_ID || null
+    // };
+    //
+    // if (process.env.NYC_PROCESSINFO_EXTERNAL_ID) {
+    //     nycCfg._processInfo.externalId = process.env.NYC_PROCESSINFO_EXTERNAL_ID;
+    //     delete process.env.NYC_PROCESSINFO_EXTERNAL_ID;
+    // }
+    //
+    // if (process.env.NYC_CONFIG_OVERRIDE) {
+    //     Object.assign(nycCfg, JSON.parse(process.env.NYC_CONFIG_OVERRIDE));
+    //     process.env.NYC_CONFIG = JSON.stringify(nycCfg);
+    // }
+
+    await nyc.wrap();
+
+    // require("spawn-wrap").runMain();
 
     //
     // Create the mocha test
@@ -158,7 +182,7 @@ export async function run(): Promise<void>
     //
     // Add all files to the test suite
     //
-    const files = glob.sync("**/*.test.js", { cwd: testsRoot });
+    const files = glob.sync("**/diagnostics.test.js", { cwd: testsRoot });
     files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
 
     const failures: number = await new Promise(resolve => mocha.run(resolve));

@@ -36,7 +36,12 @@
     },
     "nyc": {
         "extends": "@istanbuljs/nyc-config-typescript",
-        "reporter": ["text", "html", "lcov", "cobertura" ],
+        "reporter": [
+            "text",
+            "html",
+            "lcov",
+            "cobertura"
+        ],
         "all": true,
         "silent": false,
         "instrument": true,
@@ -45,8 +50,14 @@
         "hookRunInThisContext": true,
         "showProcessTree": true,
         "useSpawnWrap": true,
-        "include": ["**/dist/client/*.js", "**/dist/server/*.js", "**/common/lib/*.js"],
-        "exclude": ["**/test/**"]
+        "include": [
+            "**/dist/client/*.js",
+            "**/dist/server/*.js",
+            "**/common/lib/*.js"
+        ],
+        "exclude": [
+            "**/test/**"
+        ]
     },
     "scripts": {
         "clean-ast_cache": "rimraf c:\\Code\\data\\user-data\\User\\globalStorage\\spmeesseman.vscode-extjs\\testFixture",
@@ -108,6 +119,7 @@
         "rimraf": "^3.0.2",
         "semver": "^7.3.4",
         "source-map-support": "^0.5.19",
+        "spawn-wrap": "^2.0.0",
         "ts-loader": "^7.0.5",
         "ts-node": "^9.1.1",
         "tslint": "^6.1.3",
