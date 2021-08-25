@@ -1,5 +1,26 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.7.0 (August 25th, 2021)
+
+### Bug Fixes
+
+- **Validation:** types can sometimes be validated by a class with the same alias name, but different alias namespace
+- **Diagnostics:** invalid requires array item does not show suggesstions
+- **Parser:** blanking the content of a document throws exception in extensions output channel
+- **Validation:** layout types always show invalid type diagnostic
+
+### Features
+
+- full caching system with persistence and in-memory proxy layer
+
+### Performance Enhancements
+
+- load all cached components to server at once as opposed to one by one
+
+### Visuals
+
+- more detailed progress indicator when indexing
+
 ## Version 0.6.0 (August 23rd, 2021)
 
 ### Bug Fixes
