@@ -39,7 +39,7 @@ export class ConfigParser
                     baseDir: "",
                     baseWsDir: "",
                     buildDir: "",
-                    wsDir: workspace.getWorkspaceFolder(Uri.file(pathParts[1]))?.uri.fsPath || "",
+                    wsDir: workspace.getWorkspaceFolder(Uri.file(pathParts[1]))?.uri.fsPath || ""
                 });
             }
             else {
@@ -52,17 +52,39 @@ export class ConfigParser
         //
         for (const uri of confUris)
         {
-            const fileSystemPath = uri.fsPath || uri.path,
+            const fileSystemPath = uri.fsPath,
                   confJson = await readFile(fileSystemPath),
                   conf: IConf = json5.parse(confJson);
             if (conf.classpath && conf.name)
             {
+                const baseDir = path.dirname(uri.fsPath),
+                      wsDir = workspace.getWorkspaceFolder(uri)?.uri.fsPath || baseDir;
+                //
+                // baseWsDir should be the relative path from the workspace folder root to the app.json
+                // file.  The Language Manager will use workspace.findFiles which will require a path
+                // relative to a workspace folder.
+                //
+                const baseWsDir = path.dirname(uri.fsPath.replace(wsDir || baseDir, ""))
+                                .replace(/\\/g, "/").substring(1); // trim leading path sep
+
                 if (!(conf.classpath instanceof Array)) {
                     conf.classpath = [ conf.classpath ];
                 }
+
+                conf.baseDir = baseDir;
+                conf.baseWsDir = baseWsDir;
+                conf.wsDir = wsDir;
+
                 log.value("   add .extjsrc path", fileSystemPath, 1);
                 log.value("      namespace", conf.name, 2);
                 log.value("      classpath", conf.classpath, 2);
+                log.value("      workspace rel dir", conf.baseWsDir, 1);
+                log.value("      base project dir", conf.baseDir, 1);
+                log.write("      classpaths:", 1);
+                conf.classpath.every((c) => {
+                    log.write(`         ${c}`, 1);
+                });
+
                 config.push(conf);
             }
         }
@@ -262,7 +284,7 @@ export class ConfigParser
             log.value("      base project dir", confs[0].baseDir, 1, logPad);
             log.write("      classpaths:", 1, logPad);
             confs[0].classpath.every((c) => {
-                log.write(`         ${confs[0].classpath}`, 1, logPad);
+                log.write(`         ${c}`, 1, logPad);
             });
 			if (confs.length > 1) {
 				log.write("      framework directory:");
@@ -270,7 +292,7 @@ export class ConfigParser
 				log.value("         workspace rel dir", confs[1].baseWsDir, 1, logPad);
                 log.write("         classpaths:", 1, logPad);
                 confs[1].classpath.every((c) => {
-                    log.write(`            ${confs[1].classpath}`, 1, logPad);
+                    log.write(`            ${c}`, 1, logPad);
                 });
 			}
             config.push(...confs);
