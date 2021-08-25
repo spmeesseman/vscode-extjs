@@ -989,7 +989,7 @@ class ExtjsLanguageManager
     private async indexAll(progress: Progress<any>, project?: string, logPad = "", logLevel = 1)
     {
         log.methodStart("index all", logLevel, logPad, true, [
-            [ "project", project ], [ "# of configs", this.config.length ]
+            [ "project", project ], [ "# of configurations", this.config.length ]
         ]);
 
         const processedDirs: string[] = [],
@@ -1014,17 +1014,18 @@ class ExtjsLanguageManager
 
         for (const conf of this.config)
         {
+            log.value("   process config", conf.name, 1, logPad);
+            log.values([
+                ["wsDir", conf.wsDir], ["baseWsDir", conf.baseWsDir], ["baseDir", conf.baseDir], ["classpath", conf.classpath.toString()]
+            ], 2, logPad + "   ");
+
             const projectName = getWorkspaceProjectName(conf.wsDir),
                   forceProjectAstIndexing = !(await pathExists(path.join(this.fsStoragePath, projectName)));
             let currentFileIdx = 0,
                 numFiles = 0,
                 increment: number | undefined;
 
-            log.value("   process config", conf.name, 1, logPad);
-            log.values([
-                ["projectName", projectName], ["wsDir", conf.wsDir],
-                ["baseWsDir", conf.baseWsDir], ["baseDir", conf.baseDir], ["classpath", conf.classpath.toString()]
-            ], 2, logPad + "   ");
+            log.value("   projectName", projectName, 2, logPad);
 
             if (project) {
                 if (project.toLowerCase() !== projectName.toLowerCase()) {
@@ -1467,7 +1468,7 @@ class ExtjsLanguageManager
             log.write("   process component " + componentClass, logLevel + 1, logPad);
             log.values([
                 ["namespace", nameSpace], ["# of widgets", widgets.length], ["# of xtypes", xtypes.length],
-                ["# of methods", methods.length], ["# of configs", configs.length], ["# of properties", properties.length],
+                ["# of methods", methods.length], ["# of config properties", configs.length], ["# of properties", properties.length],
                 ["# of aliases", aliases.length], ["fs path", fsPath ]
             ], logLevel + 1, logPad + "      ");
 

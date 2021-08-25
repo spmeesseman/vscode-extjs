@@ -6,6 +6,7 @@
 import * as path from "path";
 import * as Mocha from "mocha";
 const NYC = require("nyc");
+const foreground = require("foreground-child");
 import * as glob from "glob";
 
 //
@@ -14,6 +15,7 @@ import * as glob from "glob";
 //
 import "ts-node/register";
 import "source-map-support/register";
+import { argv } from "process";
 
 //
 // Linux: prevent a weird NPE when mocha on Linux requires the window size from the TTY
@@ -90,7 +92,8 @@ export async function run(): Promise<void>
         hookRunInThisContext: true,
         showProcessTree: true,
         useSpawnWrap: true,           // wrap language server spawn
-        include: ["dist/**/*.js", "common/lib/*.js"],
+        include: ["dist/**/*.js"],
+        // include: ["dist/**/*.js", "common/lib/*.js"],
         exclude: ["dist/client/test/**"] // ,
         // require: [ "bootstrap-fork"]
     };
@@ -123,14 +126,14 @@ export async function run(): Promise<void>
 
     // await nyc.reset();
 
-    const env: any = {
-        NYC_CONFIG: JSON.stringify(nycCfg),
-        NYC_CWD: process.cwd() // nycRoot
-    };
+    // const env: any = {
+    //     NYC_CONFIG: JSON.stringify(nycCfg),
+    //     NYC_CWD: process.cwd() // nycRoot
+    // };
 
-    if (nycCfg.addAllFiles) {
-        await nyc.addAllFiles();
-    }
+    // if (nycCfg.all) {
+    //     await nyc.addAllFiles();
+    // }
 
     // const wrapper = require.resolve("./wrap.js");
     // //Support running nyc as a user without HOME (e.g. linux 'nobody'),
@@ -158,6 +161,44 @@ export async function run(): Promise<void>
     // }
 
     await nyc.wrap();
+
+    // const suppressEPIPE = function(error: any) {
+    //     /* Prevent dumping error when `nyc npm t|head` causes stdout to
+    //      * be closed when reporting runs. */
+    //     if (error.code !== "EPIPE") {
+    //       throw error;
+    //     }
+    // };
+
+    // Both running the test script invocation and the check-coverage run may
+    // set process.exitCode. Keep track so that both children are run, but
+    // a non-zero exit codes in either one leads to an overall non-zero exit code.
+    // process.exitCode = 0;
+    // foreground(argv, async () =>
+    // {
+    //     const mainChildExitCode = process.exitCode;
+    //     try {
+    //         // await nyc.writeProcessIndex();
+    //
+    //         // nyc.maybePurgeSourceMapCache();
+    //         // if (argv.checkCoverage) {
+    //         // await nyc.checkCoverage({
+    //         //     lines: argv.lines,
+    //         //     functions: argv.functions,
+    //         //     branches: argv.branches,
+    //         //     statements: argv.statements
+    //         // }, argv['per-file']).catch(suppressEPIPE)
+    //         // process.exitCode = process.exitCode || mainChildExitCode
+    //         // }
+    //
+    //         // await nyc.report().catch(suppressEPIPE);
+    //     } catch (error) {
+    //         /* istanbul ignore next */
+    //         process.exitCode = process.exitCode || mainChildExitCode || 1;
+    //         /* istanbul ignore next */
+    //         console.error(error.message);
+    //     }
+    // });
 
     // require("spawn-wrap").runMain();
 
