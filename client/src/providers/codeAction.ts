@@ -28,84 +28,77 @@ class ExtjsCodeActionProvider implements CodeActionProvider
 
         if (!context.only || context.only?.value === CodeActionKind.QuickFix.value)
         {
-            for (const d of context.diagnostics)
+            context.diagnostics.filter(d => d.source === "vscode-extjs" && d.range.intersection(range)).forEach(d =>
             {
-                if (d.source === "vscode-extjs")
-                {
-                    if (!d.range.intersection(range) && !range.intersection(d.range)) {
-                        continue;
-                    }
-
-                    actions.push(...[{
+                actions.push(...[{
+                    title: "Ignore errors of this type (this line only)",
+                    isPreferred: true,
+                    kind: CodeActionKind.QuickFix,
+                    command: {
                         title: "Ignore errors of this type (this line only)",
-                        isPreferred: true,
-                        kind: CodeActionKind.QuickFix,
-                        command: {
-                            title: "Ignore errors of this type (this line only)",
-                            command: "vscode-extjs:ignoreError",
-                            arguments: [ d.code, document, range ]
-                        }
-                    },
-                    {
+                        command: "vscode-extjs:ignoreError",
+                        arguments: [ d.code, document, range ]
+                    }
+                },
+                {
+                    title: "Ignore errors of this type (file)",
+                    isPreferred: true,
+                    kind: CodeActionKind.QuickFix,
+                    command: {
                         title: "Ignore errors of this type (file)",
+                        command: "vscode-extjs:ignoreError",
+                        arguments: [ d.code, document ]
+                    }
+                },
+                {
+                    title: "Ignore errors of this type (global)",
+                    isPreferred: true,
+                    kind: CodeActionKind.QuickFix,
+                    command: {
+                        title: "Ignore errors of this type (global)",
+                        command: "vscode-extjs:ignoreError",
+                        arguments: [ d.code ]
+                    }
+                }]);
+
+                if (d.code === ErrorCode.xtypeNotFound && d.relatedInformation)
+                {
+                    addSuggestedActions(d.relatedInformation, "xtype", range, actions);
+                }
+                else if (d.code === ErrorCode.typeNotFound && d.relatedInformation)
+                {
+                    addSuggestedActions(d.relatedInformation, "type", range, actions);
+                }
+                else if (d.code === ErrorCode.typeNoRequires || d.code === ErrorCode.xtypeNoRequires)
+                {
+                    const propertyName = d.code === ErrorCode.typeNoRequires ? "type" : "xtype";
+                    actions.push(...[
+                    {
+                        title: `Fix the 'requires' array for this declared ${propertyName}`,
                         isPreferred: true,
                         kind: CodeActionKind.QuickFix,
                         command: {
-                            title: "Ignore errors of this type (file)",
-                            command: "vscode-extjs:ignoreError",
-                            arguments: [ d.code, document ]
+                            title: `Fix the 'requires' array for this declared ${propertyName}`,
+                            command: "vscode-extjs:ensureRequire",
+                            arguments: [ document.getText(range).replace(/["']/g, ""), propertyName ]
                         }
                     },
                     {
-                        title: "Ignore errors of this type (global)",
+                        title: `Fix the 'requires' array for all declared ${propertyName}s`,
                         isPreferred: true,
                         kind: CodeActionKind.QuickFix,
                         command: {
-                            title: "Ignore errors of this type (global)",
-                            command: "vscode-extjs:ignoreError",
-                            arguments: [ d.code ]
+                            title: `Fix the 'requires' array for all declared ${propertyName}s`,
+                            command: "vscode-extjs:ensureRequire",
+                            arguments: [ undefined, propertyName ]
                         }
                     }]);
-
-                    if (d.code === ErrorCode.xtypeNotFound && d.relatedInformation)
-                    {
-                        addSuggestedActions(d.relatedInformation, "xtype", range, actions);
-                    }
-                    else if (d.code === ErrorCode.typeNotFound && d.relatedInformation)
-                    {
-                        addSuggestedActions(d.relatedInformation, "type", range, actions);
-                    }
-                    else if (d.code === ErrorCode.typeNoRequires || d.code === ErrorCode.xtypeNoRequires)
-                    {
-                        const propertyName = d.code === ErrorCode.typeNoRequires ? "type" : "xtype";
-                        actions.push(...[
-                        {
-                            title: `Fix the 'requires' array for this declared ${propertyName}`,
-                            isPreferred: true,
-                            kind: CodeActionKind.QuickFix,
-                            command: {
-                                title: `Fix the 'requires' array for this declared ${propertyName}`,
-                                command: "vscode-extjs:ensureRequire",
-                                arguments: [ document.getText(range).replace(/["']/g, ""), propertyName ]
-                            }
-                        },
-                        {
-                            title: `Fix the 'requires' array for all declared ${propertyName}s`,
-                            isPreferred: true,
-                            kind: CodeActionKind.QuickFix,
-                            command: {
-                                title: `Fix the 'requires' array for all declared ${propertyName}s`,
-                                command: "vscode-extjs:ensureRequire",
-                                arguments: [ undefined, propertyName ]
-                            }
-                        }]);
-                    }
-                    else if (d.code === ErrorCode.classNotFound && d.relatedInformation)
-                    {
-                        addSuggestedActions(d.relatedInformation, "class", range, actions);
-                    }
                 }
-            }
+                else if (d.code === ErrorCode.classNotFound && d.relatedInformation)
+                {
+                    addSuggestedActions(d.relatedInformation, "class", range, actions);
+                }
+            });
         }
 
         log.methodDone("provide code action", 1, "", true);

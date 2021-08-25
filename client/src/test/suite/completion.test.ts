@@ -17,8 +17,14 @@ suite("Completion Tests", () =>
 	suiteSetup(async () =>
     {
 		const config = vscode.workspace.getConfiguration();
+		//
+		// Set `quick suggest` setting
+		//
 		quickSuggest = config.get<boolean>("editor.quickSuggestions");
 		await config.update("editor.quickSuggestions", false);
+		//
+		// Set `ignore errors` setting
+		//
 		ignoreErrors = configuration.get<any[]>("ignoreErrors", []);
 		await configuration.update("ignoreErrors", []);
 		//
@@ -26,29 +32,34 @@ suite("Completion Tests", () =>
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
+		//
+		// Open default test document
+		//
 		await activate(docUri);
 		await waitForValidation();
 	});
 
 
 	suiteTeardown(async () =>
-    {
+    {   //
+		// Reset `quick suggest` setting
+		//
 		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
+		//
+		// Reset `ignore errors` setting
+		//
 		await configuration.update("ignoreErrors", ignoreErrors);
+		//
+		// Reset `validation delay` setting
+		//
 		await configuration.update("validationDelay", validationDelay || 1250);
+		//
+		// Close active document
+		//
 		try {
 			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}
 		catch {}
-	});
-
-
-	test("Dummy stage for p.o.s. random fails on first test", async () =>
-	{
-		await testCompletion(docUri, new vscode.Position(95, 3), "", {
-			items: []
-		}, true, "no_fail");
-		await waitForValidation();
 	});
 
 
@@ -57,22 +68,41 @@ suite("Completion Tests", () =>
 		//
 		// Inside function
 		//
-		await testCompletion(docUri, new vscode.Position(95, 3), "", {
+		await testCompletion(docUri, new vscode.Position(95, 3), "A", {
 			items: [
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
-				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class },
-				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
+				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
+			]
+		}, true, "inline property start A");
+
+		await testCompletion(docUri, new vscode.Position(95, 3), "E", {
+			items: [
 				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
+			]
+		}, true, "inline property start");
+
+		await testCompletion(docUri, new vscode.Position(95, 3), "U", {
+			items: [
+				{ label: "Utils", kind: vscode.CompletionItemKind.Class }
+			]
+		}, true, "inline property start");
+
+		await testCompletion(docUri, new vscode.Position(95, 3), "V", {
+			items: [
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
 			]
 		}, true, "inline property start");
 
 		//
 		// Inside function - beginning of line
 		//
-		await testCompletion(docUri, new vscode.Position(95, 1), "", {
+		await testCompletion(docUri, new vscode.Position(95, 1), "U", {
 			items: [
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(95, 1), "V", {
+			items: [
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 
@@ -89,17 +119,24 @@ suite("Completion Tests", () =>
 		// VSCodeExtJS.common.PhysicianDropdown.create()
 		// Inside create() i.e. create( ... )
 		//
-		await testCompletion(docUri, new vscode.Position(74, 46), "", {
-			items: [
-				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class },
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
-				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
-				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
-			]
-		});
 		await testCompletion(docUri, new vscode.Position(74, 46), "A", {
 			items: [
 				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 46), "E", {
+			items: [
+				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 46), "U", {
+			items: [
+				{ label: "Utils", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 46), "V", {
+			items: [
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 
@@ -109,17 +146,24 @@ suite("Completion Tests", () =>
 		// VSCodeExtJS.common.PhysicianDropdown.create();
 		// After create(); i.e. .create( ... ); AppUtils.
 		//
-		await testCompletion(docUri, new vscode.Position(74, 48), "", {
-			items: [
-				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class },
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
-				{ label: "Utils", kind: vscode.CompletionItemKind.Class },
-				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
-			]
-		});
 		await testCompletion(docUri, new vscode.Position(74, 48), "A", {
 			items: [
 				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 48), "E", {
+			items: [
+				{ label: "Ext", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 48), "U", {
+			items: [
+				{ label: "Utils", kind: vscode.CompletionItemKind.Class }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(74, 48), "V", {
+			items: [
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 

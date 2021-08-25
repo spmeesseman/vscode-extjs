@@ -39,6 +39,9 @@ Completion:
 	☐ Model property getter/setter when using associations
 	☐ Component store property string literal completion, like xtype/type
 	☐ Store model property string literal completion, like xtype/type
+	☐ Apply defaults for 'items'
+		look for xtype and apply same logic as if it was in item object itself
+	☐ Grid columns, column config
 
 Definition:
 
@@ -76,6 +79,7 @@ JsDoc:
 
 Miscellaneous:
 
+	☐ Move as much functionality to server side as possible
 	✔ add 'clear ast cache' or 'reindex' task for chance becomes corrupt @done(21-08-08 14:15)
 	☐ goto definition for jsdoc parameter types (surrounded with{})
 	✔ Configs and variable level cache mappings need to be separated by a 3rd project dimension @high @done(21-08-23 16:00)

@@ -79,6 +79,7 @@ suite("Code Action Tests", () =>
 	{
 		const quoteCharacter = configuration.get<string>("quoteCharacter", "single");
 		await configuration.update("quoteCharacter", "single");
+
 		//
 		// Line 203 - 207 Store type object
 		// 199
@@ -103,6 +104,21 @@ suite("Code Action Tests", () =>
 				title: "Fix the 'requires' array for all declared types",
 				command: "vscode-extjs:ensureRequire",
 				arguments: [ undefined, "type" ]
+			}
+        }]);
+
+		//
+		// Line 34 - app component
+		// store { type: userss } - invalid type, should be users
+		//
+		const range1 = toRange(235, 9, 235, 16);
+		await testCodeAction(docUri, range1, [
+        {
+			title: "Replace declared type with 'users'",
+            command: {
+				title: "Replace declared type with 'users'",
+				command: "vscode-extjs:replaceText",
+            	arguments: [ "'userss'", range1 ]
 			}
         }]);
 
@@ -248,6 +264,12 @@ suite("Code Action Tests", () =>
 
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
+	});
+
+
+	test("No action", async () =>
+	{
+		await testCodeAction(docUri, toRange(230, 14, 230, 23), []);
 	});
 
 });

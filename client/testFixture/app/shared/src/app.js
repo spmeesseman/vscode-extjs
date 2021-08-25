@@ -230,6 +230,10 @@ Ext.define('VSCodeExtJS',
 		someMethod();
 		someClass.someMethod();
 		VSCodeExtJS.common.PhysicianDropdown.badFnToCall();
+	},
+
+	store: {
+		type: 'userss'
 	}
 
 });
