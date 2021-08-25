@@ -6,6 +6,7 @@ import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, ex
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
 import * as log from "./log";
+import { getAliasLookup } from "../../common/src/extjs";
 
 
 function isErrorIgnored(code: number, fsPath: string): boolean
@@ -118,11 +119,8 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		//
 		if (globalSettings.validateXTypes)
 		{
-			cmp.widgets.filter(w => w.type === "xtype").forEach((w) => {
-				validateXtype(w, cmp, toVscodeRange(w.start, w.end), diagRelatedInfoCapability, textObj, diagnostics);
-			});
-			cmp.widgets.filter(w => w.type === "type").forEach((w) => {
-				validateXtype(w, cmp, toVscodeRange(w.start, w.end), diagRelatedInfoCapability, textObj, diagnostics);
+			cmp.widgets.filter(w => w.type === "xtype" || w.type === "type").forEach((w) => {
+				validateXtype(w, cmp, diagRelatedInfoCapability, textObj, diagnostics);
 			});
 		}
 
@@ -190,12 +188,13 @@ function toVscodeRange(start: IPosition, end: IPosition): Range
 }
 
 
-function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+function validateXtype(widget: IWidget, thisCmp: IComponent, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
-	const thisWidgetCls = extjs.getComponent(widget.name, cmp.project, components)?.componentClass,
+	const widgetCls = extjs.getComponent(widget.name, thisCmp.project, components, widget.start, thisCmp)?.componentClass,
 		  fsPath = URI.file(document.uri).fsPath,
 		  eNotFoundCode = (ErrorCode as any)[`${widget.type}NotFound`],
-		  eNoRequiresCode = (ErrorCode as any)[`${widget.type}NoRequires`];
+		  eNoRequiresCode = (ErrorCode as any)[`${widget.type}NoRequires`],
+		  range = toVscodeRange(widget.start, widget.end);
 	//
 	// Check ignored line (previous line), e.g.:
 	//
@@ -220,7 +219,7 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 	//
 	// First check to make sure we have the widget/xtype/alias indexed
 	//
-	if (!thisWidgetCls && ignoreText !== `/** vscode-extjs-ignore-${eNotFoundCode} */`)
+	if (!widgetCls && ignoreText !== `/** vscode-extjs-ignore-${eNotFoundCode} */`)
 	{   //
 		// Check global/file ignore for this error type
 		//
@@ -247,14 +246,14 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 			};
 
 			if (diagRelatedInfoCapability) {
-				addXTypeSuggestions(diagnostic, widget.name, document);
+				addXTypeSuggestions(diagnostic, widget, thisCmp, document);
 			}
 
 			diagnostics.push(diagnostic);
 		}
 	}
 
-	if (extjs.isNeedRequire(thisWidgetCls, components) && ignoreText !== `/** vscode-extjs-ignore-${eNoRequiresCode} */`)
+	if (extjs.isNeedRequire(widgetCls, components) && ignoreText !== `/** vscode-extjs-ignore-${eNoRequiresCode} */`)
 	{   //
 		// Check global/file ignore for this error type
 		//
@@ -275,12 +274,12 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 			const requires = [],
 				  requiredXtypes: string[] = [];
 			let thisXType: string | undefined;
-			requires.push(...(cmp.requires?.value || []));
+			requires.push(...(thisCmp.requires?.value || []));
 
 			//
 			// Ignore if this is the defined xtype of the component itself
 			//
-			if (thisWidgetCls === cmp.componentClass) {
+			if (widgetCls === thisCmp.componentClass) {
 				requiredXtypes.push(widget.name);
 			}
 			else if (requires.length > 0)
@@ -288,12 +287,17 @@ function validateXtype(widget: IWidget, cmp: IComponent, range: Range, diagRelat
 				// const requiredXtypes: string[] = [];
 				for (const require of requires)
 				{
-					if (require.name !== thisWidgetCls) {
+					if (require.name !== widgetCls) {
 						const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
-						const requiredCmp = components.find(c => c.componentClass === require.name && c.project === cmp.project);
+						const requiredCmp = components.find(c => c.componentClass === require.name && c.project === thisCmp.project);
 						if (requiredCmp) {
+							if (widget.type === "type") {
+								requiredXtypes.push(...(requiredCmp.types.map(x => x.name.replace(aliasNsReplaceRegex, "")) || []));
+							}
+							else {
+								requiredXtypes.push(...(requiredCmp.xtypes.map(x => x.name.replace(aliasNsReplaceRegex, "")) || []));
+							}
 							requiredXtypes.push(...(requiredCmp.aliases.map(s => s.name.replace(aliasNsReplaceRegex, "")) || []));
-							requiredXtypes.push(...(requiredCmp.xtypes.map(x => x.name.replace(aliasNsReplaceRegex, "")) || []));
 						}
 					}
 					else {
@@ -345,8 +349,8 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 
 	for (const require of requires)
 	{
-		const thisWidgetCls = extjs.getComponent(require.name, cmp.project, components)?.componentClass;
-		if (thisWidgetCls) { // if we have a mapping, then no diagnostic
+		const widgetCls = extjs.getComponent(require.name, cmp.project, components)?.componentClass;
+		if (widgetCls) { // if we have a mapping, then no diagnostic
 			continue;
 		}
 		//
@@ -430,11 +434,6 @@ function addSuggestion(a: string, text: string, suggestions: string[])
 function addClassSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument)
 {
 	const suggestions: string[] = [];
-	const _add = (aliases: IWidget[]) =>
-	{
-		aliases.map(a => a.name).forEach(a => addSuggestion(a, text, suggestions));
-	};
-
 	//
 	// See if some suggestions can be made...
 	//
@@ -455,12 +454,12 @@ function addClassSuggestions(diagnostic: Diagnostic, text: string, document: Tex
 
 
 
-function addXTypeSuggestions(diagnostic: Diagnostic, text: string, document: TextDocument)
+function addXTypeSuggestions(diagnostic: Diagnostic, widget: IWidget, thisCmp: IComponent, document: TextDocument)
 {
 	const suggestions: string[] = [];
 	const _add = (aliases: IWidget[]) =>
 	{
-		aliases.map(a => a.name).forEach(a => addSuggestion(a, text, suggestions));
+		aliases.map(a => a.name).forEach(a => addSuggestion(a, widget.name, suggestions));
 	};
 
 	//
@@ -470,6 +469,9 @@ function addXTypeSuggestions(diagnostic: Diagnostic, text: string, document: Tex
 	{
 		if (suggestions.length < 5)
 		{
+			if (widget.type === "type") {
+				_add(component.types);
+			}
 			_add(component.xtypes);
 			_add(component.aliases);
 		}
