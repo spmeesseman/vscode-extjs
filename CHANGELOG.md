@@ -1,5 +1,11 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.7.1 (August 25th, 2021)
+
+### Bug Fixes
+
+- **Config Parser:** extjsrc configuration causes indexing to fail for all projects
+
 ## Version 0.7.0 (August 25th, 2021)
 
 ### Bug Fixes
