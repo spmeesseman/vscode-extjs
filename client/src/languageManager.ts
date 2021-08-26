@@ -995,7 +995,8 @@ class ExtjsLanguageManager
         const processedDirs: string[] = [],
               cfgPct = this.config && this.config.length ? 100 / this.config.length : 100;
         let currentCfgIdx = 0,
-            components: IComponent[] = [];
+            components: IComponent[] = [],
+            pct = 0;
 
         //
         // The 'forceReIndexOnUpdateFlag' is set before a release in the case where a re-index
@@ -1036,7 +1037,7 @@ class ExtjsLanguageManager
 
             progress.report({
                 increment: 0,
-                message: `: Scanning project ${projectName}`
+                message: `: Indexing project ${projectName} ${pct}%`
             });
 
             const storageKey = this.getCmpStorageFileName(conf.baseDir, conf.name),
@@ -1048,7 +1049,6 @@ class ExtjsLanguageManager
             {
                 if (!_isIndexed(conf.baseDir))
                 {
-                    let pct = 0;
                     components = JSON.parse(storedComponents);
                     increment = Math.round(1 / components.length * cfgPct);
                     //
@@ -1061,7 +1061,7 @@ class ExtjsLanguageManager
                         pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
                         progress.report({
                             increment,
-                            message: ": Indexing " + pct + "%"
+                            message: `: Indexing project ${projectName} ${pct}%`
                         });
                     }
 
@@ -1071,28 +1071,27 @@ class ExtjsLanguageManager
 
                     progress.report({
                         increment,
-                        message: ": Caching " + Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct)) + "%"
+                        message: `: Caching project ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
                     });
 
                     await this.serverRequest.loadExtJsComponent(JSON.stringify(components), projectName);
 
                     progress.report({
                         increment,
-                        message: ": Caching " + Math.round(nextInc > pct ? nextInc : pct) + "%"
+                        message: `: Caching project ${projectName} ${Math.round(nextInc > pct ? nextInc : pct)}%`
                     });
 
                     await this.processComponents(components, projectName, false, "   ", logLevel + 1);
 
                     progress.report({
                         increment,
-                        message: Math.round(currentCfgIdx * cfgPct) + "%"
+                        message: `: Indexing project ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
                     });
                 }
             }
             else // index the file via the language server
             {
-                let pct = 0,
-                    currentDir = 0,
+                let currentDir = 0,
                     currentFile = 0;
                 components = []; // clear component defs from last loop iteration
 
@@ -1147,7 +1146,7 @@ class ExtjsLanguageManager
                             pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
                             progress.report({
                                 increment,
-                                message: ": Indexing " + pct + "%"
+                                message: `: Indexing project ${projectName} ${pct}%`
                             });
                             // statusBarSpace.text = getStatusString(pct);
                         }
@@ -1162,7 +1161,7 @@ class ExtjsLanguageManager
 
                 progress.report({
                     increment,
-                    message: ": Caching " + Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct)) + "%"
+                    message: `: Caching project ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
                 });
 
                 //
@@ -1175,7 +1174,7 @@ class ExtjsLanguageManager
 
                 progress.report({
                     increment,
-                    message: ": Indexing " + Math.round(currentCfgIdx * cfgPct) + "%"
+                    message: `: Indexing project ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
                 });
             }
         }
