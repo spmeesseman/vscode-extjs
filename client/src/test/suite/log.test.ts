@@ -1,6 +1,6 @@
 
 import * as log from "../../common/log";
-import { getDocUri, activate, toRange } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
@@ -16,12 +16,14 @@ suite("Logging Tests", () =>
 		await activate(docUri);
 		logEnabled = configuration.get<boolean>("debugClient");
 		await configuration.update("debugClient", true);
+		await waitForValidation();
 	});
 
 
 	suiteTeardown(async () =>
     {
 		await configuration.update("debugClient", logEnabled);
+		await waitForValidation();
 	});
 
 

@@ -25,10 +25,12 @@ suite("Code Action Tests", () =>
 	suiteTeardown(async () =>
     {
 		await configuration.update("ignoreErrors", ignoreErrors);
+		await waitForValidation();
 		try {
 			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}
 		catch {}
+		await waitForValidation();
 	});
 
 

@@ -32,10 +32,12 @@ suite("Hover Tests", () =>
 		// Reset validation delay setting back to original value
 		//
 		await configuration.update("validationDelay", validationDelay);
+		await waitForValidation();
 		try {
 			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}
 		catch {}
+		await waitForValidation();
 	});
 
 

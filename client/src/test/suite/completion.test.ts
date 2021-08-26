@@ -45,14 +45,17 @@ suite("Completion Tests", () =>
 		// Reset `quick suggest` setting
 		//
 		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
+		await waitForValidation();
 		//
 		// Reset `ignore errors` setting
 		//
 		await configuration.update("ignoreErrors", ignoreErrors);
+		await waitForValidation();
 		//
 		// Reset `validation delay` setting
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
+		await waitForValidation();
 		//
 		// Close active document
 		//
@@ -60,6 +63,7 @@ suite("Completion Tests", () =>
 			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}
 		catch {}
+		await waitForValidation();
 	});
 
 

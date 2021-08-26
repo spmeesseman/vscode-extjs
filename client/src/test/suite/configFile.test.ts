@@ -39,10 +39,12 @@ suite("Config File Tests", () =>
 		// Reset validation delay setting back to original value
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
+		await waitForValidation();
 		try {
 			await commands.executeCommand("workbench.action.closeActiveEditor");
 		}
 		catch {}
+		await waitForValidation();
 	});
 
 
