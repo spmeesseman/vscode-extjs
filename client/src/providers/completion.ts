@@ -12,7 +12,7 @@ import {
 } from "vscode";
 import {
     getMethodByPosition, isPositionInObjectRange, isPositionInRange, toVscodeRange, isComponent,
-    getObjectRangeByPosition, documentEol, quoteChar, getWorkspaceProjectName, toIPosition
+    getObjectRangeByPosition, documentEol, quoteChar, getWorkspaceProjectName, toIPosition, shouldIgnoreType
 } from "../common/clientUtils";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, isObjectProperty, isExpressionStatement,
@@ -55,6 +55,17 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
     async provideCompletionItems(document: TextDocument, position: Position)
     {
+        const range = document.getWordRangeAtPosition(position),
+              text = range ? document.getText(range) : "",
+              lineText = document.lineAt(position).text,
+              lineTextLeft = lineText.substr(0, position.character).trimLeft();
+
+        if (/type *\:/.test(lineTextLeft) && await shouldIgnoreType(text)) {
+            return;
+        }
+        if (!utils.isExtJsFile(document.getText())) {
+            return;
+        }
 
         log.methodStart("provide completion items", 1, "", true);
 
@@ -68,11 +79,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // Indexer finished, proceed...
         //
 
-        const lineText = document.lineAt(position).text,
-              lineTextLeft = lineText.substr(0, position.character).trimLeft(),
-              completionItems: CompletionItem[] = [],
-              range = document.getWordRangeAtPosition(position),
-              text = range ? document.getText(range) : "",
+        const completionItems: CompletionItem[] = [],
               quotesRegex = new RegExp(`(?<=(?:"|')[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?=(?:("|')))$`),
               commentRegex = new RegExp(`(?<=(?:\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?<!(?:\\*\\/))$`),
               inComments = commentRegex.test(lineText),

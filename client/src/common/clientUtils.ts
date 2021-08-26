@@ -3,9 +3,10 @@ import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import { Range, Position, TextDocument, EndOfLine, Uri, workspace } from "vscode";
-import { IPosition, IComponent, extjs, IExtJsBase, IPrimitive, IObjectRange } from "../../../common";
+import { IPosition, IComponent, extjs, IExtJsBase, IPrimitive, IObjectRange, readFile } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
+import G from "glob";
 
 
 export function documentEol(document: TextDocument)
@@ -248,6 +249,18 @@ export function isPositionInObjectRange(position: Position, component: IComponen
 export function quoteChar()
 {
     return configuration.get<string>("quoteCharacter", "single") === "single" ? "'" : "\"";
+}
+
+
+export const defaultIgnoreTypes: string[] = [
+    "string", "number", "boolean"
+];
+
+
+export async function shouldIgnoreType(type: string)
+{
+    const ignoreTypes = configuration.get<string[]>("ignoreTypes", defaultIgnoreTypes);
+    return ignoreTypes.includes(type.replace(/["']/g, ""));
 }
 
 

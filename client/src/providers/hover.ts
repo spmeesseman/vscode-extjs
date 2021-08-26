@@ -6,12 +6,23 @@ import {
 import * as log from "../common/log";
 import { ComponentType, DeclarationType, utils, VariableType } from "../../../common";
 import { extjsLangMgr } from "../extension";
-import { isPrimitive, isComponent, getMethodByPosition, getWorkspaceProjectName, toVscodePosition, toIPosition } from "../common/clientUtils";
+import { isPrimitive, isComponent, getMethodByPosition, getWorkspaceProjectName, toVscodePosition, toIPosition, shouldIgnoreType } from "../common/clientUtils";
 
 class ExtJsHoverProvider implements HoverProvider
 {
     async provideHover(document: TextDocument, position: Position, token: CancellationToken)
     {
+        let hover: Hover | undefined;
+        const hoverText = document.getText(document.getWordRangeAtPosition(position)),
+              hoverLineText = document.lineAt(position).text;
+
+        if (/type *\:/.test(hoverLineText) && await shouldIgnoreType(hoverText)) {
+            return;
+        }
+        if (!utils.isExtJsFile(document.getText())) {
+            return;
+        }
+
         log.methodStart("provide hover", 1, "", true, [["file", document.uri.fsPath]]);
 
         //
@@ -22,12 +33,6 @@ class ExtJsHoverProvider implements HoverProvider
         //
         // Indexer finished, proceed...
         //
-
-        let hover: Hover | undefined;
-        if (!utils.isExtJsFile(document.getText())) {
-            log.write("   hover disabled due to non extjs file", 2);
-            return;
-        }
 
         const { cmpType, property, cmpClass, thisClass, thisCmp, callee, text, lineText, project } = extjsLangMgr.getLineProperties(document, position, "   ");
 

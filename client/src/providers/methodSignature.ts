@@ -4,9 +4,9 @@ import {
     TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation, commands
 } from "vscode";
 import { extjsLangMgr } from "../extension";
-import { getWorkspaceProjectName, isComponent, toIPosition } from "../common/clientUtils";
+import { getWorkspaceProjectName, isComponent, shouldIgnoreType, toIPosition } from "../common/clientUtils";
 import * as log from "../common/log";
-import { IMethod, extjs } from "../../../common";
+import { IMethod, extjs, utils } from "../../../common";
 
 
 class MethodSignatureProvider implements SignatureHelpProvider
@@ -14,6 +14,17 @@ class MethodSignatureProvider implements SignatureHelpProvider
 	async provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext)
 	{
         const sigHelp = new SignatureHelp();
+        const range = document.getWordRangeAtPosition(position),
+              text = document.getText(range);
+        let lineText = document.lineAt(position).text;
+
+        if (/type *\:/.test(lineText) && await shouldIgnoreType(text)) {
+            return;
+        }
+        if (!utils.isExtJsFile(document.getText())) {
+            return;
+        }
+
         log.methodStart("provide method signature", 1, "", true);
 
         //
@@ -25,8 +36,8 @@ class MethodSignatureProvider implements SignatureHelpProvider
         // Indexer finished, proceed...
         //
 
-        let lineText = document.lineAt(position).text.substr(0, position.character),
-            pLoc = lineText.lastIndexOf("(");
+        lineText = document.lineAt(position).text.substr(0, position.character);
+        let pLoc = lineText.lastIndexOf("(");
 
         if (pLoc !== -1)
         {

@@ -14,11 +14,16 @@ export const defaultSettings: ISettings =
     debugClient: false,
     debugServer: false,
     debugLevel: 1,
+    exclude: [],
+    frameworkDirectory: undefined,
     ignoreErrors: [],
+    ignoreTypes: [],
     include: [],
     intellisenseIncludeDeprecated: true,
     intellisenseIncludePrivate: false,
-    sdkDirectory: undefined,
+    intellisenseXtypeEol: true,
+    quoteCharacter: "single",
+    toolkit: undefined,
     validateXTypes: true,
     validationDelay: 1250
 };
@@ -32,12 +37,17 @@ export interface ISettings
     //
     debugClient: boolean;
     debugServer: boolean;
-    debugLevel: number;
+    debugLevel: 1 | 2 | 3 | 4 | 5;
+    exclude: string[];
     ignoreErrors: IError[];
-    include: string[] | string;
+    ignoreTypes: string[];
+    include: string[];
     intellisenseIncludeDeprecated: boolean;
     intellisenseIncludePrivate: boolean;
-    sdkDirectory: string | undefined;
+    intellisenseXtypeEol: boolean;
+    frameworkDirectory: string | undefined;
+    quoteCharacter: "single" | "double";
+    toolkit: string | undefined;
     validateXTypes: boolean;
     validationDelay: number;
 }

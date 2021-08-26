@@ -5,7 +5,8 @@ import {
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
-import { ComponentType } from "../../../common";
+import { ComponentType, utils } from "../../../common";
+import { shouldIgnoreType } from "../common/clientUtils";
 
 
 class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
@@ -13,6 +14,15 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
     async provideTypeDefinition(document: TextDocument, position: Position, token: CancellationToken)
     {
         let location: Location | undefined;
+        const text = document.getText(document.getWordRangeAtPosition(position)),
+              lineText = document.lineAt(position).text;
+
+        if (/type *\:/.test(lineText) && await shouldIgnoreType(text)) {
+            return;
+        }
+        if (!utils.isExtJsFile(document.getText())) {
+            return;
+        }
 
         log.methodStart("provide type definition", 1, "", true);
 

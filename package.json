@@ -206,6 +206,9 @@
                 },
                 "extjsIntellisense.exclude": {
                     "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
                     "default": [
                         "**/.vscode-test/**",
                         "**/bin/**",
@@ -245,7 +248,20 @@
                         "type": "object"
                     },
                     "default": [],
-                    "description": "Errors that are excluded from validation, globally or for a document only"
+                    "description": "Errors that are excluded from validation, global or document"
+                },
+                "extjsIntellisense.ignoreTypes": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "default": [
+                        "string",
+                        "number",
+                        "boolean"
+                    ],
+                    "title": "Ignore Types",
+                    "markdownDescription": "`Types` that should be ignored"
                 },
                 "extjsIntellisense.intellisenseIncludeDeprecated": {
                     "type": "boolean",

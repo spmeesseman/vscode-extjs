@@ -4,15 +4,24 @@ import {
     CancellationToken, CodeActionProvider, ExtensionContext, languages, commands,
     TextDocument, CodeAction, CodeActionContext, Command, Range, Selection, CodeActionKind, DiagnosticRelatedInformation
 } from "vscode";
-import { ErrorCode } from "../../../common";
-import { quoteChar } from "../common/clientUtils";
+import { ErrorCode, utils } from "../../../common";
+import { quoteChar, shouldIgnoreType } from "../common/clientUtils";
 
 
 class ExtjsCodeActionProvider implements CodeActionProvider
 {
     async provideCodeActions(document: TextDocument, range: Range | Selection, context: CodeActionContext, token: CancellationToken)
     {
-        const actions: CodeAction[] = [];
+        const actions: CodeAction[] = [],
+              text = document.getText(range),
+              lineText = document.lineAt(range.start).text;
+
+        if (/type *\:/.test(lineText) && await shouldIgnoreType(text)) {
+            return;
+        }
+        if (!utils.isExtJsFile(document.getText())) {
+            return;
+        }
 
         log.methodStart("provide code action", 1, "", true);
 
@@ -80,7 +89,7 @@ class ExtjsCodeActionProvider implements CodeActionProvider
                         command: {
                             title: `Fix the 'requires' array for this declared ${propertyName}`,
                             command: "vscode-extjs:ensureRequire",
-                            arguments: [ document.getText(range).replace(/["']/g, ""), propertyName ]
+                            arguments: [ text.replace(/["']/g, ""), propertyName ]
                         }
                     },
                     {

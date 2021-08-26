@@ -42,6 +42,10 @@ Completion:
 	☐ Apply defaults for 'items'
 		look for xtype and apply same logic as if it was in item object itself
 	☐ Grid columns, column config
+	☐ Statics on main app inline.  i.e. GEMS.user.  'user' does not show in completion items
+	☐ Main app inline.  i.e. GEMS.model, GEMS.store, 'model', 'store' do not show in completion items
+	☐ Highlight a word in a comment, type x, and the xtype completion items appear.
+		behind comments no completion should happen
 
 Definition:
 
@@ -66,6 +70,9 @@ Diagnostics:
 		map type aliases i.e. 'store.', 'layout.', etc
 	☐ Model fields
 	☐ Don't use inline Ext.define in controller files
+	☐ Model reference {} object - 'type' field is showing invalid
+	✔ Model fields 'type' i.e. 'string' is getting validated and showing as no reference found @done(21-08-25 23:07)
+		make an 'ignoreTypes' srray setting, include 'string', 'number', etc, and user can add to list
 
 JsDoc:
 

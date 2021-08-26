@@ -119,7 +119,9 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		if (globalSettings.validateXTypes)
 		{
 			cmp.widgets.filter(w => w.type === "xtype" || w.type === "type").forEach((w) => {
-				validateXtype(w, cmp, diagRelatedInfoCapability, textObj, diagnostics);
+				if (w.type !== "type" || !globalSettings.ignoreTypes.includes(w.name)) {
+					validateXtype(w, cmp, diagRelatedInfoCapability, textObj, diagnostics);
+				}
 			});
 		}
 
@@ -134,7 +136,7 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		validateRequiredClasses(cmp.uses, cmp, diagRelatedInfoCapability, textObj, diagnostics);
 
 		//
-		// Validate method variables
+		// TODO - Validate method variables
 		//
 		for (const method of cmp.methods)
 		{
