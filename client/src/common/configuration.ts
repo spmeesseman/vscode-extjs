@@ -1,9 +1,7 @@
 "use strict";
 
-import {
-    ConfigurationChangeEvent, Event, EventEmitter, workspace,
-    WorkspaceConfiguration, ConfigurationTarget, Uri
-} from "vscode";
+import { ConfigurationChangeEvent, EventEmitter, workspace, WorkspaceConfiguration, ConfigurationTarget } from "vscode";
+
 
 const extensionName = "extjsIntellisense";
 

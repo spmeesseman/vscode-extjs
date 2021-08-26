@@ -261,11 +261,11 @@ export class ConfigParser
             if (wsConf.packages && wsConf.packages.dir)
             {
                 log.write("   process workspace.json dependency packages from packages.dir", 1, logPad);
-                const dirs = wsConf.packages.dir.split(",");
+                const dirs = wsConf.packages.dir.split(","),
+                      toolkit = configuration.get<string>("toolkit", "classic");
                 for (const d of dirs)
                 {
-                    const toolkit = configuration.get<string>("toolkit", "classic"),
-                          wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit);
+                    const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit);
                     log.write("      add dependency package", 1, logPad);
                     log.value("         path", wsPath, 1, logPad);
                     if (!conf.classpath.includes(wsPath)) {
