@@ -234,6 +234,13 @@ Ext.define('VSCodeExtJS',
 
 	store: {
 		type: 'userss'
+	},
+
+	testObj1: {
+		items: [
+		{
+			type: 'string'
+		}]
 	}
 
 });

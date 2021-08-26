@@ -39,7 +39,7 @@ suite("Hover Tests", () =>
 	});
 
 
-	test("Re-index files", async () =>
+	test("Re-index files", async () => // need to re-index for the tests that follow document.test
 	{
 		await vscode.commands.executeCommand("vscode-extjs:indexFiles");
 		await waitForValidation();
@@ -142,9 +142,10 @@ suite("Hover Tests", () =>
 	});
 
 
-	test("No definition", async () =>
+	test("Unknown keywords", async () =>
     {
 		await testHover(docUri, new vscode.Position(150, 3));
+		await testHover(docUri, new vscode.Position(241, 16)); // "type: 'string'"" hits shouldIgnoreType()
     });
 
 
@@ -182,7 +183,7 @@ async function testHover(docUri: vscode.Uri, position: vscode.Position, commentS
 		position
 	)) as vscode.Hover[];
 
-	assert.ok(actualHoverList.length >= 1, new Error(`Hover doc not found - ${commentString}`));
+	assert.ok(!commentString || actualHoverList.length >= 1, new Error(`Hover doc not found - ${commentString}`));
 
 	let hasTag = false;
 	for (const hover of actualHoverList)

@@ -296,6 +296,7 @@ suite("Definition Tests", () =>
 		// 'me' is not set
 		//
 		await testDefinition(docUri, new vscode.Position(150, 3), []);
+		await testDefinition(docUri, new vscode.Position(241, 16), []); // "type: 'string'"" hits shouldIgnoreType()
     });
 
 });

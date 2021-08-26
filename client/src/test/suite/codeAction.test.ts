@@ -4,6 +4,7 @@ import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
+import { defaultIgnoreTypes, shouldIgnoreType } from "../../common/clientUtils";
 
 
 suite("Code Action Tests", () =>
@@ -267,7 +268,21 @@ suite("Code Action Tests", () =>
 	});
 
 
-	test("No action", async () =>
+	test("Ignored types", async () =>
+	{
+		const ignoreTypes = configuration.get<string[]>("ignoreTypes", defaultIgnoreTypes);
+		await configuration.update("ignoreTypes", []);
+		await waitForValidation();
+		await testCodeAction(docUri, toRange(241, 13, 241, 20), []);
+		await configuration.update("ignoreTypes", [ "string" ]);
+		await waitForValidation();
+		await testCodeAction(docUri, toRange(241, 13, 241, 20), []); // "type: 'string'"" hits shouldIgnoreType()
+		await configuration.update("ignoreTypes", ignoreTypes);
+		await waitForValidation();
+	});
+
+
+	test("Unknown keywords", async () =>
 	{
 		await testCodeAction(docUri, toRange(230, 14, 230, 23), []);
 	});
