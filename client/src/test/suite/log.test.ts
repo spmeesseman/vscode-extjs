@@ -30,7 +30,10 @@ suite("Logging Tests", () =>
 		log.write("Test", 1);
 		log.value("Test", "value", 1);
 		log.error("Test error");
+		log.error(new Error("Test error object"));
 		log.error([ "Test error 1", "Test error 2" ]);
+		log.error([ "Test error 1", "Test error 2", new Error("Test error object") ]);
+		log.error([ "Test error 1", "Test error 2" ], [["Test param error", "Test param value"]]);
 	});
 
 
@@ -40,8 +43,21 @@ suite("Logging Tests", () =>
 		log.write("Test");
 		log.value("Test", "value", 1);
 		log.error("Test error");
+		log.error(new Error("Test error object"));
 		log.error([ "Test error 1", "Test error 2" ]);
+		log.error([ "Test error 1", "Test error 2", new Error("Test error object") ]);
+		log.error([ "Test error 1", "Test error 2" ], [["Test param error", "Test param value"]]);
 		log.showLogOutput(false);
+	});
+
+	test("Turn logging off", async () =>
+	{
+		await configuration.update("debugClient", false);
+		log.write("Test");
+		log.value("Test", "value", 1);
+		log.error("Test error");
+		log.error([ "Test error 1", "Test error 2" ]);
+		await configuration.update("debugClient", true);
 	});
 
 	test("Write to console", async () =>
