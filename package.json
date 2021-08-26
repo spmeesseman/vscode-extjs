@@ -256,9 +256,11 @@
                         "type": "string"
                     },
                     "default": [
-                        "string",
+                        "boolean",
+                        "date",
                         "number",
-                        "boolean"
+                        "object",
+                        "string"
                     ],
                     "title": "Ignore Types",
                     "markdownDescription": "`Types` that should be ignored"
