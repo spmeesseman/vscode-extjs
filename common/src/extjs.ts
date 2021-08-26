@@ -1,13 +1,14 @@
 
 import * as utils from "./utils";
-import { IAlias, IComponent, IConfig, ILogger, IMethod, IPosition, IProperty, IRange, IType, IWidget, IXtype } from "./interface";
+import { IAlias, IAlternateClassName, IComponent, IConfig, ILogger, IMethod, IPosition, IProperty, IRange, IRequire, IType, IWidget, IXtype } from "./interface";
 
 
-export function getComponent(componentClass: string, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
+export function getComponent(componentClass: string | undefined, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
 {
 	logger?.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["project", project]]);
-	const component = components.find(c => c.componentClass === componentClass && project === c.project) ||
-					  getComponentByAlias(componentClass, project, components, position, thisCmp, logger, logPad + "   ", logLevel);
+	const component = componentClass ? (components.find(c => c.componentClass === componentClass && project === c.project) ||
+					  						getComponentByAlias(componentClass, project, components, position, thisCmp, logger, logPad + "   ", logLevel)) :
+										undefined;
 	logger?.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
 	return component;
 }
@@ -19,15 +20,36 @@ export function getComponentByAlias(alias: string, project: string, components: 
 
 	const w = position && thisCmp ? getWidgetByPosition(position, thisCmp) : undefined;
 	// const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
-	const _match = (c: IComponent, a: IAlias|IXtype|IType) =>
+	const _match = (c: IComponent, a: IAlias|IXtype|IType|IAlternateClassName) =>
 	{
 		let matched = false;
 		if (project === c.project)
 		{
 			if (isAlias(a)) {
 				matched = a.name === alias || a.name === `${a.nameSpace}.${alias}`;
+				if (!matched && a.nameSpace === "model" && w?.parentProperty === "reference")
+				{
+					const schemaCmp = components.find(sc => sc.project === project && sc.properties.find(sp => sp.name === "schema"));
+					if (schemaCmp)
+					{
+						const schemaObj = schemaCmp.properties.find(p => p.name === "schema");
+						if (schemaObj) {
+							const v = schemaObj.value?.value;
+							if (v) {
+								let schemaCls: string | undefined;
+								if (utils.isString(v)) {
+									schemaCls = `${v}.${alias}`;
+								}
+								else if (utils.isObject(v) && v.namespace) {
+									schemaCls = `${v.namespace}.${alias}`;
+								}
+								return schemaCls ? !!components.find(sc => sc.project === project && sc.componentClass === schemaCls) : false;
+							}
+						}
+					}
+				}
 			}
-			else if (isXType(a)) {
+			else if (isXType(a) || isAlternateClassName(a)) {
 				matched = a.name === alias;
 			}
 		}
@@ -107,7 +129,14 @@ export function getAliasLookup(components: IComponent[], position: IPosition | u
 			for (const c of components) {
 				for (const a of c.aliases) {
 					thisCmp.objectRanges.filter(r => utils.isPositionInRange(position, r)).forEach(r => {
-						if (r.name === a.nameSpace || (r.name === "stores" && a.nameSpace === "store")) {
+						//
+						// parent property name or store types can be 'store', 'stores' (viewModel),
+						// 'storeConfig' (model association)
+						//
+						if (r.name === a.nameSpace || (r.name?.startsWith("store") && a.nameSpace === "store")) {
+							component = c;
+						}
+						else if (r.name === "reference" && a.nameSpace === "model") {
 							component = c;
 						}
 					});
@@ -138,9 +167,21 @@ export function isAlias(component: IWidget | IXtype | IType | IAlias | undefined
 }
 
 
+export function isAlternateClassName(component: IWidget | IXtype | IType | IAlias | undefined): component is IAlternateClassName
+{
+    return !!component && "type" in component && component.type === "alternateClassName";
+}
+
+
 export function isMethod(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IMethod
 {
     return !!component && "variables" in component;
+}
+
+
+export function isNeedRequire(componentClass: string | undefined, components: IComponent[])
+{
+    return !(!componentClass || (componentClass.startsWith("Ext.") && components.find(c => c.nameSpace === "Ext" && c.componentClass === componentClass)));
 }
 
 
@@ -161,26 +202,31 @@ export function isPositionInRange(position: IPosition, range: IRange)
 }
 
 
-
-export function isNeedRequire(componentClass: string | undefined, components: IComponent[])
+export function isProperty(component: any): component is IProperty
 {
-    return !(!componentClass || (componentClass.startsWith("Ext.") && components.find(c => c.nameSpace === "Ext" && c.componentClass === componentClass)));
+    return !!component && "componentClass" in component && !("variables" in component) && !("getter" in component) && "value" in component && component.value;
 }
 
 
-export function isProperty(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IProperty
+export function isRequire(component: any): component is IRequire
 {
-    return !!component && !("variables" in component) && !("getter" in component);
+    return !!component && !("componentClass" in component) && "start" in component && "end" in component && "name" in component;
 }
 
 
-export function isType(component: IWidget | IXtype | IType | IAlias | undefined): component is IType
+export function isType(component: any): component is IType
 {
     return !!component && "type" in component && component.type === "type";
 }
 
 
-export function isXType(component: IWidget | IXtype | IType | IAlias | undefined): component is IXtype
+export function isWidget(component: any): component is IWidget
+{
+    return !!component && "componentClass" in component && "type" in component;
+}
+
+
+export function isXType(component: any): component is IXtype
 {
     return !!component && "type" in component && component.type === "xtype";
 }

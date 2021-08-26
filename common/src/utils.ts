@@ -43,7 +43,7 @@ export function isNumeric(value: string | number): boolean
 }
 
 
-export function isObject(value: any): value is string
+export function isObject(value: any)
 {
     return value && value instanceof Object || typeof value === "object";
 }

@@ -4,14 +4,14 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType
+    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType, IMixin, IAlternateClassName
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
-    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression
+    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral
 } from "@babel/types";
 
 /**
@@ -81,7 +81,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                             aliases: [],
                             configs: [],
                             methods: [],
-                            mixins: [],
                             objectRanges: [],
                             properties: [],
                             privates: [],
@@ -163,8 +162,12 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
 
                         if (isObjectProperty(propertyMixins))
                         {
-                            componentInfo.mixins.push(...parseMixins(propertyMixins));
-                            logProperties("mixins", componentInfo.mixins);
+                            componentInfo.mixins = {
+                                value: parseMixins(propertyMixins),
+                                start: propertyMixins.loc!.start,
+                                end: propertyMixins.loc!.end,
+                            };
+                            logProperties("mixins", componentInfo.mixins?.value);
                         }
 
                         if (isObjectProperty(propertyAlias))
@@ -230,6 +233,9 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                         }
                         logProperties("methods", componentInfo.methods);
 
+                        //
+                        // Type/xtype/model widget definitionsa
+                        //
                         componentInfo.widgets.push(...parseWidgets(args[1], text, componentInfo, "xtype").filter((x) => {
                             for (const x2 of componentInfo.xtypes) {
                                 if (x.name === x2.name) {
@@ -238,6 +244,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                             }
                             return true;
                         }));
+
                         componentInfo.widgets.push(...parseWidgets(args[1], text, componentInfo, "type").filter((x) => {
                             for (const x2 of componentInfo.xtypes) {
                                 if (x.name === x2.name) {
@@ -246,7 +253,6 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                             }
                             return true;
                         }));
-                        logProperties("widgets", componentInfo.aliases);
                     }
 
                     log.methodDone("parse extjs file", 1, "", true);
@@ -363,6 +369,26 @@ function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | 
 }
 
 
+function getPropertyValue(opjProperty: ObjectProperty)
+{
+    let value: any;
+    if (isStringLiteral(opjProperty.value)) {
+        value = opjProperty.value.value;
+    }
+    else {
+        try {
+            if (isExpression(opjProperty.value)) {
+                value = ast.jsAstToLiteralObject(opjProperty.value);
+            }
+        }
+        catch (e) {
+            console.log(e);
+        }
+    }
+    return value;
+}
+
+
 function isJsDocObject(object: any): object is (IMethod | IProperty | IConfig)
 {
     return "doc" in object;
@@ -392,10 +418,10 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
 }
 
 
-function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string): (IXtype | IAlias | IType)[][]
+function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: string): (IXtype | IAlias | IAlternateClassName | IType)[][]
 {
     const xtypes: IXtype[] = [];
-    const aliases: IAlias[] = [];
+    const aliases: (IAlias|IAlternateClassName)[] = [];
     const types: IType[] = [];
     const aliasNodes: StringLiteral[] = [];
 
@@ -464,6 +490,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                         componentClass,
                         type: propertyName,
                         nameSpace,
+                        parentProperty: "",
                         range: utils.toRange(it.loc!.start, it.loc!.end)
                     });
                 }
@@ -475,6 +502,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
                         componentClass,
                         type: propertyName,
                         nameSpace: "",
+                        parentProperty: "",
                         range: utils.toRange(it.loc!.start, it.loc!.end)
                     });
                 }
@@ -510,7 +538,12 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string)
                         getter: "get" + utils.toProperCase(name),
                         setter: "set" + utils.toProperCase(name),
                         componentClass,
-                        range: utils.toRange(it.loc!.start, it.loc!.end)
+                        range: utils.toRange(it.loc!.start, it.loc!.end),
+                        value: {
+                            start: it.value.loc!.start,
+                            end: it.value.loc!.end,
+                            value: getPropertyValue(it)
+                        }
                     });
                 }
             }
@@ -757,7 +790,8 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     bodyStart: m.value.loc!.start,
                     bodyEnd: m.value.loc!.end,
                     static: doc?.includes("@static") || isStatic,
-                    range: utils.toRange(m.loc!.start, m.loc!.end)
+                    range: utils.toRange(m.loc!.start, m.loc!.end),
+                    value: undefined
                 });
             }
         }
@@ -768,27 +802,17 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
 
 function parseMixins(propertyMixins: ObjectProperty)
 {
-    const mixins: string[] = [];
+    const mixins: IMixin[] = [];
     if (isArrayExpression(propertyMixins.value))
     {
-        propertyMixins.value.elements
-        .reduce<string[]>((p, it) => {
-            if (it?.type === "StringLiteral") {
-                p.push(it.value);
-            }
-            return p;
-        }, mixins);
+        mixins.push(...parseStringArray(propertyMixins));
     }
     else if (isObjectExpression(propertyMixins.value))
     {
-        propertyMixins.value.properties.reduce<string[]>((p, it) =>
+        propertyMixins.value.properties.reduce<IMixin[]>((p, it) =>
         {
             if (it?.type === "ObjectProperty") {
-                // const name = isIdentifier(it.key) ? it.key.name : undefined;
-                const value = isStringLiteral(it.value) ? it.value : undefined;
-                if (value) {
-                    p.push(value.value);
-                }
+                mixins.push(...parseStringArray(it));
             }
             return p;
         }, mixins);
@@ -800,24 +824,29 @@ function parseMixins(propertyMixins: ObjectProperty)
 function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, isStatic: boolean, isPrivate: boolean): IProperty[]
 {
     const properties: IProperty[] = [];
-    propertyProperties.forEach((m) =>
+    propertyProperties.forEach((p) =>
     {
-        if (!isFunctionExpression(m.value))
+        if (!isFunctionExpression(p.value))
         {
-            const name = isIdentifier(m.key) ? m.key.name : undefined;
+            const name = isIdentifier(p.key) ? p.key.name : undefined;
             if (name && ignoreProperties.indexOf(name) === -1)
             {
-                const doc = getComments(m.leadingComments);
+                const doc = getComments(p.leadingComments);
                 properties.push({
                     doc, name,
-                    start: m.loc!.start,
-                    end: m.loc!.end,
+                    start: p.loc!.start,
+                    end: p.loc!.end,
                     since: getSince(doc),
                     private: doc?.includes("@private") || isPrivate,
                     deprecated: doc?.includes("@deprecated"),
                     componentClass,
                     static: doc?.includes("@static") || isStatic,
-                    range: utils.toRange(m.loc!.start, m.loc!.end)
+                    range: utils.toRange(p.loc!.start, p.loc!.end),
+                    value: {
+                        start: p.value.loc!.start,
+                        end: p.value.loc!.end,
+                        value: getPropertyValue(p)
+                    }
                 });
             }
         }
@@ -836,8 +865,8 @@ function parseStringArray(property: ObjectProperty)
             if (it?.type === "StringLiteral") {
                 p.push({
                     name: it.value,
-                    start: it.loc?.start,
-                    end: it.loc?.end
+                    start: it.loc?.start || { line: 1, column: 0 },
+                    end: it.loc?.end || { line: 1, column: 0 }
                 });
             }
             return p;

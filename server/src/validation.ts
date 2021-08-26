@@ -2,10 +2,40 @@
 import { Connection, Diagnostic, DiagnosticSeverity, Range, DocumentUri } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, components } from "./syntaxTree";
-import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, extjs, IWidget } from "../../common";
+import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, extjs, IWidget, IExtJsBase, IMixins, IProperty } from "../../common";
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
 import * as log from "./log";
+import { toVscodeRange } from "./serverUtils";
+
+
+const validateProperties = [ "model", "extend" ];
+
+
+function getIgnoreText(widget: IWidget | IRequire, document: TextDocument)
+{   //
+	// Check ignored line (previous line), e.g.:
+	//
+	//     /** vscode-extjs-ignore-3 */
+	//     xtype: 'userdropdown'
+	//
+	const ignoreRange = {
+		start: {
+			line: widget.start.line - 1,
+			character: 0
+		},
+		end: {
+			line: widget.end.line - 1,
+			character: 100000
+		}
+	};
+	let ignoreText = document.getText(ignoreRange);
+	if (ignoreText.includes("/** vscode-extjs-ignore-")) {
+		ignoreText = ignoreText.substring(ignoreText.indexOf("/** vscode-extjs-ignore-")).trimEnd();
+	}
+
+	return ignoreText;
+}
 
 
 function isErrorIgnored(code: number, fsPath: string): boolean
@@ -23,6 +53,23 @@ function isErrorIgnored(code: number, fsPath: string): boolean
 		}
 	}
 
+	return false;
+}
+
+
+function isIgnoredGlobal(fsPath: string)
+{   //
+	// Check global/file ignore for this error type
+	//
+	if (globalSettings.ignoreErrors && globalSettings.ignoreErrors.length > 0) {
+		for (const iErr of globalSettings.ignoreErrors) {
+			if (iErr.code === ErrorCode.classNotFound) {
+				if (!iErr.fsPath || fsPath === iErr.fsPath) {
+					return true;
+				}
+			}
+		}
+	}
 	return false;
 }
 
@@ -129,11 +176,22 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 		// Validate requires array
 		//
 		validateRequiredClasses(cmp.requires, cmp, diagRelatedInfoCapability, textObj, diagnostics);
-
 		//
 		// Validate uses array
 		//
 		validateRequiredClasses(cmp.uses, cmp, diagRelatedInfoCapability, textObj, diagnostics);
+		//
+		// Validate micins array
+		//
+		validateRequiredClasses(cmp.mixins, cmp, diagRelatedInfoCapability, textObj, diagnostics);
+		//
+		// model property on stores
+		//
+		cmp.properties.filter(p => validateProperties.includes(p.name)).forEach((p) => {
+			if (!globalSettings.ignoreTypes.includes(p.name)) {
+				validateRequiredClass(p, cmp, true, diagRelatedInfoCapability, textObj, diagnostics);
+			}
+		});
 
 		//
 		// TODO - Validate method variables
@@ -167,25 +225,6 @@ export async function validateExtJsFile(options: any, connection: Connection, di
 
 
 	log.methodDone("validate extjs file text", 1, "", true);
-}
-
-
-function toVscodePosition(position: IPosition)
-{
-    const { line, column } = position;
-	return {
-		line: line - 1,
-		character: column
-	};
-}
-
-
-function toVscodeRange(start: IPosition, end: IPosition): Range
-{
-	return {
-		start: toVscodePosition(start),
-		end: toVscodePosition(end)
-	};
 }
 
 
@@ -290,7 +329,7 @@ function validateXtype(widget: IWidget, thisCmp: IComponent, diagRelatedInfoCapa
 				{
 					if (require.name !== widgetCls) {
 						const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
-						const requiredCmp = components.find(c => c.componentClass === require.name && c.project === thisCmp.project);
+						const requiredCmp = extjs.getComponent(require.name, thisCmp.project, components);
 						if (requiredCmp) {
 							if (widget.type === "type") {
 								requiredXtypes.push(...(requiredCmp.types.map(x => x.name.replace(aliasNsReplaceRegex, "")) || []));
@@ -324,60 +363,19 @@ function validateXtype(widget: IWidget, thisCmp: IComponent, diagRelatedInfoCapa
 }
 
 
-function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp: IComponent, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+function validateRequiredClass(property: IRequire | IProperty, cmp: IComponent, checkIgnore: boolean,  diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
 {
-	if (!cmpRequires) {
-		return;
-	}
-
-	const requires: IRequire[] = [],
-		  fsPath = URI.file(document.uri).fsPath;
-
-	requires.push(...(cmpRequires?.value || []));
-
-	//
-	// Check global/file ignore for this error type
-	//
-	if (globalSettings.ignoreErrors && globalSettings.ignoreErrors.length > 0) {
-		for (const iErr of globalSettings.ignoreErrors) {
-			if (iErr.code === ErrorCode.classNotFound) {
-				if (!iErr.fsPath || fsPath === iErr.fsPath) {
-					return;
-				}
-			}
-		}
-	}
-
-	for (const require of requires)
+	if (property && (!checkIgnore || !isIgnoredGlobal(URI.file(document.uri).fsPath)))
 	{
-		const widgetCls = extjs.getComponent(require.name, cmp.project, components)?.componentClass;
-		if (widgetCls) { // if we have a mapping, then no diagnostic
-			continue;
-		}
-		//
-		// Check ignored line (previous line), e.g.:
-		//
-		//     /** vscode-extjs-ignore-3 */
-		//     xtype: 'userdropdown'
-		//
-		const ignoreRange = {
-			start: {
-				line: require.start ? require.start.line - 1 : cmpRequires.start.line - 1,
-				character: 0
-			},
-			end: {
-				line: require.end ? require.end.line - 1 : cmpRequires.end.line - 1,
-				character: 100000
-			}
-		};
-		let ignoreText = document.getText(ignoreRange);
-		if (ignoreText.includes("/** vscode-extjs-ignore-")) {
-			ignoreText = ignoreText.substring(ignoreText.indexOf("/** vscode-extjs-ignore-")).trimEnd();
+		const propertyName = extjs.isProperty(property) ? property.value?.value : property.name;
+		if (extjs.getComponent(propertyName, cmp.project, components)) { // if we have a mapping, then no diagnostic
+			return;
 		}
 
-		if (ignoreText !== `/** vscode-extjs-ignore-${ErrorCode.xtypeNoRequires} */`)
+		if (getIgnoreText(property, document) !== `/** vscode-extjs-ignore-${ErrorCode.classNotFound} */`)
 		{
-			const range = toVscodeRange(require.start || cmpRequires.start, require.end || cmpRequires.end);
+			const range = extjs.isProperty(property) && property.value ? toVscodeRange(property.value.start, property.value.end) :
+																		 toVscodeRange(property.start, property.end);
 			const diagnostic: Diagnostic = {
 				severity: DiagnosticSeverity.Error,
 				range,
@@ -385,10 +383,21 @@ function validateRequiredClasses(cmpRequires: IRequires | IUses | undefined, cmp
 				source: "vscode-extjs",
 				code: ErrorCode.classNotFound
 			};
-			if (diagRelatedInfoCapability) {
-				addClassSuggestions(diagnostic, require.name, document);
+			if (diagRelatedInfoCapability && propertyName) {
+				addClassSuggestions(diagnostic, propertyName, document);
 			}
 			diagnostics.push(diagnostic);
+		}
+	}
+}
+
+
+function validateRequiredClasses(cmpRequires: IRequires | IUses | IMixins | undefined, cmp: IComponent, diagRelatedInfoCapability: boolean, document: TextDocument, diagnostics: Diagnostic[])
+{
+	if (cmpRequires && !isIgnoredGlobal(URI.file(document.uri).fsPath)) {
+		const requires: IRequire[] = cmpRequires.value;
+		for (const require of requires) {
+			validateRequiredClass(require, cmp, false, diagRelatedInfoCapability, document, diagnostics);
 		}
 	}
 }

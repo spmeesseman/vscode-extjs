@@ -1,7 +1,8 @@
 
 import { parse } from "@babel/parser";
 import {
-    Node
+	Expression, isArrayExpression, isBooleanLiteral, isExpression, isIdentifier,
+	isNullLiteral, isObjectExpression, isObjectProperty, isStringLiteral, Node, SpreadElement
 } from "@babel/types";
 
 
@@ -32,4 +33,43 @@ export function getComponentsAst(text: string, logErrFn?: (arg: string | Error) 
 		}
 	}
 	return ast;
+}
+
+
+export function jsAstToLiteralObject(ast: Expression | SpreadElement | null)
+{
+    if (isNullLiteral(ast)) {
+        return null;
+    }
+    else if (isStringLiteral(ast) || isBooleanLiteral(ast)) {
+        return ast.value;
+    }
+    else if (isArrayExpression(ast)) {
+        const out: any = [];
+        for (const i in ast.elements)
+        {
+            out.push(jsAstToLiteralObject(ast.elements[i]));
+        }
+        return out;
+    }
+    else if (isObjectExpression(ast))
+    {
+        const out: any = {};
+        for (const k in ast.properties)
+        {
+            let key;
+            const p = ast.properties[k];
+            if (isObjectProperty(p) && isIdentifier(p.key))
+            {
+                key = p.key.name;
+            }
+            else {
+                throw new Error("object should contain only string-valued properties");
+            }
+            if (isExpression(p.value)) {
+                out[key] = jsAstToLiteralObject(p.value);
+            }
+        }
+        return out;
+    }
 }

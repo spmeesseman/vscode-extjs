@@ -2,7 +2,7 @@
 AST Parser:
 
 	✔ Store property 'type' and mappings @done(21-08-21 09:22)
-	☐ Additional roperties needed for models
+	☐ Additional properties needed for models
 
 Completion:
 
@@ -29,7 +29,7 @@ Completion:
 	☐ Static create() for stores/models/?
 	✔ The 'privates' block should be applied to instance components @done(21-08-21 03:51)
 		object completion showing model fields as opposed to properties/configs
-	☐ Snipper completion, i.e. sorte... and the completion item would be the entire sorter object
+	☐ Snippet completion, i.e. sorte... and the completion item would be the entire sorter object
 		sorters: [{
 			property: "",
 			direction: "ASC"
@@ -64,13 +64,13 @@ Diagnostics:
 	✔ Store diagnostics for 'type' same as 'xtype' @done(21-08-22 00:01)
 	☐ The 'models' and 'stores' property in Application.js should be validated like 'requires' and 'uses'
 	☐ the 'uses' validation should have separate error code from 'requires'
-	☐ 'mixins' property.  same validation as for requires[] and uses[].  separate error code. (see above too)
-	☐ Store - for 'model' field
-	☐ The 'type' property is not validated right if not a store, i.e. 'layout' config "type: 'vbox'"
+	✔ 'mixins' property.  same validation as for requires[] and uses[].  separate error code. (see above too) @done(21-08-26 14:08)
+	✔ Store - for 'model' field @done(21-08-26 14:08)
+	✔ The 'type' property is not validated right if not a store, i.e. 'layout' config "type: 'vbox'" @done(21-08-26 14:08)
 		map type aliases i.e. 'store.', 'layout.', etc
 	☐ Model fields
 	☐ Don't use inline Ext.define in controller files
-	☐ Model reference {} object - 'type' field is showing invalid
+	✔ Model reference {} object - 'type' field is showing invalid @done(21-08-26 18:11)
 	✔ Model fields 'type' i.e. 'string' is getting validated and showing as no reference found @done(21-08-25 23:07)
 		make an 'ignoreTypes' srray setting, include 'string', 'number', etc, and user can add to list
 
@@ -102,7 +102,7 @@ Miscellaneous:
 	☐ New command to insert an Ext.create('Ext.util.DelayedTask')...
 		Maybe a setting to use either Ext.create or 'new Ext.util.DelayedTask'
 		Map to shourtcut key
-	☐ Namespace can be removed from mapping references throughout code
+	✔ Namespace can be removed from mapping references throughout code @done(21-08-26 18:12)
 	☐ Packages referenced from app.json should have own cache location
 		use pkg namespace name extracted from pacage.json in pkg dir
 		currently get stored in main app namespace storage file
@@ -115,6 +115,7 @@ Miscellaneous:
 		same as setting multiple paths in classpath in array but will keep separate in storage, better perf
 	☐ Aliases should not be added to xtypes for widget scraping now that all is implemented
 		syntaxTree.js parseClassDef
+	☐ Renamed/moved file doesnt get cached.  validates, but no hover, completion, etc
 
 Signature:
 

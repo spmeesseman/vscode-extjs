@@ -44,14 +44,21 @@ export interface IExtJsBase extends IRange
 
 export interface IAlias extends IWidget
 {
-    type: "alias" | "alternateClassName";
+    type: "alias";
+    nameSpace: string;
+}
+
+
+export interface IAlternateClassName extends IWidget
+{
+    type: "alternateClassName";
     nameSpace: string;
 }
 
 
 export interface IComponent extends IExtJsBase
 {
-    aliases: IAlias[];
+    aliases: (IAlias|IAlternateClassName)[];
     baseNameSpace: string;
     bodyStart: IPosition;
     bodyEnd: IPosition;
@@ -62,7 +69,8 @@ export interface IComponent extends IExtJsBase
     fsPath: string;
     markdown?: any;
     methods: IMethod[];
-    mixins: string[];
+    mixins?: IMixins;
+    model?: string;
     nameSpace: string;
     objectRanges: IObjectRange[];
     private?: boolean;
@@ -132,7 +140,7 @@ export interface ILogger
 }
 
 
-export interface IMethod extends IProperty
+export interface IMethod extends IPropertyBase
 {
     bodyStart: IPosition;
     bodyEnd: IPosition;
@@ -140,7 +148,14 @@ export interface IMethod extends IProperty
     params: IParameter[];
     variables: IVariable[];
     returns: string | undefined;
+    static: boolean;
 }
+
+
+export interface IMixin extends IRequire {}
+
+
+export interface IMixins extends IRequires {}
 
 
 export interface IObjectRange extends IRange
@@ -179,12 +194,19 @@ export interface IPropertyBase extends IExtJsBase
     private: boolean;
     deprecated: boolean;
     since?: string;
+    value: IPropertyValue | undefined;
 }
 
 
 export interface IProperty extends IPropertyBase
 {
     static: boolean;
+}
+
+
+export interface IPropertyValue extends IRange
+{
+    value: any | undefined;
 }
 
 
@@ -206,8 +228,8 @@ export interface IRequires
 export interface IRequire
 {
     name: string;
-    start: IPosition | undefined;
-    end: IPosition | undefined;
+    start: IPosition;
+    end: IPosition;
 }
 
 
@@ -235,11 +257,11 @@ export interface IVariable extends IExtJsBase
 export interface IWidget extends IExtJsBase
 {
     type: "alias" | "type" | "xtype" | "alternateClassName";
+    parentProperty: string;
 }
 
 
 export interface IXtype extends IWidget
 {
     type: "xtype";
-    parentProperty: string;
 }
