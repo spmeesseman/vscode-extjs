@@ -1,5 +1,13 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.7.2 (August 26th, 2021)
+
+### Bug Fixes
+
+- **Diagnostics:** all 'type' properties with primitive property values being marked invalid.
+
+add a configurable 'ignoreTypes' setting.
+
 ## Version 0.7.1 (August 25th, 2021)
 
 ### Bug Fixes
