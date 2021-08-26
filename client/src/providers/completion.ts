@@ -364,8 +364,10 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             //
             while (cmp)
             {
-                for (const mixin of cmp.mixins) {
-                    _pushItems(instance, extjsLangMgr.getComponent(mixin, project, "      ", logLevel + 1));
+                if (cmp.mixins) {
+                    for (const mixin of cmp.mixins.value) {
+                        _pushItems(instance, extjsLangMgr.getComponent(mixin.name, project, "      ", logLevel + 1));
+                    }
                 }
                 if (cmp.extend) {
                     cmp = extjsLangMgr.getComponent(cmp.extend, project, "      ", logLevel + 1);
@@ -687,11 +689,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             // it exists, we include public class properties in the Intellisense
             //
             let tCmp: IComponent | undefined = cmp;
-            for (const mixin of tCmp.mixins)
+            if (tCmp.mixins)
             {
-                const mixinCmp = extjsLangMgr.getComponent(mixin, project, logPad + "   ", logLevel + 1, toIPosition(position));
-                if (mixinCmp) {
-                    _addProps(mixinCmp, tCmp.componentClass);
+                for (const mixin of tCmp.mixins.value)
+                {
+                    const mixinCmp = extjsLangMgr.getComponent(mixin.name, project, logPad + "   ", logLevel + 1, toIPosition(position));
+                    if (mixinCmp) {
+                        _addProps(mixinCmp, tCmp.componentClass);
+                    }
                 }
             }
             while (tCmp.extend && (tCmp = extjsLangMgr.getComponent(tCmp.extend, project, logPad + "   ", logLevel + 1, toIPosition(position))))
@@ -1094,11 +1099,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // it exists, we include public class properties in the Intellisense
         //
         let propertyDef = _get(tCmp);
-        if (!propertyDef)
+        if (!propertyDef && tCmp.mixins?.value)
         {
-            for (const mixin of tCmp.mixins)
+            for (const mixin of tCmp.mixins?.value)
             {
-                const mixinCmp = extjsLangMgr.getComponent(mixin, project, logPad + "   ", logLevel + 1, toIPosition(position));
+                const mixinCmp = extjsLangMgr.getComponent(mixin.name, project, logPad + "   ", logLevel + 1, toIPosition(position));
                 if (mixinCmp) {
                     propertyDef = _get(mixinCmp);
                     if (propertyDef) {

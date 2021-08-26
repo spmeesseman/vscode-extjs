@@ -253,7 +253,11 @@ export function quoteChar()
 
 
 export const defaultIgnoreTypes: string[] = [
-    "string", "number", "boolean"
+    "boolean",
+    "date",
+    "number",
+    "object",
+    "string"
 ];
 
 
