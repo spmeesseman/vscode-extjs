@@ -164,15 +164,6 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentByAlias(alias: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
-    {
-        log.methodStart("get component by alias", logLevel, logPad, false, [["component alias", alias], ["project", project]]);
-        const component = extjs.getComponentByAlias(alias, project, this.components, position, thisCmp, undefined, logPad, logLevel);
-        log.methodDone("get component by alias", logLevel, logPad, false, [["found", !!component]]);
-        return component;
-    }
-
-
     getComponentByFile(fsPath: string, logPad = "", logLevel = 1): IComponent | undefined
     {
         let component: IComponent | undefined;
