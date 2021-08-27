@@ -106,7 +106,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (!inComments && !inQuotes)
         {
-            if (!lineTextLeft || !lineTextLeft.includes(".") || (text && (new RegExp(`(?:\\(|;|\\:|,)\\s*${text}`)).test(lineTextLeft)))
+            if (!lineTextLeft || !lineTextLeft.includes(".") ||
+                // As function parameter
+                (text && (new RegExp(`\\((?:\\(|[\\w\\W]+,)\\s*${text}`)).test(lineTextLeft)) ||
+                // Inline, start of line, or following : ; (
+                (!text && /(?:\(|;|\\:|,)\s*(?:$|\))/.test(lineTextLeft)))
             {
                 log.write("   do inline completion", 1);
                 completionItems.push(...(await this.getInlineCompletionItems(config, "   ", 2)));

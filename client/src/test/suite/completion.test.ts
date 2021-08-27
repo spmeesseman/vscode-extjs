@@ -18,20 +18,23 @@ suite("Completion Tests", () =>
     {
 		const config = vscode.workspace.getConfiguration();
 		//
+		// Set debounce to minimum for test
+		//
+		validationDelay = configuration.get<number>("validationDelay");
+		await configuration.update("validationDelay", 250); // set to minimum validation delay
+		await waitForValidation();
+		//
 		// Set `quick suggest` setting
 		//
 		quickSuggest = config.get<boolean>("editor.quickSuggestions");
-		await config.update("editor.quickSuggestions", false);
+		await config.update("editor.quickSuggestions", true);
+		await waitForValidation();
 		//
 		// Set `ignore errors` setting
 		//
 		ignoreErrors = configuration.get<any[]>("ignoreErrors", []);
 		await configuration.update("ignoreErrors", []);
-		//
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
+		await waitForValidation();
 		//
 		// Open default test document
 		//
@@ -746,21 +749,21 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		triggerChar
 	)) as vscode.CompletionList;
 
-	const logKind = "Class";
-	const logDescRgx = /inline class as a/;
-	if (testDesc && logDescRgx.test(testDesc))
-	{
-		console.log("####################################");
-		console.log(docUri.path);
-		console.log("actual items length", actualCompletionList.items.length);
-		console.log("expected items length", expectedCompletionList.items.length);
-		console.log("####################################");
-		actualCompletionList.items.forEach((actualItem) => {
-			// if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
-				console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
-			// }
-		});
-	}
+	// const logKind = "Class";
+	// const logDescRgx = /inline class as a/;
+	// if (testDesc && logDescRgx.test(testDesc))
+	// {
+	// 	console.log("####################################");
+	// 	console.log(docUri.path);
+	// 	console.log("actual items length", actualCompletionList.items.length);
+	// 	console.log("expected items length", expectedCompletionList.items.length);
+	// 	console.log("####################################");
+	// 	actualCompletionList.items.forEach((actualItem) => {
+	// 		// if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
+	// 			console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
+	// 		// }
+	// 	});
+	// }
 
 	if (testDesc !== "no_fail")
 	{
