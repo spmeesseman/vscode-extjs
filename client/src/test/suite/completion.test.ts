@@ -102,12 +102,12 @@ suite("Completion Tests", () =>
 		//
 		// Inside function - beginning of line
 		//
-		await testCompletion(docUri, new vscode.Position(95, 1), "U", {
+		await testCompletion(docUri, new vscode.Position(95, 0), "U", {
 			items: [
 				{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 			]
 		});
-		await testCompletion(docUri, new vscode.Position(95, 1), "V", {
+		await testCompletion(docUri, new vscode.Position(95, 0), "V", {
 			items: [
 				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
 			]
@@ -255,7 +255,7 @@ suite("Completion Tests", () =>
 		//
 		// const phys = Ext.create("VSCodeExtJS.common.PhysicianDropdown"...)
 		// Line 83
-		// phys.*
+		// phys.delete();
 		//
 		await configuration.update("intellisenseIncludeDeprecated", false);
 		await configuration.update("intellisenseIncludePrivate", false);
@@ -264,6 +264,28 @@ suite("Completion Tests", () =>
 				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
+		//
+		// Line 84
+		// let pin2 = phys.getPinNumber();
+		//
+		await testCompletion(docUri, new vscode.Position(83, 18), ".", {
+			items: [
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method }
+			]
+		});
+		//
+		// const phys2 = new VSCodeExtJS.common.PhysicianDropdown...
+		// Line 90
+		// let pin3 = phys2.getPinNumber();
+		//
+		await testCompletion(docUri, new vscode.Position(89, 19), ".", {
+			items: [
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method }
+			]
+		});
+		//
+		// Show deprecated
+		//
 		await configuration.update("intellisenseIncludeDeprecated", true);
 		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
 			items: [
@@ -276,6 +298,9 @@ suite("Completion Tests", () =>
 				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
 			]
 		}, false);
+		//
+		// Show private
+		//
 		await configuration.update("intellisenseIncludePrivate", true);
 		await testCompletion(docUri, new vscode.Position(82, 7), ".", {
 			items: [
@@ -297,6 +322,9 @@ suite("Completion Tests", () =>
 				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
+		//
+		// Revert settings
+		//
 		await configuration.update("intellisenseIncludeDeprecated", incDeprecated);
 		await configuration.update("intellisenseIncludePrivate", incPrivate);
 	});
@@ -338,15 +366,13 @@ suite("Completion Tests", () =>
 
 
 	test("Inline class s a parameter", async () =>
-	{
-		//
+	{   //
 		// Line 109
 		// me.testFn2();
 		// Insert a first parameter that will be a class completion
 		//
 		await insertDocContent("VSCodeExtJS.", toRange(108, 13, 108, 13));
 		await waitForValidation();
-
 		//
 		// Line 109
 		// me.testFn2(me.testFn4(...
@@ -363,26 +389,23 @@ suite("Completion Tests", () =>
 			]
 		}, true, "inline class as a 1st parameter");
 		//
-		// Insert a first parameter, and trigger the signature helper again, we should then be
-		// on parameter #2...
+		// Insert a first parameter
 		//
-		await insertDocContent(", AppUtils.", toRange(108, 25, 108, 25));
+		await insertDocContent(", AppUtils.", toRange(108, 24, 108, 25));
 		await waitForValidation();
-
 		//
 		// 2nd parameter
 		//
-		await testCompletion(docUri, new vscode.Position(108, 25), ".", {
+		await testCompletion(docUri, new vscode.Position(108, 35), ".", {
 			items: [
-				{ label: "common", kind: vscode.CompletionItemKind.Class },
-				{ label: "store", kind: vscode.CompletionItemKind.Class }
+				{ label: "alertError", kind: vscode.CompletionItemKind.Method },
+				{ label: "publicProperty", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "inline class as a 2nd parameter");
-
 		//
 		// Remove added text, set document back to initial state
 		//
-		await insertDocContent("", toRange(108, 13, 108, 40));
+		await insertDocContent("", toRange(108, 13, 108, 35));
 		await waitForValidation();
 	});
 
@@ -438,7 +461,16 @@ suite("Completion Tests", () =>
 
 
 	test("Full xtype lines", async () =>
-	{   //
+	{
+		const items = [
+			{ label: "xtype: component", kind: vscode.CompletionItemKind.Property },
+			{ label: "xtype: grid", kind: vscode.CompletionItemKind.Property },
+			{ label: "xtype: gridpanel", kind: vscode.CompletionItemKind.Property },
+			{ label: "xtype: patientdropdown", kind: vscode.CompletionItemKind.Property },
+			{ label: "xtype: physiciandropdown", kind: vscode.CompletionItemKind.Property },
+			{ label: "xtype: userdropdown", kind: vscode.CompletionItemKind.Property }
+		];
+		//
 		// Line 187 - 191
 		// const grid = Ext.create({
 		//	   hidden: false,
@@ -446,16 +478,16 @@ suite("Completion Tests", () =>
 		//
 		// });
 		//
-		await testCompletion(docUri, new vscode.Position(189, 3), "x", {
-			items: [
-				{ label: "xtype: component", kind: vscode.CompletionItemKind.Property },
-				{ label: "xtype: grid", kind: vscode.CompletionItemKind.Property },
-				{ label: "xtype: gridpanel", kind: vscode.CompletionItemKind.Property },
-				{ label: "xtype: patientdropdown", kind: vscode.CompletionItemKind.Property },
-				{ label: "xtype: physiciandropdown", kind: vscode.CompletionItemKind.Property },
-				{ label: "xtype: userdropdown", kind: vscode.CompletionItemKind.Property }
-			]
-		});
+		await testCompletion(docUri, new vscode.Position(189, 3), "x", { items });
+		//
+		// Typing a 'quote-char' after an 'xtype:' text
+		// Remove added text, set document back to initial state
+		//
+		await insertDocContent("xtype: \"\"", toRange(189, 3, 189, 3));
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(189, 10), "\"", { items });
+		await insertDocContent("", toRange(189, 3, 189, 12));
+		await waitForValidation();
 		//
 		// Line 121-123 - should return nothing, since the component is defined
 		// in the 1st argument to Ext.create, no 'xtype: ...' items
@@ -471,7 +503,14 @@ suite("Completion Tests", () =>
 
 
 	test("Full type lines", async () =>
-	{   //
+	{
+		const items = [
+			{ label: "type: users", kind: vscode.CompletionItemKind.Property },
+			{ label: "type: appadmin", kind: vscode.CompletionItemKind.Property },
+			{ label: "type: array", kind: vscode.CompletionItemKind.Property },
+			{ label: "type: store", kind: vscode.CompletionItemKind.Property }
+		];
+		//
 		// Line 187 - 191
 		// const grid = Ext.create({
 		//	   hidden: false,
@@ -479,14 +518,16 @@ suite("Completion Tests", () =>
 		//
 		// });
 		//
-		await testCompletion(docUri, new vscode.Position(189, 3), "t", {
-			items: [
-				{ label: "type: users", kind: vscode.CompletionItemKind.Property },
-				{ label: "type: appadmin", kind: vscode.CompletionItemKind.Property },
-				{ label: "type: array", kind: vscode.CompletionItemKind.Property },
-				{ label: "type: store", kind: vscode.CompletionItemKind.Property }
-			]
-		});
+		await testCompletion(docUri, new vscode.Position(189, 3), "t", { items });
+		//
+		// Typing a 'quote-char' after a 'type:' text
+		// Remove added text, set document back to initial state
+		//
+		await insertDocContent("type: \"\"", toRange(189, 3, 189, 3));
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(189, 9), "\"", { items });
+		await insertDocContent("", toRange(189, 3, 189, 11));
+		await waitForValidation();
 		//
 		// Line 121-123 - should return nothing, since the component is defined
 		// in the 1st argument to Ext.create
@@ -630,6 +671,12 @@ suite("Completion Tests", () =>
 				{ label: "autoSync ProxyStore config", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "object 'type' configs and properties");
+		await testCompletion(docUri, new vscode.Position(207, 4), "f", {
+			items: [
+				{ label: "fields ProxyStore config", kind: vscode.CompletionItemKind.Property },
+				{ label: "filters AbstractStore config", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "object 'type' configs and properties");
 	});
 
 
@@ -660,6 +707,21 @@ suite("Completion Tests", () =>
 				{ label: "String Value", kind: vscode.CompletionItemKind.Value }
 			]
 		}, true, "userName property value");
+		//
+		// Grid / object value
+		//
+		// await insertDocContent("fields:", toRange(207, 4, 207, 4));
+		// await waitForValidation();
+		// await testCompletion(docUri, new vscode.Position(207, 10), ":", {
+		// 	items: [
+		// 		{ label: "Array Value", kind: vscode.CompletionItemKind.Value },
+		// 		{ label: "Object Value", kind: vscode.CompletionItemKind.Value }
+		// 	]
+		// }, true, "object 'type' configs and properties");
+		// //
+		// // Remove added text, set document back to initial state
+		// //
+		// await insertDocContent("", toRange(207, 4, 207, 12));
 	});
 
 

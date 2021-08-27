@@ -81,13 +81,13 @@ Ext.define('VSCodeExtJS',
 		});
 		const pin = phys.getPinNumber();
 		phys.delete();
-
+		let pin2 = phys.getPinNumber();
 		const phys2 = new VSCodeExtJS.common.PhysicianDropdown({
 			hidden: false,
 			disabled: true
 		});
 		phys2.save(a);
-
+		let pin3 = phys2.getPinNumber();
 		const phys3 = VSCodeExtJS.common.PhysicianDropdown.create({
 			hidden: false,
 			disabled: true

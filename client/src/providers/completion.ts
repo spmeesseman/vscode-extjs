@@ -57,7 +57,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         log.methodStart("provide completion items", 1, "", true);
 
-        const thisCmp = extjsLangMgr.getComponentByFile(document.uri.fsPath, "   ", 2);
+        const thisCmp = extjsLangMgr.getComponentByFile(document.uri.fsPath, "   ", 2) as IComponent;
         if (!thisCmp) {
             return [];
         }
@@ -126,7 +126,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
             else {
                 log.write("   do dot completion", 1);
-                const outerMethod =  thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
+                const outerMethod =  getMethodByPosition(position, thisCmp);
                 completionItems.push(...this.getCompletionItems(outerMethod?.name, config, "   ", 2));
             }
         }
@@ -159,7 +159,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    createCompletionItem(property: string, cmpClassPart: string, config: ICompletionConfig, kind: CompletionItemKind, isStatic: boolean, isInlineChild: boolean, preSelect: boolean, extendedFrom: string | undefined, logPad = "   ", logLevel = 2)
+    createCompletionItem(property: string, cmpClassPart: string, config: ICompletionConfig, kind: CompletionItemKind, isStatic: boolean, isInlineChild: boolean, preSelect: boolean, extendedFrom: string | undefined, logPad: string, logLevel: number)
     {
         const propCompletion: CompletionItem[] = [];
         log.methodStart("create completion item", logLevel, logPad, false, [
@@ -316,7 +316,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      * @param fsPath The filesystem path to the JavasScript class file.
      * @param addedItems Array holding item labels already added in this request.
      */
-    private getCompletionItems(fnText: string | undefined, config: ICompletionConfig, logPad = "", logLevel = 2): CompletionItem[]
+    private getCompletionItems(fnText: string | undefined, config: ICompletionConfig, logPad: string, logLevel: number): CompletionItem[]
     {
         log.methodStart("get completion items", logLevel, logPad, true, [["text", config.text], ["line text left", config.lineTextLeft], ["fn text", fnText]]);
 
@@ -352,10 +352,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         const _pushItems = ((instance: boolean, cmp?: IComponent) =>
         {
-            const baseCmp = cmp;
-            if (!baseCmp) { return; }
+            if (!cmp) { return; }
 
-            completionItems.push(...this.getCmpCompletionItems(baseCmp, instance, config, logPad + "   ", logLevel + 1));
+            completionItems.push(...this.getCmpCompletionItems(cmp, instance, config, logPad + "   ", logLevel + 1));
             //
             // Traverse up the inheritance tree, checking the 'extend' property and if
             // it exists, we include public class properties in the Intellisense
@@ -382,7 +381,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Create the completion items, including items in extended classes
         //
-        let component = extjsLangMgr.getComponent(lineCls, config.project, logPad + "   ", logLevel + 1);
+        const component = extjsLangMgr.getComponent(lineCls, config.project, logPad + "   ", logLevel + 1);
         //
         // Check if this is an instance or classpath ref, it will be different how it's handled
         //
@@ -435,20 +434,12 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             } //
              // For local instance vars, only provide completion from the right function
             //
-            else {
+            else if (fnText)
+            {
                 log.write("   try instance-component tree", logLevel + 2, logPad);
-                component = extjsLangMgr.getComponentByFile(fsPath, logPad + "   ", logLevel + 2);
-                if (component && fnText)
-                {
-                    const instComponents = this.getLocalInstanceComponents(fnText, lineCls, config.position, fsPath, component, logPad + "   ", logLevel + 1);
-                    if (instComponents.length > 0)
-                    {
-                        log.write("   found instance-components", logLevel + 2, logPad);
-                        for (const ic of instComponents)
-                        {
-                            _pushItems(true, ic);
-                        }
-                    }
+                const instComponents = this.getLocalInstanceComponents(fnText, lineCls, config.position, fsPath, config.thisCmp, logPad + "   ", logLevel + 1);
+                for (const ic of instComponents) {
+                    _pushItems(true, ic);
                 }
             }
         }
@@ -602,8 +593,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const completionItems: CompletionItem[] = [],
               cmps = extjsLangMgr.getComponentNames(),
               aliases = extjsLangMgr.getAliasNames(),
-              isInObject = config.thisCmp ? isPositionInObjectRange(config.position, config.thisCmp) : undefined,
-              method = config.thisCmp ? getMethodByPosition(config.position, config.thisCmp) : undefined,
+              isInObject = isPositionInObjectRange(config.position, config.thisCmp),
+              method = getMethodByPosition(config.position, config.thisCmp),
               quote = quoteChar();
 
         //
@@ -666,11 +657,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         const _addProps = (cmp: IComponent | undefined, extendedCls?: string) =>
         {
             if (!cmp) { return; }
-            cmp?.configs.forEach((c: IConfig) =>
+            cmp.configs.forEach((c: IConfig) =>
             {
                 _add(c, c.name, true, CompletionItemKind.Property, extendedCls, c.markdown);
             });
-            cmp?.properties.filter((p) => !this.ignoreProps.includes(p.name)).forEach((p) =>
+            cmp.properties.filter((p) => !this.ignoreProps.includes(p.name)).forEach((p) =>
             {
                 _add(p, p.name, true, CompletionItemKind.Property, extendedCls, p.markdown);
             });
@@ -685,9 +676,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 for (const mixin of tCmp.mixins.value)
                 {
                     const mixinCmp = extjsLangMgr.getComponent(mixin.name, config.project, logPad + "   ", logLevel + 1, toIPosition(config.position));
-                    if (mixinCmp) {
-                        _addProps(mixinCmp, tCmp.componentClass);
-                    }
+                    _addProps(mixinCmp, tCmp.componentClass);
                 }
             }
             while (tCmp.extend && (tCmp = extjsLangMgr.getComponent(tCmp.extend, config.project, logPad + "   ", logLevel + 1, toIPosition(config.position))))
@@ -1073,7 +1062,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getPropertyValueItems(property: string, config: ICompletionConfig, component: IComponent, logPad = "   ", logLevel = 2)
+    private getPropertyValueItems(property: string, config: ICompletionConfig, component: IComponent, logPad: string, logLevel: number)
     {
         let tCmp: IComponent | undefined = component;
         const completionItems: CompletionItem[] = [],
@@ -1089,9 +1078,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // it exists, we include public class properties in the Intellisense
         //
         let propertyDef = _get(tCmp);
-        if (!propertyDef && tCmp.mixins?.value)
+        if (!propertyDef && tCmp.mixins && tCmp.mixins.value)
         {
-            for (const mixin of tCmp.mixins?.value)
+            for (const mixin of tCmp.mixins.value)
             {
                 const mixinCmp = extjsLangMgr.getComponent(mixin.name, project, logPad + "   ", logLevel + 1, toIPosition(config.position));
                 if (mixinCmp) {
@@ -1121,11 +1110,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             const eol = documentEol(config.document),
                   propertyType = getTypeFromDoc(property, propertyDef.doc, "property") || getTypeFromDoc(property, propertyDef.doc, "cfg");
             switch (propertyType) {
-                case "Object":
-                    valueCompletionItem = new CompletionItem("Object Value", CompletionItemKind.Value);
-                    valueCompletionItem.insertText = " " + "{}";
-                    completionItems.push(valueCompletionItem);
-                    break;
                 case "String":
                     valueCompletionItem = new CompletionItem("String Value", CompletionItemKind.Value);
                     valueCompletionItem.insertText = " " + "\"\"";
@@ -1139,7 +1123,24 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     valueCompletionItem.insertText = ` true${config.xtypeEol ? "," + eol : ""}`;
                     completionItems.push(valueCompletionItem);
                     break;
+                // case "Array":
+                // case "string[]":
+                //     valueCompletionItem = new CompletionItem("Object Value", CompletionItemKind.Value);
+                //     valueCompletionItem.insertText = " " + "{}";
+                //     completionItems.push(valueCompletionItem);
+                //     break;
+                // case "Object":
+                //     valueCompletionItem = new CompletionItem("Object Value", CompletionItemKind.Value);
+                //     valueCompletionItem.insertText = " " + "{}";
+                //     completionItems.push(valueCompletionItem);
+                //     break;
                 default:
+                //    valueCompletionItem = new CompletionItem("Array Value", CompletionItemKind.Value);
+                //    valueCompletionItem.insertText = " " + "[]";
+                //    completionItems.push(valueCompletionItem);
+                //    valueCompletionItem = new CompletionItem("Object Value", CompletionItemKind.Value);
+                //    valueCompletionItem.insertText = " " + "{}";
+                //    completionItems.push(valueCompletionItem);
                     //
                     // TODO - display class values if the type is a class type
                     // e.g. 'Ext.create('VSCodeExtJS.common.PhysicianDropdown', {});'
