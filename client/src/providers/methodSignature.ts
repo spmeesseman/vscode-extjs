@@ -14,13 +14,8 @@ class MethodSignatureProvider implements SignatureHelpProvider
 	async provideSignatureHelp(document: TextDocument, position: Position, token: CancellationToken, context: SignatureHelpContext)
 	{
         const sigHelp = new SignatureHelp();
-        const range = document.getWordRangeAtPosition(position),
-              text = document.getText(range);
         let lineText = document.lineAt(position).text;
 
-        if (/type *\:/.test(lineText) && await shouldIgnoreType(text)) {
-            return;
-        }
         if (!utils.isExtJsFile(document.getText())) {
             return;
         }

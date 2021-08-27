@@ -61,9 +61,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 position, document, text, lineTextLeft
               };
 
-        if (/type *\:/.test(lineTextLeft) && await shouldIgnoreType(text)) {
-            return;
-        }
         if (!utils.isExtJsFile(document.getText())) {
             return;
         }

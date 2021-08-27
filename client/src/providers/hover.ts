@@ -4,7 +4,7 @@ import {
     ProviderResult, TextDocument, MarkdownString, Range, commands
 } from "vscode";
 import * as log from "../common/log";
-import { ComponentType, DeclarationType, utils, VariableType } from "../../../common";
+import { ComponentType, DeclarationType, IComponent, IConfig, IMethod, utils, VariableType } from "../../../common";
 import { extjsLangMgr } from "../extension";
 import { isPrimitive, isComponent, getMethodByPosition, getWorkspaceProjectName, toVscodePosition, toIPosition, shouldIgnoreType } from "../common/clientUtils";
 
@@ -41,17 +41,15 @@ class ExtJsHoverProvider implements HoverProvider
             ["component type", cmpType], ["property", property], ["project", project]
         ], 2, "   ");
 
-        if (property && cmpClass)
+        if (property && cmpClass && thisCmp)
         {
             if (cmpType === ComponentType.Method)
             {
-                const method = extjsLangMgr.getMethod(cmpClass, property, project, false, "   ", 2);
-                if (method) {
-                    log.value("   provide class hover info", property, 2);
-                    const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase(),
-                          returns = method.returns ? `: returns ${returnsText}` : "";
-                    hover = new Hover(new MarkdownString().appendCodeblock(`function ${text}${returns}`).appendMarkdown(method.markdown ? method.markdown.value : ""));
-                }
+                const method = extjsLangMgr.getMethod(cmpClass, property, project, false, "   ", 2) as IMethod;
+                log.value("   provide class hover info", property, 2);
+                const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase(),
+                        returns = method.returns ? `: returns ${returnsText}` : "";
+                hover = new Hover(new MarkdownString().appendCodeblock(`function ${text}${returns}`).appendMarkdown(method.markdown ? method.markdown.value : ""));
             }
             else if (cmpType === ComponentType.Property)
             {
@@ -66,12 +64,10 @@ class ExtJsHoverProvider implements HoverProvider
                     {
                         log.value("   provide class instance hover info", property, 2);
                         let varType = "instance";
-                        if (thisCmp) {
-                            const thisMethod = getMethodByPosition(position, thisCmp),
-                                thisVar = thisMethod?.variables.find((v) => v.name === property);
-                            if (thisVar) {
-                                varType = DeclarationType[thisVar.declaration];
-                            }
+                        const thisMethod = getMethodByPosition(position, thisCmp),
+                            thisVar = thisMethod?.variables.find((v) => v.name === property);
+                        if (thisVar) {
+                            varType = DeclarationType[thisVar.declaration];
                         }
                         hover = new Hover(new MarkdownString().appendCodeblock(`${varType} ${text}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
                     }
@@ -97,12 +93,10 @@ class ExtJsHoverProvider implements HoverProvider
                             let varType = "any ";
                             const method = cmp.methods.find(m => m.name === callee);
                             if (method?.returns) { // the type of the current property is the @return type of the fn
-                                if (thisCmp) {
-                                    const thisMethod = getMethodByPosition(position, thisCmp),
-                                          thisVar = thisMethod?.variables.find((v) => v.name === property);
-                                    if (thisVar) {
-                                        varType = DeclarationType[thisVar.declaration] + " ";
-                                    }
+                                const thisMethod = getMethodByPosition(position, thisCmp),
+                                        thisVar = thisMethod?.variables.find((v) => v.name === property);
+                                if (thisVar) {
+                                    varType = DeclarationType[thisVar.declaration] + " ";
                                 }
                                 const hoverDoc = `${varType}${text}: ${method.returns.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase()}`;
                                 hover = new Hover(new MarkdownString().appendCodeblock(hoverDoc).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
@@ -113,40 +107,35 @@ class ExtJsHoverProvider implements HoverProvider
             }
             else if (cmpType === ComponentType.Config)
             {
-                const config = extjsLangMgr.getConfig(cmpClass, property, project, "   ", 2);
-                if (config) {
-                    log.value("   provide class hover info", property, 2);
-                    hover = new Hover(new MarkdownString().appendCodeblock(`config ${text}: ${config.componentClass}`).appendMarkdown(config.markdown ? config.markdown.value : ""));
-                }
+                const config = extjsLangMgr.getConfig(cmpClass, property, project, "   ", 2) as IConfig;
+                log.value("   provide class hover info", property, 2);
+                hover = new Hover(new MarkdownString().appendCodeblock(`config ${text}: ${config.componentClass}`).appendMarkdown(config.markdown ? config.markdown.value : ""));
             }
-            else if (cmpType & ComponentType.Class)
+            else // if (cmpType & ComponentType.Class)
             {
-                const cmp = extjsLangMgr.getComponent(cmpClass, project, "   ", 2, toIPosition(position), thisCmp);
-                if (isComponent(cmp))
-                {
-                    log.value("   provide class hover info", property, 2);
-                    let typeName = "class";
-                    if (cmp.singleton) {
-                        typeName = "singleton";
-                    }
-                    else if (!lineText.includes("xtype:") && (lineText.includes("store:") || extjsLangMgr.getStoreTypeNames().find((x) => x.replace("store.", "") === text))) {
-                        typeName = "store";
-                    }
-                    else if (!lineText.includes("xtype:") && (lineText.includes("model:") || extjsLangMgr.getModelTypeNames().find((m) => m.replace("model.", "") === text))) {
-                        typeName = "model";
-                    }
-                    // else if (lineText.includes("xtype:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
-                    //     typeName = "xtype";
-                    // }
-                    // else if (!lineText.includes("xtype:") && lineText.includes("type:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
-                    //     typeName = "type";
-                    // }
-                    let clsShortName = text;
-                    if (lineText.includes(`.${text}`) || lineText.includes(`${text}.`)) {
-                        clsShortName = cmp.componentClass.substring(cmp.componentClass.lastIndexOf(".") + 1);
-                    }
-                    hover = new Hover(new MarkdownString().appendCodeblock(`${typeName} ${clsShortName}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
+                const cmp = extjsLangMgr.getComponent(cmpClass, project, "   ", 2, toIPosition(position), thisCmp) as IComponent;
+                log.value("   provide class hover info", property, 2);
+                let typeName = "class";
+                if (cmp.singleton) {
+                    typeName = "singleton";
                 }
+                else if (!lineText.includes("xtype:") && (lineText.includes("store:") || extjsLangMgr.getStoreTypeNames().find((x) => x.replace("store.", "") === text))) {
+                    typeName = "store";
+                }
+                else if (!lineText.includes("xtype:") && (lineText.includes("model:") || extjsLangMgr.getModelTypeNames().find((m) => m.replace("model.", "") === text))) {
+                    typeName = "model";
+                }
+                // else if (lineText.includes("xtype:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
+                //     typeName = "xtype";
+                // }
+                // else if (!lineText.includes("xtype:") && lineText.includes("type:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
+                //     typeName = "type";
+                // }
+                let clsShortName = text;
+                if (lineText.includes(`.${text}`) || lineText.includes(`${text}.`)) {
+                    clsShortName = cmp.componentClass.substring(cmp.componentClass.lastIndexOf(".") + 1);
+                }
+                hover = new Hover(new MarkdownString().appendCodeblock(`${typeName} ${clsShortName}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
             }
         }
 

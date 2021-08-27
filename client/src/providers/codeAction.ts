@@ -13,12 +13,8 @@ class ExtjsCodeActionProvider implements CodeActionProvider
     async provideCodeActions(document: TextDocument, range: Range | Selection, context: CodeActionContext, token: CancellationToken)
     {
         const actions: CodeAction[] = [],
-              text = document.getText(range),
-              lineText = document.lineAt(range.start).text;
+              text = document.getText(range);
 
-        if (/type *\:/.test(lineText) && await shouldIgnoreType(text)) {
-            return;
-        }
         if (!utils.isExtJsFile(document.getText())) {
             return;
         }

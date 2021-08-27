@@ -14,12 +14,7 @@ class ExtJsDefinitionProvider implements DefinitionProvider
     async provideDefinition(document: TextDocument, position: Position, token: CancellationToken)
     {
         let location: Location | undefined;
-        const text = document.getText(document.getWordRangeAtPosition(position)),
-              lineText = document.lineAt(position).text;
 
-        if (/type *\:/.test(lineText) && await shouldIgnoreType(text)) {
-            return;
-        }
         if (!utils.isExtJsFile(document.getText())) {
             return;
         }
