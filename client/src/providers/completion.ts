@@ -106,21 +106,17 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (!inComments && !inQuotes)
         {
-            if (!lineTextLeft || !lineTextLeft.includes(".") || (new RegExp(`(?:\\(|;|\\:)\\s*${text}`)).test(lineTextLeft))
+            if (!lineTextLeft || !lineTextLeft.includes(".") || (text && (new RegExp(`(?:\\(|;|\\:|,)\\s*${text}`)).test(lineTextLeft)))
             {
                 log.write("   do inline completion", 1);
                 completionItems.push(...(await this.getInlineCompletionItems(config, "   ", 2)));
             }
             else {
                 log.write("   do dot completion", 1);
-                let methodName: string | undefined;
-                const thisCls = extjsLangMgr.getClsByPath(document.uri.fsPath);
-                if (thisCls) {
-                    const thisCmp = extjsLangMgr.getComponent(thisCls, config.project, "   ", 2, toIPosition(position)),
-                          outerMethod =  thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
-                    methodName = outerMethod?.name; // name of the method we are in
-                }
-                completionItems.push(...this.getCompletionItems(methodName, config, "   ", 2));
+                const thisCls = extjsLangMgr.getClsByPath(document.uri.fsPath) as string;
+                const thisCmp = extjsLangMgr.getComponent(thisCls, config.project, "   ", 2, toIPosition(position)),
+                      outerMethod =  thisCmp ? getMethodByPosition(position, thisCmp) : undefined;
+                completionItems.push(...this.getCompletionItems(outerMethod?.name, config, "   ", 2));
             }
         }
         else {
