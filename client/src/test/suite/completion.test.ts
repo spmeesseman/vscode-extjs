@@ -334,6 +334,56 @@ suite("Completion Tests", () =>
 	});
 
 
+	test("Inline class s a parameter", async () =>
+	{
+		//
+		// Line 109
+		// me.testFn2();
+		// Insert a first parameter that will be a class completion
+		//
+		await insertDocContent("VSCodeExtJS.", toRange(108, 13, 108, 13));
+		await waitForValidation();
+
+		//
+		// Line 109
+		// me.testFn2(me.testFn4(...
+		//
+		await testCompletion(docUri, new vscode.Position(108, 25), ".", {
+			items: [
+				{ label: "common", kind: vscode.CompletionItemKind.Class },
+				{ label: "AppUtilities", kind: vscode.CompletionItemKind.Class },
+				{ label: "view", kind: vscode.CompletionItemKind.Class },
+				{ label: "main", kind: vscode.CompletionItemKind.Class },
+				{ label: "mixins", kind: vscode.CompletionItemKind.Class },
+				{ label: "model", kind: vscode.CompletionItemKind.Class },
+				{ label: "store", kind: vscode.CompletionItemKind.Class }
+			]
+		}, true, "inline class as a 1st parameter");
+		//
+		// Insert a first parameter, and trigger the signature helper again, we should then be
+		// on parameter #2...
+		//
+		await insertDocContent(", AppUtils.", toRange(108, 25, 108, 25));
+		await waitForValidation();
+
+		//
+		// 2nd parameter
+		//
+		await testCompletion(docUri, new vscode.Position(108, 25), ".", {
+			items: [
+				{ label: "common", kind: vscode.CompletionItemKind.Class },
+				{ label: "store", kind: vscode.CompletionItemKind.Class }
+			]
+		}, true, "inline class as a 2nd parameter");
+
+		//
+		// Remove added text, set document back to initial state
+		//
+		await insertDocContent("", toRange(108, 13, 108, 40));
+		await waitForValidation();
+	});
+
+
 	test("Sub-classes", async () =>
 	{
 		//
@@ -448,7 +498,6 @@ suite("Completion Tests", () =>
 	});
 
 
-
 	test("Object 'xtype' configs and properties", async () =>
 	{   //
 		// Line 167
@@ -544,7 +593,6 @@ suite("Completion Tests", () =>
 	});
 
 
-
 	test("Object 'type' configs and properties", async () =>
 	{   //
 		// Line 203 - 207 Store filter object
@@ -612,7 +660,6 @@ suite("Completion Tests", () =>
 	});
 
 
-
 	test("Behind comments", async () =>
 	{
 		//
@@ -676,7 +723,7 @@ suite("Completion Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(2, 12), "l", {
+		await testCompletion(jssUri, new vscode.Position(2, 12), ".", {
 			items: []
 		}, true, "non-extjs file");
 		try {
@@ -699,21 +746,21 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		triggerChar
 	)) as vscode.CompletionList;
 
-	// const logKind = "Value";
-	// const logDescRgx = / property value/;
-	// if (testDesc && logDescRgx.test(testDesc))
-	// {
-	// 	console.log("####################################");
-	// 	console.log(docUri.path);
-	// 	console.log("actual items length", actualCompletionList.items.length);
-	// 	console.log("expected items length", expectedCompletionList.items.length);
-	// 	console.log("####################################");
-	// 	actualCompletionList.items.forEach((actualItem) => {
-	// 		// if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
-	// 			console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
-	// 		// }
-	// 	});
-	// }
+	const logKind = "Class";
+	const logDescRgx = /inline class as a/;
+	if (testDesc && logDescRgx.test(testDesc))
+	{
+		console.log("####################################");
+		console.log(docUri.path);
+		console.log("actual items length", actualCompletionList.items.length);
+		console.log("expected items length", expectedCompletionList.items.length);
+		console.log("####################################");
+		actualCompletionList.items.forEach((actualItem) => {
+			// if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
+				console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
+			// }
+		});
+	}
 
 	if (testDesc !== "no_fail")
 	{

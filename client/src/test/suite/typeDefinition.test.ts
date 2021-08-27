@@ -112,7 +112,7 @@ suite("Type Definition Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await testTypeDefinition(docUri, new vscode.Position(1, 11), []);
+		await testTypeDefinition(jssUri, new vscode.Position(1, 11), []);
 		try {
 			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}

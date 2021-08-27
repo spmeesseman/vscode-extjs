@@ -302,7 +302,7 @@ suite("Code Action Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await testCodeAction(docUri, toRange(2, 12, 2, 16), []);
+		await testCodeAction(jssUri, toRange(2, 12, 2, 16), []);
 		try {
 			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}

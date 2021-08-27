@@ -314,7 +314,7 @@ suite("Definition Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await testDefinition(docUri, new vscode.Position(1, 11), []);
+		await testDefinition(jssUri, new vscode.Position(1, 11), []);
 		try {
 			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		}
