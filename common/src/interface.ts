@@ -11,7 +11,8 @@ export enum ComponentType
     Store = 1 << 6,
     Type = 1 << 7,
     XType = 1 << 8,
-    Layout = 1 << 9
+    Layout = 1 << 9,
+    Instance = 1 << 10
 }
 
 

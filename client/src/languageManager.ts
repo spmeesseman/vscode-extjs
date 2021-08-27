@@ -27,7 +27,6 @@ export interface ILineProperties
 {
     property: string;
     cmpClass?: string;
-    cmp?: IComponent;
     callee?: string;
     calleeCmp?: IExtJsBase;
     thisClass?: string;
@@ -457,7 +456,7 @@ class ExtjsLanguageManager
                 text,
                 project,
                 lineText: allLineText,
-                component
+                component: thisCmp
             };
         }
 
@@ -668,18 +667,22 @@ class ExtjsLanguageManager
         }
         else // ComponentType.Property / ComponentType.Config | variable / parameter
         {   //
-            cmpClass = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel)?.componentClass;
-            if (!cmpClass) {
-                const cmp = this.components.find(c => /* c.nameSpace === nameSpace && */
+            component = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel);
+            if (!component) {
+                component = this.components.find(c => /* c.nameSpace === nameSpace && */
                                     c.project === project && c.componentClass === thisCmp.componentClass && c.properties.find(p => p.name === property)) ||
                             this.components.find(c => /* c.nameSpace === nameSpace && */
                                     c.project === project && c.componentClass === thisCmp.componentClass && c.configs.find(cfg => cfg.name === property));
-                if (cmp) {
-                    cmpClass = cmp.componentClass;
-                    if (cmp.configs.find(c => c.name === property)) {
+                if (component) {
+                    cmpClass = component.componentClass;
+                    if ((component as IComponent).configs.find(c => c.name === property)) {
                         cmpType = ComponentType.Config;
                     }
                 }
+            }
+            else {
+                cmpClass = component.componentClass;
+                // cmpType = cmpType | ComponentType.Instance;
             }
         }
 
