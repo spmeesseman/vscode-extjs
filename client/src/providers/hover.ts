@@ -99,7 +99,7 @@ class ExtJsHoverProvider implements HoverProvider
                                     varType = DeclarationType[thisVar.declaration] + " ";
                                 }
                                 const hoverDoc = `${varType}${text}: ${method.returns.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase()}`;
-                                hover = this.getHover(hoverDoc, config.markdown);
+                                hover = this.getHover(hoverDoc, method.markdown);
                             }
                         }
                     }
