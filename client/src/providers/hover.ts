@@ -34,7 +34,7 @@ class ExtJsHoverProvider implements HoverProvider
         // Indexer finished, proceed...
         //
 
-        const { cmpType, property, cmpClass, thisClass, thisCmp, callee, text, lineText, project } = extjsLangMgr.getLineProperties(document, position, "   ");
+        const { cmpType, property, cmpClass, thisClass, thisCmp, callee, text, lineText, project } = extjsLangMgr.getLineProperties(document, position, "   ", 2);
 
         log.values([
             ["component class", cmpClass], ["this class", thisClass], ["callee", callee],
@@ -49,14 +49,14 @@ class ExtJsHoverProvider implements HoverProvider
                 log.value("   provide class hover info", property, 2);
                 const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase(),
                         returns = method.returns ? `: returns ${returnsText}` : "";
-                hover = new Hover(new MarkdownString().appendCodeblock(`function ${text}${returns}`).appendMarkdown(method.markdown ? method.markdown.value : ""));
+                hover = this.getHover(`function ${text}${returns}`, method.markdown);
             }
             else if (cmpType === ComponentType.Property)
             {
                 const prop = extjsLangMgr.getProperty(cmpClass, property, project, false, "   ", 2);
                 if (prop) {
                     log.value("   provide property hover info", property, 2);
-                    hover = new Hover(new MarkdownString().appendCodeblock(`property ${text}: ${prop.componentClass}`).appendMarkdown(prop.markdown ? prop.markdown.value : ""));
+                    hover = this.getHover(`property ${text}: ${prop.componentClass}`, prop.markdown);
                 }
                 else {
                     let cmp = extjsLangMgr.getComponentInstance(property, project, position, document.uri.fsPath, "   ");
@@ -69,7 +69,7 @@ class ExtJsHoverProvider implements HoverProvider
                         if (thisVar) {
                             varType = DeclarationType[thisVar.declaration];
                         }
-                        hover = new Hover(new MarkdownString().appendCodeblock(`${varType} ${text}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
+                        hover = this.getHover(`${varType} ${text}: ${cmp.componentClass}`, cmp.markdown);
                     }
                     else if (thisClass && callee && isPrimitive(cmp))
                     {   //
@@ -99,7 +99,7 @@ class ExtJsHoverProvider implements HoverProvider
                                     varType = DeclarationType[thisVar.declaration] + " ";
                                 }
                                 const hoverDoc = `${varType}${text}: ${method.returns.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase()}`;
-                                hover = new Hover(new MarkdownString().appendCodeblock(hoverDoc).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
+                                hover = this.getHover(hoverDoc, config.markdown);
                             }
                         }
                     }
@@ -109,7 +109,7 @@ class ExtJsHoverProvider implements HoverProvider
             {
                 const config = extjsLangMgr.getConfig(cmpClass, property, project, "   ", 2) as IConfig;
                 log.value("   provide class hover info", property, 2);
-                hover = new Hover(new MarkdownString().appendCodeblock(`config ${text}: ${config.componentClass}`).appendMarkdown(config.markdown ? config.markdown.value : ""));
+                hover = this.getHover(`config ${text}: ${config.componentClass}`, config.markdown);
             }
             else // if (cmpType & ComponentType.Class)
             {
@@ -135,12 +135,18 @@ class ExtJsHoverProvider implements HoverProvider
                 if (lineText.includes(`.${text}`) || lineText.includes(`${text}.`)) {
                     clsShortName = cmp.componentClass.substring(cmp.componentClass.lastIndexOf(".") + 1);
                 }
-                hover = new Hover(new MarkdownString().appendCodeblock(`${typeName} ${clsShortName}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
+                hover = this.getHover(`${typeName} ${clsShortName}: ${cmp.componentClass}`, cmp.markdown);
             }
         }
 
         log.methodDone("provide hover", 1, "", true);
         return hover;
+    }
+
+
+    private getHover(codeblock: any, markdown: any)
+    {
+        return new Hover(new MarkdownString().appendCodeblock(`${codeblock}`).appendMarkdown(markdown ? markdown.value : ""));
     }
 
 }

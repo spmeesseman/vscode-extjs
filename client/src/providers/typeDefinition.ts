@@ -30,7 +30,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
         // Indexer finished, proceed...
         //
 
-        const { cmpClass, cmpType, property, thisClass, project } = extjsLangMgr.getLineProperties(document, position, "   ");
+        const { cmpClass, cmpType, property, thisClass, project } = extjsLangMgr.getLineProperties(document, position, "   ", 2);
 
         if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
         {
