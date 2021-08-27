@@ -126,10 +126,7 @@ class ExtJsHoverProvider implements HoverProvider
                 {
                     log.value("   provide class hover info", property, 2);
                     let typeName = "class";
-                    if (!lineText.includes("type:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
-                        typeName = "xtype";
-                    }
-                    else if (cmp.singleton) {
+                    if (cmp.singleton) {
                         typeName = "singleton";
                     }
                     else if (!lineText.includes("xtype:") && (lineText.includes("store:") || extjsLangMgr.getStoreTypeNames().find((x) => x.replace("store.", "") === text))) {
@@ -138,7 +135,16 @@ class ExtJsHoverProvider implements HoverProvider
                     else if (!lineText.includes("xtype:") && (lineText.includes("model:") || extjsLangMgr.getModelTypeNames().find((m) => m.replace("model.", "") === text))) {
                         typeName = "model";
                     }
-                    const clsShortName = cmp.componentClass.substring(cmp.componentClass.lastIndexOf(".") + 1);
+                    // else if (lineText.includes("xtype:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
+                    //     typeName = "xtype";
+                    // }
+                    // else if (!lineText.includes("xtype:") && lineText.includes("type:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {
+                    //     typeName = "type";
+                    // }
+                    let clsShortName = text;
+                    if (lineText.includes(`.${text}`) || lineText.includes(`${text}.`)) {
+                        clsShortName = cmp.componentClass.substring(cmp.componentClass.lastIndexOf(".") + 1);
+                    }
                     hover = new Hover(new MarkdownString().appendCodeblock(`${typeName} ${clsShortName}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
                 }
             }
