@@ -20,7 +20,7 @@ export function getComponentByAlias(alias: string, project: string, components: 
 
 	const w = position && thisCmp ? getWidgetByPosition(position, thisCmp) : undefined;
 	// const aliasNsReplaceRegex = /(?:[^\.]+\.)+/i;
-	const _match = (c: IComponent, a: IAlias|IXtype|IType|IAlternateClassName) =>
+	const _match = (c: IComponent, a: IAlias|IXtype|IType|IAlternateClassName|IProperty) =>
 	{
 		let matched = false;
 		if (project === c.project)
@@ -49,7 +49,7 @@ export function getComponentByAlias(alias: string, project: string, components: 
 					}
 				}
 			}
-			else if (isXType(a) || isAlternateClassName(a)) {
+			else { // if (isXType(a) || isAlternateClassName(a) || isProperty(a)) {
 				matched = a.name === alias;
 			}
 		}
@@ -57,9 +57,10 @@ export function getComponentByAlias(alias: string, project: string, components: 
 	};
 
 	let component: IComponent | undefined;
-	const xtypeComponents = w?.type !== "type" ? (components.filter(c => c.xtypes.find(x => _match(c, x))) || []) :
-												 (components.filter(c => c.types.find(t => _match(c, t))) || []),
-		  aliasComponents = components.filter(c => c.aliases.find(a => _match(c, a))) || [];
+	const xtypeComponents = w?.type !== "type" ? components.filter(c => c.xtypes.find(x => _match(c, x))) :
+												 components.filter(c => c.types.find(t => _match(c, t))),
+		  aliasComponents = components.filter(c => c.aliases.find(a => _match(c, a)) ||
+		  										   c.properties.find(p => p.name === "name" && c.extend?.endsWith(".Application") && _match(c, p)));
 
 	//
 	// getAliasLookup() will examine parent object's property name of the widget in the
@@ -155,25 +156,25 @@ export function getWidgetByPosition(position: IPosition, component: IComponent)
 }
 
 
-export function isConfig(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IConfig
+export function isConfig(component: any): component is IConfig
 {
     return !!component && "getter" in component;
 }
 
 
-export function isAlias(component: IWidget | IXtype | IType | IAlias | undefined): component is IAlias
+export function isAlias(component: any): component is IAlias
 {
     return !!component && "type" in component && component.type === "alias";
 }
 
 
-export function isAlternateClassName(component: IWidget | IXtype | IType | IAlias | undefined): component is IAlternateClassName
+export function isAlternateClassName(component: any): component is IAlternateClassName
 {
     return !!component && "type" in component && component.type === "alternateClassName";
 }
 
 
-export function isMethod(component: IComponent | IProperty | IMethod | IConfig | undefined): component is IMethod
+export function isMethod(component: any): component is IMethod
 {
     return !!component && "variables" in component;
 }
