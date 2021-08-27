@@ -140,7 +140,7 @@ suite("Hover Tests", () =>
 		// Is of type VSCodeExtJS.store.user.Users, not VSCodeExtJS.view.users.Users, which
 		// is also of (x)type "users"
 		//
-		await testHover(docUri, new vscode.Position(201, 13), "users: VSCodeExtJS.store.user.Users");
+		await testHover(docUri, new vscode.Position(201, 13), "store users: VSCodeExtJS.store.user.Users");
 	});
 
 
@@ -149,6 +149,32 @@ suite("Hover Tests", () =>
 		await testHover(docUri, new vscode.Position(150, 3));
 		await testHover(docUri, new vscode.Position(241, 16)); // "type: 'string'"" hits shouldIgnoreType()
     });
+
+
+	test("Store properties", async () =>
+	{   //
+		// Open non extjs doc inside of a classpath
+		//
+		const storeUri = getDocUri("app/shared/store/Activities.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(storeUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		} catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		//
+		// Line 7
+		// model: 'VSCodeExtJS.model.Activity'
+		//
+		await testHover(storeUri, new vscode.Position(6, 21), "model Activity: VSCodeExtJS.model.Activity");
+		await testHover(storeUri, new vscode.Position(6, 26), "model Activity: VSCodeExtJS.model.Activity");
+		await testHover(storeUri, new vscode.Position(6, 32), "model Activity: VSCodeExtJS.model.Activity");
+
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+	});
 
 
 	test("Non-ExtJS document", async () =>
