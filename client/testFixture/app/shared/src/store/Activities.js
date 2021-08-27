@@ -1,5 +1,5 @@
 
-Ext.define('VSCodeSxtJS.store.Activities', 
+Ext.define('VSCodeExtJS.store.Activities', 
 {
     extend: 'Ext.data.Store',
     alias: 'store.activities',

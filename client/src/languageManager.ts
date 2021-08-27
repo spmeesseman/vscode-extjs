@@ -96,6 +96,14 @@ class ExtjsLanguageManager
                     aliases.push(a.name);
                 }
             });
+            //
+            // The main application class that extends Ext.app.Application...
+            //
+            c.properties.filter(p => p.name === "name" && c.extend?.endsWith(".app.Application")).forEach((p) => {
+                if (!aliases.includes(p.componentClass) && p.value) {
+                    aliases.push(p.value.value);
+                }
+            });
         });
         return aliases;
     }

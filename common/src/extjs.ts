@@ -49,7 +49,10 @@ export function getComponentByAlias(alias: string, project: string, components: 
 					}
 				}
 			}
-			else { // if (isXType(a) || isAlternateClassName(a) || isProperty(a)) {
+			else if (!isXType(a) && !isAlternateClassName(a) && isProperty(a)) {
+				matched = a.value?.value === alias;
+			}
+			else { // if (isXType(a) || isAlternateClassName(a)) {
 				matched = a.name === alias;
 			}
 		}
@@ -60,7 +63,7 @@ export function getComponentByAlias(alias: string, project: string, components: 
 	const xtypeComponents = w?.type !== "type" ? components.filter(c => c.xtypes.find(x => _match(c, x))) :
 												 components.filter(c => c.types.find(t => _match(c, t))),
 		  aliasComponents = components.filter(c => c.aliases.find(a => _match(c, a)) ||
-		  										   c.properties.find(p => p.name === "name" && c.extend?.endsWith(".Application") && _match(c, p)));
+		  										   c.properties.find(p => p.name === "name" && c.extend?.endsWith(".app.Application") && _match(c, p)));
 
 	//
 	// getAliasLookup() will examine parent object's property name of the widget in the
