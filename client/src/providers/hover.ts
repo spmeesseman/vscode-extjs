@@ -132,13 +132,14 @@ class ExtJsHoverProvider implements HoverProvider
                     else if (cmp.singleton) {
                         typeName = "singleton";
                     }
-                    else if (!lineText.includes("xtype:") && extjsLangMgr.getStoreTypeNames().find((x) => x.replace("store.", "") === text)) {
+                    else if (!lineText.includes("xtype:") && (lineText.includes("store:") || extjsLangMgr.getStoreTypeNames().find((x) => x.replace("store.", "") === text))) {
                         typeName = "store";
                     }
-                    else if (!lineText.includes("xtype:") && extjsLangMgr.getModelTypeNames().find((m) => m.replace("model.", "") === text)) {
+                    else if (!lineText.includes("xtype:") && (lineText.includes("model:") || extjsLangMgr.getModelTypeNames().find((m) => m.replace("model.", "") === text))) {
                         typeName = "model";
                     }
-                    hover = new Hover(new MarkdownString().appendCodeblock(`${typeName} ${text}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
+                    const clsShortName = cmp.componentClass.substring(cmp.componentClass.lastIndexOf(".") + 1);
+                    hover = new Hover(new MarkdownString().appendCodeblock(`${typeName} ${clsShortName}: ${cmp.componentClass}`).appendMarkdown(cmp.markdown ? cmp.markdown.value : ""));
                 }
             }
         }
