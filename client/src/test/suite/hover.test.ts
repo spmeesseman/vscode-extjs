@@ -155,7 +155,7 @@ suite("Hover Tests", () =>
 	{   //
 		// Open non extjs doc inside of a classpath
 		//
-		const storeUri = getDocUri("app/shared/store/Activities.js");
+		const storeUri = getDocUri("app/shared/src/store/Activities.js");
 		try {
 			const doc = await vscode.workspace.openTextDocument(storeUri);
 			await vscode.window.showTextDocument(doc);

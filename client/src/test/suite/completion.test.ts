@@ -663,6 +663,29 @@ suite("Completion Tests", () =>
 		await waitForValidation();
 	});
 
+
+	test("Non-ExtJS document", async () =>
+	{
+		const jssUri = getDocUri("app/js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		}
+		catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(2, 12), "l", {
+			items: []
+		}, true, "non-extjs file");
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
+		await waitForValidation();
+	});
+
 });
 
 

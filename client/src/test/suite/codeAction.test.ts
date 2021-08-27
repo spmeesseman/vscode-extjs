@@ -289,6 +289,27 @@ suite("Code Action Tests", () =>
 		await testCodeAction(docUri, toRange(230, 14, 230, 23), []);
 	});
 
+
+	test("Non-ExtJS document", async () =>
+	{
+		const jssUri = getDocUri("app/js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		}
+		catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await testCodeAction(docUri, toRange(2, 12, 2, 16), []);
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
+		await waitForValidation();
+	});
+
 });
 
 

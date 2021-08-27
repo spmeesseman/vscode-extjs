@@ -301,6 +301,27 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(241, 16), []); // "type: 'string'"" hits shouldIgnoreType()
     });
 
+
+	test("Non-ExtJS document", async () =>
+	{
+		const jssUri = getDocUri("app/js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		}
+		catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await testDefinition(docUri, new vscode.Position(1, 11), []);
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
+		await waitForValidation();
+	});
+
 });
 
 

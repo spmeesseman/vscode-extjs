@@ -283,6 +283,31 @@ suite("Method Signature Tests", () =>
 		await waitForValidation();
     });
 
+
+	test("Non-ExtJS document", async () =>
+	{
+		const jssUri = getDocUri("app/js/script1.js");
+		try {
+			const doc = await vscode.workspace.openTextDocument(jssUri);
+			await vscode.window.showTextDocument(doc);
+			assert(vscode.window.activeTextEditor, "No active editor");
+		}
+		catch (e) {
+			console.error(e);
+		}
+		await waitForValidation();
+		await testSignature(docUri, new vscode.Position(2, 16), "(", {
+			activeParameter: 1,
+			activeSignature: 0,
+			signatures: getSigInfo("a, b")
+		}, false);
+		try {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+		catch {}
+		await waitForValidation();
+	});
+
 });
 
 
