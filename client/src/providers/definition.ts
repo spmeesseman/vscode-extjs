@@ -35,7 +35,7 @@ class ExtJsDefinitionProvider implements DefinitionProvider
         if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
         {
             log.value("   component class", cmpClass, 2);
-            const fsPath = extjsLangMgr.getFilePath(cmpClass, project, "   ");
+            const fsPath = extjsLangMgr.getFilePath(cmpClass, project, "   ", 2);
             if (fsPath)
             {
                 const uri = Uri.file(fsPath),

@@ -780,27 +780,25 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // all properties/configs of the xtype 'textfield' that start with the text 'max',
                 // i.e. maxLength, etc
                 //
+                const m = config.lineTextLeft.match(new RegExp(`^["']*([\\w_\\-]+)["']*\\s*\\:\\s*${config.text}$`, "i"));
+                if (m)
                 {
-                    const m = config.lineTextLeft.match(new RegExp(`^["']*([\\w_\\-]+)["']*\\s*\\:\\s*${config.text}$`, "i"));
-                    if (m)
-                    {
-                        const [_, property ] = m;
-                        log.write("   add inline property completion", 1);
-                        completionItems.push(...(await this.getObjectRangeCompletionItems(
-                            property, config, logPad + "   ", logLevel, _addProps
-                        )));
-                    }
-                    else {
-                        completionItems.push(...(await this.getObjectRangeCompletionItems(
-                            undefined, config, logPad + "   ", logLevel, _addProps
-                        )));
-                    }
+                    const [_, property ] = m;
+                    log.write("   add inline property completion", 1);
+                    completionItems.push(...(await this.getObjectRangeCompletionItems(
+                        property, config, logPad + "   ", logLevel, _addProps
+                    )));
+                }
+                else {
+                    completionItems.push(...(await this.getObjectRangeCompletionItems(
+                        undefined, config, logPad + "   ", logLevel, _addProps
+                    )));
                 }
             }
             else if (config.thisCmp.extend) // on main object
             {
                 const cmp = extjsLangMgr.getComponent(config.thisCmp.extend, config.project, logPad + "   ", logLevel + 1);
-                _addProps(cmp);
+                _addProps(cmp, config.thisCmp.extend);
             }
         }
 

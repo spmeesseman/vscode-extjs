@@ -89,10 +89,25 @@ export interface IComponent extends IExtJsBase
 }
 
 
+/**
+ * Represents a configuration object read from a configuration file.
+ * Configuration objects are read from:
+ *
+ *      .extjsrc.json files
+ *      app.json files
+ *      Paths set in workspace settings
+ */
 export interface IConf
 {
     archivePath?: string;
+    /**
+     * The base directory of the configuration file.  Full path.
+     */
     baseDir: string;
+    /**
+     * The base directory of the configuration file, relative to the worksace
+     * directory.  Relative path.
+     */
     baseWsDir: string;
     bootstrap?: any;
     buildDir: string | undefined;
@@ -119,6 +134,10 @@ export interface IConf
     requires?: string[];
     url?: string;
     version?: string;
+    /**
+     * The directory of the workspace/project folder that the configuration file
+     * belongs to / resides in.  Full path.
+     */
     wsDir: string;
 }
 
