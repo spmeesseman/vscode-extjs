@@ -87,10 +87,10 @@ class ExtjsLanguageManager
     }
 
 
-    getAliasNames(): string[]
+    getAliasNames(project: string): string[]
     {
         const aliases: string[] = [];
-        this.components.forEach((c) => {
+        this.components.filter(c => project === c.project).forEach((c) => {
             c.aliases.forEach((a) => {
                 if (!aliases.includes(a.name)) {
                     aliases.push(a.name);
@@ -160,13 +160,11 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentNames(): string[]
+    getComponentNames(project: string): string[]
     {
         const cmps: string[] = [];
-        this.components.forEach((c) => {
-            if (!cmps.includes(c.componentClass)) {
-                cmps.push(c.componentClass);
-            }
+        this.components.filter(c => c.project === project).forEach((c) => {
+            cmps.push(c.componentClass);
         });
         return cmps;
     }
@@ -760,10 +758,10 @@ class ExtjsLanguageManager
     }
 
 
-    getModelTypeNames(): string[]
+    getModelTypeNames(project: string): string[]
     {
         const types: string[] = [];
-        this.components.forEach((c) => {
+        this.components.filter(c => project === c.project).forEach((c) => {
             types.push(...c.aliases.filter(a => !types.includes(a.name) && a.name.startsWith("model.")).map(a => a.name));
         });
         return types;
@@ -948,20 +946,20 @@ class ExtjsLanguageManager
     }
 
 
-    getStoreTypeNames(): string[]
+    getStoreTypeNames(project: string): string[]
     {
         const types: string[] = [];
-        this.components.forEach((c) => {
+        this.components.filter(c => project === c.project).forEach((c) => {
             types.push(...c.aliases.filter(a => !types.includes(a.name) && /\bstore\./.test(a.name)).map(a => a.name));
         });
         return types;
     }
 
 
-    getXtypeNames(): string[]
+    getXtypeNames(project: string): string[]
     {
         const xtypes: string[] = [];
-        this.components.forEach((c) =>
+        this.components.filter(c => project === c.project).forEach((c) =>
         {
             xtypes
             .push(
@@ -1043,7 +1041,7 @@ class ExtjsLanguageManager
 
             progress.report({
                 increment: 0,
-                message: `: Indexing project ${projectName} ${pct}%`
+                message: `: Indexing ${projectName} ${pct}%`
             });
 
             const storageKey = this.getCmpStorageFileName(conf.baseDir, conf.name),
@@ -1067,7 +1065,7 @@ class ExtjsLanguageManager
                         pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
                         progress.report({
                             increment,
-                            message: `: Indexing project ${projectName} ${pct}%`
+                            message: `: Indexing ${projectName} ${pct}%`
                         });
                     }
 
@@ -1077,21 +1075,21 @@ class ExtjsLanguageManager
 
                     progress.report({
                         increment,
-                        message: `: Caching project ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
+                        message: `: Caching ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
                     });
 
                     await this.serverRequest.loadExtJsComponent(JSON.stringify(components), projectName);
 
                     progress.report({
                         increment,
-                        message: `: Caching project ${projectName} ${Math.round(nextInc > pct ? nextInc : pct)}%`
+                        message: `: Caching ${projectName} ${Math.round(nextInc > pct ? nextInc : pct)}%`
                     });
 
                     await this.processComponents(components, projectName, false, "   ", logLevel + 1);
 
                     progress.report({
                         increment,
-                        message: `: Indexing project ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
+                        message: `: Indexing ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
                     });
                 }
             }
@@ -1152,7 +1150,7 @@ class ExtjsLanguageManager
                             pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
                             progress.report({
                                 increment,
-                                message: `: Indexing project ${projectName} ${pct}%`
+                                message: `: Indexing ${projectName} ${pct}%`
                             });
                             // statusBarSpace.text = getStatusString(pct);
                         }
@@ -1167,7 +1165,7 @@ class ExtjsLanguageManager
 
                 progress.report({
                     increment,
-                    message: `: Caching project ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
+                    message: `: Caching ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
                 });
 
                 //

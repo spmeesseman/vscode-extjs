@@ -474,7 +474,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
      */
     private getChildClsCompletionItems(component: IComponent, config: ICompletionConfig, logPad: string, logLevel: number): CompletionItem[]
     {
-        const cmps = extjsLangMgr.getComponentNames(),
+        const cmps = extjsLangMgr.getComponentNames(config.project),
               componentClass = component.componentClass,
               cmpClsParts = componentClass.split("."),
               completionItems: CompletionItem[] = [];
@@ -591,8 +591,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         log.methodStart("get inline completion items", logLevel, logPad);
 
         const completionItems: CompletionItem[] = [],
-              cmps = extjsLangMgr.getComponentNames(),
-              aliases = extjsLangMgr.getAliasNames(),
+              cmps = extjsLangMgr.getComponentNames(config.project),
+              aliases = extjsLangMgr.getAliasNames(config.project),
               isInObject = isPositionInObjectRange(config.position, config.thisCmp),
               method = getMethodByPosition(config.position, config.thisCmp),
               quote = quoteChar();
@@ -965,8 +965,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 //  An `xtype` is not defined on this object, add the complete `xtype` list
                 //
                 const xtypes = [];
-                if (property !== "type" && (!config.text || !/\btype/.test(config.lineTextLeft))) { xtypes.push(...extjsLangMgr.getXtypeNames()); }
-                if (property !== "xtype" && (!config.text || !/\bxtype/.test(config.lineTextLeft))) { xtypes.push(...extjsLangMgr.getStoreTypeNames()); }
+                if (property !== "type" && (!config.text || !/\btype/.test(config.lineTextLeft))) { xtypes.push(...extjsLangMgr.getXtypeNames(config.project)); }
+                if (property !== "xtype" && (!config.text || !/\bxtype/.test(config.lineTextLeft))) { xtypes.push(...extjsLangMgr.getStoreTypeNames(config.project)); }
                 xtypes.filter(x => !config.addedItems.includes(x)).forEach((xtype) =>
                 {
                     const xtypeCompletion = this.getXTypeCompletionItem(xtype, config, xtype.includes("store.") ? "type" : "xtype");
