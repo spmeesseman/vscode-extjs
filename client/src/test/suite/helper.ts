@@ -6,8 +6,6 @@ import { extjsLangMgr } from "../../extension";
 
 export let doc: vscode.TextDocument;
 export let editor: vscode.TextEditor;
-export let documentEol: string;
-export let platformEol: string;
 
 
 let activated = false;

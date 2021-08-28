@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, waitForValidation, insertDocContent, toRange } from "./helper";
 import { configuration } from "../../common/configuration";
+import { quoteChar } from "../../common/clientUtils";
 
 
 suite("Completion Tests", () =>
@@ -70,7 +71,7 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Inline property start", async () =>
+	test("Inline class start", async () =>
 	{
 		//
 		// Inside function
@@ -173,8 +174,11 @@ suite("Completion Tests", () =>
 				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
 			]
 		});
+	});
 
-		//
+
+	test("Inline property start", async () =>
+	{   //
 		// Inside object - 'u' trigger
 		// Line 121-123
 		// const phys = Ext.create('VSCodeExtJS.common.PatientDropdown', {
@@ -216,6 +220,22 @@ suite("Completion Tests", () =>
 				{ label: "test2 config", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "this methods");
+	});
+
+
+	test("Class config properties", async () =>
+	{   //
+		// Line 109
+		// me.
+		//
+		await testCompletion(docUri, new vscode.Position(108, 5), ".", {
+			items: [
+				{ label: "setTest config setter", kind: vscode.CompletionItemKind.Method },
+				{ label: "getTest config getter", kind: vscode.CompletionItemKind.Method },
+				{ label: "test config", kind: vscode.CompletionItemKind.Property },
+				{ label: "test2 config", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "config property");
 	});
 
 
@@ -460,6 +480,18 @@ suite("Completion Tests", () =>
 	});
 
 
+	test("Invalid xtype object", async () =>
+	{
+		await insertDocContent("xtype: invalidXtype,\r\n\t\t", toRange(189, 3, 189, 3));
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(190, 3), "u", {
+			items: []
+		}, true, "invalid xtype object");
+		await insertDocContent("", toRange(189, 3, 190, 3));
+		await waitForValidation();
+	});
+
+
 	test("Full xtype lines", async () =>
 	{
 		const items = [
@@ -480,13 +512,40 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(189, 3), "x", { items });
 		//
+		// Typing a ':' after an 'xtype:'
+		//
+		await insertDocContent("xtype:", toRange(189, 3, 189, 3));
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(189, 8), ":", { items });
+		await insertDocContent("", toRange(189, 3, 189, 9));
+		await waitForValidation();
+		//
 		// Typing a 'quote-char' after an 'xtype:' text
 		// Remove added text, set document back to initial state
 		//
-		await insertDocContent("xtype: \"\"", toRange(189, 3, 189, 3));
+		const quote = quoteChar();
+		await insertDocContent(`xtype: ${quote}${quote}`, toRange(189, 3, 189, 3));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(189, 10), "\"", { items });
+		await testCompletion(docUri, new vscode.Position(189, 8), ":", { items });
+		await testCompletion(docUri, new vscode.Position(189, 10), quote, { items });
+		await testCompletion(docUri, new vscode.Position(189, 11), quote, { items });
+		await testCompletion(docUri, new vscode.Position(189, 12), "", { items });
+		//
+		// Remove added text, set document back to initial state
+		//
 		await insertDocContent("", toRange(189, 3, 189, 12));
+		await waitForValidation();
+		//
+		// Mid-typing type (xt...)
+		//
+		await insertDocContent("xt", toRange(189, 3, 189, 3));
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(189, 5), "y", { items }, true, "object 'xtype' configs and properties mid-word");
+		await testCompletion(docUri, new vscode.Position(189, 4), "t", { items }, true, "object 'xtype' configs and properties mid-word");
+		//
+		// Remove added text, set document back to initial state
+		//
+		await insertDocContent("", toRange(189, 3, 189, 5));
 		await waitForValidation();
 		//
 		// Line 121-123 - should return nothing, since the component is defined
@@ -498,7 +557,7 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
 			items: []
-		});
+		}, false, "object 'x/type' already defined");
 	});
 
 
@@ -520,13 +579,37 @@ suite("Completion Tests", () =>
 		//
 		await testCompletion(docUri, new vscode.Position(189, 3), "t", { items });
 		//
+		// Typing a ':' after an 'xtype:'
+		//
+		await insertDocContent("type:", toRange(189, 3, 189, 3));
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(189, 7), ":", { items });
+		await insertDocContent("", toRange(189, 3, 189, 8));
+		await waitForValidation();
+		//
 		// Typing a 'quote-char' after a 'type:' text
 		// Remove added text, set document back to initial state
 		//
-		await insertDocContent("type: \"\"", toRange(189, 3, 189, 3));
+		const quote = quoteChar();
+		await insertDocContent(`type: ${quote}${quote}`, toRange(189, 3, 189, 3));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(189, 9), "\"", { items });
+		await testCompletion(docUri, new vscode.Position(189, 7), ":", { items });
+		await testCompletion(docUri, new vscode.Position(189, 9), quote, { items });
+		await testCompletion(docUri, new vscode.Position(189, 10), quote, { items });
+		await testCompletion(docUri, new vscode.Position(189, 11), "", { items });
 		await insertDocContent("", toRange(189, 3, 189, 11));
+		await waitForValidation();
+		//
+		// Mid-typing type (ty...)
+		//
+		await insertDocContent("ty", toRange(216, 4, 216, 4));
+		await waitForValidation();
+		await testCompletion(docUri, new vscode.Position(216, 6), "p", { items }, true, "object 'type' configs and properties mid-word");
+		await testCompletion(docUri, new vscode.Position(216, 5), "y", { items }, true, "object 'type' configs and properties mid-word");
+		//
+		// Remove added text, set document back to initial state
+		//
+		await insertDocContent("", toRange(216, 4, 216, 6));
 		await waitForValidation();
 		//
 		// Line 121-123 - should return nothing, since the component is defined
@@ -536,9 +619,9 @@ suite("Completion Tests", () =>
 		//
 		// });
 		//
-		await testCompletion(docUri, new vscode.Position(121, 3), "x", {
+		await testCompletion(docUri, new vscode.Position(121, 3), "t", {
 			items: []
-		});
+		}, false, "object 'x/type' already defined");
 	});
 
 
@@ -561,7 +644,6 @@ suite("Completion Tests", () =>
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property },
 			]
 		}, true, "inherited xtype properties inside physician object");
-
 		//
 		// And 171 for patientdropdown
 		//
@@ -575,7 +657,6 @@ suite("Completion Tests", () =>
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property },
 			]
 		}, true, "inherited xtype properties inside patient object");
-
 		//
 		// And 175 for userdropdown (props are defined on userdropdown, not inherited)
 		//
@@ -589,7 +670,6 @@ suite("Completion Tests", () =>
 				{ label: "readOnly", kind: vscode.CompletionItemKind.Property },
 			]
 		});
-
 		//
 		// And 182 for an ExtJs component 'textfield'
 		//
@@ -615,7 +695,6 @@ suite("Completion Tests", () =>
 				// { label: "fieldLabel", kind: vscode.CompletionItemKind.Property }
 			]
 		});
-
 		//
 		// Line 121-123
 		// Within a function body
@@ -634,6 +713,13 @@ suite("Completion Tests", () =>
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property },
 			]
 		});
+		//
+		//
+		// Do objects with no type or xtype def, line 217
+		//
+		await testCompletion(docUri, new vscode.Position(189, 3), "z", {
+			items: []
+		}, false, "no xtype, send non t/x key 2");
 	});
 
 
@@ -671,12 +757,19 @@ suite("Completion Tests", () =>
 				{ label: "autoSync ProxyStore config", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "object 'type' configs and properties");
+		//
 		await testCompletion(docUri, new vscode.Position(207, 4), "f", {
 			items: [
 				{ label: "fields ProxyStore config", kind: vscode.CompletionItemKind.Property },
 				{ label: "filters AbstractStore config", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "object 'type' configs and properties");
+		//
+		// Do objects with no type or xtype def, line 217
+		//
+		await testCompletion(docUri, new vscode.Position(216, 4), "z", {
+			items: []
+		}, false, "no type, send non t/x key");
 	});
 
 
@@ -750,6 +843,39 @@ suite("Completion Tests", () =>
 	});
 
 
+	test("Config properties of extended class", async () =>
+	{
+		const physDdUri = getDocUri("app/classic/src/common/physiciandropdown.js");
+		await activate(physDdUri);
+		await waitForValidation();
+		await testCompletion(physDdUri, new vscode.Position(14, 0), "u", {
+			items: [
+				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "config property of extended class");
+		await testCompletion(physDdUri, new vscode.Position(14, 0), "r", {
+			items: [
+				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "config property of extended class");
+		await insertDocContent("u", toRange(14, 1, 14, 1));
+		await testCompletion(physDdUri, new vscode.Position(14, 1), "s", {
+			items: [
+				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "config property of extended class");
+		await insertDocContent("r", toRange(14, 1, 14, 2));
+		await testCompletion(physDdUri, new vscode.Position(14, 1), "e", {
+			items: [
+				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "config property of extended class");
+		await insertDocContent("", toRange(14, 0, 14, 1));
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitForValidation();
+	});
+
+
 	test("No completion", async () =>
 	{	//
 		// Outside object range
@@ -758,16 +884,13 @@ suite("Completion Tests", () =>
 			items: []
 		}, true, "outside completion ranges");
 		await waitForValidation();
-
 		//
 		// Open non extjs doc outside of a classpath
 		//
 		const jssUri = getDocUri("app/js/script1.js");
-		const doc = await vscode.workspace.openTextDocument(jssUri);
-		await vscode.window.showTextDocument(doc);
-		assert(vscode.window.activeTextEditor, "No active editor");
+		await activate(jssUri);
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(4, 0), "A", {
+		await testCompletion(jssUri, new vscode.Position(4, 0), "A", {
 			items: []
 		}, true, "non-extjs file");
 		await waitForValidation();
@@ -779,14 +902,7 @@ suite("Completion Tests", () =>
 	test("Non-ExtJS document", async () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		}
-		catch (e) {
-			console.error(e);
-		}
+		await activate(jssUri);
 		await waitForValidation();
 		await testCompletion(jssUri, new vscode.Position(2, 12), ".", {
 			items: []
