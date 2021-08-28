@@ -71,6 +71,23 @@ suite("Completion Tests", () =>
 	});
 
 
+	test("This methods", async () =>
+	{
+		//
+		// Line 71
+		// this.*
+		//
+		await testCompletion(docUri, new vscode.Position(70, 7), ".", {
+			items: [
+				{ label: "setTest config setter", kind: vscode.CompletionItemKind.Method },
+				{ label: "getTest config getter", kind: vscode.CompletionItemKind.Method },
+				{ label: "test config", kind: vscode.CompletionItemKind.Property },
+				{ label: "test2 config", kind: vscode.CompletionItemKind.Property }
+			]
+		}, true, "this methods");
+	});
+
+
 	test("Inline class start", async () =>
 	{
 		//
@@ -203,23 +220,6 @@ suite("Completion Tests", () =>
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "inherited define properties inside physician object");
-	});
-
-
-	test("This methods", async () =>
-	{
-		//
-		// Line 71
-		// this.*
-		//
-		await testCompletion(docUri, new vscode.Position(70, 7), ".", {
-			items: [
-				{ label: "setTest config setter", kind: vscode.CompletionItemKind.Method },
-				{ label: "getTest config getter", kind: vscode.CompletionItemKind.Method },
-				{ label: "test config", kind: vscode.CompletionItemKind.Property },
-				{ label: "test2 config", kind: vscode.CompletionItemKind.Property }
-			]
-		}, true, "this methods");
 	});
 
 

@@ -145,6 +145,13 @@ suite("Command Tests", () =>
 	});
 
 
+	test("Replace text no-parameter edge case", async () =>
+	{
+		await testCommand("replaceText", "text");
+		await testCommand("replaceText");
+	});
+
+
 	test("Ignore requires errors", async function()
 	{
 		if (this && this.timeout) {
@@ -184,19 +191,13 @@ suite("Command Tests", () =>
 	});
 
 
-	test("Replace text no-parameter edge case", async () =>
-	{
-		await testCommand("replaceText", "text");
-		await testCommand("replaceText");
-	});
-
-
 	test("No active document", async () =>
 	{
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
 
 		await testCommand("waitReady");
+		await testCommand("ignoreError", ErrorCode.classNotFound);
 		await testCommand("ignoreError");
 		await testCommand("ensureRequire");
 		await testCommand("ensureRequire", "physiciandropdown");
