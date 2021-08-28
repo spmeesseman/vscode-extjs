@@ -45,11 +45,16 @@ class ExtJsHoverProvider implements HoverProvider
         {
             if (cmpType === ComponentType.Method)
             {
-                const method = extjsLangMgr.getMethod(cmpClass, property, project, false, "   ", 2) as IMethod;
+                const method = extjsLangMgr.getMethod(cmpClass, property, project, false, "   ", 2);
                 log.value("   provide class hover info", property, 2);
-                const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase(),
+                if (method) { // it could happen, if this fires immediately following en edit
+                    let returns = "";
+                    if (method.returns) {
+                        const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase();
                         returns = method.returns ? `: returns ${returnsText}` : "";
-                hover = this.getHover(`function ${text}${returns}`, method.markdown);
+                    }
+                    hover = this.getHover(`function ${text}${returns}`, method.markdown);
+                }
             }
             else if (cmpType === ComponentType.Property)
             {
