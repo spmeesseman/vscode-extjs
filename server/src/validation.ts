@@ -2,7 +2,7 @@
 import { Connection, Diagnostic, DiagnosticSeverity, Range, DocumentUri } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parseExtJsFile, components } from "./syntaxTree";
-import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, extjs, IWidget, IExtJsBase, IMixins, IProperty } from "../../common";
+import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, extjs, IWidget, IExtJsBase, IMixins, IProperty, IServerRequest } from "../../common";
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
 import * as log from "./log";
@@ -144,13 +144,13 @@ export async function validateExtJsSyntax(textDocument: TextDocument, connection
  * @param connection Client connection object
  * @param diagRelatedInfoCapability Specifies if the client has diagnostic related information capability
  */
-export async function validateExtJsFile(options: any, connection: Connection, diagRelatedInfoCapability: boolean)
+export async function validateExtJsFile(options: IServerRequest, connection: Connection, diagRelatedInfoCapability: boolean)
 {
 	log.methodStart("validate extjs file text", 1, "", true);
 
-	const parsedComponents = await parseExtJsFile(options.path, options.text, options.project, options.nameSpace);
+	const parsedComponents = await parseExtJsFile(options);
 	const diagnostics: Diagnostic[] = [];
-	const textObj = TextDocument.create(options.path, "javascript", 2, options.text);
+	const textObj = TextDocument.create(options.fsPath, "javascript", 2, options.text);
 
 	//
 	// For each component found, perform the following validations:

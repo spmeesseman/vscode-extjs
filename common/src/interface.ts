@@ -149,6 +149,16 @@ export interface IConfig extends IPropertyBase
 }
 
 
+export interface IEdit
+{
+    end: number;
+    start: number;
+    length: number;
+    range: IRange;
+    text: string;
+}
+
+
 export interface ILogger
 {
     error: (msg: string | (string|Error)[] | Error, params?: (string|any)[][]) => void;
@@ -250,6 +260,16 @@ export interface IRequire
     name: string;
     start: IPosition;
     end: IPosition;
+}
+
+
+export interface IServerRequest
+{
+    edits: IEdit[];
+    fsPath: string;
+    nameSpace: string;
+    project: string;
+    text: string;
 }
 
 

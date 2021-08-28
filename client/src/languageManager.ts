@@ -1,15 +1,15 @@
 
 import {
     Disposable, ExtensionContext, Progress, TextDocumentChangeEvent, Range, Position,
-    ProgressLocation, TextDocument, window, workspace, Uri, ConfigurationChangeEvent, commands
+    ProgressLocation, TextDocument, window, workspace, Uri, ConfigurationChangeEvent, commands, TextDocumentContentChangeEvent
 } from "vscode";
 import {
     IConfig, IComponent, IMethod, IConf, IProperty, utils, ComponentType,
-    IVariable, VariableType, IExtJsBase, IPrimitive, IParameter, extjs, IPosition
+    IVariable, VariableType, IExtJsBase, IPrimitive, IParameter, extjs, IPosition, IEdit
 } from  "../../common";
 
 import {
-    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded, documentEol, getWorkspaceProjectName, toIPosition
+    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded, documentEol, getWorkspaceProjectName, toIPosition, toIRange
 } from "./common/clientUtils";
 import * as log from "./common/log";
 import * as path from "path";
@@ -85,6 +85,26 @@ class ExtjsLanguageManager
         this.serverRequest = serverRequest;
         this.commentParser = new CommentParser();
         this.configParser = new ConfigParser();
+    }
+
+
+    private changesToIEdits(changes: TextDocumentContentChangeEvent[])
+    {
+        const edits: IEdit[] = [];
+        if (changes)
+        {
+            for (const change of changes) // this should be replaced by language_server incremental document sync
+            {
+                edits.push({
+                    start: change.rangeOffset,
+                    end: change.rangeOffset + change.rangeLength,
+                    length: change.rangeLength,
+                    text: change.text,
+                    range: toIRange(change.range)
+                });
+            }
+        }
+        return edits;
     }
 
 
@@ -1173,9 +1193,7 @@ class ExtjsLanguageManager
                 // Update entire component tree in fs cache
                 //
                 if (components.length > 0) {
-                    const cmpCopy: any[] = [ ...[], ...components ];
-                    this.prepareComponentsForStorage(cmpCopy);
-                    await fsStorage.update(storageKey, JSON.stringify(cmpCopy));
+                    await fsStorage.update(storageKey, JSON.stringify(components));
                     await storage.update(storageKey + "_TIMESTAMP", new Date());
                 }
 
@@ -1197,24 +1215,24 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexAndValidateFile(document: TextDocument)
+    private async indexAndValidateFile(document: TextDocument, edits?: IEdit[])
     {
         const ns = this.getNamespace(document);
         //
         // Index the file, don't save to fs cache, we'll persist to fs cache when the
         // document is saved
         //
-        const components = await this.indexFile(document.uri.fsPath, ns, false, document, true, "", 1);
+        const components = await this.indexFile(document.uri.fsPath, ns, false, document, true, "", 1, edits);
         //
         // Validate document
         //
         if (components && components.length > 0) {
-            await this.validateDocument(document, ns);
+            await this.validateDocument(document, ns, edits);
         }
     }
 
 
-    async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall: boolean, logPad: string, logLevel: number): Promise<IComponent[] | false | undefined>
+    async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall: boolean, logPad: string, logLevel: number, edits?: IEdit[]): Promise<IComponent[] | false | undefined>
     {
         log.methodStart("indexing " + fsPath, logLevel, logPad, true, [[ "namespace", nameSpace ]]);
 
@@ -1297,7 +1315,7 @@ class ExtjsLanguageManager
         // Request 'parse file' from server
         //
         const project = getWorkspaceProjectName(fsPath),
-              components = await this.serverRequest.parseExtJsFile(fsPath, project, nameSpace, text),
+              components = await this.serverRequest.parseExtJsFile(fsPath, project, nameSpace, text, edits || []),
               cached = await this.processComponents(components, project, oneCall, logPad + "   ", logLevel + 1);
 
         //
@@ -1416,34 +1434,17 @@ class ExtjsLanguageManager
             if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
             {
                 exists = true;
-                storedComponents[i] = { ...{}, ...component };
-                this.prepareComponentsForStorage(storedComponents[i]);
+                storedComponents[i] = component;
                 break;
             }
         }
 
         if (!exists) {
-            storedComponents.push({ ...{}, ...component });
-            this.prepareComponentsForStorage(storedComponents[storedComponents.length - 1]);
+            storedComponents.push(component);
         }
 
         await fsStorage.update(storageKey, JSON.stringify(storedComponents));
         await storage.update(storageKey + "_TIMESTAMP", new Date());
-    }
-
-
-    private prepareComponentsForStorage(components: IComponent[])
-    {
-        components.forEach(c =>
-        {
-            c.methods.forEach((m: any) => {
-                delete m.objectRanges;
-            });
-            c.properties.forEach((p: any) => {
-                delete p.objectRanges;
-            });
-            delete (c as any).objectRanges;
-        });
     }
 
 
@@ -1590,10 +1591,13 @@ class ExtjsLanguageManager
     }
 
 
-    private async removeComponentsFromCache(uri: Uri)
+    private async removeComponentsFromCache(uri: Uri, nameSpace: string)
     {
         const fsPath = uri.fsPath,
-               project = getWorkspaceProjectName(fsPath);
+              project = getWorkspaceProjectName(fsPath),
+              baseDir = this.getAppJsonDir(fsPath),
+              storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
+              storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
 
         log.methodStart("remove file from cache", 1, "", true, [["path", fsPath]]);
 
@@ -1603,11 +1607,22 @@ class ExtjsLanguageManager
         if (componentClass && componentNs)
         {
             log.value("   removing component class", componentClass, 2);
-            //
-            // Update memory cache
-            //
-            this.components.filter((c) => c.fsPath === uri.fsPath).forEach((c, i) => {
+            this.components.filter((c) => c.fsPath === uri.fsPath).forEach((c, i) =>
+            {   //
+                // Update memory cache
+                //
                 this.components.splice(i, 1);
+                //
+                // Update fs cache
+                //
+                for (let i = 0; i < storedComponents.length; i++)
+                {
+                    if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
+                    {
+                        this.components.splice(i, 1);
+                        break;
+                    }
+                }
             });
         }
 
@@ -1639,7 +1654,7 @@ class ExtjsLanguageManager
     }
 
 
-    async validateDocument(textDocument: TextDocument | undefined, nameSpace: string)
+    async validateDocument(textDocument: TextDocument | undefined, nameSpace: string, edits?: IEdit[])
     {
         const text = textDocument?.getText();
         this.currentLineCount = textDocument?.lineCount || 0;
@@ -1656,7 +1671,7 @@ class ExtjsLanguageManager
             const project = getWorkspaceProjectName(textDocument.uri.fsPath);
             this.isValidating = true;
             if (await pathExists(path.join(this.fsStoragePath, project))) {
-                await this.serverRequest.validateExtJsFile(textDocument.uri.path, project, nameSpace, text);
+                await this.serverRequest.validateExtJsFile(textDocument.uri.path, project, nameSpace, text, edits || []);
             }
             // else {
             //     await this.indexFiles(this.getWorkspaceProjectName(textDocument.uri.fsPath));
@@ -1679,9 +1694,9 @@ class ExtjsLanguageManager
     }
 
 
-    private async watcherDocumentDelete(uri: Uri) // (e: FileDeleteEvent)
+    private async watcherDocumentDelete(uri: Uri, nameSpace: string) // (e: FileDeleteEvent)
     {
-        await this.removeComponentsFromCache(uri);
+        await this.removeComponentsFromCache(uri, nameSpace);
         const activeTextDocument = window.activeTextEditor?.document;
         await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
     }
@@ -1726,7 +1741,7 @@ class ExtjsLanguageManager
                 //
                 else if (e.document.lineAt(change.range.start).text.includes("Ext.define"))
                 {
-                    this.removeComponentsFromCache(e.document.uri);
+                    this.removeComponentsFromCache(e.document.uri, this.getNamespace(e.document));
                 }
             }
             //
@@ -1738,11 +1753,11 @@ class ExtjsLanguageManager
             //
             // Debounce!!  Or not!!  We don't debounce if there was an EOL involved in the edit
             //
-            taskId = setTimeout(async (document) =>
+            taskId = setTimeout(async (document, changes) =>
             {
                 this.reIndexTaskIds.delete(document.uri.fsPath);
-                await this.indexAndValidateFile(document);
-            }, debounceMs, e.document);
+                await this.indexAndValidateFile(document, this.changesToIEdits(changes));
+            }, debounceMs, e.document,  e.contentChanges);
 
             this.reIndexTaskIds.set(e.document.uri.fsPath, taskId);
         }
@@ -1805,7 +1820,7 @@ class ExtjsLanguageManager
         //
         disposables.push(jsWatcher.onDidChange(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e, true, "", 1); }, this));
         disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e, true, "", 1); }, this));
-        disposables.push(jsWatcher.onDidDelete(async (e) => { await this.watcherDocumentDelete(e); }, this));
+        disposables.push(jsWatcher.onDidDelete(async (e) => { await this.watcherDocumentDelete(e, this.getNamespace(e)); }, this));
         //
         // Active editor changed (processes open-document too)
         //

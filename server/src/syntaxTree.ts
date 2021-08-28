@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as log from "./log";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType, IMixin, IAlternateClassName
+    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType, IMixin, IAlternateClassName, IServerRequest
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
@@ -32,19 +32,24 @@ export async function loadExtJsComponent(ast: string | undefined)
 }
 
 
-export async function parseExtJsFile(fsPath: string, text: string, project: string, nameSpace: string)
+export async function parseExtJsFile(options: IServerRequest)
 {
-    const parsedComponents: IComponent[] = [],
-          nodeAst = ast.getComponentsAst(text, log.error);
+    const fsPath = options.fsPath,
+          project = options.project,
+          nameSpace = options.nameSpace,
+          parsedComponents: IComponent[] = [],
+          nodeAst = ast.getComponentsAst(options.text,  options.edits, log.error);
 
-    if (!nodeAst) {
+    if (!nodeAst || !nodeAst.ast || !nodeAst.text) {
         return parsedComponents;
     }
+
+    const text = nodeAst.text;
 
     //
     // Construct our syntax tree to be able to serve the goods
     //
-    traverse(nodeAst,
+    traverse(nodeAst.ast,
     {
         CallExpression(path)
         {
@@ -842,11 +847,11 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
                     componentClass,
                     static: doc?.includes("@static") || isStatic,
                     range: utils.toRange(p.loc!.start, p.loc!.end),
-                    value: nameSpace !== "Ext" ? {
+                    value: {
                         start: p.value.loc!.start,
                         end: p.value.loc!.end,
                         value: getPropertyValue(p)
-                    } : undefined
+                    }
                 });
             }
         }

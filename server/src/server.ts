@@ -125,7 +125,7 @@ connection.onRequest("parseExtJsFile", async (param: any) =>
 {
     try {
         const jso = JSON.parse(param);
-        return await parseExtJsFile(jso?.fsPath, jso?.text, jso?.project, jso?.nameSpace);
+        return await parseExtJsFile(jso);
     }
     catch (error)
     {
