@@ -6,7 +6,7 @@ import {
 import * as log from "../common/log";
 import { ComponentType, DeclarationType, IComponent, IConfig, IMethod, utils, VariableType } from "../../../common";
 import { extjsLangMgr } from "../extension";
-import { isPrimitive, isComponent, getMethodByPosition, getWorkspaceProjectName, toVscodePosition, toIPosition, shouldIgnoreType } from "../common/clientUtils";
+import { isPrimitive, isComponent, getMethodByPosition, toIPosition, shouldIgnoreType } from "../common/clientUtils";
 
 class ExtJsHoverProvider implements HoverProvider
 {
@@ -124,10 +124,10 @@ class ExtJsHoverProvider implements HoverProvider
                 if (cmp.singleton) {
                     typeName = "singleton";
                 }
-                else if (!lineText.includes("xtype:") && (lineText.includes("store:") || extjsLangMgr.getStoreTypeNames().find((x) => x.replace("store.", "") === text))) {
+                else if (!lineText.includes("xtype:") && (lineText.includes("store:") || extjsLangMgr.getStoreTypeNames(project).find((x) => x.replace("store.", "") === text))) {
                     typeName = "store";
                 }
-                else if (!lineText.includes("xtype:") && (lineText.includes("model:") || extjsLangMgr.getModelTypeNames().find((m) => m.replace("model.", "") === text))) {
+                else if (!lineText.includes("xtype:") && (lineText.includes("model:") || extjsLangMgr.getModelTypeNames(project).find((m) => m.replace("model.", "") === text))) {
                     typeName = "model";
                 }
                 // else if (lineText.includes("xtype:") && extjsLangMgr.getXtypeNames().find((x) => x === text)) {

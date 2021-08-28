@@ -6,6 +6,7 @@ import * as log from "./log";
 import { deleteDir, pathExists, readFile } from "../../../common/lib/fs";
 import * as json5 from "json5";
 import * as path from "path";
+import { LogTraceNotification } from "vscode-languageclient";
 
 
 export class ConfigParser
@@ -35,14 +36,17 @@ export class ConfigParser
                 const sWsFolder = workspace.getWorkspaceFolder(Uri.file(pathParts[1]));
                 if (sWsFolder)
                 {
-                    config.push({
+                    log.value("   add settings conf", sPath, 1);
+                    const sConf: IConf = {
                         classpath: [ pathParts[1] ],
                         name: pathParts[0],
                         baseDir: path.dirname(pathParts[1]),
                         baseWsDir: ".",
                         buildDir: "",
                         wsDir: sWsFolder.uri.fsPath
-                    });
+                    };
+                    this.logConf(sConf);
+                    config.push(sConf);
                 }
             }
             else {
@@ -85,32 +89,26 @@ export class ConfigParser
                 conf.baseWsDir = baseWsDir;
                 conf.wsDir = wsDir;
 
-                log.value("   add .extjsrc classpaths", fileSystemPath, 1);
-                log.value("      namespace", conf.name, 2);
-                log.value("      classpath", conf.classpath, 2);
-                log.value("      workspace rel dir", conf.baseWsDir, 1);
-                log.value("      base project dir", conf.baseDir, 1);
-                log.write("      classpaths:", 1);
-                conf.classpath.every((c) => {
-                    log.write(`         ${c}`, 1);
-                });
-
+                log.value("   add .extjsrc conf", fileSystemPath, 1);
+                this.logConf(conf);
                 config.push(conf);
 
                 if (conf.framework)
                 {
-                    log.value("   add framework path from .extjsrc", conf.framework, 1);
                     if (await pathExists(conf.framework))
                     {
-                        config.push({
-                            classpath: [ conf.framework.replace("\\", "/") ],
+                        const fwConf: IConf = {
+                            classpath: [ path.relative(baseDir, conf.framework) ],
                             name: "Ext",
-                            baseDir: conf.framework,
-                            baseWsDir: ".", // path.relative(conf.baseDir, conf.framework),
+                            baseDir,
+                            baseWsDir: ".", // path.relative(baseDir, conf.framework),
                             buildDir: "",
                             wsDir: conf.framework,
                             frameworkDir: conf.framework
-                        });
+                        };
+                        log.value("   add framework conf from .extjsrc", conf.framework, 1);
+                        this.logConf(conf);
+                        config.push(fwConf);
                     }
                     else {
                         window.showWarningMessage(`Invalid framework path ${uri.fsPath} - does not exist`);
@@ -130,16 +128,18 @@ export class ConfigParser
 		{
             if (await pathExists(fwDirectory))
             {
-                log.value("   add framework path from settings", fwDirectory, 1);
-                config.push({
-                    classpath: [ fwDirectory.replace("\\", "/") ],
+                const fwConf: IConf = {
+                    classpath: [ fwDirectory ],
                     name: "Ext",
                     baseDir: fwDirectory,
                     baseWsDir: ".",
                     buildDir: "",
                     wsDir: workspace.getWorkspaceFolder(Uri.file(fwDirectory))?.uri.fsPath || fwDirectory,
                     frameworkDir: fwDirectory
-                });
+                };
+                log.value("   add framework path from settings", fwDirectory, 1);
+                this.logConf(fwConf);
+                config.push(fwConf);
             }
             else {
                 window.showWarningMessage(`Invalid framework path ${fwDirectory} - does not exist`);
@@ -157,6 +157,19 @@ export class ConfigParser
         log.methodDone("get extjs configuration", 1, "", true, [["# of configured projects found", config.length]]);
 
         return config;
+    }
+
+
+    private logConf(conf: IConf)
+    {
+        log.value("      namespace", conf.name, 2);
+        log.value("      classpath", conf.classpath, 2);
+        log.value("      workspace rel dir", conf.baseWsDir, 1);
+        log.value("      base project dir", conf.baseDir, 1);
+        log.write("      classpaths:", 1);
+        conf.classpath.every((c) => {
+            log.write(`         ${c}`, 1);
+        });
     }
 
 
@@ -290,10 +303,7 @@ export class ConfigParser
                                       fwSdkClasspath = fwConf.sencha?.classpath?.replace("${package.dir}", fwPath);
                                 if (fwSdkClasspath)
                                 {
-                                    log.write(`      add dependency package '${dep}'`, 1, logPad);
-                                    log.value("         path", fwPath, 1, logPad);
-                                    log.value("         version", fwConf.dependencies[dep], 1, logPad);
-                                    confs.push({
+                                    const fwSdkConf = {
                                         name: "Ext",
                                         classpath: [ fwSdkClasspath ],
                                         baseDir,
@@ -301,16 +311,19 @@ export class ConfigParser
                                         buildDir,
                                         wsDir,
                                         frameworkDir
-                                    });
+                                    };
+                                    log.write(`      add dependency package '${dep}'`, 1, logPad);
+                                    log.value("         path", fwPath, 1, logPad);
+                                    log.value("         version", fwConf.dependencies[dep], 1, logPad);
+                                    this.logConf(fwSdkConf);
+                                    confs.push(fwSdkConf);
                                 }
                             }
                         }
                     }
                 }
                 else {
-                    log.write("   this is a sencha cmd project", 1, logPad);
-                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 1, logPad);
-					confs.push({
+                    const cmdConf = {
 						name: "Ext",
 						classpath: [ wsConf.frameworks.ext ],
                         baseDir,
@@ -318,7 +331,11 @@ export class ConfigParser
                         buildDir,
                         wsDir,
                         frameworkDir
-					});
+					};
+                    log.write("   this is a sencha cmd project", 1, logPad);
+                    log.value("   add ws.json framework path", wsConf.frameworks.ext, 1, logPad);
+                    this.logConf(cmdConf);
+					confs.push(cmdConf);
                 }
             }
 
@@ -342,14 +359,7 @@ export class ConfigParser
         if (confs.length)
         {
             log.write("   successfully parsed app.json:", 1, logPad);
-            log.value("      namespace", confs[0].name, 1, logPad);
-            log.value("      path", fileSystemPath, 1, logPad);
-            log.value("      workspace rel dir", confs[0].baseWsDir, 1, logPad);
-            log.value("      base project dir", confs[0].baseDir, 1, logPad);
-            log.write("      classpaths:", 1, logPad);
-            confs[0].classpath.every((c) => {
-                log.write(`         ${c}`, 1, logPad);
-            });
+            this.logConf(confs[0]);
 			if (confs.length > 1) {
 				log.write("      framework directory:");
 				log.value("         namespace", confs[1].name, 1, logPad);
