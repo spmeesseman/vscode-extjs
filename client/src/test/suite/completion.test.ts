@@ -113,7 +113,8 @@ suite("Completion Tests", () =>
 
 		await testCompletion(docUri, new vscode.Position(95, 3), "V", {
 			items: [
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
+				{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 			]
 		}, true, "inline property start");
 
@@ -127,7 +128,8 @@ suite("Completion Tests", () =>
 		});
 		await testCompletion(docUri, new vscode.Position(95, 0), "V", {
 			items: [
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
+				{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 
@@ -161,7 +163,8 @@ suite("Completion Tests", () =>
 		});
 		await testCompletion(docUri, new vscode.Position(74, 46), "V", {
 			items: [
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
+				{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 
@@ -188,7 +191,8 @@ suite("Completion Tests", () =>
 		});
 		await testCompletion(docUri, new vscode.Position(74, 48), "V", {
 			items: [
-				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
+				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
+				{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 			]
 		});
 	});
