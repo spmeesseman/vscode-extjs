@@ -57,18 +57,19 @@ export function jsAstToLiteralObject(ast: Expression | SpreadElement | null)
         const out: any = {};
         for (const k in ast.properties)
         {
-            let key;
             const p = ast.properties[k];
             if (isObjectProperty(p) && isIdentifier(p.key))
             {
-                key = p.key.name;
+                if (isExpression(p.value)) {
+                    out[p.key.name] = jsAstToLiteralObject(p.value);
+                }
             }
-            else {
-                throw new Error("object should contain only string-valued properties");
-            }
-            if (isExpression(p.value)) {
-                out[key] = jsAstToLiteralObject(p.value);
-            }
+            // else {
+            //     //
+            //     // TODO - log error
+            //     // throw new Error("object should contain only string-valued properties");
+            //     //
+            // }
         }
         return out;
     }
