@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import { Range, Position, TextDocument, EndOfLine, Uri, workspace } from "vscode";
-import { IPosition, IComponent, extjs, IExtJsBase, IPrimitive, IObjectRange } from "../../../common";
+import { IPosition, IComponent, extjs, IExtJsBase, IPrimitive, IObjectRange, IRange } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
 
@@ -298,13 +298,13 @@ export function toIPosition(position: Position): IPosition
 }
 
 
-// export function toIRange(range: Range): IRange
-// {
-//     return {
-//         start: toIPosition(range.start),
-//         end: toIPosition(range.end)
-//     };
-// }
+export function toIRange(range: Range): IRange
+{
+    return {
+        start: toIPosition(range.start),
+        end: toIPosition(range.end)
+    };
+}
 
 
 export function toVscodePosition(position: IPosition)

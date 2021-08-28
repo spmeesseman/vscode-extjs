@@ -1,6 +1,7 @@
-import { Diagnostic } from "vscode";
+import { Diagnostic, TextDocumentContentChangeEvent } from "vscode";
 import { LanguageClient } from "vscode-languageclient";
-import { IComponent } from "../../../common";
+import { IComponent, IEdit, IServerRequest } from "../../../common";
+import { toIRange } from "./clientUtils";
 
 
 class ServerRequest
@@ -17,14 +18,16 @@ class ServerRequest
         await this.client.sendRequest("loadExtJsComponent", JSON.stringify({ ast, project }));
     }
 
-    async parseExtJsFile(fsPath: string, project: string, nameSpace: string, text: string)
+    async parseExtJsFile(fsPath: string, project: string, nameSpace: string, text: string, edits: IEdit[])
     {
-        return this.client.sendRequest<IComponent[]>("parseExtJsFile", JSON.stringify({ fsPath, project, text, nameSpace }));
+        const request: IServerRequest = { fsPath, project, text, nameSpace, edits };
+        return this.client.sendRequest<IComponent[]>("parseExtJsFile", JSON.stringify(request));
     }
 
-    async validateExtJsFile(path: string, project: string, nameSpace: string, text: string): Promise<Diagnostic[]>
+    async validateExtJsFile(fsPath: string, project: string, nameSpace: string, text: string, edits: IEdit[]): Promise<Diagnostic[]>
     {
-        return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify({ path, project, nameSpace, text }));
+        const request: IServerRequest = { fsPath, project, text, nameSpace, edits };
+        return this.client.sendRequest<Diagnostic[]>("validateExtJsFile", JSON.stringify(request));
     }
 }
 
