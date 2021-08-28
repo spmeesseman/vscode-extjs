@@ -93,6 +93,66 @@ suite("Config File Tests", () =>
 	});
 
 
+	test("Extjsrc add framework directory", async () =>
+	{
+		await writeFile(
+            extjsrcPath,
+			"{\r\n" +
+            '    "classpath": [ "app" ],\r\n' +
+            '    "name": "VSCodeExtJS",\r\n' +
+            '    "framework": "c:\\\\Projects\\\\vscode\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
+            "}\r\n"
+        );
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
+	test("Extjsrc add invalid framework directory", async () =>
+	{
+		await writeFile(
+            extjsrcPath,
+			"{\r\n" +
+            '    "classpath": [ "app" ],\r\n' +
+            '    "name": "VSCodeExtJS",\r\n' +
+            '    "framework": "c:\\\\Projects\\\\vscodeInvalid\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
+            "}\r\n"
+        );
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
+	test("Extjsrc add invalid framework directory outside workspace", async () =>
+	{
+		await writeFile(
+            extjsrcPath,
+			"{\r\n" +
+            '    "classpath": [ "app" ],\r\n' +
+            '    "name": "VSCodeExtJS",\r\n' +
+            '    "framework": "c:\\\\Code\\\\sencha"\r\n' +
+            "}\r\n"
+        );
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
+	test("Extjsrc add invalid json", async () =>
+	{
+		await writeFile(
+            extjsrcPath,
+			"{\r\n" +
+            '    "classpath": "app",\r\n' +
+            '    "name": "VSCodeExtJS"\r\n' + // <- no comma
+            '    "framework": "c:\\\\Projects\\\\vscode\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
+            "}\r\n"
+        );
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
 	test("Extjsrc restore", async () =>
 	{
 		await writeFile(
@@ -111,11 +171,8 @@ suite("Config File Tests", () =>
 	{
 		const fwDirectory = configuration.get<string>("frameworkDirectory", undefined);
 		const settingsPaths = configuration.get<string[]>("include", []);
-		await configuration.update("frameworkDirectory", "extjs");
-		await configuration.update("include", [ "app" ]); // invalid path value must be name|path
-		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
-		await configuration.update("include", [ "VSCodeExtJS|app" ]);
+		await configuration.update("frameworkDirectory", "c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\extjs");
+		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\app" ]);
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
 		//
@@ -130,6 +187,35 @@ suite("Config File Tests", () =>
 		// Reset (for local tests, this won't matter in a CI environment)
 		//
 		await configuration.update("include", settingsPaths);
+		await waitForValidation();
+		await configuration.update("frameworkDirectory", fwDirectory);
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+	});
+
+
+	test("Invalid extension path settings", async () =>
+	{
+		const fwDirectory = configuration.get<string>("frameworkDirectory", undefined);
+		const settingsPaths = configuration.get<string[]>("include", []);
+		await configuration.update("frameworkDirectory", "extjs");
+		//
+		await configuration.update("include", [ "app" ]); // invalid path value must be name|path
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		await configuration.update("include", [ "VSCodeExtJS|" ]);
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjsBadPath" ]);
+		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		// Reset (for local tests, this won't matter in a CI environment)
+		//
+		await configuration.update("include", settingsPaths);
+		await waitForValidation();
 		await configuration.update("frameworkDirectory", fwDirectory);
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
