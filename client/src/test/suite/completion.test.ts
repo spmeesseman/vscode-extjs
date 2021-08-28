@@ -223,7 +223,7 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Class config properties", async () =>
+	test("Class instance config properties", async () =>
 	{   //
 		// Line 109
 		// me.
@@ -831,7 +831,6 @@ suite("Completion Tests", () =>
 		//
 		await insertDocContent("VSCodeExtJS", toRange(2, 3, 2, 3));
 		await waitForValidation();
-
 		await testCompletion(docUri, new vscode.Position(2, 14), ".", {
 			items: []
 		}, true, "behind comment method");
@@ -845,7 +844,7 @@ suite("Completion Tests", () =>
 
 	test("Config properties of extended class", async () =>
 	{
-		const physDdUri = getDocUri("app/classic/src/common/physiciandropdown.js");
+		const physDdUri = getDocUri("app/classic/src/common/PhysicianDropdown.js");
 		await activate(physDdUri);
 		await waitForValidation();
 		await testCompletion(physDdUri, new vscode.Position(14, 0), "u", {
@@ -927,8 +926,8 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		triggerChar
 	)) as vscode.CompletionList;
 
-	// const logKind = "Class";
-	// const logDescRgx = /inline class as a/;
+	// const logKind = "Property";
+	// const logDescRgx = /config property of extended class/;
 	// if (testDesc && logDescRgx.test(testDesc))
 	// {
 	// 	console.log("####################################");
@@ -937,7 +936,7 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	// 	console.log("expected items length", expectedCompletionList.items.length);
 	// 	console.log("####################################");
 	// 	actualCompletionList.items.forEach((actualItem) => {
-	// 		// if (triggerChar) { // && actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
+	// 		// if (actualItem.kind && vscode.CompletionItemKind[actualItem.kind] === logKind) {
 	// 			console.log(actualItem.label, actualItem.kind ? vscode.CompletionItemKind[actualItem.kind] : "");
 	// 		// }
 	// 	});
