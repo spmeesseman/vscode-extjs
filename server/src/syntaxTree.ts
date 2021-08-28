@@ -57,7 +57,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                 //
                 if (isIdentifier(callee.object) && callee.object.name === "Ext" && isIdentifier(callee.property) && callee.property.name === "define")
                 {
-                    log.methodStart("parse extjs file", 1, "", true, [["file", fsPath]]);
+                    log.methodStart("parse extjs file", 1, "", true, [["file", fsPath], ["project", project], ["nameSpace", nameSpace]]);
 
                     //
                     // Ext.define should be in the form:
@@ -72,11 +72,11 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                               baseNameSpace = dotIdx !== -1 ? args[0].value.substring(0, dotIdx) : args[0].value;
 
                         const componentInfo: IComponent = {
-                            name: args[0].value || nameSpace,
+                            name: args[0].value,
                             baseNameSpace,
                             fsPath,
                             project,
-                            nameSpace: nameSpace || baseNameSpace,
+                            nameSpace,
                             componentClass: args[0].value,
                             aliases: [],
                             configs: [],
@@ -196,25 +196,25 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
 
                         if (isObjectProperty(propertyConfig))
                         {
-                            componentInfo.configs.push(...parseConfig(propertyConfig, componentInfo.componentClass));
+                            componentInfo.configs.push(...parseConfig(propertyConfig, componentInfo.componentClass, nameSpace));
                         }
                         logProperties("configs", componentInfo.configs);
 
                         if (isObjectProperty(propertyPrivates))
                         {
-                            componentInfo.privates.push(...parsePropertyBlock(propertyPrivates, componentInfo.componentClass, false, true, text, fsPath));
+                            componentInfo.privates.push(...parsePropertyBlock(propertyPrivates, componentInfo.componentClass, nameSpace, false, true, text, fsPath));
                         }
                         logProperties("privates", componentInfo.privates);
 
                         if (isObjectProperty(propertyStatics))
                         {
-                            componentInfo.statics.push(...parsePropertyBlock(propertyStatics, componentInfo.componentClass, true, false, text, fsPath));
+                            componentInfo.statics.push(...parsePropertyBlock(propertyStatics, componentInfo.componentClass, nameSpace, true, false, text, fsPath));
                         }
                         logProperties("statics", componentInfo.statics);
 
                         if (propertyProperty && propertyProperty.length)
                         {
-                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass, false, false));
+                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass, nameSpace, false, false));
                         }
                         logProperties("properties", componentInfo.properties);
 
@@ -234,7 +234,7 @@ export async function parseExtJsFile(fsPath: string, text: string, project: stri
                         logProperties("methods", componentInfo.methods);
 
                         //
-                        // Type/xtype/model widget definitionsa
+                        // Type/xtype/model widget definitions
                         //
                         componentInfo.widgets.push(...parseWidgets(args[1], text, componentInfo, "xtype").filter((x) => {
                             for (const x2 of componentInfo.xtypes) {
@@ -516,7 +516,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
 }
 
 
-function parseConfig(propertyConfig: ObjectProperty, componentClass: string)
+function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nameSpace: string)
 {
     const configs: IConfig[] = [];
     if (isObjectExpression(propertyConfig.value))
@@ -821,7 +821,7 @@ function parseMixins(propertyMixins: ObjectProperty)
 }
 
 
-function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, isStatic: boolean, isPrivate: boolean): IProperty[]
+function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, nameSpace: string, isStatic: boolean, isPrivate: boolean): IProperty[]
 {
     const properties: IProperty[] = [];
     propertyProperties.forEach((p) =>
@@ -842,11 +842,11 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
                     componentClass,
                     static: doc?.includes("@static") || isStatic,
                     range: utils.toRange(p.loc!.start, p.loc!.end),
-                    value: {
+                    value: nameSpace !== "Ext" ? {
                         start: p.value.loc!.start,
                         end: p.value.loc!.end,
                         value: getPropertyValue(p)
-                    }
+                    } : undefined
                 });
             }
         }
@@ -931,7 +931,7 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
 }
 
 
-function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: string, isStatic: boolean, isPrivate: boolean, text: string | undefined, fsPath: string)
+function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: string, nameSpace: string, isStatic: boolean, isPrivate: boolean, text: string | undefined, fsPath: string)
 {
     const block: (IMethod| IProperty)[] = [];
     if (isObjectExpression(staticsConfig.value))
@@ -940,7 +940,7 @@ function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: strin
         const propertyProperty = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
 
         block.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, isStatic, isPrivate, fsPath));
-        block.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, isStatic, isPrivate));
+        block.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, nameSpace, isStatic, isPrivate));
     }
     return block;
 }

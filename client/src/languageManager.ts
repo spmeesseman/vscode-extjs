@@ -21,6 +21,7 @@ import { configuration } from "./common/configuration";
 import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
+import { isMethod } from "../../common/src/extjs";
 
 
 export interface ILineProperties
@@ -1172,13 +1173,15 @@ class ExtjsLanguageManager
                 // Update entire component tree in fs cache
                 //
                 if (components.length > 0) {
-                    await fsStorage.update(storageKey, JSON.stringify(components));
+                    const cmpCopy: any[] = [ ...[], ...components ];
+                    this.prepareComponentsForStorage(cmpCopy);
+                    await fsStorage.update(storageKey, JSON.stringify(cmpCopy));
                     await storage.update(storageKey + "_TIMESTAMP", new Date());
                 }
 
                 progress.report({
                     increment,
-                    message: `: Indexing project ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
+                    message: `: Indexing ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
                 });
             }
         }
@@ -1388,15 +1391,6 @@ class ExtjsLanguageManager
         //
         await this.initializeInternal();
         //
-        // TODO - Cache cleanup task
-        //
-        // Create a task that will run every minute and clean up any hanging items in
-        // both the memory and fs cache
-        //
-        // setTimeout(async () =>
-        // {
-        //     //
-        // }, 60000);
         //
         // Return disposable watchers list...
         //
@@ -1414,19 +1408,35 @@ class ExtjsLanguageManager
     {
         const baseDir = this.getAppJsonDir(fsPath),
               storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
-              storedComponents: IComponent[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
+              storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
 
         for (let i = 0; i < storedComponents.length; i++)
         {
             if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
             {
-                storedComponents[i] = component;
+                storedComponents[i] = { ...{}, ...component };
+                this.prepareComponentsForStorage(storedComponents[i]);
                 break;
             }
         }
 
         await fsStorage.update(storageKey, JSON.stringify(storedComponents));
         await storage.update(storageKey + "_TIMESTAMP", new Date());
+    }
+
+
+    private prepareComponentsForStorage(components: IComponent[])
+    {
+        components.forEach(c =>
+        {
+            c.methods.forEach((m: any) => {
+                delete m.objectRanges;
+            });
+            c.properties.forEach((p: any) => {
+                delete p.objectRanges;
+            });
+            delete (c as any).objectRanges;
+        });
     }
 
 
