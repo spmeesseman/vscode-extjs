@@ -172,7 +172,7 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentByFile(fsPath: string, logPad = "", logLevel = 1): IComponent | undefined
+    getComponentByFile(fsPath: string, logPad: string, logLevel: number): IComponent | undefined
     {
         let component: IComponent | undefined;
         log.methodStart("get component by file", logLevel, logPad, false, [["component file", fsPath]]);
@@ -203,7 +203,7 @@ class ExtjsLanguageManager
      *
      * @returns {String}
      */
-    private getComponentClass(property: string, project: string, position: Position, lineText: string, fsPath: string | undefined, logPad = "", logLevel = 1): string | undefined
+    private getComponentClass(property: string, project: string, position: Position, lineText: string, fsPath: string | undefined, logPad: string, logLevel: number): string | undefined
     {
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
@@ -283,7 +283,7 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentInstance(property: string, project: string, position: Position, fsPath: string, logPad = "", logLevel = 1): IComponent | IPrimitive | undefined
+    getComponentInstance(property: string, project: string, position: Position, fsPath: string, logPad: string, logLevel: number): IComponent | IPrimitive | undefined
     {
         log.methodStart("get component instance", logLevel, logPad, false, [["property", property], ["project", project]]);
 
@@ -347,7 +347,7 @@ class ExtjsLanguageManager
     }
 
 
-    getConfig(componentClass: string, property: string, project: string, logPad = "", logLevel = 1): IConfig | undefined
+    getConfig(componentClass: string, property: string, project: string, logPad: string, logLevel: number): IConfig | undefined
     {
         let config: IConfig | undefined;
 
@@ -383,7 +383,7 @@ class ExtjsLanguageManager
     }
 
 
-    getFilePath(componentClass: string, project: string, logPad = "", logLevel = 1)
+    getFilePath(componentClass: string, project: string, logPad: string, logLevel: number)
     {
         const fsPath = this.clsToFilesMapping[project][componentClass];
         log.write("get fs path by component", logLevel, logPad);
@@ -401,7 +401,7 @@ class ExtjsLanguageManager
      * @param position The position in the document to extract line properties for
      * @param logPad Padding to prepend to any logging
      */
-    getLineProperties(document: TextDocument, position: Position, logPad = "", logLevel = 1): ILineProperties
+    getLineProperties(document: TextDocument, position: Position, logPad: string, logLevel: number): ILineProperties
     {
         log.methodStart("get line properties", logLevel, logPad);
 
@@ -585,15 +585,38 @@ class ExtjsLanguageManager
             cmpType = component ? ComponentType.Class : ComponentType.Property;
         }
         //
-        // Classes and property class instances (non string literal)
+        // Classes and property class instances (non string literal).  Non-keywords will fall here too
         //
         else if (new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`).test(lineText))
-        {
-            if (/\btype: ["']{1}[\w.]/.test(lineText)) {
-                cmpType = ComponentType.Class | ComponentType.Store;
+        {   //
+            // Any keyword will fall into this case, so make sure the component by property exists
+            //
+            component = this.getComponent(property, project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
+            if (component) {
+                if (/\btype: ["']{1}[\w.]/.test(lineText)) {
+                    cmpType = ComponentType.Class | ComponentType.Store;
+                }
+                else {
+                    cmpType = ComponentType.Class;
+                }
             }
-            else {
-                cmpType = ComponentType.Class;
+            //
+            // If it doesn't exist, it's possible this is a piece of a class path, check that
+            //
+            else if (lineText.includes("."))
+            {
+                const newClsParts: string[] = [];
+                const clsParts = lineText.trim().split(".");
+                for (const clsPart of clsParts) {
+                    newClsParts.push(clsPart);
+                    if (clsPart === property) {
+                        break;
+                    }
+                }
+                component = this.getComponent(newClsParts.join("."), project, logPad + "   ", logLevel, toIPosition(position), thisCmp);
+                if (component) {
+                    cmpType = ComponentType.Class;
+                }
             }
         }
 
@@ -708,7 +731,7 @@ class ExtjsLanguageManager
     }
 
 
-    getMethod(componentClass: string, property: string, project: string, isStatic: boolean, logPad = "", logLevel = 1): IMethod| undefined
+    getMethod(componentClass: string, property: string, project: string, isStatic: boolean, logPad: string, logLevel: number): IMethod| undefined
     {
         log.methodStart("get method by property", logLevel, logPad, false, [
             ["component class", componentClass], ["property", property], ["project", project]
@@ -774,45 +797,26 @@ class ExtjsLanguageManager
     }
 
 
-    getNamespaceFromClass(componentClass: string, project: string, defaultNs?: string, logPad = "", logLevel = 1)
+    getNamespaceFromClass(componentClass: string, project: string, logPad: string, logLevel: number)
     {
+        let nameSpace: string | undefined;
         log.methodStart("get namespace from class", logLevel, logPad, false, [["component class", componentClass]]);
         if (componentClass.indexOf(".") !== -1)
         {
-            defaultNs = componentClass.substring(0, componentClass.indexOf("."));
+            nameSpace = componentClass.substring(0, componentClass.indexOf("."));
         }
         else {
             const aCmp = this.components.find(c => project === c.project && componentClass === c.componentClass);
             if (aCmp) {
-                defaultNs = aCmp.componentClass.substring(0, aCmp.componentClass.indexOf("."));
+                nameSpace = aCmp.componentClass.substring(0, aCmp.componentClass.indexOf("."));
             }
         }
-        log.methodDone("get namespace from class", logLevel, logPad, false, [["namespace", defaultNs]]);
-        return defaultNs || componentClass;
+        log.methodDone("get namespace from class", logLevel, logPad, false, [["namespace", nameSpace]]);
+        return nameSpace || componentClass;
     }
 
 
-    /**
-     * @method getNamespaceFromFile
-     *
-     * @param fsPath Filesystem path to file
-     * @param part Zero-based index of namespace part to return
-     */
-    getNamespaceFromFile(fsPath: string, part?: number, logPad = "", logLevel = 1): string | undefined
-    {
-        let ns: string | undefined;
-        log.methodStart("get namespace from file", logLevel, logPad, false, [["file", fsPath]]);
-        const cls = this.getClsByPath(fsPath);
-        if (cls){
-            log.value("   found base class", cls, logLevel + 2, logPad);
-            ns = cls.split(".")[part ?? 0];
-        }
-        log.methodDone("get namespace from file", logLevel, logPad, false, [["namespace", ns]]);
-        return ns;
-    }
-
-
-    getPropertyPosition(property: string, cmpType: ComponentType, componentClass: string, project: string, isStatic: boolean, logPad = "", logLevel = 1)
+    getPropertyPosition(property: string, cmpType: ComponentType, componentClass: string, project: string, isStatic: boolean, logPad: string, logLevel: number)
     {
         let start = new Position(0, 0),
             end = new Position(0, 0);
@@ -821,7 +825,7 @@ class ExtjsLanguageManager
             ["property", property], ["component class", componentClass], ["project", project]
         ]);
 
-        const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property, project, isStatic, logPad + "   ") :
+        const pObject = cmpType === ComponentType.Method ? this.getMethod(componentClass, property, project, isStatic, logPad + "   ", logLevel + 1) :
                                       (cmpType === ComponentType.Config ? this.getConfig(componentClass, property, project, logPad + "   ", logLevel + 1) :
                                                                           this.getProperty(componentClass, property, project, isStatic, logPad + "   ", logLevel + 1));
 
@@ -857,7 +861,7 @@ class ExtjsLanguageManager
     }
 
 
-    getProperty(componentClass: string, property: string, project: string, isStatic: boolean, logPad = "", logLevel = 1): IProperty | undefined
+    getProperty(componentClass: string, property: string, project: string, isStatic: boolean, logPad: string, logLevel: number): IProperty | undefined
     {
         log.methodStart("get property by component class", logLevel, logPad, false, [
             ["component class", componentClass], ["property", property], ["project", project]
@@ -923,7 +927,7 @@ class ExtjsLanguageManager
      *
      * @returns {String[]}
      */
-    getSubComponentNames(clsPart: string, logPad = "", logLevel = 1): string[]
+    getSubComponentNames(clsPart: string, logPad: string, logLevel: number): string[]
     {
         const subComponentNames: string[] = [];
 
@@ -988,7 +992,7 @@ class ExtjsLanguageManager
     }
 
 
-    private async indexAll(progress: Progress<any>, project?: string, logPad = "", logLevel = 1)
+    private async indexAll(progress: Progress<any>, logPad: string, logLevel: number, project?: string)
     {
         log.methodStart("index all", logLevel, logPad, true, [
             [ "project", project ], [ "# of configurations", this.config.length ]
@@ -1199,7 +1203,7 @@ class ExtjsLanguageManager
         // Index the file, don't save to fs cache, we'll persist to fs cache when the
         // document is saved
         //
-        const components = await this.indexFile(document.uri.fsPath, ns, false, document);
+        const components = await this.indexFile(document.uri.fsPath, ns, false, document, true, "", 1);
         //
         // Validate document
         //
@@ -1209,7 +1213,7 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall = true, logPad = "", logLevel = 1): Promise<IComponent[] | false | undefined>
+    async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall: boolean, logPad: string, logLevel: number): Promise<IComponent[] | false | undefined>
     {
         log.methodStart("indexing " + fsPath, logLevel, logPad, true, [[ "namespace", nameSpace ]]);
 
@@ -1342,7 +1346,7 @@ class ExtjsLanguageManager
         async (progress) =>
         {
             try {
-                await this.indexAll(progress, project);
+                await this.indexAll(progress, "", 1, project);
             }
             catch (e) {
                 log.error(e);
@@ -1428,7 +1432,7 @@ class ExtjsLanguageManager
     }
 
 
-    private async processComponents(components: IComponent[] | undefined, project: string, isFileEdit: boolean, logPad = "", logLevel = 1)
+    private async processComponents(components: IComponent[] | undefined, project: string, isFileEdit: boolean, logPad: string, logLevel: number)
     {   //
         // If no components, then bye bye
         //
@@ -1579,7 +1583,7 @@ class ExtjsLanguageManager
         log.methodStart("remove file from cache", 1, "", true, [["path", fsPath]]);
 
         const componentClass = this.getClsByPath(fsPath),
-              componentNs = componentClass ? this.getNamespaceFromClass(componentClass, project, undefined, "   ", 2) : undefined;
+              componentNs = componentClass ? this.getNamespaceFromClass(componentClass, project, "   ", 2) : undefined;
 
         if (componentClass && componentNs)
         {
@@ -1784,8 +1788,8 @@ class ExtjsLanguageManager
         //
         // Javascript watchers
         //
-        disposables.push(jsWatcher.onDidChange(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
-        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e); }, this));
+        disposables.push(jsWatcher.onDidChange(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e, true, "", 1); }, this));
+        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e, true, "", 1); }, this));
         disposables.push(jsWatcher.onDidDelete(async (e) => { await this.watcherDocumentDelete(e); }, this));
         //
         // Active editor changed (processes open-document too)

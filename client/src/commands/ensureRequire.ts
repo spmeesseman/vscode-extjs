@@ -14,14 +14,15 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 	if (!document) {
 		return;
 	}
+
+	log.methodStart("Command - Ensure requires", 1, "", true);
+
 	const fsPath = document.uri.fsPath,
 		  project = getWorkspaceProjectName(fsPath),
-		  ns = fsPath ? extjsLangMgr.getNamespaceFromFile(fsPath) : undefined,
-		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, false, document) : undefined,
+		  ns = getNamespaceFromFile(fsPath, "   ", 2),
+		  components = ns && fsPath && document ? await extjsLangMgr.indexFile(fsPath, ns, false, document, true, "   ", 2) : undefined,
 		  workspaceEdit = new WorkspaceEdit(),
 		  quote = quoteChar();
-
-	log.methodStart("Command - Ensure requires", 1, "", true, [ [ "namespace", ns ], [ "fs path", fsPath ] ]);
 
 	if (components)
 	{
@@ -98,6 +99,26 @@ export async function ensureRequires(xtype: string | undefined, type: "type" | "
 	}
 
 	log.methodDone("Command - Ensure requires", 1, "", true);
+}
+
+
+/**
+ * @method getNamespaceFromFile
+ *
+ * @param fsPath Filesystem path to file
+ * @param part Zero-based index of namespace part to return
+ */
+function getNamespaceFromFile(fsPath: string, logPad: string, logLevel: number): string | undefined
+{
+	let ns: string | undefined;
+	log.methodStart("get namespace from file", logLevel, logPad, false, [["file", fsPath]]);
+	const cls = extjsLangMgr.getClsByPath(fsPath);
+	if (cls){
+		log.value("   found base class", cls, logLevel + 2, logPad);
+		ns = cls.split(".")[0];
+	}
+	log.methodDone("get namespace from file", logLevel, logPad, false, [["namespace", ns]]);
+	return ns;
 }
 
 
