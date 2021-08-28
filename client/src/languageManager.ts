@@ -1406,6 +1406,7 @@ class ExtjsLanguageManager
 
     private async persistComponent(fsPath: string, nameSpace: string, component: IComponent)
     {
+        let exists = false;
         const baseDir = this.getAppJsonDir(fsPath),
               storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
               storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
@@ -1414,10 +1415,16 @@ class ExtjsLanguageManager
         {
             if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
             {
+                exists = true;
                 storedComponents[i] = { ...{}, ...component };
                 this.prepareComponentsForStorage(storedComponents[i]);
                 break;
             }
+        }
+
+        if (!exists) {
+            storedComponents.push({ ...{}, ...component });
+            this.prepareComponentsForStorage(storedComponents[storedComponents.length - 1]);
         }
 
         await fsStorage.update(storageKey, JSON.stringify(storedComponents));
