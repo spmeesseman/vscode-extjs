@@ -54,7 +54,7 @@ class ExtJsHoverProvider implements HoverProvider
                         const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase();
                         returns = method.returns ? `: returns ${returnsText}` : "";
                     }
-                    hover = this.getHover(`function ${text}${returns}`, method.markdown);
+                    hover = this.getHover(`function ${text}${returns}`, method.doc);
                 }
             }
             else if (cmpType === ComponentType.Property)
@@ -62,7 +62,7 @@ class ExtJsHoverProvider implements HoverProvider
                 const prop = extjsLangMgr.getProperty(cmpClass, property, project, false, "   ", 2);
                 if (prop) {
                     log.value("   provide property hover info", property, 2);
-                    hover = this.getHover(`property ${text}: ${prop.componentClass}`, prop.markdown);
+                    hover = this.getHover(`property ${text}: ${prop.componentClass}`, prop.doc);
                 }
                 else {
                     let cmp = extjsLangMgr.getComponentInstance(property, project, position, document.uri.fsPath, "   ", 2);
@@ -105,7 +105,7 @@ class ExtJsHoverProvider implements HoverProvider
                                     varType = DeclarationType[thisVar.declaration] + " ";
                                 }
                                 const hoverDoc = `${varType}${text}: ${method.returns.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase()}`;
-                                hover = this.getHover(hoverDoc, method.markdown);
+                                hover = this.getHover(hoverDoc, method.doc);
                             }
                         }
                     }
@@ -115,7 +115,7 @@ class ExtJsHoverProvider implements HoverProvider
             {
                 const config = extjsLangMgr.getConfig(cmpClass, property, project, "   ", 2) as IConfig;
                 log.value("   provide class hover info", property, 2);
-                hover = this.getHover(`config ${text}: ${config.componentClass}`, config.markdown);
+                hover = this.getHover(`config ${text}: ${config.componentClass}`, config.doc);
             }
             else // if (cmpType & ComponentType.Class)
             {

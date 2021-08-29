@@ -1,7 +1,7 @@
 
 import {
     ExtensionContext, languages, Position, CancellationToken, ProviderResult, ParameterInformation,
-    TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation, commands
+    TextDocument, SignatureHelpProvider, SignatureHelp, SignatureHelpContext, SignatureInformation, commands, MarkdownString
 } from "vscode";
 import { extjsLangMgr } from "../extension";
 import { getWorkspaceProjectName, isComponent, shouldIgnoreType, toIPosition } from "../common/clientUtils";
@@ -94,7 +94,13 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 {
                     for (const p of method.params)
                     {
-                        params.push(new ParameterInformation(p.name, p.markdown || p.doc));
+                        if (p.doc && p.doc.body) {
+                            const markdown = new MarkdownString().appendCodeblock(p.doc.title).appendMarkdown(p.doc.body);
+                            params.push(new ParameterInformation(p.name, markdown));
+                        }
+                        else {
+                            params.push(new ParameterInformation(p.name));
+                        }
                     }
                 }
                 return method.name === methodName;

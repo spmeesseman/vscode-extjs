@@ -17,6 +17,7 @@ import {
 import {
     isIdentifier, isObjectExpression, isObjectProperty, isStringLiteral,  ObjectExpression, ArrayExpression
 } from "@babel/types";
+import { doc } from "../test/suite/helper";
 
 
 interface ICompletionConfig
@@ -276,7 +277,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             if ("getter" in cmp)
             {
                 const getterItem = new CompletionItem(cmp.getter, CompletionItemKind.Method);
-                getterItem.documentation = cmp.markdown;
+                if (cmp.doc && cmp.doc.body) {
+                    getterItem.documentation = new MarkdownString().appendCodeblock(cmp.doc.title).appendMarkdown(cmp.doc.body);
+                }
                 getterItem.commitCharacters = [ "(" ];
                 tagText = this.tagText(cmp, cmp.getter, extendedFrom);
                 getterItem.insertText = cmp.getter;
@@ -286,7 +289,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             if ("setter" in cmp)
             {
                 const setterItem = new CompletionItem(cmp.setter, CompletionItemKind.Method);
-                setterItem.documentation = cmp.markdown;
+                if (cmp.doc && cmp.doc.body) {
+                    setterItem.documentation = new MarkdownString().appendCodeblock(cmp.doc.title).appendMarkdown(cmp.doc.body);
+                }
                 setterItem.commitCharacters = [ "(" ];
                 tagText = this.tagText(cmp, cmp.setter, extendedFrom);
                 setterItem.insertText = cmp.setter;
@@ -600,7 +605,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // A helper function to add items to the completion list that will be provided to VSCode
         //
-        const _add = (cmp: IConfig | IProperty | undefined, cls: string, basic: boolean, kind: CompletionItemKind, extendedCls?: string, doc?: string) =>
+        const _add = (cmp: IConfig | IProperty | undefined, cls: string, basic: boolean, kind: CompletionItemKind, extendedCls?: string) =>
         {
             const cCls = cls.split(".")[0];
             if (!config.addedItems.includes(cCls))
@@ -631,7 +636,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     //
                     if (basic) {
                         cItems.forEach((i) => {
-                            i.documentation = doc;
+                            if (cmp && cmp.doc && cmp.doc.body) {
+                                i.documentation = new MarkdownString().appendCodeblock(cmp.doc.title).appendMarkdown(cmp.doc.body);
+                            }
                             if (kind === CompletionItemKind.Constant || kind === CompletionItemKind.Variable) {
                                 i.commitCharacters = [ "." ];
                             }
@@ -654,11 +661,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             if (!cmp) { return; }
             cmp.configs.forEach((c: IConfig) =>
             {
-                _add(c, c.name, true, CompletionItemKind.Property, extendedCls, c.markdown);
+                _add(c, c.name, true, CompletionItemKind.Property, extendedCls);
             });
             cmp.properties.filter((p) => !this.ignoreProps.includes(p.name)).forEach((p) =>
             {
-                _add(p, p.name, true, CompletionItemKind.Property, extendedCls, p.markdown);
+                _add(p, p.name, true, CompletionItemKind.Property, extendedCls);
             });
 
             //

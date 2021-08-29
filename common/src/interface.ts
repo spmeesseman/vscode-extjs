@@ -230,7 +230,6 @@ export interface IObjectRange extends IRange
 export interface IParameter extends IExtJsBase
 {
     doc?: IJsDoc;
-    markdown?: any;
     methodName: string;
     type: VariableType;
 }
@@ -252,7 +251,6 @@ export interface IPrimitive extends IExtJsBase
 export interface IPropertyBase extends IExtJsBase
 {
     doc?: IJsDoc;
-    markdown?: any;
     private: boolean;
     deprecated: boolean;
     since?: string;

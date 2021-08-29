@@ -298,42 +298,6 @@ function getJsDoc(property: string, componentClass: string, comments: readonly C
 }
 
 
-function getReturns(doc?: string)
-{
-    let returns: string | undefined;
-    if (doc?.includes("@return"))
-    {
-        const matches = doc.match(/@return[s](.+)/i);
-        if (matches && matches[1])
-        {
-            returns = matches[1];
-        }
-    }
-    return returns?.trim();
-}
-
-
-function getSince(doc?: string)
-{
-    let since: string | undefined;
-    if (doc?.includes("@since"))
-    {
-        const matches = doc.match(/@since (v*[\d\.]{2,10})/i);
-        if (matches && matches[1])
-        {
-            since = matches[1];
-        }
-    }
-    if (since)
-    {
-        if (since[0] !== "v") {
-            since = "v" + since;
-        }
-    }
-    return since?.toLowerCase();
-}
-
-
 function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | undefined)
 {
     if (!text) {
