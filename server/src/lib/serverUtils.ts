@@ -1,6 +1,6 @@
 
 import { Range } from "vscode-languageserver";
-import { IPosition } from "../../common";
+import { IPosition } from "../../../common";
 
 
 export function toVscodePosition(position: IPosition)

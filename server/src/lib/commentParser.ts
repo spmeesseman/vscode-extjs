@@ -2,7 +2,7 @@
 import { MarkupContent } from "vscode-languageserver";
 // import { MarkedString } from "vscode-languageserver-types"
 import { IJsDoc } from "../../../common"
-import * as log from "../log";
+import * as log from "./log";
 
 
 enum MarkdownChars

@@ -9,7 +9,7 @@ import {
 import {
 	TextDocument
 } from "vscode-languageserver-textdocument";
-import { parseExtJsFile, loadExtJsComponent } from "./syntaxTree";
+import { parseExtJsFile, loadExtJsComponent } from "./parser";
 import { ISettings, defaultSettings } from  "../../common";
 import { validateExtJsSyntax, validateExtJsFile } from "./validation";
 

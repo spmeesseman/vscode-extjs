@@ -1,5 +1,5 @@
 
-import { connection, globalSettings } from "./server";
+import { connection, globalSettings } from "../server";
 
 const logValueWhiteSpace = 40;
 

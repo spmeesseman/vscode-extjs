@@ -1,7 +1,7 @@
 
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
-import * as log from "./log";
+import * as log from "./lib/log";
 import { parseDoc } from "./lib/commentParser";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,

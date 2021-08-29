@@ -1,12 +1,12 @@
 
 import { Connection, Diagnostic, DiagnosticSeverity, Range, DocumentUri } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { parseExtJsFile, components } from "./syntaxTree";
+import { parseExtJsFile, components } from "./parser";
 import { IPosition, IComponent, utils, ErrorCode, IRequire, IRequires, IUses, extjs, IWidget, IExtJsBase, IMixins, IProperty, IServerRequest } from "../../common";
 import { globalSettings } from "./server";
 import { URI } from "vscode-uri";
-import * as log from "./log";
-import { toVscodeRange } from "./serverUtils";
+import * as log from "./lib/log";
+import { toVscodeRange } from "./lib/serverUtils";
 
 
 const validateProperties = [ "model", "extend" ];
