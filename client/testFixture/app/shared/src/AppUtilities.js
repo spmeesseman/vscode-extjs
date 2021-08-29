@@ -47,10 +47,10 @@ Ext.define('VSCodeExtJS.AppUtilities',
      *     127 - Client Error
      *     128 - Client General
      * 
-     * @param {Boolean} [show=true]  Show the button to open a help desk ticket
+     * @param {Boolean} [showHelpDeskBtn=true]  Show the button to open a help desk ticket
      * User can select whetheror not to submit a ticket, or close and proceed.
      * 
-     * @param {Number} [type=1] Type of help request, can be one of the following:
+     * @param {Number} [helpType=1] Type of help request, can be one of the following:
      *     1 - Bug Report
      *     2 - Feature Request
      *     3 - Quality Issue

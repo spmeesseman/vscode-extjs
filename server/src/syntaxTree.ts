@@ -846,7 +846,7 @@ function parseStringArray(property: ObjectProperty)
 }
 
 
-function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, doc: IJsDoc | undefined): IParameter[]
+function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, jsdoc: IJsDoc | undefined): IParameter[]
 {
     const params: IParameter[] = [];
     if (!text || !methodName) {
@@ -876,21 +876,17 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
         }
     }
 
-    //
-    // Look into the method comments, see if we can extract type information about the parameters
-    //
-    if (doc && params.length)
+    if (jsdoc)
     {
         for (const p of params)
         {
-            const paramDoc = doc.body.match(new RegExp(`@param\\s*(\\{[\\w\\.]+\\})*\\s*${p.name}[^\\r\\n]*`));
-            if (paramDoc)
+            for (const docParam of jsdoc.params)
             {
-                // p.doc = "@param " + paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
-                p.doc = parseDoc(p.name, paramDoc[0].trim(), parentCls, "   ");
-                if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
+                if (docParam.name === p.name)
                 {
-                    p.componentClass = paramDoc[1].replace(/[\{\}]/g, "");
+                    p.doc = docParam.body;
+                    p.docTitle = docParam.title;
+                    p.componentClass = docParam.type; // match[1].replace(/[\{\}]/g, "");
                     p.type = getVariableType(p.componentClass.toLowerCase());
                 }
             }

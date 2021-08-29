@@ -158,19 +158,13 @@ export interface IEdit
 }
 
 
-export interface IJsDocMarkup
-{
-    value: string;
-    kind: "plaintext" | "markdown" | "code";
-    language: "javascript";
-}
-
-
 export interface IJsDocParam
 {
-    default: string;
+    default?: string;
     name: string;
     type: string;
+    body: string;
+    title: string;
 }
 
 
@@ -187,7 +181,6 @@ export interface IJsDoc
     title: string;
     type: string;
     params: IJsDocParam[];
-    markup: IJsDocMarkup[];
 }
 
 
@@ -229,7 +222,8 @@ export interface IObjectRange extends IRange
 
 export interface IParameter extends IExtJsBase
 {
-    doc?: IJsDoc;
+    doc?: string;
+    docTitle?: string;
     methodName: string;
     type: VariableType;
 }
