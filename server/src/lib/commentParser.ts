@@ -172,6 +172,18 @@ class CommentParser
     }
 
 
+    private handlePrivateLine(line: string, jsdoc: IJsDoc)
+    {
+        let textLine = line.trim();
+        textLine = this.italic(textLine, false, true);
+
+        jsdoc.private = true;
+        this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
+
+        log.value("      insert private line", textLine, 5);
+    }
+
+
     private handleObjectLine(line: string, property: string, jsdoc: IJsDoc)
     {
         let cfgLine = "";
@@ -597,6 +609,10 @@ class CommentParser
             else if (mode === MarkdownStringMode.Deprecated)
             {
                 this.handleDeprecatedLine(line, jsdoc);
+            }
+            else if (mode === MarkdownStringMode.Private)
+            {
+                this.handlePrivateLine(line, jsdoc);
             }
             else if (mode === MarkdownStringMode.Since)
             {
