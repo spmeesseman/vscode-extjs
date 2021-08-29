@@ -32,7 +32,7 @@ suite("Config File Tests", () =>
 		// in the fn implementation (case with a default value supplied in call to get)
 		//
 		storage.get<string>("storage_test", "test");
-		const testsApi = await activate();
+		const testsApi = await activate(wsJsonUri);
 		extJsApi = testsApi.extJsApi;
 		extjsLangMgr = extJsApi.extjsLangMgr;
 	});

@@ -75,7 +75,7 @@ suite("API Tests", () =>
 		//
 		const api = await activate(getDocUri("app/js/script1.js"));
 		extjsLangMgr.getLineProperties(api.doc, new Position(0, 0), "", 1);
-		closeActiveDocument();
+		await closeActiveDocument();
 	});
 
 
