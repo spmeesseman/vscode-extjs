@@ -881,7 +881,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // Check if we aren't within a parsed `objectRange`, if we are not, then this is the
         // main Ext.define object.
         //
-        // COverage shows we account for the position already being within range before the
+        // Coverage shows we account for the position already being within range before the
         // call to this method is made.  Keeping here commented for now in case there is some
         // kind of side effect.  If there wasn't so many changes through initial development,
         // removing this would be a concerned but I think since so much has changed it's possible
