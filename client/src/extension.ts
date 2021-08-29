@@ -7,9 +7,9 @@ import registerClearAstCommand from "./commands/clearAst";
 import registerReplaceTextCommand from "./commands/replaceText";
 import registerIgnoreErrorCommand from "./commands/ignoreError";
 import registerWaitReadyCommand from "./commands/waitReady";
-import ExtjsLanguageManager from "./languageManager";
+import ExtjsLanguageManager, { ILineProperties } from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
-import { Disposable, ExtensionContext, OutputChannel, window } from "vscode";
+import { Disposable, ExtensionContext, OutputChannel, Position, TextDocument, window } from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
 import { registerProviders } from "./providers/manager";
 import { initStorage } from "./common/storage";
@@ -23,10 +23,17 @@ const clients: Map<string, LanguageClient> = new Map();
 export let extjsLangMgr: ExtjsLanguageManager;
 
 
+export interface IExtjsLanguageManager
+{
+    getLineProperties: (document: TextDocument, position: Position, logPad: string, logLevel: number) => ILineProperties;
+    setBusy: (busy: boolean) => void;
+    setTests: (tests: boolean) => void;
+}
+
 export interface ExtJsApi
 {
-    extjsLangMgr: ExtjsLanguageManager | undefined;
-    client: LanguageClient | undefined;
+    extjsLangMgr: IExtjsLanguageManager;
+    client: LanguageClient;
 }
 
 

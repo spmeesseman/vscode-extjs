@@ -1,14 +1,18 @@
 
-import * as vscode from "vscode";
+import {
+    Disposable, ExtensionContext, extensions, TextDocumentChangeEvent, Range, Position,
+    TextEditor, TextDocument, window, workspace, Uri, ConfigurationChangeEvent, commands, TextDocumentContentChangeEvent
+} from "vscode";
 import * as path from "path";
 import * as assert from "assert";
-import { extjsLangMgr } from "../../extension";
+import { ExtJsApi } from "../../extension";
 
-export let doc: vscode.TextDocument;
-export let editor: vscode.TextEditor;
+export let doc: TextDocument;
+export let editor: TextEditor;
 
 
 let activated = false;
+let extJsApi: ExtJsApi;
 const serverActivationDelay = 2000;
 const invalidationDelay = 2000;
 
@@ -16,10 +20,9 @@ const invalidationDelay = 2000;
 /**
  * Activates the spmeesseman.vscode-extjs extension
  */
-export async function activate(docUri?: vscode.Uri)
+export async function activate(docUri?: Uri)
 {
-	let extJsApi = {};
-	const ext = vscode.extensions.getExtension("spmeesseman.vscode-extjs")!;
+	const ext = extensions.getExtension("spmeesseman.vscode-extjs")!;
 	assert(ext, "Could not find extension");
 	if (!activated)
 	{
@@ -29,15 +32,25 @@ export async function activate(docUri?: vscode.Uri)
 	}
 	if (docUri) {
 		try {
-			doc = await vscode.workspace.openTextDocument(docUri);
-			editor = await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
+			doc = await workspace.openTextDocument(docUri);
+			editor = await window.showTextDocument(doc);
+			assert(window.activeTextEditor, "No active editor");
 		} catch (e) {
 			console.error(e);
 		}
 	}
-	extjsLangMgr.setTests(true);
-	return doc;
+	extJsApi.extjsLangMgr.setTests(true);
+	return { extJsApi , doc };
+}
+
+
+export async function closeActiveDocument()
+{
+	try {
+		await commands.executeCommand("workbench.action.closeActiveEditor");
+	} catch (e) {
+		console.error(e);
+	}
 }
 
 
@@ -49,19 +62,19 @@ export const getDocPath = (p: string) =>
 
 export const getDocUri = (p: string) =>
 {
-	return vscode.Uri.file(getDocPath(p));
+	return Uri.file(getDocPath(p));
 };
 
 
 export const getNewDocUri = (p: string) =>
 {
-	return vscode.Uri.file(getDocPath(p)).with({ scheme: "untitled" });
+	return Uri.file(getDocPath(p)).with({ scheme: "untitled" });
 };
 
 
 export async function setDocContent(content: string): Promise<boolean>
 {
-	const all = new vscode.Range(
+	const all = new Range(
 		doc.positionAt(0),
 		doc.positionAt(doc.getText().length)
 	);
@@ -69,7 +82,7 @@ export async function setDocContent(content: string): Promise<boolean>
 }
 
 
-export async function insertDocContent(content: string, range: vscode.Range): Promise<boolean>
+export async function insertDocContent(content: string, range: Range): Promise<boolean>
 {
 	return editor.edit(eb => eb.replace(range, content));
 }
@@ -83,9 +96,9 @@ export async function sleep(ms: number)
 
 export function toRange(sLine: number, sChar: number, eLine: number, eChar: number)
 {
-	const start = new vscode.Position(sLine, sChar);
-	const end = new vscode.Position(eLine, eChar);
-	return new vscode.Range(start, end);
+	const start = new Position(sLine, sChar);
+	const end = new Position(eLine, eChar);
+	return new Range(start, end);
 }
 
 

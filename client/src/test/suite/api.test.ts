@@ -1,16 +1,21 @@
-import { commands } from "vscode";
+import { commands, Position } from "vscode";
 import { configuration } from "../../common/configuration";
 import { quoteChar } from "../../common/clientUtils";
-import { extjsLangMgr } from "../../extension";
-import { activate, waitForValidation } from "./helper";
+import { activate, closeActiveDocument, getDocUri, waitForValidation } from "./helper";
+import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
 
 
 suite("API Tests", () =>
 {
+	let extJsApi: ExtJsApi;
+	let extjsLangMgr: IExtjsLanguageManager;
+
 
 	suiteSetup(async () =>
     {
-		await activate();
+		const testsApi = await activate();
+		extJsApi = testsApi.extJsApi;
+		extjsLangMgr = extJsApi.extjsLangMgr;
 	});
 
 
@@ -62,5 +67,16 @@ suite("API Tests", () =>
 		quoteChar();
 		await configuration.update("quoteCharacter", qChar);
 	});
+
+
+	test("Miscellaneous api coverage", async() =>
+	{   //
+		// Do some extension api usage that'll improve coverage...
+		//
+		const api = await activate(getDocUri("app/js/script1.js"));
+		extjsLangMgr.getLineProperties(api.doc, new Position(0, 0), "", 1);
+		closeActiveDocument();
+	});
+
 
 });

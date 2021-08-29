@@ -514,14 +514,17 @@ suite("Completion Tests", () =>
 		//
 		// });
 		//
-		await testCompletion(docUri, new vscode.Position(189, 3), "x", { items });
+		await testCompletion(docUri, new vscode.Position(189, 3), "x", { items }, true, "full xtype lines 'x'");
 		//
 		// Typing a ':' after an 'xtype:'
 		//
 		await insertDocContent("xtype:", toRange(189, 3, 189, 3));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(189, 8), ":", { items });
-		await insertDocContent("", toRange(189, 3, 189, 9));
+		try {
+			await testCompletion(docUri, new vscode.Position(189, 8), ":", { items }, true, "full xtype lines ':'");
+		}
+		catch (e) { throw e; }
+		finally { await insertDocContent("", toRange(189, 3, 189, 9)); }
 		await waitForValidation();
 		//
 		// Typing a 'quote-char' after an 'xtype:' text
@@ -530,14 +533,17 @@ suite("Completion Tests", () =>
 		const quote = quoteChar();
 		await insertDocContent(`xtype: ${quote}${quote}`, toRange(189, 3, 189, 3));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(189, 8), ":", { items });
-		await testCompletion(docUri, new vscode.Position(189, 10), quote, { items });
-		await testCompletion(docUri, new vscode.Position(189, 11), quote, { items });
-		await testCompletion(docUri, new vscode.Position(189, 12), "", { items });
+		try {
+			await testCompletion(docUri, new vscode.Position(189, 8), ":", { items });
+			await testCompletion(docUri, new vscode.Position(189, 10), quote, { items });
+			await testCompletion(docUri, new vscode.Position(189, 11), quote, { items });
+			await testCompletion(docUri, new vscode.Position(189, 12), "", { items });
+		}
+		catch (e) { throw e; }
+		finally { await insertDocContent("", toRange(189, 3, 189, 12)); }
 		//
 		// Remove added text, set document back to initial state
 		//
-		await insertDocContent("", toRange(189, 3, 189, 12));
 		await waitForValidation();
 		//
 		// Mid-typing type (xt...)
@@ -581,39 +587,44 @@ suite("Completion Tests", () =>
 		//
 		// });
 		//
-		await testCompletion(docUri, new vscode.Position(189, 3), "t", { items });
+		await testCompletion(docUri, new vscode.Position(189, 3), "t", { items }, true, "full type lines 'tx'");
 		//
 		// Typing a ':' after an 'xtype:'
 		//
 		await insertDocContent("type:", toRange(189, 3, 189, 3));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(189, 7), ":", { items });
-		await insertDocContent("", toRange(189, 3, 189, 8));
+		try {
+			await testCompletion(docUri, new vscode.Position(189, 7), ":", { items }, true, "full type lines ':'");
+		}
+		catch (e) { throw e; }
+		finally { await insertDocContent("", toRange(189, 3, 189, 8)); }
 		await waitForValidation();
 		//
 		// Typing a 'quote-char' after a 'type:' text
-		// Remove added text, set document back to initial state
 		//
 		const quote = quoteChar();
 		await insertDocContent(`type: ${quote}${quote}`, toRange(189, 3, 189, 3));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(189, 7), ":", { items });
-		await testCompletion(docUri, new vscode.Position(189, 9), quote, { items });
-		await testCompletion(docUri, new vscode.Position(189, 10), quote, { items });
-		await testCompletion(docUri, new vscode.Position(189, 11), "", { items });
-		await insertDocContent("", toRange(189, 3, 189, 11));
+		try {
+			await testCompletion(docUri, new vscode.Position(189, 7), ":", { items });
+			await testCompletion(docUri, new vscode.Position(189, 9), quote, { items });
+			await testCompletion(docUri, new vscode.Position(189, 10), quote, { items });
+			await testCompletion(docUri, new vscode.Position(189, 11), "", { items });
+		}
+		catch (e) { throw e; }
+		finally { await insertDocContent("", toRange(189, 3, 189, 11)); }
 		await waitForValidation();
 		//
 		// Mid-typing type (ty...)
 		//
 		await insertDocContent("ty", toRange(216, 4, 216, 4));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(216, 6), "p", { items }, true, "object 'type' configs and properties mid-word");
-		await testCompletion(docUri, new vscode.Position(216, 5), "y", { items }, true, "object 'type' configs and properties mid-word");
-		//
-		// Remove added text, set document back to initial state
-		//
-		await insertDocContent("", toRange(216, 4, 216, 6));
+		try {
+			await testCompletion(docUri, new vscode.Position(216, 6), "p", { items }, true, "object 'type' configs and properties mid-word");
+			await testCompletion(docUri, new vscode.Position(216, 5), "y", { items }, true, "object 'type' configs and properties mid-word");
+		}
+		catch (e) { throw e; }
+		finally { await insertDocContent("", toRange(216, 4, 216, 6)); }
 		await waitForValidation();
 		//
 		// Line 121-123 - should return nothing, since the component is defined
@@ -931,7 +942,7 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 	)) as vscode.CompletionList;
 
 	// const logKind = "Property";
-	// const logDescRgx = /config property of extended class/;
+	// const logDescRgx = /type lines '\:'/;
 	// if (testDesc && logDescRgx.test(testDesc))
 	// {
 	// 	console.log("####################################");

@@ -1,17 +1,19 @@
 
 import * as path from "path";
-import { commands, window, workspace } from "vscode";
+import { commands, workspace } from "vscode";
 import { renameSync } from "fs";
-import { copyFile, deleteFile, readFile, writeFile } from "../../../../common/lib/fs";
+import { copyFile, deleteFile, writeFile } from "../../../../common/lib/fs";
 import { getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange } from "./helper";
 import { storage } from "../../common/storage";
 import { configuration } from "../../common/configuration";
-import { extjsLangMgr } from "../../extension";
+import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
 
 
 suite("Config File Tests", () =>
 {
 
+	let extJsApi: ExtJsApi;
+	let extjsLangMgr: IExtjsLanguageManager;
 	const wsJsonUri = getDocUri("workspace.json");
 	const appJsonUri = getDocUri("app.json");
 	const appJsonPath = getDocPath("app.json");
@@ -30,7 +32,9 @@ suite("Config File Tests", () =>
 		// in the fn implementation (case with a default value supplied in call to get)
 		//
 		storage.get<string>("storage_test", "test");
-		await activate(wsJsonUri);
+		const testsApi = await activate();
+		extJsApi = testsApi.extJsApi;
+		extjsLangMgr = extJsApi.extjsLangMgr;
 	});
 
 
