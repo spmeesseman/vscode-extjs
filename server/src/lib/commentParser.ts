@@ -126,7 +126,7 @@ class CommentParser
         if (match) {
             const [ _, paramType, varType  ] = match;
             pType = paramType as "property" | "param" | "cfg" | "class" | "method";
-            vType = varType;
+            vType = varType.toLowerCase();
         }
         return {
             vType, pType
