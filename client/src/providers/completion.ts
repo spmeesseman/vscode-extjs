@@ -8,17 +8,15 @@ import {
 } from "../../../common";
 import {
     CompletionItem, CompletionItemProvider, ExtensionContext, languages, Position,
-    TextDocument, CompletionItemKind, window, Range, TextEdit, commands
+    TextDocument, CompletionItemKind, Range, TextEdit, commands, MarkdownString
 } from "vscode";
 import {
-    getMethodByPosition, isPositionInObjectRange, isPositionInRange, toVscodeRange, isComponent,
-    getObjectRangeByPosition, documentEol, quoteChar, getWorkspaceProjectName, toIPosition, shouldIgnoreType
+    getMethodByPosition, isPositionInObjectRange, isPositionInRange, toVscodeRange,
+    getObjectRangeByPosition, documentEol, quoteChar, getWorkspaceProjectName, toIPosition,
 } from "../common/clientUtils";
 import {
-    isArrayExpression, isIdentifier, isObjectExpression, isObjectProperty, isExpressionStatement,
-    isStringLiteral,  isLabeledStatement, objectExpression, ObjectExpression, Expression, ArrayExpression
+    isIdentifier, isObjectExpression, isObjectProperty, isStringLiteral,  ObjectExpression, ArrayExpression
 } from "@babel/types";
-import { getTypeFromDoc } from "../common/commentParser";
 
 
 interface ICompletionConfig
@@ -238,7 +236,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         // Documentation / JSDoc / Leading Comments
         //
-        completionItem.documentation = cmp.markdown;
+        if (cmp.doc && cmp.doc.title) {
+            completionItem.documentation = new MarkdownString().appendCodeblock(cmp.doc.title).appendMarkdown(cmp.doc.body);
+        }
 
         //
         // If a text edit triggers a completion in the middle of the expression we need to
@@ -1066,15 +1066,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         if (propertyDef && propertyDef.doc)
         {
             let valueCompletionItem: CompletionItem | undefined;
-            const eol = documentEol(config.document),
-                  propertyType = getTypeFromDoc(property, propertyDef.doc, "property") || getTypeFromDoc(property, propertyDef.doc, "cfg");
-            switch (propertyType) {
-                case "String":
+            const eol = documentEol(config.document);
+            switch (propertyDef.doc.type) {
+                case "string":
                     valueCompletionItem = new CompletionItem("String Value", CompletionItemKind.Value);
                     valueCompletionItem.insertText = " " + "\"\"";
                     completionItems.push(valueCompletionItem);
                     break;
-                case "Boolean":
+                case "boolean":
                     valueCompletionItem = new CompletionItem("false", CompletionItemKind.Value);
                     valueCompletionItem.insertText = ` false${config.xtypeEol ? "," + eol : ""}`;
                     completionItems.push(valueCompletionItem);

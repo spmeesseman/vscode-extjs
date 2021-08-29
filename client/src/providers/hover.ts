@@ -1,12 +1,13 @@
 
 import {
     CancellationToken, ExtensionContext, Hover, HoverProvider, languages, Position,
-    ProviderResult, TextDocument, MarkdownString, Range, commands
+    TextDocument, MarkdownString, commands
 } from "vscode";
 import * as log from "../common/log";
-import { ComponentType, DeclarationType, IComponent, IConfig, IMethod, utils, VariableType } from "../../../common";
+import { ComponentType, DeclarationType, IComponent, IConfig, IJsDoc, utils } from "../../../common";
 import { extjsLangMgr } from "../extension";
 import { isPrimitive, isComponent, getMethodByPosition, toIPosition, shouldIgnoreType } from "../common/clientUtils";
+
 
 class ExtJsHoverProvider implements HoverProvider
 {
@@ -74,7 +75,7 @@ class ExtJsHoverProvider implements HoverProvider
                         if (thisVar) {
                             varType = DeclarationType[thisVar.declaration];
                         }
-                        hover = this.getHover(`${varType} ${text}: ${cmp.componentClass}`, cmp.markdown);
+                        hover = this.getHover(`${varType} ${text}: ${cmp.componentClass}`, cmp.doc);
                     }
                     else if (thisClass && callee && isPrimitive(cmp))
                     {   //
@@ -140,7 +141,7 @@ class ExtJsHoverProvider implements HoverProvider
                 if (lineText.includes(`.${text}`) || lineText.includes(`${text}.`)) {
                     clsShortName = cmp.componentClass.substring(cmp.componentClass.lastIndexOf(".") + 1);
                 }
-                hover = this.getHover(`${typeName} ${clsShortName}: ${cmp.componentClass}`, cmp.markdown);
+                hover = this.getHover(`${typeName} ${clsShortName}: ${cmp.componentClass}`, cmp.doc);
             }
         }
 
@@ -149,9 +150,15 @@ class ExtJsHoverProvider implements HoverProvider
     }
 
 
-    private getHover(codeblock: any, markdown: any)
+    private getHover(title: any, jsdoc: IJsDoc | undefined)
     {
-        return new Hover(new MarkdownString().appendCodeblock(`${codeblock}`).appendMarkdown(markdown ? markdown.value : ""));
+        if (jsdoc && jsdoc.body)
+        {
+            return new Hover(new MarkdownString().appendCodeblock(title || jsdoc.title).appendMarkdown(jsdoc.body));
+        }
+        else {
+            return new Hover(new MarkdownString().appendCodeblock(title));
+        }
     }
 
 }
