@@ -389,7 +389,7 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Inline class s a parameter", async () =>
+	test("Inline class as a parameter", async () =>
 	{   //
 		// Line 109
 		// me.testFn2();
