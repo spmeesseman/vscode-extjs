@@ -9,4 +9,5 @@ lib
 coverage
 .nyc_output
 !/client/testFixture/**/*
+!/server/src/lib/**/*
 .dccache
