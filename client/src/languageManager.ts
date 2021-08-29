@@ -18,7 +18,6 @@ import { pathExists } from "../../common/lib/fs";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
-import { CommentParser } from "./common/commentParser";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
 import { isMethod } from "../../common/src/extjs";
@@ -44,7 +43,7 @@ class ExtjsLanguageManager
 {   //
     // When an update requires a re-index, change the name of this flag
     //
-    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.7.2";
+    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.8.0";
 
     private isIndexing = false;
     private isValidating = false;
@@ -54,7 +53,6 @@ class ExtjsLanguageManager
     private serverRequest: ServerRequest;
     private reIndexTaskIds: Map<string, NodeJS.Timeout | undefined> = new Map();
     private dirNamespaceMap: Map<string, string> = new Map<string, string>();
-    private commentParser: CommentParser;
     private configParser: ConfigParser;
     private components: IComponent[] = [];
     private isTests = false;
@@ -83,7 +81,6 @@ class ExtjsLanguageManager
     constructor(serverRequest: ServerRequest)
     {
         this.serverRequest = serverRequest;
-        this.commentParser = new CommentParser();
         this.configParser = new ConfigParser();
     }
 
@@ -1494,23 +1491,6 @@ class ExtjsLanguageManager
             ], logLevel + 1, logPad + "      ");
 
             //
-            // The components documentation.  Defined at the very top of the class file, e.g.:
-            //
-            //     /**
-            //      * @class MyApp.Utilities
-            //      *
-            //      * Description for MyApp utilities class
-            //      *
-            //      * @singleton
-            //      * @since 2.0.0
-            //      */
-            //     Ext.define("MyApp.Utilities", {
-            //         ...
-            //     });
-            //
-            cmp.markdown = cmp.doc ? cmp.markdown = this.commentParser.toMarkdown(componentClass, cmp.doc, logPad + "   ") : undefined;
-
-            //
             // Map the filesystem path <-> component class.  Do a check to see if there are duplicate
             // class names found.  The `fsPath` parameter is null when this is being called from
             // indexAl() after reading and indexing from the fs cache
@@ -1529,39 +1509,6 @@ class ExtjsLanguageManager
                     window.showWarningMessage(`Duplicate component alias names found - ${a.name}`);
                 }
                 this.clsToFilesMapping[project][a.name] = cmp.fsPath;
-            });
-
-            //
-            // Map methods found to the component class
-            //
-            methods.forEach(method => {
-                method.markdown = this.commentParser.toMarkdown(method.name, method.doc, logPad + "   ");
-                if (method.params)
-                {
-                    log.write(`         add doc for method ${method.name}`, logLevel + 2, logPad);
-                    for (const p of method.params)
-                    {
-                        if (p.doc) {
-                            p.markdown = this.commentParser.toMarkdown(p.name, p.doc, logPad + "   ");
-                        }
-                    }
-                }
-            });
-
-            //
-            // Map config properties found to the component class
-            //
-            log.write(`      add doc for ${configs.length} configs`, logLevel + 1, logPad);
-            configs.forEach(config => {
-                config.markdown = this.commentParser.toMarkdown(config.name, config.doc, logPad + "   ");
-            });
-
-            //
-            // Map properties found to the component class
-            //
-            log.write(`      add doc for ${properties.length} properties`, logLevel + 1, logPad);
-            properties.forEach(property => {
-                property.markdown = this.commentParser.toMarkdown(property.name, property.doc, logPad + "   ");
             });
 
             //

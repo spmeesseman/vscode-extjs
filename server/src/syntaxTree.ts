@@ -2,9 +2,10 @@
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as log from "./log";
+import { parseDoc } from "./lib/commentParser";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
-    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType, IMixin, IAlternateClassName, IServerRequest
+    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType, IMixin, IAlternateClassName, IServerRequest, IJsDoc
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
@@ -102,10 +103,10 @@ export async function parseExtJsFile(options: IServerRequest)
                         };
 
                         if (isExpressionStatement(path.container)) {
-                            componentInfo.doc = getComments(path.container.leadingComments);
-                            componentInfo.since = getSince(componentInfo.doc);
-                            componentInfo.private = componentInfo.doc?.includes("@private");
-                            componentInfo.deprecated = componentInfo.doc?.includes("@deprecated");
+                            componentInfo.doc = getJsDoc(args[0].value, args[0].value, path.container.leadingComments);
+                            componentInfo.since = componentInfo.doc?.since;
+                            componentInfo.private = componentInfo.doc?.private;
+                            componentInfo.deprecated = componentInfo.doc?.deprecated;
                         }
 
                         parsedComponents.push(componentInfo);
@@ -287,13 +288,13 @@ function cacheComponents(componentsToCache: IComponent[])
 }
 
 
-function getComments(comments: readonly Comment[] | null)
+function getJsDoc(property: string, componentClass: string, comments: readonly Comment[] | null)
 {
     let commentsStr = "";
     comments?.forEach((c) => {
         commentsStr += c.value;
     });
-    return commentsStr;
+    return commentsStr ? parseDoc(property, componentClass, commentsStr, "   ") : undefined;
 }
 
 
@@ -415,7 +416,7 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
             {
                 log.write("      " + p.name, 3);
                 if (isJsDocObject(p) && p.doc) {
-                    log.write(p.doc.replace(/\n/g, "<br>"), 5);
+                    log.write(p.doc.body.replace(/\n/g, "<br>"), 5);
                 }
             }
         });
@@ -532,12 +533,12 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nam
                 const name = isIdentifier(it.key) ? it.key.name : undefined;
                 if (name)
                 {
-                    const doc = getComments(it.leadingComments);
+                    const doc = getJsDoc(name, componentClass, it.leadingComments);
                     p.push({
                         doc, name,
-                        since: getSince(doc),
-                        private: doc?.includes("@private"),
-                        deprecated: doc?.includes("@deprecated"),
+                        since: doc?.since,
+                        private: doc?.private || false,
+                        deprecated: doc?.deprecated || false,
                         start: it.loc!.start,
                         end: it.loc!.end,
                         getter: "get" + utils.toProperCase(name),
@@ -776,7 +777,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
             if (propertyName)
             {
-                const doc = getComments(m.leadingComments),
+                const doc = getJsDoc(propertyName, componentClass, m.leadingComments),
                       params = parseParams(m, propertyName, text, componentClass, doc),
                       variables = parseVariables(m, propertyName, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
                 methods.push({
@@ -787,14 +788,14 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     start: m.loc!.start,
                     end: m.loc!.end,
                     variables,
-                    returns: getReturns(doc),
-                    since: getSince(doc),
-                    private: doc?.includes("@private") || isPrivate,
-                    deprecated: doc?.includes("@deprecated"),
+                    returns: doc?.returns,
+                    since: doc?.since,
+                    private: doc?.private || isPrivate,
+                    deprecated: doc?.deprecated || false,
                     objectRanges: getMethodObjectRanges(m, propertyName),
                     bodyStart: m.value.loc!.start,
                     bodyEnd: m.value.loc!.end,
-                    static: doc?.includes("@static") || isStatic,
+                    static: doc?.static || isStatic,
                     range: utils.toRange(m.loc!.start, m.loc!.end),
                     value: undefined
                 });
@@ -836,16 +837,16 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
             const name = isIdentifier(p.key) ? p.key.name : undefined;
             if (name && ignoreProperties.indexOf(name) === -1)
             {
-                const doc = getComments(p.leadingComments);
+                const doc = getJsDoc(name, componentClass, p.leadingComments);
                 properties.push({
                     doc, name,
                     start: p.loc!.start,
                     end: p.loc!.end,
-                    since: getSince(doc),
-                    private: doc?.includes("@private") || isPrivate,
-                    deprecated: doc?.includes("@deprecated"),
+                    since: doc?.since,
+                    private: doc?.private || isPrivate,
+                    deprecated: doc?.deprecated || false,
                     componentClass,
-                    static: doc?.includes("@static") || isStatic,
+                    static: doc?.static || isStatic,
                     range: utils.toRange(p.loc!.start, p.loc!.end),
                     value: {
                         start: p.value.loc!.start,
@@ -881,7 +882,7 @@ function parseStringArray(property: ObjectProperty)
 }
 
 
-function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, doc: string): IParameter[]
+function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, doc: IJsDoc | undefined): IParameter[]
 {
     const params: IParameter[] = [];
     if (!text || !methodName) {
@@ -918,11 +919,11 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
     {
         for (const p of params)
         {
-            const paramDoc = doc.match(new RegExp(`@param\\s*(\\{[\\w\\.]+\\})*\\s*${p.name}[^\\r\\n]*`));
+            const paramDoc = doc.body.match(new RegExp(`@param\\s*(\\{[\\w\\.]+\\})*\\s*${p.name}[^\\r\\n]*`));
             if (paramDoc)
             {
                 // p.doc = "@param " + paramDoc[0].substring(paramDoc[0].indexOf(p.name) + p.name.length).trim();
-                p.doc = paramDoc[0].trim();
+                p.doc = parseDoc(p.name, paramDoc[0].trim(), parentCls, "   ");
                 if (paramDoc[1]) // captures type in for {Boolean}, {String}, etc
                 {
                     p.componentClass = paramDoc[1].replace(/[\{\}]/g, "");

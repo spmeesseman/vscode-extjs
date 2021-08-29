@@ -65,10 +65,9 @@ export interface IComponent extends IExtJsBase
     bodyEnd: IPosition;
     configs: IConfig[];
     deprecated?: boolean;
-    doc?: string;
+    doc?: IJsDoc;
     extend?: string;
     fsPath: string;
-    markdown?: any;
     methods: IMethod[];
     mixins?: IMixins;
     model?: string;
@@ -159,6 +158,39 @@ export interface IEdit
 }
 
 
+export interface IJsDocMarkup
+{
+    value: string;
+    kind: "plaintext" | "markdown" | "code";
+    language: "javascript";
+}
+
+
+export interface IJsDocParam
+{
+    default: string;
+    name: string;
+    type: string;
+}
+
+
+export interface IJsDoc
+{
+    body: string;
+    deprecated: boolean;
+    private: boolean;
+    pType: "property" | "param" | "cfg" | "class" | "method" | "unknown";
+    returns: string;
+    since: string;
+    singleton: boolean;
+    static: boolean;
+    title: string;
+    type: string;
+    params: IJsDocParam[];
+    markup: IJsDocMarkup[];
+}
+
+
 export interface ILogger
 {
     error: (msg: string | (string|Error)[] | Error, params?: (string|any)[][]) => void;
@@ -197,7 +229,7 @@ export interface IObjectRange extends IRange
 
 export interface IParameter extends IExtJsBase
 {
-    doc?: string;
+    doc?: IJsDoc;
     markdown?: any;
     methodName: string;
     type: VariableType;
@@ -219,7 +251,7 @@ export interface IPrimitive extends IExtJsBase
 
 export interface IPropertyBase extends IExtJsBase
 {
-    doc?: string;
+    doc?: IJsDoc;
     markdown?: any;
     private: boolean;
     deprecated: boolean;

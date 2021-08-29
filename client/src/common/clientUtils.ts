@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import { Range, Position, TextDocument, EndOfLine, Uri, workspace } from "vscode";
-import { IPosition, IComponent, extjs, IExtJsBase, IPrimitive, IObjectRange, IRange } from "../../../common";
+import { IPosition, IComponent, IExtJsBase, IPrimitive, IObjectRange, IRange } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
 

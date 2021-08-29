@@ -91,9 +91,12 @@ JsDoc:
 
 Miscellaneous:
 
-	☐ Move as much functionality to server side as possible
 	☐ Server module nyc instrumentation
 	☐ Server cannot break on common module code (ts) while debugging
+	Move as much functionality to server side as possible:
+		✔ JsDoc parser @done(21-08-29 11:52)
+		☐ Hover?
+		☐ Completion?
 		need to step into js code from calling ts server code
 	✔ Fault tolerance in AST parser @done(21-08-28 13:26)
 	✔ add 'clear ast cache' or 'reindex' task for chance becomes corrupt @done(21-08-08 14:15)
@@ -103,7 +106,7 @@ Miscellaneous:
 		currently only [namespace][componentname].  needs to be [project][namespace][componentname]
 	✔ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json) @done(21-08-13 16:52)
 	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index 
-	☐ FS cache - check to see if can get away with not persisting object range info
+	✘ FS cache - check to see if can get away with not persisting object range info @cancelled(21-08-29 07:17)
 		i think this is only used on the active document, which is always re-indexed anyway when opened
 	☐ New command to create Ext.define file from template
 		Prompt for dir/filename
@@ -111,6 +114,7 @@ Miscellaneous:
 	☐ New command to insert an Ext.create('Ext.util.DelayedTask')...
 		Maybe a setting to use either Ext.create or 'new Ext.util.DelayedTask'
 		Map to shourtcut key
+		A new tray window in explorer pane with different "insert" tasks
 	✔ Namespace can be removed from mapping references throughout code @done(21-08-26 18:12)
 	☐ Packages referenced from app.json should have own cache location
 		use pkg namespace name extracted from pacage.json in pkg dir
