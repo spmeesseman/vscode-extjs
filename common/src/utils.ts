@@ -12,6 +12,12 @@ export function btoa(str: string): string
 }
 
 
+export function isArray(value: any)
+{
+    return value && Array.isArray(value);
+}
+
+
 export function isExtJsFile(documentText: string | undefined)
 {
     const regex = /Ext\.define\s*\([\r\n]*['"]{1}[\r\n,a-zA-Z0-9.]+['"]{1}\s*,\s*[\r\n]*\s*{/m;
@@ -27,7 +33,7 @@ export function isGetterSetter(method: string): boolean
 
 export function isLowerCase(value: string)
 {
-    return value === value.toLowerCase() && value !== value.toUpperCase();
+    return value && value === value.toLowerCase() && value !== value.toUpperCase();
 }
 
 
@@ -74,7 +80,7 @@ export function isString(value: any): value is string
 
 export function isUpperCase(value: string)
 {
-    return value !== value.toLowerCase() && value === value.toUpperCase();
+    return value && value !== value.toLowerCase() && value === value.toUpperCase();
 }
 
 

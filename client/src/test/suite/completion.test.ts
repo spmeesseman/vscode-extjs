@@ -88,7 +88,7 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Inline class start", async () =>
+	test("Inline class", async () =>
 	{
 		//
 		// Inside function
@@ -198,7 +198,7 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Inline property start", async () =>
+	test("Inline property", async () =>
 	{   //
 		// Inside object - 'u' trigger
 		// Line 121-123
@@ -224,6 +224,25 @@ suite("Completion Tests", () =>
 				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
 			]
 		}, true, "inherited define properties inside physician object");
+	});
+
+
+	test("Inline model field", async () =>
+	{   //
+		// Inside object - 'u' trigger
+		// Line 248-250
+		// const user = VSCodeExtJS.model.User.create({
+		//
+		// });
+		//
+		await testCompletion(docUri, new vscode.Position(248, 3), "", {
+			items: [
+				{ label: "dtexpires date (m/d/Y H:i:s)", kind: vscode.CompletionItemKind.Field },
+				{ label: "id number", kind: vscode.CompletionItemKind.Field },
+				{ label: "password string", kind: vscode.CompletionItemKind.Field },
+				{ label: "userid string", kind: vscode.CompletionItemKind.Field }
+			]
+		}, true, "inline model fields");
 	});
 
 

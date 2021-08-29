@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import { Range, Position, TextDocument, EndOfLine, Uri, workspace } from "vscode";
-import { IPosition, IComponent, IExtJsBase, IPrimitive, IObjectRange, IRange } from "../../../common";
+import { IPosition, IComponent, IExtJsBase, IPrimitive, IObjectRange, IRange, IMethod } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
 
@@ -116,7 +116,7 @@ export function getMethodByPosition(position: Position, component: IComponent)
 // }
 
 
-export function getObjectRangeByPosition(position: Position, component: IComponent)
+export function getObjectRangeByPosition(position: Position, component: IComponent | IMethod)
 {   //
     // Return last found, this will be the most inner object
     //

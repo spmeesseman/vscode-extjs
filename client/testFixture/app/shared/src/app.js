@@ -241,6 +241,13 @@ Ext.define('VSCodeExtJS',
 		{
 			type: 'string'
 		}]
-	}
+	},
+
+	testFn12: function()
+	{
+		const user = VSCodeExtJS.model.User.create({
+			
+		});
+	},
 
 });
