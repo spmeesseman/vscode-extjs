@@ -884,8 +884,8 @@ function parseParams(objEx: ObjectProperty, methodName: string, text: string | u
             {
                 if (docParam.name === p.name)
                 {
-                    p.doc = docParam.body;
-                    p.docTitle = docParam.title;
+                    // p.doc = docParam.body;
+                    // p.docTitle = docParam.title;
                     p.componentClass = docParam.type; // match[1].replace(/[\{\}]/g, "");
                     p.type = getVariableType(p.componentClass.toLowerCase());
                 }

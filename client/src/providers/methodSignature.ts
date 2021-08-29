@@ -94,12 +94,17 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 {
                     for (const p of method.params)
                     {
-                        const markdown = new MarkdownString();
-                        if (p.doc) {
-                            if (p.docTitle) {
-                                markdown.appendCodeblock(p.docTitle);
+                        let markdown: MarkdownString | undefined;
+                        if (method.doc && method.doc.params)
+                        {
+                            for (const pDoc of method.doc.params)
+                            {
+                                if (pDoc.name === p.name) {
+                                    markdown = new MarkdownString().appendCodeblock(pDoc.title).appendMarkdown(pDoc.body);
+                                }
                             }
-                            markdown.appendMarkdown(p.doc);
+                        }
+                        if (markdown) {
                             params.push(new ParameterInformation(p.name, markdown));
                         }
                         else {

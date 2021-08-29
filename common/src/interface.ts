@@ -222,8 +222,8 @@ export interface IObjectRange extends IRange
 
 export interface IParameter extends IExtJsBase
 {
-    doc?: string;
-    docTitle?: string;
+    // doc?: string;
+    // docTitle?: string;
     methodName: string;
     type: VariableType;
 }
