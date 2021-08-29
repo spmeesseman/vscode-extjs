@@ -3,11 +3,12 @@
 		"target": "es2019",
 		"lib": ["ES2019"],
 		"module": "commonjs",
-		"moduleResolution": "node",
-		"sourceMap": true,
-		"strict": true,
 		"outDir": "../dist/server",
-		"rootDir": "src"
+		"moduleResolution": "node",
+		"rootDir": "src",
+		"strict": true,
+		"sourceMap": true,
+		"allowSyntheticDefaultImports":true
 	},
 	"references": [
 	  	{ "path": "../common" }
