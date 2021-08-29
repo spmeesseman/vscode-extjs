@@ -26,7 +26,7 @@ Completion:
 	✔ Implement 'statics' block - display on classname typing, not instance @done(21-08-18 20:35)
 	✔ Completion for store 'type' same as 'xtype' @done(21-08-21 14:19)
 	☐ Should work for a string in a requires/uses/models/stores block should display the doc for that class
-	☐ Static create() for stores/models/?
+	☐ Static create() for stores/models/? @started(21-08-29 16:04)
 	✔ The 'privates' block should be applied to instance components @done(21-08-21 03:51)
 		object completion showing model fields as opposed to properties/configs
 	☐ Snippet completion, i.e. sorte... and the completion item would be the entire sorter object
@@ -42,8 +42,11 @@ Completion:
 	☐ Apply defaults for 'items'
 		look for xtype and apply same logic as if it was in item object itself
 	☐ Grid columns, column config
-	☐ Statics on main app inline.  i.e. GEMS.user.  'user' does not show in completion items
-	☐ Main app inline.  i.e. GEMS.model, GEMS.store, 'model', 'store' do not show in completion items
+	☐ Statics on main app inline.
+		i.e. GEMS.user.  'user' properties do not have completion
+		Scan for GEMS.user= in alll files?  Or create static file mapping to types (like eslint globals)
+	☐ Main app inline
+		i.e. GEMS.model, GEMS.store, 'model', 'store' completion does not show any items
 	☐ Highlight a word in a comment, type x, and the xtype completion items appear.
 		behind comments no completion should happen
 
@@ -84,7 +87,7 @@ JsDoc:
 		i.e. 'class component: Ext.Component', make Ext.Component a gotto def link 
 	☐ Hovering over a string in a requires/uses/models/stores block should display the doc for that class
 		GoTo Def does.
-	☐ Main parsed hover markdown needs reformatting
+	✔ Main parsed hover markdown needs reformatting @done(21-08-29 15:41)
 		commentParser.js
 		Put type header in parser instead of adding separately in completion provider
 		Format and remove all @ markers
@@ -108,13 +111,11 @@ Miscellaneous:
 	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index 
 	✘ FS cache - check to see if can get away with not persisting object range info @cancelled(21-08-29 07:17)
 		i think this is only used on the active document, which is always re-indexed anyway when opened
-	☐ New command to create Ext.define file from template
-		Prompt for dir/filename
-		Map to shourtcut key
-	☐ New command to insert an Ext.create('Ext.util.DelayedTask')...
-		Maybe a setting to use either Ext.create or 'new Ext.util.DelayedTask'
-		Map to shourtcut key
-		A new tray window in explorer pane with different "insert" tasks
+	☐ New command and explorer tray to insert ExtJs code snippets
+		e.g. an Ext.create('Ext.util.DelayedTask', {...
+		create Ext.define file from template
+			Prompt for dir/filename
+		map to shortcut keys setting
 	✔ Namespace can be removed from mapping references throughout code @done(21-08-26 18:12)
 	☐ Packages referenced from app.json should have own cache location
 		use pkg namespace name extracted from pacage.json in pkg dir
