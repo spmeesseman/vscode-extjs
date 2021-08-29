@@ -9,7 +9,7 @@
         "vscode": "^1.44.0"
     },
     "publisher": "spmeesseman",
-    "license": "MIT",
+    "license": "See LICENSE",
     "homepage": "https://github.com/spmeesseman/vscode-extjs/blob/master/README.md",
     "repository": {
         "type": "git",
