@@ -54,6 +54,8 @@ Definition:
 
 	✔ Store - go to definition for 'type' same as 'xtype' @done(21-08-21 18:54)
 	☐ Models
+	☐ Children of alias do not work
+		e.g. AppUtils.GridColumn
 
 Diagnostics:
 
@@ -77,6 +79,14 @@ Diagnostics:
 	✔ Model reference {} object - 'type' field is showing invalid @done(21-08-26 18:11)
 	✔ Model fields 'type' i.e. 'string' is getting validated and showing as no reference found @done(21-08-25 23:07)
 		make an 'ignoreTypes' srray setting, include 'string', 'number', etc, and user can add to list
+	☐ STore types are invalidated if they are not in 'store' or ciewModel 'stores'
+		e.g. SettingsWinModel.js this.setStores()
+	☐ Action to ignore additional 'type' fields
+		should reference parent object - can leave types on for stores, etc, but turn off for other parent obj
+	☐ Add grid 'filter' type to validation
+		Grid filter usees 'type' to reference stores in some cases e.g. User Mgmt grid.js filter: { type: 'yesno' ... }
+	☐ Deeply nested store types still invalidate
+		e.g. User Mgmt AppUtilities.js line 6978
 
 JsDoc:
 
