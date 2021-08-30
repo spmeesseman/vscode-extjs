@@ -17,8 +17,7 @@ Ext.define('VSCodeExtJS.model.User',
         type : 'string'
     },
     {
-        name : 'password',
-        type : 'string'
+        name : 'password'
     },
     {
         name : 'dtexpires',

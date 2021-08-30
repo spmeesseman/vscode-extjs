@@ -921,7 +921,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             v.forEach((f: any) => {
                 const insertStr = `${f.name}: ${!f.type || f.type === "string" ? config.quoteChar + config.quoteChar : ""}`,
                       dateFmt = f.type === "date" ? (f.dateFormat ? " (" + f.dateFormat + ")" : "") : "",
-                      typeFmt = f.type ? f.type : "string",
+                      typeFmt = f.type ?? "string",
                       completionStr = this.getLabel(f.name, `${typeFmt}${dateFmt}`),
                       completion = new CompletionItem(completionStr, CompletionItemKind.Field);
                 completion.insertText = insertStr;

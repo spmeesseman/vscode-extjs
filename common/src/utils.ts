@@ -12,6 +12,29 @@ export function btoa(str: string): string
 }
 
 
+/**
+ * Checks if a value exists in the given array
+ *
+ * * **IMPORTANT**  This function will return 0 on success if the item is the 1st in the array,
+ * always check for a return value of false, and not just using a !existsInArray to determine if
+ * the item exists
+ *
+ * @since 0.8.0
+ * @param arr The array to check
+ * @param item The value to check in the given array for
+ * @returns The index of the item in the array if the value exists in the arrray, `false` otherwise
+ */
+ export function existsInArray(arr: any[], item: any): boolean | number
+ {
+     for (let i = 0; i < arr.length; i++) {
+         if (item === arr[i]) {
+             return i;
+         }
+     }
+     return false;
+ }
+
+
 export function isArray(value: any)
 {
     return value && Array.isArray(value);
@@ -99,6 +122,34 @@ export function pick<T, K extends keyof T>(obj: T, ...keys: K[])
       ret[key] = obj[key];
     });
     return ret;
+}
+
+
+export function pushIfNotExists(arr: any[], item: any)
+{
+    if (arr.indexOf(item) === -1) {
+        arr.push(item);
+    }
+}
+
+
+export function removeFromArray(arr: any[], item: any)
+{
+    let idx = -1;
+    let idx2 = -1;
+
+    for (const a of arr)
+    {
+        idx++;
+        if (item === a) {
+            idx2 = idx;
+            return false;
+        }
+    }
+
+    if (idx2 !== -1 && idx2 < arr.length) {
+        arr.splice(idx2, 1);
+    }
 }
 
 

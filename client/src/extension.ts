@@ -9,17 +9,23 @@ import registerIgnoreErrorCommand from "./commands/ignoreError";
 import registerWaitReadyCommand from "./commands/waitReady";
 import ExtjsLanguageManager, { ILineProperties } from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
-import { Disposable, ExtensionContext, OutputChannel, Position, TextDocument, window } from "vscode";
+import { views } from "./providers/tasks/views";
+import { ConfigurationChangeEvent, Disposable, ExtensionContext, OutputChannel, Position, tasks, TextDocument, window, workspace } from "vscode";
 import { LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from "vscode-languageclient";
 import { registerProviders } from "./providers/manager";
 import { initStorage } from "./common/storage";
 import { initFsStorage } from "./common/fsStorage";
+import { TaskTreeDataProvider } from "./providers/tasks/tree";
+import { configuration } from "./common/configuration";
+import { ExtJsTaskProvider } from "./providers/tasks/task";
 
 
 let client: LanguageClient;
+let taskTree: TaskTreeDataProvider | undefined;
 let disposables: Disposable[];
 const clients: Map<string, LanguageClient> = new Map();
 
+export const providers: Map<string, ExtJsTaskProvider> = new Map();
 export let extjsLangMgr: ExtjsLanguageManager;
 
 
@@ -67,6 +73,46 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     registerCommands(context);
 
     //
+    // Register internal task providers.  Npm, VScode type tasks are provided
+    // by VSCode, not internally.
+    //
+    const taskProvider = new ExtJsTaskProvider();
+    context.subscriptions.push(tasks.registerTaskProvider("extjs", taskProvider));
+    providers.set("extjs", taskProvider);
+
+    //
+    // Register the task provider
+    //
+    if (configuration.get<boolean>("enableTaskView")) {
+        taskTree = registerExplorer("taskExplorer", context);
+    }
+
+    //
+    // Refresh tree when folders are added/removed from the workspace
+    //
+    const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async(_e) =>
+    {
+        if (configuration.get<boolean>("enableTaskExplorer"))
+        {
+            if (taskTree) {
+                await taskTree.refresh("newWsFolder");
+            }
+            else {
+                taskTree = registerExplorer("taskExplorer", context);
+            }
+        }
+    });
+    context.subscriptions.push(workspaceWatcher);
+
+    //
+    // Register configurations/settings change watcher
+    //
+    const d = workspace.onDidChangeConfiguration(async e => {
+        await processConfigChanges(context, e);
+    });
+    context.subscriptions.push(d);
+
+    //
     // Init/clear FS storage for syntax caching when a new project/workspace folder is added/removed
     //
     // const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async(_e) =>
@@ -99,6 +145,22 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
 }
 
 
+async function processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
+{
+    if (e.affectsConfiguration("extjsIntellisense.enableTaskExplorer"))
+    {
+        if (configuration.get<boolean>("enableTaskExplorer")) {
+            if (taskTree) {
+                await taskTree.refresh("config");
+            }
+            else {
+                taskTree = registerExplorer("taskExplorer", context);
+            }
+        }
+    }
+}
+
+
 function registerCommands(context: ExtensionContext)
 {
     registerEnsureRequiresCommand(context);
@@ -107,6 +169,32 @@ function registerCommands(context: ExtensionContext)
     registerIndexFilesCommand(context);
     registerClearAstCommand(context);
     registerWaitReadyCommand(context);
+}
+
+
+function registerExplorer(name: string, context: ExtensionContext, enabled?: boolean): TaskTreeDataProvider | undefined
+{
+    log.write("Register tasks tree provider '" + name + "'");
+
+    if (enabled !== false)
+    {
+        if (workspace.workspaceFolders)
+        {
+            const treeDataProvider = new TaskTreeDataProvider(name, context);
+            const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
+            const view = views.get(name);
+            if (view) {
+                context.subscriptions.push(view);
+                log.write("   Tree data provider registered'" + name + "'");
+            }
+            return treeDataProvider;
+        }
+        else {
+            log.write("✘ No workspace folders!!!");
+        }
+    }
+
+    return undefined;
 }
 
 
