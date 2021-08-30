@@ -3,10 +3,9 @@ import { Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { configuration } from "./configuration";
 import { IConf } from  "../../../common";
 import * as log from "./log";
-import { deleteDir, pathExists, readFile } from "../../../common/lib/fs";
+import { pathExists, readFile } from "../../../common/lib/fs";
 import * as json5 from "json5";
 import * as path from "path";
-import { LogTraceNotification } from "vscode-languageclient";
 
 
 export class ConfigParser

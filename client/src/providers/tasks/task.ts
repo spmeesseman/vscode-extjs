@@ -1,10 +1,12 @@
 
 import { Task, TaskProvider, WorkspaceFolder, ShellExecution, Uri, workspace, ShellExecutionOptions } from "vscode";
 import * as path from "path";
+import * as json5 from "json5";
 import * as util from "../../common/clientUtils";
 import * as log from "../../common/log";
 import { ExtJsTaskDefinition } from "./definition";
 import { configuration } from "../../common/configuration";
+import { readFile } from "../../../../common";
 
 
 export class ExtJsTaskProvider implements TaskProvider
@@ -45,7 +47,7 @@ export class ExtJsTaskProvider implements TaskProvider
             script: target,
             target,
             fileName: path.basename(uri.fsPath),
-            path: path.relative(folder.uri.fsPath, uri.fsPath),
+            path: path.dirname(path.relative(folder.uri.fsPath, uri.fsPath)),
             cmdLine: "sencha app build",
             takesArgs: false,
             uri
@@ -54,39 +56,30 @@ export class ExtJsTaskProvider implements TaskProvider
     }
 
 
-    public getDocumentPosition(scriptName: string | undefined, documentText: string | undefined): number
+    public getDocumentPosition(scriptName: string, documentText: string): number
     {
-        return 0;
+        return documentText.indexOf(scriptName, documentText.indexOf("\"builds\"") + 1) || 0;
     }
 
 
     public async readTasks(logPad = ""): Promise<Task[]>
     {
-        log.methodStart("detect app-publisher files", 1, logPad, true);
+        log.methodStart("detect extjs app.json files", 1, logPad, true);
 
         const allTasks: Task[] = [];
-        const visitedFiles: Set<string> = new Set();
 
-        if (workspace.workspaceFolders)
+        const appDotJsonUris = await workspace.findFiles("**/app.json");
+        for (const uri of appDotJsonUris)
         {
-            for (const fobj of workspace.workspaceFolders)
-            {
-                if (!util.isExcluded(fobj.uri.path) && !visitedFiles.has(fobj.uri.fsPath))
-                {
-                    visitedFiles.add(fobj.uri.fsPath);
-                    allTasks.push(...await this.readUriTasks(fobj.uri));
-                }
-            }
+            allTasks.push(...await this.readUriTasks(uri));
         }
 
-        log.value(logPad + "   # of tasks", allTasks.length, 2, logPad);
-        log.methodDone("detect extjs configuration files", 1, logPad, true);
-
+        log.methodDone("detect extjs app.json files", 1, logPad, true, [["# of tasks", allTasks.length]]);
         return allTasks;
     }
 
 
-    private _getKind(cmdLine: string, defaultDef: ExtJsTaskDefinition): ExtJsTaskDefinition
+    private getKind(cmdLine: string, defaultDef: ExtJsTaskDefinition): ExtJsTaskDefinition
     {
         return { ...defaultDef, ...{ cmdLine } };
     }
@@ -95,49 +88,46 @@ export class ExtJsTaskProvider implements TaskProvider
     public async readUriTasks(uri: Uri, wsFolder?: WorkspaceFolder, logPad = ""): Promise<Task[]>
     {
         const cwd = path.dirname(uri.fsPath),
-              folder = wsFolder || workspace.getWorkspaceFolder(uri),
-              groupSeparator = configuration.get<string>("groupSeparator");
+              folder = wsFolder || workspace.getWorkspaceFolder(uri);
 
         if (!folder) {
             return [];
         }
 
+        log.methodStart("read extjs file uri task", 1, logPad, true, [["path", uri?.fsPath], ["project folder", folder?.name]]);
+
         const defaultDef = this.getDefaultDefinition(undefined, folder, uri),
               options: ShellExecutionOptions = { cwd },
               tasks: Task[] = [],
-              taskDefs: any = [];
+              appJson = json5.parse(await readFile(uri.fsPath));
 
-        //
-        // For ap files in the same dir, nsamed with a tag, e.g.:
-        //    .publishrc.spm.json
-        //
-        let apLabel = "";
-        const match = uri.fsPath.match(/\.publishrc\.(.+)\.(?:js(?:on)?|ya?ml)$/i);
-        if (match && match.length > 1 && match[1])
+        if (appJson && appJson.builds)
         {
-            apLabel =  match[1];
+            const sep = "___";
+            Object.keys(appJson.builds).forEach((buildName: string) =>
+            {
+                const buildNameFmt = buildName.toLowerCase();
+                let cmdLine = `sencha app build ${buildName} development`,
+                    label = `cmd${sep}build${sep}dev${sep}${buildNameFmt}`,
+                    exec = new ShellExecution(cmdLine, options);
+                tasks.push(new Task(this.getKind(cmdLine, defaultDef), folder, label, "extjs", exec, undefined));
+
+                cmdLine = `sencha app build ${buildName} production"`;
+                label = `cmd${sep}build${sep}production${sep}${buildNameFmt}`;
+                exec = new ShellExecution(cmdLine, options);
+                tasks.push(new Task(this.getKind(cmdLine, defaultDef), folder, label, "extjs", exec, undefined));
+
+                cmdLine = `cross-env webpack --env.profile=${buildName} --env.watch=no --env.environment=development --env.treeshake=yes`;
+                label = `webpack${sep}build${sep}dev${sep}${buildNameFmt}`;
+                exec = new ShellExecution(cmdLine, options);
+                tasks.push(new Task(this.getKind(cmdLine, defaultDef), folder, label, "extjs", exec, undefined));
+
+                cmdLine = `cross-env webpack --env.profile=${buildName} --env.watch=no --env.environment=production --env.treeshake=yes`;
+                label = `webpack${sep}build${sep}production${sep}${buildNameFmt}`;
+                exec = new ShellExecution(cmdLine, options);
+                tasks.push(new Task(this.getKind(cmdLine, defaultDef), folder, label, "extjs", exec, undefined));
+            });
         }
-
-        log.methodStart("read extjs file uri task", 1, logPad, true, [["path", uri?.fsPath], ["project folder", folder?.name]]);
-
-        // taskDefs.push({
-        //     label: "general" + groupSeparator + "config",
-        //     cmdLine: "npx app-publisher --version"
-        // });
-
-        //
-        // Create the shell execution objects
-        //
-        taskDefs.forEach((def: any) => {
-            let apFmtLabel = "";
-            if (apLabel) {
-                apFmtLabel = ` (${apLabel.toLowerCase()})`;
-                def.cmdLine += ` --config-name ${apLabel}`;
-            }
-            const exec = new ShellExecution(def.cmdLine, options);
-            tasks.push(new Task(this._getKind(def.cmdLine, defaultDef), folder,
-                                `${def.label}${apFmtLabel}`, "app-publisher", exec, undefined));
-        });
 
         log.methodDone("read app-publisher file uri tasks", 1, logPad, true);
 

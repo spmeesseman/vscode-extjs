@@ -135,7 +135,6 @@
         "@babel/traverse": "^7.12.13",
         "@babel/types": "^7.12.13",
         "json5": "^2.2.0",
-        "jsonc-parser": "^3.0.0",
         "minimatch": "^3.0.4",
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
@@ -176,7 +175,7 @@
             {
                 "command": "vscode-extjs:tasks.run",
                 "title": "%command.run%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "light": "res/light/continue.svg",
                     "dark": "res/dark/continue.svg"
@@ -185,7 +184,7 @@
             {
                 "command": "vscode-extjs:tasks.runNoTerm",
                 "title": "%command.runNoTerm%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "light": "res/light/continue.svg",
                     "dark": "res/dark/continue.svg"
@@ -194,7 +193,7 @@
             {
                 "command": "vscode-extjs:tasks.runWithArgs",
                 "title": "%command.runWithArgs%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "light": "res/light/continue.svg",
                     "dark": "res/dark/continue.svg"
@@ -203,7 +202,7 @@
             {
                 "command": "vscode-extjs:tasks.runLastTask",
                 "title": "%command.runLastTask%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "light": "res/light/continue.svg",
                     "dark": "res/dark/continue.svg"
@@ -212,12 +211,12 @@
             {
                 "command": "vscode-extjs:tasks.addToExcludes",
                 "title": "%command.addToExcludes%",
-                "when": "config.extjsIntellisense.enableTaskView"
+                "when": "config.extjsIntellisense.enableTaskExplorer"
             },
             {
                 "command": "vscode-extjs:tasks.addRemoveFromFavorites",
                 "title": "%command.addRemoveFromFavorites%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "dark": "res/dark/favorite.svg",
                     "light": "res/light/favorite.svg"
@@ -226,12 +225,12 @@
             {
                 "command": "vscode-extjs:tasks.clearSpecialFolder",
                 "title": "CLR",
-                "when": "config.extjsIntellisense.enableTaskView"
+                "when": "config.extjsIntellisense.enableTaskExplorer"
             },
             {
                 "command": "vscode-extjs:tasks.pause",
                 "title": "%command.pause%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "dark": "res/dark/pause.svg",
                     "light": "res/light/pause.svg"
@@ -240,7 +239,7 @@
             {
                 "command": "vscode-extjs:tasks.restart",
                 "title": "%command.restart%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "dark": "res/dark/restart.svg",
                     "light": "res/light/restart.svg"
@@ -249,7 +248,7 @@
             {
                 "command": "vscode-extjs:tasks.open",
                 "title": "%command.open%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "dark": "res/dark/file.svg",
                     "light": "res/light/file.svg"
@@ -258,7 +257,7 @@
             {
                 "command": "vscode-extjs:tasks.openTerminal",
                 "title": "%command.openTerminal%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "dark": "res/dark/terminal.svg",
                     "light": "res/light/terminal.svg"
@@ -267,7 +266,7 @@
             {
                 "command": "vscode-extjs:tasks.stop",
                 "title": "%command.stop%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "dark": "res/dark/stop.svg",
                     "light": "res/light/stop.svg"
@@ -276,7 +275,7 @@
             {
                 "command": "vscode-extjs:tasks.refresh",
                 "title": "%command.refresh%",
-                "when": "config.extjsIntellisense.enableTaskView",
+                "when": "config.extjsIntellisense.enableTaskExplorer",
                 "icon": {
                     "light": "res/light/refresh.svg",
                     "dark": "res/dark/refresh.svg"
@@ -285,7 +284,7 @@
             {
                 "command": "vscode-extjs:tasks.showOutput",
                 "title": "%command.showOutput%",
-                "when": "config.extjsIntellisense.enableTaskView"
+                "when": "config.extjsIntellisense.enableTaskExplorer"
             }
         ],
         "configurationDefaults": {
@@ -322,8 +321,8 @@
                 },
                 "extjsIntellisense.enableTaskExplorer": {
                     "type": "boolean",
-                    "default": true,
-                    "markdownDescription": "Enable the ExtJs `Tasks View`."
+                    "default": false,
+                    "markdownDescription": "Enable the ExtJs `Tasks View`"
                 },
                 "extjsIntellisense.exclude": {
                     "type": "array",
@@ -486,7 +485,7 @@
             "explorer": [
                 {
                     "id": "taskExplorer",
-                    "name": "EXTJS INTELLISENSE",
+                    "name": "EXTJS INTELLISENSE (NOT AVAILABLE)",
                     "when": "config.extjsIntellisense.enableTaskExplorer",
                     "icon": "res/gears-r.svg"
                 }
@@ -508,263 +507,147 @@
             "view/item/context": [
                 {
                     "command": "vscode-extjs:tasks.open",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == script"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == script"
                 },
                 {
                     "command": "vscode-extjs:tasks.open",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptFile"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile"
                 },
                 {
                     "command": "vscode-extjs:tasks.open",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptRunning"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning"
                 },
                 {
                     "command": "vscode-extjs:tasks.run",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == script"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == script"
                 },
                 {
                     "command": "vscode-extjs:tasks.run",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptFile"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile"
                 },
                 {
                     "command": "vscode-extjs:tasks.runWithArgs",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptFile"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile"
                 },
                 {
                     "command": "vscode-extjs:tasks.runNoTerm",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == script"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == script"
                 },
                 {
                     "command": "vscode-extjs:tasks.runNoTerm",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptFile"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile"
                 },
                 {
                     "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileApp-publisher"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == taskFileExtjs"
                 },
                 {
                     "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileNpm"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileWorkspace"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFilePython"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileAnt"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFilePerl"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileGradle"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileMake"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileGrunt"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileGulp"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileBash"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileBatch"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFilePowershell"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileRuby"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskFileNsis"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupApp-publisher"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupNpm"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupWorkspace"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupPython"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupPipenv"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupAnt"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupPerl"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupGradle"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupMake"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupGrunt"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupGulp"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupBash"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupBatch"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupPowershell"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupRuby"
-                },
-                {
-                    "command": "vscode-extjs:tasks.addToExcludes",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == taskGroupNsis"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == taskGroupExtjs"
                 },
                 {
                     "command": "vscode-extjs:tasks.addRemoveFromFavorites",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == script"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == script"
                 },
                 {
                     "command": "vscode-extjs:tasks.addRemoveFromFavorites",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptFile"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile"
                 },
                 {
                     "command": "vscode-extjs:tasks.addRemoveFromFavorites",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptRunning"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning"
                 },
                 {
                     "command": "vscode-extjs:tasks.clearSpecialFolder",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == favorites"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == favorites"
                 },
                 {
                     "command": "vscode-extjs:tasks.clearSpecialFolder",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == lasttasks"
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == lasttasks"
                 },
                 {
                     "command": "vscode-extjs:tasks.runNoTerm",
-                    "when": "config.extjsIntellisense.enableTaskView && config.extjsIntellisense.showExecuteWithNoTerminalButton && view == taskExplorer && viewItem == script",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && config.extjsIntellisense.showExecuteWithNoTerminalButton && view == taskExplorer && viewItem == script",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.runNoTerm",
-                    "when": "config.extjsIntellisense.enableTaskView && config.extjsIntellisense.showExecuteWithNoTerminalButton && view == taskExplorer && viewItem == scriptFile",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && config.extjsIntellisense.showExecuteWithNoTerminalButton && view == taskExplorer && viewItem == scriptFile",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.runWithArgs",
-                    "when": "config.extjsIntellisense.enableTaskView && config.extjsIntellisense.showExecuteWithArgumentsButton && view == taskExplorer && viewItem == scriptFile",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && config.extjsIntellisense.showExecuteWithArgumentsButton && view == taskExplorer && viewItem == scriptFile",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.run",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == script",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == script",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.run",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptFile",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.open",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == script",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == script",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.open",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptFile",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.open",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptRunning",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.openTerminal",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptRunning",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.restart",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptRunning",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.pause",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptRunning",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.stop",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == scriptRunning",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.addRemoveFromFavorites",
-                    "when": "config.extjsIntellisense.enableTaskView && config.extjsIntellisense.showFavoritesButton && view == taskExplorer && viewItem == script",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == script",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.addRemoveFromFavorites",
-                    "when": "config.extjsIntellisense.enableTaskView && config.extjsIntellisense.showFavoritesButton && view == taskExplorer && viewItem == scriptFile",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptFile",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.addRemoveFromFavorites",
-                    "when": "config.extjsIntellisense.enableTaskView && config.extjsIntellisense.showFavoritesButton && view == taskExplorer && viewItem == scriptRunning",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == scriptRunning",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.clearSpecialFolder",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == favorites",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == favorites",
                     "group": "inline"
                 },
                 {
                     "command": "vscode-extjs:tasks.clearSpecialFolder",
-                    "when": "config.extjsIntellisense.enableTaskView && view == taskExplorer && viewItem == lasttasks",
+                    "when": "config.extjsIntellisense.enableTaskExplorer && view == taskExplorer && viewItem == lasttasks",
                     "group": "inline"
                 }
             ]

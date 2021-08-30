@@ -89,47 +89,28 @@ export default class TaskFile extends TreeItem
      */
     constructor(context: ExtensionContext, folder: TaskFolder, taskDef: TaskDefinition, source: string, relativePath: string, groupLevel: number, group?: boolean, label?: string, logPad = "")
     {
-        super(TaskFile.getLabel(taskDef, label ? label : source, relativePath, group || false), TreeItemCollapsibleState.Collapsed);
+        super(TaskFile.getLabel(label ? label : source, relativePath, group || false), TreeItemCollapsibleState.Collapsed);
 
         this.folder = folder;
-        this.path = this.label !== "vscode" ? relativePath : ".vscode";
-        this.nodePath = this.label !== "vscode" ? relativePath : "vscode";
+        this.path = relativePath;
+        this.nodePath = relativePath;
         this.taskSource = source;
         this.isGroup = (group === true);
         this.isUser = false;
         this.groupLevel = 0;
 
-        //
-        // Reference ticket #133, vscode folder should not use a path appendature in it's folder label
-        // in the task tree, there is only one path for vscode/workspace tasks, /.vscode.  The fact that
-        // you can set the path variable inside a vscode task changes the relativePath for the task,
-        // causing an endless loop when putting the tasks into groups (see taskTree.createTaskGroupings).
-        // All other task types will have a relative path of it's location on the filesystem (with
-        // exception of TSC, which is handled elsewhere).
-        //
-        this.path = this.label !== "vscode" ? relativePath : ".vscode";
-
         if (group && this.label) {
             this.nodePath = path.join(this.nodePath, this.label.toString());
-        }
-
-        if (!this.nodePath && this.label === "vscode") {
-            this.nodePath = path.join(".vscode", this.label);
         }
 
         if (!this.nodePath) { // force null or undefined to empty string
             this.nodePath = "";
         }
 
-        this.fileName = this.getFileNameFromSource(source, folder, taskDef, true);
+        this.fileName = path.basename(taskDef.fileName);
         if (folder.resourceUri)
         {
-            if (relativePath && source !== "Workspace") {
-                this.resourceUri = Uri.file(path.join(folder.resourceUri.fsPath, relativePath, this.fileName));
-            }
-            else {
-                this.resourceUri = Uri.file(path.join(folder.resourceUri.fsPath, this.fileName));
-            }
+            this.resourceUri = Uri.file(path.join(folder.resourceUri.fsPath, relativePath, this.fileName));
         }
 
         if (!group)
@@ -177,108 +158,22 @@ export default class TaskFile extends TreeItem
      *
      * @param treeNode The node/item to add to this TaskFile node.
      */
-    private static getLabel(taskDef: TaskDefinition, source: string, relativePath: string, group: boolean): string
+    private static getLabel(source: string, relativePath: string, group: boolean): string
     {
-        let label = source;
-
-        if (source === "Workspace")
+        if (group !== true && relativePath.length > 0 && relativePath !== ".")
         {
-            label = "vscode";
-        }
-
-        if (group !== true)
-        {
-            if (source === "ant")
-            {   //
-                // For ant files not named build.xml, display the file name too
-                //
-                if (taskDef.fileName && !taskDef.fileName.match(/build.xml/i))
-                {
-                    if (relativePath.length > 0 && relativePath !== ".vscode" && taskDef.type)
-                    {
-                        return label + " (" + relativePath.substring(0, relativePath.length - 1).toLowerCase() + "/" + taskDef.fileName.toLowerCase() + ")";
-                    }
-                    return (label + " (" + taskDef.fileName.toLowerCase() + ")");
-                }
-            }
-
-            if (source === "app-publisher")
-            {   //
-                // For ap files in the same dir, nsamed with a tag, e.g.:
-                //    .publishrc.spm.json
-                //
-                const match = taskDef.fileName.match(/\.publishrc\.(.+)\.(?:js(?:on)?|ya?ml)$/i);
-                if (match && match.length > 1 && match[1])
-                {
-                    return (label + " (" + match[1].toLowerCase() + ")");
-                }
-            }
-
-            //
-            // Reference ticket #133, vscode folder should not use a path appendature in it's folder label
-            // in the task tree, there is only one path for vscode/workspace tasks, /.vscode.  The fact that
-            // you can set the path variable inside a vscode task changes the relativePath for the task,
-            // causing an endless loop when putting the tasks into groups (see taskTree.createTaskGroupings).
-            // All othr task types will have a relative path of it's location on the filesystem (with
-            // eception of TSC, which is handled elsewhere).
-            //
-            if (relativePath.length > 0 && relativePath !== ".vscode" && source !== "Workspace")
+            if (relativePath.endsWith("\\") || relativePath.endsWith("/")) // trim slash chars
             {
-                if (relativePath.endsWith("\\") || relativePath.endsWith("/")) // trim slash chars
-                {
-                    return label + " (" + relativePath.substring(0, relativePath.length - 1).toLowerCase() + ")";
-                }
-                else {
-                    return label + " (" + relativePath.toLowerCase() + ")";
-                }
+                return source + " (" + relativePath.substring(0, relativePath.length - 1).toLowerCase() + ")";
+            }
+            else {
+                return source + " (" + relativePath.toLowerCase() + ")";
             }
         }
 
-        return label.toLowerCase();
+        return source.toLowerCase();
     }
 
-
-    /**
-     * @method addTreeNode
-     * @private
-     *
-     * @param treeNode The node/item to add to this TaskFile node.
-     *
-     * @returns File name
-     */
-    private getFileNameFromSource(source: string, folder: TaskFolder, taskDef: TaskDefinition, incRelPathForCode?: boolean): string
-    {
-        //
-        // Ant tasks or any tasks provided by this extension will have a "fileName" definition
-        //
-        if (taskDef.fileName)
-        {
-            return path.basename(taskDef.fileName);
-        }
-
-        //
-        // Since tasks are returned from VSCode API without a filename that they were found
-        // in we must deduce the filename from the task source.  This includes npm, tsc, and
-        // vscode (workspace) tasks
-        //
-
-        let fileName = "package.json";
-
-        if (source === "Workspace")
-        {
-            fileName = "tasks.json"; // // note:  user task has no resourceUri
-            if (incRelPathForCode === true && folder.resourceUri) // project folder task
-            {
-                fileName = ".vscode/tasks.json";
-            }
-        }
-        else if (source === "tsc")
-        {
-            fileName = "tsconfig.json";
-        }
-
-        return fileName;
-    }
 
 
     /**

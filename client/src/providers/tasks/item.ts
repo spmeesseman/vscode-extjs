@@ -59,7 +59,7 @@ export default class TaskItem extends TreeItem
         this.groupLevel = groupLevel;       // Grouping level - indicates how many levels deep the TaskItem node is
         this.command = {                    // Note that 'groupLevel' will be set by TaskFile.addScript()
             title: "Open definition",       // Default click action is Open file since it's easy to click on accident
-            command: "taskExplorer.open",   // Default click action can be set to 'Execute/Run' in Settings
+            command: "vscode-extjs:tasks.open", // Default click action can be set to 'Execute/Run' in Settings
             arguments: [this]               // If the def. action is 'Run', then it is redirected in the 'Open' cmd
         };
         //
@@ -85,7 +85,7 @@ export default class TaskItem extends TreeItem
         //
         // Tooltip
         //
-        this.tooltip = "Open " + task.name; //  + (task.detail ? ` | ${task.detail}` : ""); - exists in vscode .48 types
+        this.tooltip = "Open " + task.name.replace(/___/g, "-"); //  + (task.detail ? ` | ${task.detail}` : ""); - exists in vscode .48 types
         //
         // Refresh state - sets context value, icon path from execution state
         //
@@ -132,7 +132,7 @@ export default class TaskItem extends TreeItem
         // Note that TaskItems of type 'scriptFile' can be ran with arguments and this will have an additional
         // entry added to it's context menu - "Run with arguments"
         //
-        if (task.definition.scriptFile || this.taskSource === "gradle") {
+        if (task.definition.scriptFile || this.taskSource === "gradle" || this.taskSource === "extjs") {
             this.contextValue = running ? "scriptRunning" : "scriptFile";
         }
         else {

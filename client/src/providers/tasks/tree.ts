@@ -12,11 +12,10 @@ import * as log from "../../common/log";
 import TaskItem from "./item";
 import TaskFile from "./file";
 import TaskFolder from "./folder";
-import { views } from "./views";
-import { visit, JSONVisitor } from "jsonc-parser";
 import { storage } from "../../common/storage";
 import { providers } from "../../extension";
 import { configuration } from "../../common/configuration";
+import { ExtJsTaskProvider } from "./task";
 
 
 
@@ -34,6 +33,8 @@ const noScripts = new NoScripts();
 /**
  * @class TaskTreeDataProvider
  *
+ * @since 0.8.0
+ *
  * Implements the VSCode TreeDataProvider API to build a tree of tasks to display within a view.
  */
 export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
@@ -48,6 +49,9 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
     private currentInvalidation: string | undefined;
     private _onDidChangeTreeData: EventEmitter<TreeItem | null> = new EventEmitter<TreeItem | null>();
     readonly onDidChangeTreeData: Event<TreeItem | null> = this._onDidChangeTreeData.event;
+    private groupSeparator = "___";
+    private maxGroupLevel = 10;
+    private maxLastTasks = 10;
 
 
     constructor(name: string, context: ExtensionContext)
@@ -110,7 +114,6 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
 
     /**
      * @method addRemoveFavorite
-     * @since 2.0.0
      *
      * Adds/removes tasks from the Favorites List.  Basically a toggle, if the task exists as a
      * favorite already when this function is called, it gets removed, if it doesnt exist, it gets added.
@@ -228,6 +231,34 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
     }
 
 
+    private async buildGroupings(folders: Map<string, TaskFolder>, logPad = "", logLevel = 1)
+    {
+        log.methodStart("build tree node groupings", logLevel, logPad);
+
+        //
+        // Sort nodes.  By default the project folders are sorted in the same order as that
+        // of the Explorer.  Sort TaskFile nodes and TaskItems nodes alphabetically, by default
+        // its entirely random as to when the individual providers report tasks to the engine
+        //
+        // After the initial sort, create any task groupings based on the task group separator.
+        // 'folders' are the project/workspace folders.
+        //
+        for (const [ key, folder ] of folders)
+        {
+            if (key === constants.LAST_TASKS_LABEL || key === constants.FAV_TASKS_LABEL) {
+                continue;
+            }
+            this.sortFolder(folder, logPad + "   ", logLevel + 1);
+            //
+            // Create groupings by task type
+            //
+            await this.createTaskGroupings(folder, logPad + "   ", logLevel + 1);
+        }
+
+        log.methodDone("build tree node groupings", logLevel, logPad);
+    }
+
+
     private async buildTaskTree(tasksList: Task[], logPad = "", logLevel = 1): Promise<TaskFolder[] | NoScripts[]>
     {
         let taskCt = 0;
@@ -243,13 +274,10 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         // The 'Last Tasks' folder will be 1st in the tree
         //
         const lastTasks = storage.get<string[]>(constants.LAST_TASKS_STORE, []);
-        if (configuration.get<boolean>("showLastTasks") === true)
+        if (lastTasks && lastTasks.length > 0)
         {
-            if (lastTasks && lastTasks.length > 0)
-            {
-                ltFolder = new TaskFolder(constants.LAST_TASKS_LABEL);
-                folders.set(constants.LAST_TASKS_LABEL, ltFolder);
-            }
+            ltFolder = new TaskFolder(constants.LAST_TASKS_LABEL);
+            folders.set(constants.LAST_TASKS_LABEL, ltFolder);
         }
 
         //
@@ -286,7 +314,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         //
         // Sort and build groupings
         //
-        // await this.buildGroupings(folders, logPad + "   ", logLevel);
+        await this.buildGroupings(folders, logPad + "   ", logLevel);
 
         //
         // Sort the 'Last Tasks' folder by last time run
@@ -418,8 +446,6 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
      * @method clearSpecialFolder
      *
      * @param folder The TaskFolder representing either the "Last Tasks" or the "Favorites" folders.
-     *
-     * @since v2.0.0
      */
     private async clearSpecialFolder(folder: TaskFolder | string)
     {
@@ -488,94 +514,254 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
     }
 
 
-    private findJsonDocumentPosition(documentText: string, taskItem: TaskItem)
+    /**
+     * @method createTaskGroupings
+     *
+     * Creates main task groupings, i.e. 'npm', 'vscode', 'batch', etc, for a given {@link TaskFolder}
+     *
+     * @param folder The TaskFolder to process
+     */
+    private async createTaskGroupings(folder: TaskFolder, logPad = "", logLevel = 1)
     {
-        const me = this;
-        let inScripts = false;
-        let inTasks = false;
-        let inTaskLabel: any;
-        let scriptOffset = 0;
+        let prevTaskFile: TaskItem | TaskFile | undefined;
+        const subfolders: Map<string, TaskFile> = new Map();
 
-        const visitor: JSONVisitor =
+        log.methodStart("create tree node folder grouping", logLevel, logPad, true, [[ "project folder", folder.label ]]);
+
+        for (const each of folder.taskFiles)
+        {   //
+            // Only processitems of type 'TaskFile'
+            //
+            if (!(each instanceof TaskFile)) {
+                continue;
+            }
+            //
+            // Check if current taskfile source is equal to previous (i.e. ant, npm, vscode, etc)
+            //
+            if (prevTaskFile && prevTaskFile.taskSource === each.taskSource)
+            {
+                const id = folder.label + each.taskSource;
+                let subfolder: TaskFile | undefined = subfolders.get(id);
+                if (!subfolder)
+                {
+                    log.values([
+                        ["   Add source file sub-container", each.path],
+                        ["      id", id]
+                    ], logLevel + 2, logPad, true);
+                    const definition = (each.treeNodes[0] as TaskItem)?.task?.definition;
+                    if (definition)
+                    {
+                        subfolder = new TaskFile(this.extensionContext, folder, definition,
+                                                each.taskSource, each.path, 0, true, undefined, "   ");
+                        subfolders.set(id, subfolder);
+                        folder.addTaskFile(subfolder);
+                        //
+                        // Since we add the grouping when we find two or more equal group names, we are iterating
+                        // over the 2nd one at this point, and need to add the previous iteration's TaskItem to the
+                        // new group just created
+                        //
+                        subfolder.addTreeNode(prevTaskFile); // addScript will set the group level on the TaskItem
+                    }
+                }
+                if (subfolder && subfolder.nodePath !== each.nodePath) {
+                    subfolder.addTreeNode(each); // addScript will set the group level on the TaskItem
+                }
+            }
+            prevTaskFile = each;
+            //
+            // Create the grouping
+            //
+            await this.createTaskGroupingsBySep(folder, each, subfolders, 0, logPad + "   ", logLevel + 1);
+        }
+
+        //
+        // For groupings with separator, when building the task tree, when tasks are grouped new task definitions
+        // are created but the old task remains in the parent folder.  Remove all tasks that have been moved down
+        // into the tree hierarchy due to groupings
+        //
+        this.removeGroupedTasks(folder, subfolders, logPad + "   ", logLevel + 1);
+
+        //
+        // For groupings with separator, now go through and rename the labels within each group minus the
+        // first part of the name split by the separator character (the name of the new grouped-with-separator node)
+        //
+        log.write(logPad + "   rename grouped tasks", logLevel);
+        for (const each of folder.taskFiles)
         {
-            onError: () =>
+            if (each instanceof TaskFile) {
+                await this.renameGroupedTasks(each);
+            }
+        }
+
+        //
+        // Resort after making adds/removes
+        //
+        this.sortFolder(folder, logPad + "   ", logLevel + 1);
+
+        log.methodDone("create tree node folder grouping", logLevel, logPad);
+    }
+
+
+    /**
+     * @method createTaskGroupingsBySep
+     *
+     *  By default the hierarchy would look like:
+     *
+     *      build
+     *          prod
+     *          dev
+     *          server-dev
+     *          server-prod
+     *          sass
+     *
+     * @param folder The base task folder
+     * @param each  Task file to process
+     * @param prevTaskFile Previous task file processed
+     * @param subfolders Tree taskfile map
+     */
+    private async createTaskGroupingsBySep(folder: TaskFolder, taskFile: TaskFile, subfolders: Map<string, TaskFile>, treeLevel = 0, logPad = "", logLevel = 2)
+    {
+        let prevName: string[] | undefined;
+        let prevTaskItem: TaskItem | undefined;
+        const newNodes: TaskFile[] = [];
+        const atMaxLevel: boolean = this.maxGroupLevel <= treeLevel + 1;
+
+        log.methodStart("create task groupings by separator", logLevel, logPad, true, [
+            [ "folder", folder.label ], [ "label (node name)", taskFile.label ], [ "grouping level", treeLevel ], [ "is group", taskFile.isGroup ],
+            [ "file name", taskFile.fileName ], [ "folder", folder.label ], [ "path", taskFile.path ], ["tree level", treeLevel]
+        ]);
+
+        const _setNodePath = (t: TaskItem | undefined, cPath: string) =>
+        {
+            if (t && !atMaxLevel && prevName)
             {
-                return scriptOffset;
-            },
-            onObjectEnd: () =>
-            {
-                if (inScripts)
-                {
-                    inScripts = false;
+                log.write("   setting node path", logLevel + 2, logPad);
+                log.value("      current", t.nodePath, logLevel + 2, logPad);
+                if (!t.nodePath && taskFile.taskSource === "Workspace") {
+                    t.nodePath = path.join(".vscode", prevName[treeLevel]);
                 }
-            },
-            onLiteralValue: (value: any, offset: number, _length: number) =>
-            {
-                if (inTaskLabel)
-                {
-                    if (typeof value === "string")
-                    {
-                        if (inTaskLabel === "label" || inTaskLabel === "script")
-                        {
-                            if (taskItem.task?.name === value)
-                            {
-                                scriptOffset = offset;
-                            }
-                        }
-                    }
-                    inTaskLabel = undefined;
+                else if (!t.nodePath) {
+                    t.nodePath = prevName[treeLevel];
                 }
-            },
-            onObjectProperty: (property: string, offset: number, _length: number) =>
-            {
-                if (property === "scripts")
-                {
-                    inScripts = true;
-                    if (!taskItem)
-                    { // select the script section
-                        scriptOffset = offset;
-                    }
+                else {
+                    t.nodePath = path.join(cPath, prevName[treeLevel]);
                 }
-                else if (inScripts && taskItem)
-                {
-                    const label = me.getTaskName(property, taskItem.task?.definition.path);
-                    if (taskItem.task?.name === label)
-                    {
-                        scriptOffset = offset;
-                    }
-                }
-                else if (property === "tasks")
-                {
-                    inTasks = true;
-                    if (!inTaskLabel)
-                    { // select the script section
-                        scriptOffset = offset;
-                    }
-                }
-                else if ((property === "label" || property === "script") && inTasks && !inTaskLabel)
-                {
-                    inTaskLabel = "label";
-                    if (!inTaskLabel)
-                    { // select the script section
-                        scriptOffset = offset;
-                    }
-                }
-                else
-                { // nested object which is invalid, ignore the script
-                    inTaskLabel = undefined;
-                }
+                log.value("      new", t.nodePath, logLevel + 2, logPad);
             }
         };
 
-        visit(documentText, visitor);
+        for (const each of taskFile.treeNodes)
+        {
+            if (!(each instanceof TaskItem) || !each.task || !each.label) {
+                continue;
+            }
+            const label = each.label.toString();
+            let subfolder: TaskFile | undefined;
+            const prevNameThis = label?.split(this.groupSeparator);
+            const prevNameOk = prevName && prevName.length > treeLevel && prevName[treeLevel];
 
-        return scriptOffset;
+            log.write("   process task item", logLevel + 1, logPad);
+            log.values([
+                ["id", each.id], ["label", label], ["node path", each.nodePath], ["command", each.command?.command],
+                ["previous name [tree level]", prevName && prevNameOk ? prevName[treeLevel] : "undefined"],
+                ["this previous name", prevNameThis]
+            ], logLevel + 2, logPad + "      ");
+
+            //
+            // Check if we're in a state to create a new group.
+            // If 'prevName' length > 1, then this task was grouped using the group separator, for
+            // example:
+            //
+            //     build-ui-dev
+            //     build-ui-production
+            //     build-svr-trace
+            //     build-svr-debug
+            //     build-svr-production
+            //
+            // There may be other tasks, if we are grouping at more than one level, that may match
+            // another set of tasks in separate parts of the groupings, for example:
+            //
+            //     wp-build-ui-dev
+            //     wp-build-ui-production
+            //     wp-build-svr-trace
+            //     wp-build-svr-debug
+            //     wp-build-svr-production
+            //
+            let foundGroup = false;
+            if (prevName && prevNameOk && prevNameThis && prevNameThis.length > treeLevel)
+            {
+                for (let i = 0; i <= treeLevel; i++)
+                {
+                    if (prevName[i] === prevNameThis[i]) {
+                        log.write("   found group", 4, logPad);
+                        foundGroup = true;
+                    }
+                    else {
+                        foundGroup = false;
+                        break;
+                    }
+                }
+            }
+
+            if (foundGroup && prevName)
+            {   //
+                // We found a pair of tasks that need to be grouped.  i.e. the first part of the label
+                // when split by the separator character is the same...
+                //
+                const id = this.getGroupedId(folder, taskFile, label, treeLevel);
+                subfolder = subfolders.get(id);
+
+                if (!subfolder)
+                {   //
+                    // Create the new node, add it to the list of nodes to add to the tree.  We must
+                    // add them after we loop since we are looping on the array that they need to be
+                    // added to
+                    //
+                    subfolder = new TaskFile(this.extensionContext, folder, each.task.definition, taskFile.taskSource,
+                                             each.taskFile.path, treeLevel, true, prevName[treeLevel], logPad);
+                    subfolders.set(id, subfolder);
+                    _setNodePath(prevTaskItem, each.nodePath);
+                    //
+                    // Since we add the grouping when we find two or more equal group names, we are iterating
+                    // over the 2nd one at this point, and need to add the previous iteration's TaskItem to the
+                    // new group just created
+                    //
+                    subfolder.addTreeNode(prevTaskItem); // addScript will set the group level on the TaskItem
+                    newNodes.push(subfolder);
+                }
+
+                _setNodePath(each, each.nodePath);
+                subfolder.addTreeNode(each); // addScript will set the group level on the TaskItem
+            }
+
+            if (label.includes(this.groupSeparator)) {
+                prevName = label.split(this.groupSeparator);
+            }
+            prevTaskItem = each;
+        }
+
+        //
+        // If there are new grouped by separator nodes to add to the tree...
+        //
+        if (newNodes.length > 0)
+        {
+            let numGrouped = 0;
+            for (const n of newNodes)
+            {
+                taskFile.insertTreeNode(n, numGrouped++);
+                if (!atMaxLevel)
+                {
+                    await this.createTaskGroupingsBySep(folder, n, subfolders, treeLevel + 1, logPad + "   ", logLevel + 1);
+                }
+            }
+        }
+
+        log.methodDone("create task groupings by separator", logLevel, logPad);
     }
 
 
     private findDocumentPosition(document: TextDocument, taskItem?: TaskItem): number
     {
-        let scriptOffset = 0;
         const documentText = document.getText();
 
         log.methodStart("find task definition document position", 1, "", true,
@@ -584,19 +770,8 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
 
         if (!taskItem || !taskItem.task) { return 0; }
 
-        const def = taskItem.task.definition;
-        if (taskItem.taskSource === "npm" || taskItem.taskSource === "Workspace")
-        {
-            scriptOffset = this.findJsonDocumentPosition(documentText, taskItem);
-        }
-        else {
-            const provider = providers.get("extjs");
-            scriptOffset = provider?.getDocumentPosition(taskItem.task.name, documentText) || -1;
-        }
-
-        if (scriptOffset === -1) {
-            scriptOffset = 0;
-        }
+        const provider = providers.get("extjs") as ExtJsTaskProvider,
+              scriptOffset = provider.getDocumentPosition(taskItem.task.name, documentText);
 
         log.methodDone("find task definition document position", 1, "", true, [ ["offset", scriptOffset ] ]);
         return scriptOffset;
@@ -624,15 +799,12 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         //
         // Fire change event for the 'Last Tasks' folder if the task exists there
         //
-        if (configuration.get<boolean>("showLastTasks") === true)
+        const lastTasks = storage.get<string[]>(constants.LAST_TASKS_STORE, []);
+        if (utils.existsInArray(lastTasks, this.getTaskItemId(taskItem)) !== false)
         {
-            const lastTasks = storage.get<string[]>(constants.LAST_TASKS_STORE, []);
-            if (utils.existsInArray(lastTasks, this.getTaskItemId(taskItem)) !== false)
+            if (this.taskTree[0].label === constants.LAST_TASKS_LABEL)
             {
-                if (this.taskTree[0].label === constants.LAST_TASKS_LABEL)
-                {
-                    this._onDidChangeTreeData.fire(this.taskTree[0]);
-                }
+                this._onDidChangeTreeData.fire(this.taskTree[0]);
             }
         }
 
@@ -758,6 +930,24 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
 
         this.currentInvalidation = undefined; // reset file modification task type flag
         return items;
+    }
+
+
+    private getGroupedId(folder: TaskFolder, file: TaskFile, label: string, treeLevel: number)
+    {
+        const labelSplit = label?.split(this.groupSeparator);
+        let id = "";
+        for (let i = 0; i <= treeLevel; i++)
+        {
+            id += labelSplit[i];
+        }
+        if (file.resourceUri) {
+            id += file.resourceUri.fsPath.replace(/\W/gi, "");
+        }
+        else if (file.fileName) {
+            id += file.fileName.replace(/\W/gi, "");
+        }
+        return folder.label + file.taskSource + id + (treeLevel || treeLevel === 0 ? treeLevel.toString() : "");
     }
 
 
@@ -1502,6 +1692,161 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
     }
 
 
+    private removeGroupedTasks(folder: TaskFolder, subfolders: Map<string, TaskFile>, logPad: string, logLevel: number)
+    {
+        const taskTypesRmv: TaskFile[] = [];
+
+        log.methodStart("remove grouped tasks", logLevel, logPad);
+
+        for (const each of folder.taskFiles)
+        {
+            if (!(each instanceof TaskFile) || !each.label) {
+                continue;
+            }
+            const id = folder.label + each.taskSource;
+            const id2 = this.getGroupedId(folder, each, each.label.toString(), each.groupLevel);
+
+            if (!each.isGroup && subfolders.get(id))
+            {
+                taskTypesRmv.push(each);
+            }
+            else if (id2 && !each.isGroup && subfolders.get(id2))
+            {
+                taskTypesRmv.push(each);
+            }
+            else if (each.isGroup)
+            {
+                for (const each2 of each.treeNodes)
+                {
+                    this.removeScripts(each2 as TaskFile, folder, subfolders, 0, logPad, logLevel + 1);
+                    if (each2 instanceof TaskFile && each2.isGroup && each2.groupLevel > 0)
+                    {
+                        for (const each3 of each2.treeNodes)
+                        {
+                            if (each3 instanceof TaskFile)
+                            {
+                                this.removeScripts(each3, folder, subfolders, 0, logPad, logLevel + 1);
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                this.removeScripts(each, folder, subfolders, 0, logPad, logLevel + 1);
+            }
+        }
+
+        for (const each of taskTypesRmv)
+        {
+            folder.removeTaskFile(each);
+        }
+
+        log.methodDone("remove grouped tasks", logLevel, logPad);
+    }
+
+
+    /**
+     * Perform some removal based on groupings with separator.  The nodes added within the new
+     * group nodes need to be removed from the old parent node still...
+     *
+     * @param taskFile TaskFile instance to remove tasks from
+     * @param folder Project task folder
+     * @param subfolders Current tree subfolders map
+     * @param level Current grouping level
+     */
+    private removeScripts(taskFile: TaskFile, folder: TaskFolder, subfolders: Map<string, TaskFile>, level = 0, logPad = "", logLevel = 3)
+    {
+        const me = this;
+        const taskTypesRmv: (TaskItem|TaskFile)[] = [];
+
+        log.methodStart("remove scripts", logLevel, logPad, false);
+
+        for (const each of taskFile.treeNodes)
+        {
+            const label = each.label?.toString();
+
+            if (!label) {
+                continue;
+            }
+
+            const labelPart = label?.split(this.groupSeparator)[level];
+            const id = this.getGroupedId(folder, taskFile, label, level);
+
+            if (each instanceof TaskItem)
+            {
+                if (label.split(this.groupSeparator).length > 1 && labelPart)
+                {
+                    if (subfolders.get(id))
+                    {
+                        taskTypesRmv.push(each);
+                    }
+                }
+            }
+            else
+            {
+                let allTasks = false;
+                for (const each2 of each.treeNodes)
+                {
+                    if (each2 instanceof TaskItem)
+                    {
+                        allTasks = true;
+                    }
+                    else {
+                        allTasks = false;
+                        break;
+                    }
+                }
+
+                if (!allTasks) {
+                    me.removeScripts(each, folder, subfolders, level + 1, logPad, logLevel + 1);
+                }
+            }
+        }
+
+        for (const each2 of taskTypesRmv)
+        {
+            taskFile.removeTreeNode(each2);
+        }
+
+        log.methodDone("remove scripts", logLevel, logPad);
+    }
+
+
+    private async renameGroupedTasks(taskFile: TaskFile)
+    {
+        let rmvLbl = taskFile.label?.toString();
+        rmvLbl = rmvLbl?.replace(/\(/gi, "\\(").replace(/\[/gi, "\\[");
+        rmvLbl = rmvLbl?.replace(/\)/gi, "\\)").replace(/\]/gi, "\\]");
+
+        for (const each2 of taskFile.treeNodes)
+        {
+            if (each2 instanceof TaskItem)
+            {
+                const rgx = new RegExp(rmvLbl + this.groupSeparator, "i");
+                each2.label = each2.label?.toString().replace(rgx, "");
+
+                if (each2.groupLevel > 0)
+                {
+                    let label = "";
+                    const labelParts = each2.label?.split(this.groupSeparator);
+                    if (labelParts)
+                    {
+                        for (let i = each2.groupLevel; i < labelParts.length; i++)
+                        {
+                            label += (label ? this.groupSeparator : "") + labelParts[i];
+                        }
+                        each2.label = label || each2.label;
+                    }
+                }
+            }
+            else {
+                await this.renameGroupedTasks(each2);
+            }
+        }
+    }
+
+
+
     private async restart(taskItem: TaskItem)
     {
         log.methodStart("restart task", 1, "", true);
@@ -1591,7 +1936,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
                 }
             }
             if (await this.runTask(newTask, noTerminal)) {
-                await this.saveTask(taskItem, configuration.get<number>("numLastTasks"), false, "   ");
+                await this.saveTask(taskItem, this.maxLastTasks, false, "   ");
             }
         }
 
@@ -1708,7 +2053,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
                     }
                     if (newTask) {
                         if (await this.runTask(newTask, noTerminal)) {
-                            await me.saveTask(taskItem, configuration.get<number>("numLastTasks"));
+                            await me.saveTask(taskItem, this.maxLastTasks);
                         }
                     }
                 }
@@ -1776,18 +2121,13 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         const tree = this.taskTree;
         const storeName: string = !isFavorite ? constants.LAST_TASKS_STORE : constants.FAV_TASKS_STORE;
         const label: string = !isFavorite ? constants.LAST_TASKS_LABEL : constants.FAV_TASKS_LABEL;
-        const showLastTasks = configuration.get<boolean>("showLastTasks");
-        const favIdx = showLastTasks ? 1 : 0;
+        const favIdx = 1;
         const treeIdx = !isFavorite ? 0 : favIdx;
 
         log.methodStart("show special tasks", 1, logPad, false, [
             [ "is favorite", isFavorite ], [ "fav index", favIdx ], [ "tree index", treeIdx ],
-            [ "show", show ], [ "has task item", !!taskItem ], [ "showLastTasks setting", showLastTasks ]
+            [ "show", show ], [ "has task item", !!taskItem ]
         ]);
-
-        if (!showLastTasks && !isFavorite) {
-            return;
-        }
 
         if (!tree || tree.length === 0 ||
             (tree.length === 1 && tree[0].contextValue === "noscripts")) {

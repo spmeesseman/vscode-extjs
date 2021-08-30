@@ -84,27 +84,13 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     // Register the task provider
     //
     if (configuration.get<boolean>("enableTaskExplorer")) {
-        taskTree = registerExplorer("taskExplorer", context);
+        taskTree = registerExplorer(context);
     }
 
     //
     // Register configurations/settings change watcher
     //
     context.subscriptions.push(workspace.onDidChangeConfiguration(async e => { await processConfigChanges(context, e); }));
-
-    //
-    // Init/clear FS storage for syntax caching when a new project/workspace folder is added/removed
-    //
-    // const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(async(_e) =>
-    // {
-    //     for (const wsf of _e.removed) {
-    //         // clearFsStorage(wsf.name, context);
-    //     }
-    //     for (const wsf of _e.added) {
-    //         initFsStorage(wsf.name, context);
-    //     }
-    // });
-    // context.subscriptions.push(workspaceWatcher);
 
     //
     // Language Manager
@@ -134,7 +120,7 @@ async function processConfigChanges(context: ExtensionContext, e: ConfigurationC
                 await taskTree.refresh("config");
             }
             else {
-                taskTree = registerExplorer("taskExplorer", context);
+                taskTree = registerExplorer(context);
             }
         }
     }
@@ -152,25 +138,26 @@ function registerCommands(context: ExtensionContext)
 }
 
 
-function registerExplorer(name: string, context: ExtensionContext): TaskTreeDataProvider | undefined
+function registerExplorer(context: ExtensionContext): TaskTreeDataProvider | undefined
 {
-    log.write("Register tasks tree provider '" + name + "'");
-
-    if (workspace.workspaceFolders)
-    {
-        const treeDataProvider = new TaskTreeDataProvider(name, context);
-        const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
-        views.set(name, treeView);
-        const view = views.get(name);
-        if (view) {
-            context.subscriptions.push(view);
-            log.write("   Tree data provider registered'" + name + "'");
-        }
-        return treeDataProvider;
-    }
-    else {
-        log.write("No workspace folders!!!");
-    }
+    // const name = "taskExplorer";
+    // log.write("Register tasks tree provider '" + name + "'");
+    // if (workspace.workspaceFolders)
+    // {
+    //     const treeDataProvider = new TaskTreeDataProvider(name, context);
+    //     const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
+    //     views.set(name, treeView);
+    //     const view = views.get(name);
+    //     if (view) {
+    //         context.subscriptions.push(view);
+    //         log.write("   Tree data provider registered'" + name + "'");
+    //     }
+    //     return treeDataProvider;
+    // }
+    // else {
+    //     log.write("No workspace folders!!!");
+    // }
+    return undefined;
 }
 
 
