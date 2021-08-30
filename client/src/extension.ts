@@ -83,7 +83,7 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     //
     // Register the task provider
     //
-    if (configuration.get<boolean>("enableTaskView")) {
+    if (configuration.get<boolean>("enableTaskExplorer")) {
         taskTree = registerExplorer("taskExplorer", context);
     }
 

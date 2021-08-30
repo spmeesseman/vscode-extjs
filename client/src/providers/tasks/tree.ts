@@ -2,11 +2,10 @@ import {
     Event, EventEmitter, ExtensionContext, Task, TaskDefinition, TaskRevealKind, TextDocument,
     TreeDataProvider, TreeItem, TreeItemCollapsibleState, Uri, TaskStartEvent, TaskEndEvent,
     commands, window, workspace, tasks, Selection, WorkspaceFolder, InputBoxOptions,
-    ShellExecution, Terminal, StatusBarItem, StatusBarAlignment, CustomExecution
+    Terminal, StatusBarItem, StatusBarAlignment, CustomExecution
 } from "vscode";
 import * as path from "path";
 import { pathExists, utils } from "../../../../common";
-import * as clientUtils from "../../common/clientUtils";
 import * as assert from "assert";
 import constants from "../../common/constants";
 import * as log from "../../common/log";
@@ -15,7 +14,6 @@ import TaskFile from "./file";
 import TaskFolder from "./folder";
 import { visit, JSONVisitor } from "jsonc-parser";
 import { storage } from "../../common/storage";
-import { views } from "./views";
 import { providers } from "../../extension";
 import { configuration } from "../../common/configuration";
 
@@ -25,7 +23,7 @@ class NoScripts extends TreeItem
 {
     constructor()
     {
-        super("No scripts found", TreeItemCollapsibleState.None);
+        super("No snippets or app.json files found", TreeItemCollapsibleState.None);
         this.contextValue = "noscripts";
     }
 }
@@ -232,6 +230,16 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         }
 
         //
+        // The 'Code Snippets' folder
+        //
+        const snippetTasks = storage.get<string[]>(constants.SNIPPETS_TASKS_STORE, []);
+        if (snippetTasks && snippetTasks.length > 0)
+        {
+            const snippetsFolder = new TaskFolder(constants.SNIPPETS_TASKS_LABEL);
+            folders.set(constants.SNIPPETS_TASKS_LABEL, snippetsFolder);
+        }
+
+        //
         // Loop through each task provided by the engine and build a task tree
         //
         for (const each of tasksList)
@@ -327,16 +335,9 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
                 folder = new TaskFolder(each.scope);
                 folders.set(scopeName, folder);
             }
-        }     //
-        else // User Task (not related to a ws or project)
-        {   //
-            scopeName = constants.USER_TASKS_LABEL;
-            folder = folders.get(scopeName);
-            if (!folder)
-            {
-                folder = new TaskFolder(scopeName);
-                folders.set(scopeName, folder);
-            }
+        }
+        else {
+            return;
         }
 
         //
@@ -752,7 +753,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
     {
         return [...folders.values()]?.sort((a: TaskFolder, b: TaskFolder) =>
         {
-            const sFolders = [ constants.FAV_TASKS_LABEL, constants.LAST_TASKS_LABEL, constants.USER_TASKS_LABEL];
+            const sFolders = [ constants.FAV_TASKS_LABEL, constants.LAST_TASKS_LABEL];
             if (a.label === constants.LAST_TASKS_LABEL) {
                 return -1;
             }
@@ -767,18 +768,6 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             }
             else if (b.label === constants.FAV_TASKS_LABEL) {
                 if (a.label !== constants.LAST_TASKS_LABEL) {
-                    return 1;
-                }
-                return -1;
-            }
-            else if (a.label === constants.USER_TASKS_LABEL) {
-                if (b.label !== constants.LAST_TASKS_LABEL && b.label !== constants.FAV_TASKS_LABEL) {
-                    return -1;
-                }
-                return 1;
-            }
-            else if (b.label === constants.USER_TASKS_LABEL) {
-                if (a.label !== constants.LAST_TASKS_LABEL && a.label !== constants.FAV_TASKS_LABEL) {
                     return 1;
                 }
                 return -1;
@@ -949,12 +938,11 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             {
                 const isFav = item.label?.toString().includes(constants.FAV_TASKS_LABEL);
                 const isLast = item.label?.toString().includes(constants.LAST_TASKS_LABEL);
-                const isUser = item.label?.toString().includes(constants.USER_TASKS_LABEL);
                 const tmp: any = me.getParent(item);
                 assert(tmp === null, "Invalid parent type, should be null for TaskFolder");
-                log.write("   Task Folder " + item.label + ":  " + (!isFav && !isLast && !isUser ?
+                log.write("   Task Folder " + item.label + ":  " + (!isFav && !isLast ?
                          item.resourceUri?.fsPath : (isLast ? constants.LAST_TASKS_LABEL :
-                            (isUser ? constants.USER_TASKS_LABEL : constants.FAV_TASKS_LABEL))), logLevel + 1, logPad);
+                            constants.FAV_TASKS_LABEL)), logLevel + 1, logPad);
                 await processItem(item);
             }
         }
@@ -1019,8 +1007,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
     private getTaskItemId(taskItem: TaskItem)
     {
         return taskItem?.id?.replace(constants.LAST_TASKS_LABEL + ":", "")
-                            .replace(constants.FAV_TASKS_LABEL + ":", "")
-                            .replace(constants.USER_TASKS_LABEL + ":", "");
+                            .replace(constants.FAV_TASKS_LABEL + ":", "");
     }
 
 
@@ -1221,10 +1208,6 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             log.value("scope.name", task.scope.name, 4, logPad);
             log.value("scope.uri.path", task.scope.uri.path, 4, logPad);
             log.value("scope.uri.fsPath", task.scope.uri.fsPath, 4, logPad);
-        }
-        else // User tasks
-        {
-            log.value("scope.uri.path", "N/A (User)", 4, logPad);
         }
         log.value("relative Path", definition.path ? definition.path : "", 4, logPad);
         log.value("type", definition.type, 4, logPad);
@@ -1451,7 +1434,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             [ "tree is null", !this.taskTree ]
         ]);
 
-        if (invalidate !== false) // if anything but 'add to excludes'
+        if (invalidate === "fs")
         {
             await this.handleFileWatcherEvent(invalidate, opt, logPad + "   ");
         }

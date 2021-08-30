@@ -94,7 +94,7 @@ export async function run(): Promise<void>
         useSpawnWrap: true,           // wrap language server spawn
         include: ["dist/**/*.js"],
         // include: ["dist/**/*.js", "common/lib/*.js"],
-        exclude: ["dist/client/test/**"] // ,
+        exclude: [ "dist/client/test/**", "dist/client/src/providers/tasks/**" ] // ,
         // require: [ "bootstrap-fork"]
     };
 
