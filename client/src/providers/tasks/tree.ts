@@ -2,7 +2,7 @@ import {
     Event, EventEmitter, ExtensionContext, Task, TaskDefinition, TaskRevealKind, TextDocument,
     TreeDataProvider, TreeItem, TreeItemCollapsibleState, Uri, TaskStartEvent, TaskEndEvent,
     commands, window, workspace, tasks, Selection, WorkspaceFolder, InputBoxOptions,
-    Terminal, StatusBarItem, StatusBarAlignment, CustomExecution
+    Terminal, StatusBarItem, StatusBarAlignment, CustomExecution, ConfigurationChangeEvent
 } from "vscode";
 import * as path from "path";
 import { pathExists, utils } from "../../../../common";
@@ -12,6 +12,7 @@ import * as log from "../../common/log";
 import TaskItem from "./item";
 import TaskFile from "./file";
 import TaskFolder from "./folder";
+import { views } from "./views";
 import { visit, JSONVisitor } from "jsonc-parser";
 import { storage } from "../../common/storage";
 import { providers } from "../../extension";
@@ -55,6 +56,9 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         this.extensionContext = context;
         this.name = name;
 
+        //
+        // Register commands
+        //
         subscriptions.push(commands.registerCommand("vscode-extjs:tasks.run",  async (item: TaskItem) => { await this.run(item); }, this));
         subscriptions.push(commands.registerCommand("vscode-extjs:tasks.runNoTerm",  async (item: TaskItem) => { await this.run(item, true, false); }, this));
         subscriptions.push(commands.registerCommand("vscode-extjs:tasks.runWithArgs",  async (item: TaskItem, args: string) => { await this.run(item, false, true, args); }, this));
@@ -69,8 +73,38 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         subscriptions.push(commands.registerCommand("vscode-extjs:tasks.addRemoveFromFavorites", async (taskItem: TaskItem) => { await this.addRemoveFavorite(taskItem); }, this));
         subscriptions.push(commands.registerCommand("vscode-extjs:tasks.clearSpecialFolder", async (taskFolder: TaskFolder) => { await this.clearSpecialFolder(taskFolder); }, this));
 
+        //
+        // Register for task start/stop events
+        //
         tasks.onDidStartTask(async (_e) => this.taskStartEvent(_e));
         tasks.onDidEndTask(async (_e) => this.taskFinishedEvent(_e));
+
+        //
+        // Watch workspace app.json files
+        //
+        const appJsonWatcher = workspace.createFileSystemWatcher("**/app.json");
+        subscriptions.push(appJsonWatcher.onDidChange(async (e) => { await this.refresh(e); }, this));
+        subscriptions.push(appJsonWatcher.onDidDelete(async (e) => { await this.refresh(e); }, this));
+        subscriptions.push(appJsonWatcher.onDidCreate(async (e) => { await this.refresh(e); }, this));
+
+        //
+        // Refresh tree when folders are added/removed from the workspace
+        //
+        context.subscriptions.push(workspace.onDidChangeWorkspaceFolders(async(_e) => { await this.refresh(); }, this));
+
+        //
+        // Register configurations/settings change watcher
+        //
+        context.subscriptions.push(workspace.onDidChangeConfiguration(async e => { await this.processConfigChanges(context, e); }, this));
+    }
+
+
+    private async processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
+    {
+        if (e.affectsConfiguration("extjsIntellisense.enableTaskExplorer"))
+        {
+            // main extension will handle this particular setting
+        }
     }
 
 

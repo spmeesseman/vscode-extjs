@@ -88,29 +88,9 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     }
 
     //
-    // Refresh tree when folders are added/removed from the workspace
-    //
-    const workspaceWatcher = workspace.onDidChangeWorkspaceFolders(async(_e) =>
-    {
-        if (configuration.get<boolean>("enableTaskExplorer"))
-        {
-            if (taskTree) {
-                await taskTree.refresh("newWsFolder");
-            }
-            else {
-                taskTree = registerExplorer("taskExplorer", context);
-            }
-        }
-    });
-    context.subscriptions.push(workspaceWatcher);
-
-    //
     // Register configurations/settings change watcher
     //
-    const d = workspace.onDidChangeConfiguration(async e => {
-        await processConfigChanges(context, e);
-    });
-    context.subscriptions.push(d);
+    context.subscriptions.push(workspace.onDidChangeConfiguration(async e => { await processConfigChanges(context, e); }));
 
     //
     // Init/clear FS storage for syntax caching when a new project/workspace folder is added/removed
@@ -125,7 +105,6 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     //     }
     // });
     // context.subscriptions.push(workspaceWatcher);
-
 
     //
     // Language Manager
@@ -143,6 +122,7 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
         client
     };
 }
+
 
 
 async function processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
@@ -172,29 +152,25 @@ function registerCommands(context: ExtensionContext)
 }
 
 
-function registerExplorer(name: string, context: ExtensionContext, enabled?: boolean): TaskTreeDataProvider | undefined
+function registerExplorer(name: string, context: ExtensionContext): TaskTreeDataProvider | undefined
 {
     log.write("Register tasks tree provider '" + name + "'");
 
-    if (enabled !== false)
+    if (workspace.workspaceFolders)
     {
-        if (workspace.workspaceFolders)
-        {
-            const treeDataProvider = new TaskTreeDataProvider(name, context);
-            const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
-            const view = views.get(name);
-            if (view) {
-                context.subscriptions.push(view);
-                log.write("   Tree data provider registered'" + name + "'");
-            }
-            return treeDataProvider;
+        const treeDataProvider = new TaskTreeDataProvider(name, context);
+        const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
+        views.set(name, treeView);
+        const view = views.get(name);
+        if (view) {
+            context.subscriptions.push(view);
+            log.write("   Tree data provider registered'" + name + "'");
         }
-        else {
-            log.write("✘ No workspace folders!!!");
-        }
+        return treeDataProvider;
     }
-
-    return undefined;
+    else {
+        log.write("No workspace folders!!!");
+    }
 }
 
 
