@@ -171,11 +171,11 @@ Aside from that, the ExtJs Language Server provides everything else it is capabl
 
 ## JsDoc
 
-![hover-img1](resources/readme/../../res/readme/hover-xtype.png)
-
-![hover-img2](resources/readme/../../res/readme/hover-singleton.png)
-
-![hover-img3](resources/readme/../../res/readme/hover-cls-instance.png)
+|Screenshots||
+|-|-|
+|![hover-img1](resources/readme/../../res/readme/hover-xtype.png)|![hover-img2](resources/readme/../../res/readme/hover-cls-instance.png)|
+|![hover-img3](resources/readme/../../res/readme/hover-extjs-textfield.png)|![hover-img4](resources/readme/../../res/readme/hover-extjs-ajax.png)|
+|![hover-img5](resources/readme/../../res/readme/hover-singleton.png)||
 
 JsDoc comments are most useful to a JavaScript programmer but useless to an ExtJs programmer.  Not anymore... They are parsed and used where applicable just like a standard JavaScript Language Server:
 
