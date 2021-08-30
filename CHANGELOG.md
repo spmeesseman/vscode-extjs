@@ -1,5 +1,37 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.8.0 (August 30th, 2021)
+
+### Bug Fixes
+
+- **Parser:** exception seen in log "object key must be a string"
+- **General:** references to new/renamed files will not validate in other files
+- **Completion:** multi root workspace projects are referencing components in other projects
+- **Hover:** if move mouse over a keyword while typing in another and activating completion, an exception is seen in the log
+- **Parser:** the main application class that extends Ext.app.Application should use the 'name' property as an alias.
+- **Parser:** the main application class that extends Ext.app.Application should use the 'name' property as an alias.
+- **Completion:** not working when typing function parameters
+- **General:** there should be no processing when the open editor document is not an ExtJs file
+- **Hover:** model type not displayed
+- **Hover:** type name should always display last part of class name
+
+### Features
+
+- **Completion:** add support for model.create()
+- **JsDoc:** add javascript-like type title to hover and completion doc
+- **General:** first round implementation of fault tolerance in ast parser
+- **Diagnostics:** validation for store 'model' field, cls 'extend' field, and model 'refereces' block
+- **Diagnostics:** validation for mixins
+
+### Refactoring
+
+- **Validation:** add 'object' and 'boolean' to default ignored types
+- **Parser:** move jsdoc parser to server
+
+### Visuals
+
+- **Indexer:** better status indicator messages
+
 ## Version 0.7.2 (August 26th, 2021)
 
 ### Bug Fixes
