@@ -20,7 +20,6 @@ import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
-import { isMethod } from "../../common/src/extjs";
 
 
 export interface ILineProperties
