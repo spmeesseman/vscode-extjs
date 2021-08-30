@@ -1155,7 +1155,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             switch (propertyDef.doc.type) {
                 case "string":
                     valueCompletionItem = new CompletionItem("String Value", CompletionItemKind.Value);
-                    valueCompletionItem.insertText = " " + "\"\"";
+                    valueCompletionItem.insertText = ` ${config.quoteChar}${config.quoteChar}`;
+                    valueCompletionItem.command = {command: "cursorMove", title: "cursorMove", arguments: [ { to: "left", by: "character", value: 1 } ]};
                     completionItems.push(valueCompletionItem);
                     break;
                 case "boolean":
