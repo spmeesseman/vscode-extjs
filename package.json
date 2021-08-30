@@ -378,6 +378,9 @@
                     "default": [
                         "boolean",
                         "date",
+                        "decimal",
+                        "int",
+                        "list",
                         "number",
                         "object",
                         "string"
