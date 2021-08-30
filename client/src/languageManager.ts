@@ -415,6 +415,9 @@ class ExtjsLanguageManager
      * @param document The TextDocument instance
      * @param position The position in the document to extract line properties for
      * @param logPad Padding to prepend to any logging
+     *
+     * @returns {Object}
+     * property: The text that is hovered over (and flash highlighted by VSCode UI)
      */
     getLineProperties(document: TextDocument, position: Position, logPad: string, logLevel: number): ILineProperties
     {
@@ -667,6 +670,9 @@ class ExtjsLanguageManager
             else if (component = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
                 cmpClass = component.componentClass;
             }
+            else {
+                cmpType = ComponentType.None;
+            }
         }
         else if (cmpType === ComponentType.Method)
         {
@@ -715,6 +721,9 @@ class ExtjsLanguageManager
                     if ((component as IComponent).configs.find(c => c.name === property)) {
                         cmpType = ComponentType.Config;
                     }
+                }
+                else {
+                    cmpType = ComponentType.None;
                 }
             }
             else {
