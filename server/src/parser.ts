@@ -128,7 +128,7 @@ export async function parseExtJsFile(options: IServerRequest)
                         const propertySingleton = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "singleton");
                         const propertyMethod = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
-                        const propertyObjects = args[1].properties.filter(p => isObjectProperty(p) && !isFunctionExpression(p.value));
+                        const propertyObjects = args[1].properties.filter(p => isObjectProperty(p));
 
                         if (isObjectProperty(propertyExtend))
                         {

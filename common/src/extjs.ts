@@ -138,8 +138,9 @@ export function getAliasLookup(components: IComponent[], position: IPosition | u
 		if (position && thisCmp) {
 			for (const c of components) {
 				for (const a of c.aliases) {
-					thisCmp.objectRanges.filter(r => utils.isPositionInRange(position, r)).forEach(r => {
-						//
+					const ranges = thisCmp.objectRanges.filter(r => utils.isPositionInRange(position, r));
+					for (const r of ranges)
+					{   //
 						// parent property name or store types can be 'store', 'stores' (viewModel),
 						// 'storeConfig' (model association)
 						//
@@ -149,7 +150,13 @@ export function getAliasLookup(components: IComponent[], position: IPosition | u
 						else if (r.name === "reference" && a.nameSpace === "model") {
 							component = c;
 						}
-					});
+						else if (r.name === "filter" && a.nameSpace === "grid.filter") {
+							component = c;
+						}
+						if (component) {
+							break;
+						}
+					}
 				}
 			}
 		}
