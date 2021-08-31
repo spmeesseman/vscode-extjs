@@ -87,6 +87,8 @@ Diagnostics:
 		Grid filter usees 'type' to reference stores in some cases e.g. User Mgmt grid.js filter: { type: 'yesno' ... }
 	☐ Deeply nested store types still invalidate
 		e.g. User Mgmt AppUtilities.js line 6978
+	☐ Invalidate inproper static/private call.
+		e.g. private call only on instances, static calls only on full classpath names or alternateClassNames
 
 JsDoc:
 
