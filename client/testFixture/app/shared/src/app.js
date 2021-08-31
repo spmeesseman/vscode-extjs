@@ -248,6 +248,38 @@ Ext.define('VSCodeExtJS',
 		const user = VSCodeExtJS.model.User.create({
 			
 		});
+
+		VSCodeExtJS.model.User.create({
+			
+		});
 	},
+
+	Stuff:
+    {
+        physType: function()
+        { 
+            return {
+                text: 'Type', 
+                dataIndex: 'usertype', 
+                exportRenderer: true,
+                filter: 
+                {
+                    type: 'list',
+                    idField: 'code',
+                    labelField: 'dsc',
+                    dataIndex: 'users.usertype',
+                    frontMatch: false,
+                    store:
+                    {
+                        type: 'users'
+                    }
+                }, 
+                renderer: function(value, meta, record) 
+                {
+                    return value;
+                }
+            };
+        }
+	}
 
 });
