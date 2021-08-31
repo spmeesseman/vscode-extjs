@@ -4,6 +4,7 @@ import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
+import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
 
 
 suite("Command Tests", () =>
@@ -13,6 +14,8 @@ suite("Command Tests", () =>
 	// get its own test here
 	//
 
+	let extJsApi: ExtJsApi;
+	let extjsLangMgr: IExtjsLanguageManager;
 	const docUri = getDocUri("app/shared/src/app.js");
 	let validationDelay: number | undefined;
 	let logEnabled: boolean | undefined;
@@ -35,7 +38,9 @@ suite("Command Tests", () =>
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250);
-		await activate(docUri);
+		const testsApi = await activate();
+		extJsApi = testsApi.extJsApi;
+		extjsLangMgr = extJsApi.extjsLangMgr;
 		await waitForValidation();
 	});
 
@@ -197,6 +202,10 @@ suite("Command Tests", () =>
 		await testCommand("dumpCache", "", 1);
 		await testCommand("dumpCache", "testFixture");
 		await testCommand("dumpCache");
+		extjsLangMgr.setBusy(true);
+		await testCommand("dumpCache");
+		extjsLangMgr.setBusy(false);
+		await waitForValidation();
 	});
 
 
