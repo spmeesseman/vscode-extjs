@@ -7,6 +7,7 @@ import registerClearAstCommand from "./commands/clearAst";
 import registerReplaceTextCommand from "./commands/replaceText";
 import registerIgnoreErrorCommand from "./commands/ignoreError";
 import registerWaitReadyCommand from "./commands/waitReady";
+import registerDumpCacheCommand from "./commands/dumpCache";
 import ExtjsLanguageManager, { ILineProperties } from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 import { views } from "./providers/tasks/views";
@@ -135,6 +136,7 @@ function registerCommands(context: ExtensionContext)
     registerIndexFilesCommand(context);
     registerClearAstCommand(context);
     registerWaitReadyCommand(context);
+    registerDumpCacheCommand(context);
 }
 
 

@@ -191,6 +191,15 @@ suite("Command Tests", () =>
 	});
 
 
+	test("Dump cache to files", async () =>
+	{
+		await testCommand("dumpCache", "testFixture", "");
+		await testCommand("dumpCache", "", 1);
+		await testCommand("dumpCache", "testFixture");
+		await testCommand("dumpCache");
+	});
+
+
 	test("No active document", async () =>
 	{
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
