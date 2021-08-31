@@ -280,6 +280,33 @@ Ext.define('VSCodeExtJS',
                 }
             };
         }
+	},
+
+	columns: [
+	{
+		text: 'test',
+		filter: 'string'
+	},
+	{
+		text: 'test2',
+		filter: 
+		{
+			type: 'yesno',
+			dataIndex: valueField,
+			
+		}
+	}], 
+
+	yesNo: function(valueField, displayField, changeCb)
+	{
+		return {
+			text: displayField,
+			filter:
+			{
+				type: 'yesno',
+				dataIndex: valueField
+			}
+		};
 	}
 
 });
