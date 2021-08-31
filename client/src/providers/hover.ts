@@ -35,7 +35,9 @@ class ExtJsHoverProvider implements HoverProvider
         // Indexer finished, proceed...
         //
 
-        const { cmpType, property, cmpClass, thisClass, thisCmp, callee, text, lineText, project } = extjsLangMgr.getLineProperties(document, position, "   ", 2);
+        const {
+            cmpType, property, cmpClass, thisClass, thisCmp, callee, text, lineText, lineTextCut, project, component
+        } = extjsLangMgr.getLineProperties(document, position, "   ", 2);
 
         log.values([
             ["component class", cmpClass], ["this class", thisClass], ["callee", callee],
@@ -46,7 +48,8 @@ class ExtJsHoverProvider implements HoverProvider
         {
             if (cmpType === ComponentType.Method)
             {
-                const method = extjsLangMgr.getMethod(cmpClass, property, project, false, "   ", 2);
+                const isStatic = !!component && lineTextCut.includes(cmpClass + ".") && !(component as IComponent).singleton,
+                      method = extjsLangMgr.getMethod(cmpClass, property, project, isStatic, "   ", 2);
                 log.value("   provide class hover info", property, 2);
                 if (method) { // it could happen, if this fires immediately following en edit
                     let returns = "";

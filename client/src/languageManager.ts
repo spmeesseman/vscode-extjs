@@ -33,6 +33,7 @@ export interface ILineProperties
     cmpType: ComponentType;
     text: string;
     lineText: string;
+    lineTextCut: string;
     project: string;
     component: IComponent | IPrimitive | undefined;
 }
@@ -473,6 +474,7 @@ class ExtjsLanguageManager
                 text,
                 project,
                 lineText: allLineText,
+                lineTextCut: lineText,
                 component: thisCmp
             };
         }
@@ -493,6 +495,7 @@ class ExtjsLanguageManager
                 text,
                 project,
                 lineText: allLineText,
+                lineTextCut: lineText,
                 component
             };
         }
@@ -603,7 +606,7 @@ class ExtjsLanguageManager
             cmpType = component ? ComponentType.Class : ComponentType.Property;
         }
         //
-        // Classes and property class instances (non string literal).  Non-keywords will fall here too
+        // Classes and property class instances, string literals, Non-keywords will fall here too
         //
         else if (new RegExp(`(.|^\\s*)${property}.[\\W\\w]*$`).test(lineText))
         {   //
@@ -681,14 +684,15 @@ class ExtjsLanguageManager
         {
             cmpClass = this.getComponentClass(property, project, position, lineText, thisPath, logPad + "   ", logLevel);
             if (cmpClass)
-            {   //
+            {
+                component = this.getComponent(cmpClass, project, "   ", logLevel + 1);
+                //
                 // getComponentClass() will return the file class if this is a config getter/setter, so
                 // check the methods mapping to see if it exists on the main component or not.  If it doesn't
                 // then check if its a config property getter/setter fn
                 //
-                const classHasMethod = !!this.components.find(c =>
-                    c.componentClass === cmpClass && project === getWorkspaceProjectName(c.fsPath)
-                )?.methods?.find(x => x.name === property);
+                const isStatic = !!component && lineText.includes(cmpClass + ".") && !(component as IComponent).singleton,
+                      classHasMethod = !!this.getMethod(cmpClass, property, project, isStatic, "   ", logLevel + 1);
                 if (!classHasMethod && utils.isGetterSetter(property))
                 {   //
                     // A config property:
@@ -711,8 +715,18 @@ class ExtjsLanguageManager
                 }
             }
         }
-        else // ComponentType.Property / ComponentType.Config | variable / parameter
-        {   //
+        //
+        // Check to make sure it isn't a quoted string that isnt preceded by type/xtype, if
+        // not then we have a cfg/prop/var/param
+        //
+        // TODO - filters.property:
+        //        sorters.property:
+        //        sorters: [
+        //        new RegExp(`property\\s*:\\s*${property}["']+`).test(lineText)
+        //
+        else if (new RegExp(`x?type\\s*:\\s*["']+${property}["']+`).test(allLineText) || !(new RegExp(`["']+[^"']*${property}\\s*[^"']*["']+`).test(allLineText)))
+        {   // ComponentType.Property / ComponentType.Config | variable / parameter
+            //
             component = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel);
             if (!component) {
                 component = this.components.find(c => /* c.nameSpace === nameSpace && */
@@ -753,6 +767,7 @@ class ExtjsLanguageManager
             text,
             project,
             lineText: allLineText,
+            lineTextCut: lineText,
             component
         };
     }
