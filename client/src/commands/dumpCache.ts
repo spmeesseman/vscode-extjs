@@ -27,20 +27,14 @@ function dumpCache(project?: string, logPad = "   ", logLevel = 1)
             }
             else
             {
-                if (workspace.workspaceFolders.length > 1)
+                fileGlob = "";
+                for (const wsFolder of workspace.workspaceFolders)
                 {
-                    fileGlob = "{";
-                    for (const wsFolder of workspace.workspaceFolders)
-                    {
-                        if (fileGlob !== "{") { fileGlob += ","; }
-                        fileGlob += `${path.basename(wsFolder.uri.fsPath)}`;
-                    }
-                    fileGlob += "}/**/components.json";
+                    if (fileGlob !== "") { fileGlob += ","; }
+                    fileGlob += `${path.basename(wsFolder.uri.fsPath)}`;
                 }
-                else {
-                    project = path.basename(workspace.workspaceFolders[0].uri.fsPath);
-                    cmpPath = path.join(fsStoragePath, project);
-                }
+                fileGlob = workspace.workspaceFolders.length > 1 ? `{${fileGlob}}/**/components.json` :
+                                                                   `${fileGlob}/**/components.json`;
             }
 
             glob(fileGlob, { nocase: true, ignore: "flags/**", cwd: cmpPath }, async (err, files) =>
