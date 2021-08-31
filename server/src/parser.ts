@@ -12,7 +12,7 @@ import {
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
-    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral
+    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral, isReturnStatement, ReturnStatement, FunctionExpression
 } from "@babel/types";
 
 /**
@@ -51,8 +51,8 @@ export async function parseExtJsFile(options: IServerRequest)
     // Construct our syntax tree to be able to serve the goods
     //
     traverse(nodeAst.ast,
-    {
-        CallExpression(path)
+    {                        // Get the main Ext.define call expression
+        CallExpression(path) // The only damn reason a standard js parser doesnt work for ExtJs files
         {
             const callee = path.node.callee,
                 args = path.node.arguments;
@@ -241,6 +241,7 @@ export async function parseExtJsFile(options: IServerRequest)
 
                         //
                         // Type/xtype/model widget definitions
+                        // These are the external xtypes/types found that are referenced within a component
                         //
                         componentInfo.widgets.push(...parseWidgets(args[1], text, componentInfo, "xtype").filter((x) => {
                             for (const x2 of componentInfo.xtypes) {
@@ -549,11 +550,11 @@ function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRa
 
     if (isFunctionExpression(m.value))
     {
-        const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p) || isAssignmentExpression(p));
+        const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p) || isAssignmentExpression(p) || isReturnStatement(p));
+
         if (propertyObjects && propertyObjects.length)
         {
-
-            const pushRanges = (args: any) =>
+            const pushRanges = (args: any, name: string) =>
             {
                 for (const a of args)
                 {
@@ -563,7 +564,14 @@ function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRa
                             start: a.loc!.start,
                             end: a.loc!.end,
                             type: a.type,
-                            name: methodName
+                            name
+                        });
+                        a.properties.forEach(p =>
+                        {
+                            if (isObjectProperty(p) && isObjectExpression(p.value) && isIdentifier(p.key))
+                            {
+                                pushRanges([ p ], p.key.name);
+                            }
                         });
                     }
                 }
@@ -577,13 +585,13 @@ function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRa
                     {
                         if (isCallExpression(d.init) || isNewExpression(d.init))
                         {
-                            pushRanges(d.init.arguments);
+                            pushRanges(d.init.arguments, methodName);
                         }
                         if (isAwaitExpression(d.init))
                         {
                             if (isCallExpression(d.init.argument))
                             {
-                                pushRanges(d.init.argument.arguments);
+                                pushRanges(d.init.argument.arguments, methodName);
                             }
                             else {
                                 log.error("Unhandled Object Range: unexpected await syntax", [["method name", methodName]]);
@@ -594,10 +602,16 @@ function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRa
                 else if (isExpressionStatement(o))
                 {
                     if (isCallExpression(o.expression)) {
-                        pushRanges(o.expression.arguments);
+                        pushRanges(o.expression.arguments, methodName);
                     }
                     else if (isAssignmentExpression(o.expression) && isCallExpression(o.expression.right)) {
-                        pushRanges(o.expression.right.arguments);
+                        pushRanges(o.expression.right.arguments, methodName);
+                    }
+                }
+                else if (isReturnStatement(o))
+                {
+                    if (isObjectExpression(o.argument)) {
+                        pushRanges([ o.argument ], methodName);
                     }
                 }
             });
@@ -608,18 +622,17 @@ function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRa
 }
 
 
-function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement)[]): IObjectRange[]
+function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement | FunctionExpression)[]): IObjectRange[]
 {
     const objectRanges: IObjectRange[] = [];
 
-    const pushRanges = (props: (ObjectMethod | ObjectProperty | SpreadElement)[] | undefined) =>
+    const pushRanges = (props: (ObjectMethod | ObjectProperty | SpreadElement | ReturnStatement | FunctionExpression)[] | undefined) =>
     {
         props?.forEach((m) =>
         {
-            if (isObjectProperty(m))
+            if (isObjectProperty(m) && isIdentifier(m.key))
             {
-                const name = isIdentifier(m.key) ? m.key.name : undefined;
-                if (name && ignoreProperties.indexOf(name) === -1)
+                if (m.key.name && ignoreProperties.indexOf(m.key.name) === -1)
                 {
                     if (isObjectExpression(m.value))
                     {
@@ -627,27 +640,53 @@ function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement
                             start: m.loc!.start,
                             end: m.loc!.end,
                             type: m.type,
-                            name
+                            name: m.key.name
                         });
-                        pushRanges(m.value.properties.filter(p => isObjectProperty(p) && !isFunctionExpression(p.value)));
+                        pushRanges(m.value.properties.filter(p => isObjectProperty(p)));
+                    }
+                    else if (isFunctionExpression(m.value))
+                    {
+                        m.value.body.body.filter(p => isReturnStatement(p)).forEach(p =>
+                        {
+                            if (isReturnStatement(p) && isObjectExpression(p.argument))
+                            {
+                                objectRanges.push({
+                                    start: p.argument.loc!.start,
+                                    end: p.argument.loc!.end,
+                                    type: p.argument.type,
+                                    name: undefined
+                                });
+                                pushRanges(p.argument.properties.filter(p => isObjectProperty(p)));
+                            }
+                        });
                     }
                     else if (isArrayExpression(m.value))
                     {
                         for (const e of m.value.elements)
                         {
-                            if (isObjectExpression(e))
+                            if (isObjectExpression(e) && isIdentifier(m.key))
                             {
                                 objectRanges.push({
                                     start: e.loc!.start,
                                     end: e.loc!.end,
                                     type: e.type,
-                                    name: undefined
+                                    name: m.key.name
                                 });
-                                pushRanges(e.properties.filter(p => isObjectProperty(p) && !isFunctionExpression(p.value)));
+                                pushRanges(e.properties.filter(p => isObjectProperty(p)));
                             }
                         }
                     }
                 }
+            }
+            else if (isReturnStatement(m) && isObjectExpression(m.argument))
+            {
+                objectRanges.push({
+                    start: m.argument.loc!.start,
+                    end: m.argument.loc!.end,
+                    type: m.argument.type,
+                    name: undefined
+                });
+                pushRanges(m.argument.properties.filter(p => isObjectProperty(p)));
             }
             else if (isObjectMethod(m) && isObjectExpression(m.body.body))
             {
@@ -657,6 +696,7 @@ function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement
                     type: m.type,
                     name: undefined
                 });
+                pushRanges(m.body.body.properties.filter(p => isObjectProperty(p)));
             }
             else if (isSpreadElement(m))
             {
@@ -668,6 +708,7 @@ function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement
                         type: m.type,
                         name: undefined
                     });
+                    pushRanges(m.argument.properties.filter(p => isObjectProperty(p)));
                 }
                 else if (isArrayExpression(m.argument))
                 {
@@ -681,6 +722,7 @@ function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement
                                 type: e.type,
                                 name: undefined
                             });
+                            pushRanges(e.properties.filter(p => isObjectProperty(p)));
                         }
                     }
                 }
