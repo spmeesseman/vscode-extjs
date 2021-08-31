@@ -144,11 +144,23 @@ suite("Hover Tests", () =>
 	});
 
 
+	test("Unknown strings", async () =>
+	{
+		//
+		// Line 355
+		// dataIndex: 'users.usertype'
+		//
+		await testHover(docUri, new vscode.Position(353, 20));
+		await testHover(docUri, new vscode.Position(354, 25));
+	});
+
+
 	test("Unknown keywords", async () =>
     {
 		await testHover(docUri, new vscode.Position(150, 3));
 		await testHover(docUri, new vscode.Position(241, 16)); // "type: 'string'"" hits shouldIgnoreType()
-		await testHover(docUri, new vscode.Position(135, 5)); // "return" hits shouldIgnoreType()
+		await testHover(docUri, new vscode.Position(135, 5));  // "return" hits shouldIgnoreType()
+		await testHover(docUri, new vscode.Position(353, 10)); // labelField:
     });
 
 
