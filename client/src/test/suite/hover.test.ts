@@ -67,10 +67,24 @@ suite("Hover Tests", () =>
 	});
 
 
+	test("Privates", async () =>
+	{
+		await testHover(docUri, new vscode.Position(94, 28), "function stopAllPriv: returns string");
+		await testHover(docUri, new vscode.Position(228, 44)); // <- improper non-static, returns nothing
+	});
+
+
+	test("Statics", async () =>
+	{
+		await testHover(docUri, new vscode.Position(192, 44), "function stopAll: returns boolean");
+		await testHover(docUri, new vscode.Position(231, 44)); // undefined static method returns nothing
+	});
+
+
 	test("Aliases", async () =>
 	{
-		await testHover(docUri, new vscode.Position(72, 4), "AppUtils");
-		await testHover(docUri, new vscode.Position(72, 12), "AppUtils.alertError");
+		await testHover(docUri, new vscode.Position(72, 4), "singleton AppUtilities: VSCodeExtJS.AppUtilities");
+		await testHover(docUri, new vscode.Position(72, 12), "VSCodeExtJS.AppUtilities.alertError");
 	});
 
 
@@ -144,14 +158,25 @@ suite("Hover Tests", () =>
 	});
 
 
+	test("Filter types", async () =>
+	{
+		//
+		// Line 295, 307
+		// type: "yesno"
+		//
+		await testHover(docUri, new vscode.Position(294, 12), "class yesno: VSCodeExtJS.common.YesNo");
+		await testHover(docUri, new vscode.Position(306, 13), "class yesno: VSCodeExtJS.common.YesNo");
+	});
+
+
 	test("Unknown strings", async () =>
 	{
 		//
 		// Line 355
 		// dataIndex: 'users.usertype'
 		//
-		await testHover(docUri, new vscode.Position(353, 20));
-		await testHover(docUri, new vscode.Position(354, 25));
+		await testHover(docUri, new vscode.Position(286, 12));
+		await testHover(docUri, new vscode.Position(287, 25));
 	});
 
 

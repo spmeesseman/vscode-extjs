@@ -92,7 +92,7 @@ Ext.define('VSCodeExtJS',
 			hidden: false,
 			disabled: true
 		});
-		phys3.load(b);
+		phys3.load(b); phys3.stopAllPriv("test", false, false);
         
 	},
 
@@ -285,6 +285,7 @@ Ext.define('VSCodeExtJS',
 	columns: [
 	{
 		text: 'test',
+		dataIndex: 'users.usertype',
 		filter: 'string'
 	},
 	{
