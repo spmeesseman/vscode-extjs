@@ -185,7 +185,7 @@ suite("Hover Tests", () =>
 		await testHover(docUri, new vscode.Position(150, 3));
 		await testHover(docUri, new vscode.Position(241, 16)); // "type: 'string'"" hits shouldIgnoreType()
 		await testHover(docUri, new vscode.Position(135, 5));  // "return" hits shouldIgnoreType()
-		await testHover(docUri, new vscode.Position(353, 10)); // labelField:
+		await testHover(docUri, new vscode.Position(308, 10)); // labelField:
     });
 
 

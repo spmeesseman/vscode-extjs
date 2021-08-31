@@ -293,7 +293,7 @@ Ext.define('VSCodeExtJS',
 		filter: 
 		{
 			type: 'yesno',
-			dataIndex: valueField,
+			dataIndex: 'id',
 			
 		}
 	}], 
@@ -305,7 +305,8 @@ Ext.define('VSCodeExtJS',
 			filter:
 			{
 				type: 'yesno',
-				dataIndex: valueField
+				dataIndex: 'id',
+				labelField: 'name'
 			}
 		};
 	}
