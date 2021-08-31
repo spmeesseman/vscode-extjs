@@ -21,6 +21,7 @@
         "noscripts",
         "qzsiniong",
         "vsix",
-        "vslauncher"
+        "vslauncher",
+        "yesno"
     ]
 }
