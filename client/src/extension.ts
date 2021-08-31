@@ -140,7 +140,7 @@ function registerCommands(context: ExtensionContext)
 
 function registerExplorer(context: ExtensionContext): TaskTreeDataProvider | undefined
 {
-    // const name = "taskExplorer";
+    // const name = "extjsTaskExplorer";
     // log.write("Register tasks tree provider '" + name + "'");
     // if (workspace.workspaceFolders)
     // {
