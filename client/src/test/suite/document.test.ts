@@ -109,6 +109,14 @@ suite("Document Tests", () =>
 	});
 
 
+    // test("Add workspace folder", async () =>
+    // {
+    // 	// await vscode.commands.executeCommand("vscode.openFolder");
+    // 	// vscode.workspace.
+    // 	// await waitForValidation();
+    // });
+
+
 	test("Non-ExtJS document", async () =>
 	{   //
 		// Open non extjs doc outside of a classpath

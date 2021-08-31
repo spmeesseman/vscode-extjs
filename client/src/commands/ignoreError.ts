@@ -4,7 +4,7 @@ import { addIgnoreError } from "../common/ignoreError";
 import { extjsLangMgr } from "../extension";
 
 
-export async function ignoreError(code: number | undefined, document: TextDocument | undefined, range: Range | Selection | undefined)
+async function ignoreError(code: number | undefined, document: TextDocument | undefined, range: Range | Selection | undefined)
 {
 	if (code)
 	{

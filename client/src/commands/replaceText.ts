@@ -2,7 +2,7 @@
 import { commands, ExtensionContext, Range, TextEditor, TextEditorEdit } from "vscode";
 
 
-export function replaceText(textEditor: TextEditor, edit: TextEditorEdit, text: string | undefined, range: Range | undefined)
+function replaceText(textEditor: TextEditor, edit: TextEditorEdit, text: string | undefined, range: Range | undefined)
 {
 	if (range && (text || text === ""))
 	{

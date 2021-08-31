@@ -17,7 +17,7 @@ export function showReIndexButton(show = true)
 }
 
 
-export async function indexFiles(project?: string, clean = true, logPad = "")
+async function indexFiles(project?: string, clean = true, logPad = "")
 {
     log.methodStart("index files command", 1, logPad, true);
 

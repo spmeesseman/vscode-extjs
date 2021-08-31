@@ -5,7 +5,7 @@ import { commands, ExtensionContext } from "vscode";
 import { extjsLangMgr } from "../extension";
 
 
-export async function waitReady(logPad = "   ", timeout = 120000, logLevel = 3)
+async function waitReady(logPad = "   ", timeout = 120000, logLevel = 3)
 {
     log.methodStart("wait ready command", logLevel, logPad);
 

@@ -463,7 +463,6 @@ function addClassSuggestions(diagnostic: Diagnostic, text: string, document: Tex
 }
 
 
-
 function addXTypeSuggestions(diagnostic: Diagnostic, widget: IWidget, thisCmp: IComponent, document: TextDocument)
 {
 	const suggestions: string[] = [];
