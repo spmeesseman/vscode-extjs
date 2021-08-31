@@ -42,7 +42,7 @@ class ExtjsLanguageManager
 {   //
     // When an update requires a re-index, change the name of this flag
     //
-    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.8.0";
+    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.8.1";
 
     private isIndexing = false;
     private isValidating = false;
@@ -670,6 +670,9 @@ class ExtjsLanguageManager
             else if (component = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
                 cmpClass = component.componentClass;
             }
+            else if (component = this.getComponent(cmpClass, project, logPad + "   ", logLevel)) {
+                cmpClass = component.componentClass;
+            }
             else {
                 cmpType = ComponentType.None;
             }
@@ -1033,7 +1036,7 @@ class ExtjsLanguageManager
         // needs to happen when the new version is run for the first time on the user machine.
         // Clear the fs cache in the case where this flag is set but a re-indexing hasnt happened yet.
         //
-        const needsReIndex = storage.get<string>(this.forceReIndexOnUpdateFlag, "false") !== "true";
+        const needsReIndex = storage.get<string>(this.forceReIndexOnUpdateFlag + "_" + this.isTests, "false") !== "true";
         if (needsReIndex) {
             await commands.executeCommand("vscode-extjs:clearAst", undefined, true, logPad + "   ");
         }
@@ -1214,7 +1217,7 @@ class ExtjsLanguageManager
         // needs to happen when the new version is run for the first time on the user machine.
         // Set flag that indexing was done
         //
-        await storage.update(this.forceReIndexOnUpdateFlag, "true");
+        await storage.update(this.forceReIndexOnUpdateFlag + "_" + this.isTests, "true");
 
         log.methodDone("index all", logLevel, logPad, true);
     }
