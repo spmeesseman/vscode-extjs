@@ -25,10 +25,16 @@ export function getComponentByAlias(alias: string, project: string, components: 
 		let matched = false;
 		if (project === c.project)
 		{
-			if (isAlias(a)) {
+			if (isAlias(a))
+			{
 				matched = a.name === alias || a.name === `${a.nameSpace}.${alias}`;
+				//
+				// Handle model associations
+				//
 				if (!matched && a.nameSpace === "model" && w?.parentProperty === "reference")
-				{
+				{   //
+					// Look for the model definition that defines the 'schema' property
+					//
 					const schemaCmp = components.find(sc => sc.project === project && sc.properties.find(sp => sp.name === "schema"));
 					if (schemaCmp)
 					{

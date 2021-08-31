@@ -12,7 +12,7 @@ import {
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
-    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral, isReturnStatement, ReturnStatement, FunctionExpression
+    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral, isReturnStatement, ReturnStatement, FunctionExpression, assignmentExpression, identifier, isLVal
 } from "@babel/types";
 
 /**
@@ -976,49 +976,53 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
     traverse(ast,
     {
         ExpressionStatement(path)
-        {   //
+        {
+            let rightExpression, id;
+            //
             // If a method parameter is reset, the intellisense should change
             // on this variable if editing below the reassignment.  Record the position
             // of the reassignment and the new variable type it has become
             //
             const node = path.node;
-            if (!isAssignmentExpression(node.expression)) {
-                return;
+            if (isAssignmentExpression(node.expression)) {
+                rightExpression = node.expression.right;
+                id = node.expression.left;
             }
-            if (isIdentifier(node.expression.left))
+            else if (isCallExpression(node.expression)) {
+                rightExpression = node.expression;
+                id = identifier("_");
+            }
+            if (isCallExpression(rightExpression) && isLVal(id))
             {
-                if (isCallExpression(node.expression.right))
-                {
-                    try {
-                        const declarator = variableDeclarator(node.expression.left, node.expression.right),
-                              declaration = variableDeclaration("let", [ declarator ]);
-                        declarator.loc = { ...node.expression.right.loc } as SourceLocation;
-                        const variable = parseVariable(declaration, declarator, node.expression.left.name, methodName, parentCls);
-                        if (variable) {
-                            _add(variable);
-                        }
-                    }
-                    catch (e) {
-                        log.error(e);
+                try {
+                    const declarator = variableDeclarator(id, rightExpression),
+                            declaration = variableDeclaration("let", [ declarator ]);
+                    declarator.loc = { ...rightExpression.loc } as SourceLocation;
+                    const variable = parseVariable(declaration, declarator, identifier.name, methodName, parentCls);
+                    if (variable) {
+                        _add(variable);
                     }
                 }
-                if (params)
-                {
-                    for (const p of params)
-                    {
-                        if (p.name === node.expression.left.name) {
-                            //
-                            // TODO - parameter reassignment
-                            //
-                            // const variable = parseVariable(node.expression.r, dec, dec.id.name, methodName, dec.id.name);
-                            // if (variable) {
-                            //     _add(variable);
-                            //     p.reassignments.push(variable);
-                            // }
-                        }
-                    }
+                catch (e) {
+                    log.error(e);
                 }
             }
+            // if (params)
+            // {
+            //     for (const p of params)
+            //     {
+            //         if (p.name === node.expression.left.name) {
+            //             //
+            //             // TODO - parameter reassignment
+            //             //
+            //             const variable = parseVariable(node.expression.r, dec, dec.id.name, methodName, dec.id.name);
+            //             if (variable) {
+            //                 _add(variable);
+            //                 p.reassignments.push(variable);
+            //             }
+            //         }
+            //     }
+            // }
         },
 
         VariableDeclaration(path)
