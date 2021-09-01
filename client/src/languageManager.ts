@@ -14,7 +14,7 @@ import {
 import * as log from "./common/log";
 import * as path from "path";
 import ServerRequest from "./common/ServerRequest";
-import { pathExists } from "../../common/lib/fs";
+import { getDateModified, pathExists } from "../../common/lib/fs";
 import { fsStorage } from "./common/fsStorage";
 import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
@@ -1104,6 +1104,7 @@ class ExtjsLanguageManager
             {
                 if (!_isIndexed(conf.baseDir))
                 {
+                    processedDirs.push(conf.baseDir);
                     components = JSON.parse(storedComponents);
                     increment = Math.round(1 / components.length * cfgPct);
                     //
@@ -1111,8 +1112,22 @@ class ExtjsLanguageManager
                     //
                     for (const c of components)
                     {
-                        processedDirs.push(c.fsPath);
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
+                        const tsKey = c.fsPath + "_TIMESTAMP",
+                            lastModified = await getDateModified(c.fsPath);
+                        //
+                        // If the file's been modified since the last time it's been indexed, then re-index
+                        // and update the in-memory component array
+                        //
+                        if (lastModified && lastModified > storage.get<Date>(tsKey, new Date()))
+                        {
+                            log.write(`   Index modified file ${c.fsPath}`, logLevel + 1, logPad);
+                            const cmps = await this.indexFile(c.fsPath, c.nameSpace, false, Uri.file(c.fsPath), false, "   ", logLevel + 2);
+                            if (cmps) {
+                                await this.processComponents(cmps, projectName, false, "   ", logLevel + 2);
+                                await storage.update(tsKey, new Date());
+                            }
+                        }
                         pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
                         progress.report({
                             increment,
@@ -1176,12 +1191,12 @@ class ExtjsLanguageManager
                 {
                     if (!_isIndexed(dir))
                     {
-                        log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, 2, logPad);
+                        log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, logLevel + 1, logPad);
 
                         const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
                         for (const uri of uris)
                         {
-                            log.write(`   Index file ${++currentFile} of ${numFiles}`, 2, logPad);
+                            log.write(`   Index file ${++currentFile} of ${numFiles}`, logLevel + 2, logPad);
                             //
                             // Index this file and process its components
                             //
@@ -1262,7 +1277,7 @@ class ExtjsLanguageManager
     }
 
 
-    async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall: boolean, logPad: string, logLevel: number, edits?: IEdit[]): Promise<IComponent[] | false | undefined>
+    async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall: boolean, logPad: string, logLevel: number, edits?: IEdit[]): Promise<IComponent[] | undefined>
     {
         log.methodStart("indexing " + fsPath, logLevel, logPad, true, [[ "namespace", nameSpace ]]);
 
@@ -1328,7 +1343,7 @@ class ExtjsLanguageManager
         // this is a filewatcher event it's guaranteed to be a js file).)
         //
         if (!utils.isExtJsFile(text)) {
-            return false;
+            return;
         }
 
         //
@@ -1475,6 +1490,7 @@ class ExtjsLanguageManager
 
         await fsStorage.update(storageKey, JSON.stringify(storedComponents));
         await storage.update(storageKey + "_TIMESTAMP", new Date());
+        await storage.update(fsPath + "_TIMESTAMP", new Date());
     }
 
 

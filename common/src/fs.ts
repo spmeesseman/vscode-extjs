@@ -7,9 +7,22 @@ import { timeout, isString } from "./utils";
 let cwd = process.cwd();
 
 
-export function setCwd(dir: string)
+export function appendFile(file: string, data: string): Promise<void>
 {
-    cwd = dir;
+    return new Promise<void>((resolve, reject) =>
+    {
+        try {
+            fs.appendFile(path.resolve(cwd, file), data, (err) => {
+                if (err) {
+                    reject(err);
+                }
+                resolve();
+            });
+        }
+        catch (e) {
+            reject(e);
+        }
+    });
 }
 
 
@@ -45,9 +58,6 @@ export function copyFile(src: string, dst: string)
 }
 
 
-//
-// TODO - make a pure async imp.
-//
 export function copyDir(src: string, dst: string, filter?: RegExp, copyWithBaseFolder = false)
 {
     return new Promise<boolean>(async (resolve, reject) =>
@@ -114,7 +124,8 @@ export function copyDir(src: string, dst: string, filter?: RegExp, copyWithBaseF
 
 export function createDir(dir: string)
 {
-    return new Promise<boolean>(async (resolve, reject) => {
+    return new Promise<boolean>(async (resolve, reject) =>
+    {
         try {
             const baseDir = path.dirname(dir);
             if (!(await pathExists(baseDir))) {
@@ -125,63 +136,6 @@ export function createDir(dir: string)
                     reject(err);
                 }
                 resolve(true);
-            });
-        }
-        catch (e) {
-            reject(e);
-        }
-    });
-}
-
-
-export function pathExists(file: string): Promise<boolean>
-{
-    return new Promise<boolean>((resolve, reject) => {
-        try {
-            if (!file) {
-                resolve(false);
-                return;
-            }
-            fs.access(path.resolve(cwd, file), (e) => {
-                if (e) {
-                    resolve(false);
-                }
-                resolve(true);
-            });
-        }
-        catch (e) {
-            resolve(false);
-        }
-    });
-}
-
-
-export function readFile(file: string): Promise<string>
-{
-    return new Promise<string>(async (resolve, reject) => {
-        try {
-            const buf = await readFileBuf(file);
-            if (buf) {
-                resolve(buf.toString("utf8"));
-            }
-            resolve("");
-        }
-        catch (e) {
-            reject(e);
-        }
-    });
-}
-
-
-export function readFileBuf(file: string): Promise<Buffer>
-{
-    return new Promise<Buffer>((resolve, reject) => {
-        try {
-            fs.readFile(path.resolve(cwd, file), (e, data) => {
-                if (e) {
-                    reject(e);
-                }
-                resolve(data);
             });
         }
         catch (e) {
@@ -243,21 +197,20 @@ export function deleteFile(file: string): Promise<void>
 }
 
 
-/**
- * Overwrites file if it exists
- *
- * @param file The file path to write to
- * @param data The data to write
- */
-export function writeFile(file: string, data: string): Promise<void>
+export function getDateModified(file: string)
 {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<Date|undefined>((resolve, reject) =>
+    {
         try {
-            fs.writeFile(path.resolve(cwd, file), data, (err) => {
-                if (err) {
-                    reject(err);
+            if (!file) {
+                reject(new Error("Invalid file path"));
+                return;
+            }
+            fs.stat(file, { bigint: true }, (e, stats) => {
+                if (e) {
+                    reject(e);
                 }
-                resolve();
+                resolve(stats.mtime);
             });
         }
         catch (e) {
@@ -267,15 +220,57 @@ export function writeFile(file: string, data: string): Promise<void>
 }
 
 
-export function appendFile(file: string, data: string): Promise<void>
+export function pathExists(file: string): Promise<boolean>
 {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<boolean>((resolve, reject) =>
+    {
         try {
-            fs.appendFile(path.resolve(cwd, file), data, (err) => {
-                if (err) {
-                    reject(err);
+            if (!file) {
+                resolve(false);
+                return;
+            }
+            fs.access(path.resolve(cwd, file), (e) => {
+                if (e) {
+                    resolve(false);
                 }
-                resolve();
+                resolve(true);
+            });
+        }
+        catch (e) {
+            resolve(false);
+        }
+    });
+}
+
+
+export function readFile(file: string): Promise<string>
+{
+    return new Promise<string>(async (resolve, reject) =>
+    {
+        try {
+            const buf = await readFileBuf(file);
+            if (buf) {
+                resolve(buf.toString("utf8"));
+            }
+            resolve("");
+        }
+        catch (e) {
+            reject(e);
+        }
+    });
+}
+
+
+export function readFileBuf(file: string): Promise<Buffer>
+{
+    return new Promise<Buffer>((resolve, reject) =>
+    {
+        try {
+            fs.readFile(path.resolve(cwd, file), (e, data) => {
+                if (e) {
+                    reject(e);
+                }
+                resolve(data);
             });
         }
         catch (e) {
@@ -343,4 +338,35 @@ export async function replaceInFile(file: string, old: string, nu: string | ((m:
         timeout(500);
     }
     return content !== contentNew;
+}
+
+
+export function setCwd(dir: string)
+{
+    cwd = dir;
+}
+
+
+/**
+ * Overwrites file if it exists
+ *
+ * @param file The file path to write to
+ * @param data The data to write
+ */
+export function writeFile(file: string, data: string): Promise<void>
+{
+    return new Promise<void>((resolve, reject) =>
+    {
+        try {
+            fs.writeFile(path.resolve(cwd, file), data, (err) => {
+                if (err) {
+                    reject(err);
+                }
+                resolve();
+            });
+        }
+        catch (e) {
+            reject(e);
+        }
+    });
 }
