@@ -769,49 +769,46 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 // within one of these ranges.  The configs/props only get displayed when the current
                 // position is within an object expression.
                 //
-                if (getObjectRangeByPosition(config.position, method))
+                let added = false;
+                //
+                // Method variable parameter object expressions
+                //
+                // Example:
+                //
+                //     const user = VSCodeExtJS.model.User.create({
+                //         phantom:
+                //     });
+                //
+                method.variables.filter((v) => isPositionInRange(config.position, toVscodeRange(v.start, v.end))).forEach((v) =>
                 {
-                    let added = false;
+                    const cmp = extjsLangMgr.getComponent(v.componentClass, config.project, logPad + "   ", logLevel + 1);
+                    _addProps(cmp, true);
+                    added = !!cmp;
+                });
+                //
+                // If we didn't find a variable definition that ranged our current position and
+                // defined the component class that the object range is an argument of, then check
+                // the object type/xtype
+                //
+                if (!added)
+                {   //
+                    // Add inner object class properties if there's an xtype label defined on it
                     //
-                    // Method variable parameter object expressions
+                    // Example, consider the process of writing of the following:
                     //
-                    // Example:
+                    //     const userDd = Ext.create({
+                    //         xtype: "userdropdowns",
+                    //         fieldLabel: "label",
+                    //         user
                     //
-                    //     const user = VSCodeExtJS.model.User.create({
-                    //         phantom:
-                    //     });
+                    // While writing the above, at the current end of string, intellisense should pop up
+                    // all properties/configs of the xtype 'userdropdowns' that start with the text
+                    // 'user', i.e. userName, etc
                     //
-                    method.variables.filter((v) => isPositionInRange(config.position, toVscodeRange(v.start, v.end))).forEach((v) =>
-                    {
-                        const cmp = extjsLangMgr.getComponent(v.componentClass, config.project, logPad + "   ", logLevel + 1);
-                        _addProps(cmp, true);
-                        added = !!cmp;
-                    });
-                    //
-                    // If we didn't find a variable definition that ranged our current position and
-                    // defined the component class that the object range is an argument of, then check
-                    // the object type/xtype
-                    //
-                    if (!added)
-                    {   //
-                        // Add inner object class properties if there's an xtype label defined on it
-                        //
-                        // Example, consider the process of writing of the following:
-                        //
-                        //     const userDd = Ext.create({
-                        //         xtype: "userdropdowns",
-                        //         fieldLabel: "label",
-                        //         user
-                        //
-                        // While writing the above, at the current end of string, intellisense should pop up
-                        // all properties/configs of the xtype 'userdropdowns' that start with the text
-                        // 'user', i.e. userName, etc
-                        //
-                        const _addProps2 = (cmp: IComponent | undefined) => { _addProps(cmp, true); };
-                        completionItems.push(...(await this.getObjectRangeCompletionItems(
-                            undefined, config, logPad + "   ", logLevel, _addProps2
-                        )));
-                    }
+                    const _addProps2 = (cmp: IComponent | undefined) => { _addProps(cmp, true); };
+                    completionItems.push(...(await this.getObjectRangeCompletionItems(
+                        undefined, config, logPad + "   ", logLevel, _addProps2
+                    )));
                 }
             }
             //
