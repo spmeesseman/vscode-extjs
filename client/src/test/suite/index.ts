@@ -9,6 +9,8 @@ const NYC = require("nyc");
 const foreground = require("foreground-child");
 import * as glob from "glob";
 
+// import * as baseConfig from "@istanbuljs/nyc-config-typescript";
+
 //
 // Recommended modules, loading them here to speed up NYC init
 // and minimize risk of race condition
@@ -80,6 +82,7 @@ export async function run(): Promise<void>
     //
     const nycCfg: any = {
         extends: "@istanbuljs/nyc-config-typescript",
+        // ...baseConfig,
         // cwd: path.join(__dirname, "..", "..", "..", ".."),
         // reporter: ["text-summary", "html", "lcov", "cobertura" ],
         cwd: nycRoot,
@@ -107,7 +110,7 @@ export async function run(): Promise<void>
     // Check the modules already loaded and warn in case of race condition
     // (ideally, at this point the require cache should only contain one file - this module)
     //
-    const myFilesRegex = /vscode-recall\/dist/;
+    const myFilesRegex = /vscode-extjs\/dist/;
     const filterFn = myFilesRegex.test.bind(myFilesRegex);
     if (Object.keys(require.cache).filter(filterFn).length > 1)
     {
