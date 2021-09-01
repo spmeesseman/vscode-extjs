@@ -3,7 +3,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import { deleteFile, writeFile } from "../../../../common/lib/fs";
 import { configuration } from "../../common/configuration";
-import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocContent } from "./helper";
+import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocContent, closeActiveDocuments } from "./helper";
 
 
 suite("Document Tests", () =>
@@ -36,10 +36,7 @@ suite("Document Tests", () =>
 		await waitForValidation();
 		await configuration.update("validationDelay", validationDelay || 1250);
 		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocuments();
 		await waitForValidation();
 	});
 
@@ -167,6 +164,26 @@ suite("Document Tests", () =>
 		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		await waitForValidation();
+	});
+
+
+	test("Simultaneous non-awaited open", async () =>
+	{   //
+		// Open file that should be ignored
+		//
+		const jssUri = getDocUri("app/shared/src/test/Test.js"),
+			  doc = await vscode.workspace.openTextDocument(jssUri),
+			  jssUri2 = getDocUri("app/js/script1.js"),
+			  doc2 = await vscode.workspace.openTextDocument(jssUri2),
+			  jssUri3 = getDocUri("app/classic/src/common/YesNo.js"),
+			  doc3 = await vscode.workspace.openTextDocument(jssUri3);
+		vscode.window.showTextDocument(doc);
+		vscode.window.showTextDocument(doc2);
+		vscode.window.showTextDocument(doc3);
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 });

@@ -55,7 +55,21 @@ export async function closeActiveDocument()
 {
 	try {
 		await commands.executeCommand("workbench.action.closeActiveEditor");
-	} catch (e) {
+	}
+	catch (e) {
+		console.error(e);
+	}
+}
+
+
+export async function closeActiveDocuments()
+{
+	try {
+		while (window.activeTextEditor) {
+			await commands.executeCommand("workbench.action.closeActiveEditor");
+		}
+	}
+	catch (e) {
 		console.error(e);
 	}
 }

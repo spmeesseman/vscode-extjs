@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, insertDocContent, toRange } from "./helper";
+import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments } from "./helper";
 import { configuration } from "../../common/configuration";
 import { quoteChar } from "../../common/clientUtils";
 
@@ -63,10 +63,7 @@ suite("Completion Tests", () =>
 		//
 		// Close active document
 		//
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocuments();
 		await waitForValidation();
 	});
 

@@ -31,11 +31,6 @@ suite("Task Explorer Tests", () =>
 		await configuration.update("validationDelay", validationDelay || 1250);
 		await configuration.update("enableTaskExplorer", taskExplorerEnabled);
 		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
-		await waitForValidation();
 	});
 
 

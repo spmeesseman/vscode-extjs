@@ -5,7 +5,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, sleep } from "./helper";
+import { getDocUri, activate, waitForValidation, sleep, closeActiveDocuments } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
@@ -33,10 +33,7 @@ suite("Hover Tests", () =>
 		//
 		await configuration.update("validationDelay", validationDelay);
 		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocuments();
 		await waitForValidation();
 	});
 

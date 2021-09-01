@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
@@ -35,10 +35,7 @@ suite("Diagnostics Tests", () =>
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
 		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocuments();
 		await waitForValidation();
 	});
 

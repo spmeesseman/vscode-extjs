@@ -195,6 +195,14 @@ suite("Config File Tests", () =>
 		await configuration.update("frameworkDirectory", fwDirectory);
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		// Some additional coverage - force prompt w/o tests flag set
+		//
+		extjsLangMgr.setTests(false);
+		await configuration.update("include", [ "app" ]); // invalid path value must be name|path
+		await waitForValidation();
+		extjsLangMgr.setTests(true);
+		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -301,7 +309,6 @@ suite("Config File Tests", () =>
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
 	});
-
 
 
 	test("Workspace.json frameworks.ext", async function()

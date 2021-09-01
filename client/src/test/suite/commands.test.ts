@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
 import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
@@ -53,10 +53,7 @@ suite("Command Tests", () =>
 		await waitForValidation();
 		await configuration.update("validationDelay", validationDelay || 1250);
 		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocuments();
 		await waitForValidation();
 	});
 
@@ -222,10 +219,7 @@ suite("Command Tests", () =>
 
 	test("No active document", async () =>
 	{
-		while (vscode.window.activeTextEditor) {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-			await waitForValidation();
-		}
+		await closeActiveDocuments();
 		await testCommand("waitReady");
 		await testCommand("ignoreError", ErrorCode.classNotFound);
 		await testCommand("ignoreError");

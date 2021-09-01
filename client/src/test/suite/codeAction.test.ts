@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
 import { defaultIgnoreTypes, shouldIgnoreType } from "../../common/clientUtils";
@@ -303,10 +303,7 @@ suite("Code Action Tests", () =>
 		}
 		await waitForValidation();
 		await testCodeAction(jssUri, toRange(2, 12, 2, 16), []);
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocuments();
 		await waitForValidation();
 	});
 

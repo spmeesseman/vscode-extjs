@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { configuration } from "../../common/configuration";
-import { getDocUri, activate, insertDocContent, toRange, waitForValidation } from "./helper";
+import { getDocUri, activate, insertDocContent, toRange, waitForValidation, closeActiveDocuments } from "./helper";
 
 
 suite("Method Signature Tests", () =>
@@ -29,10 +29,7 @@ suite("Method Signature Tests", () =>
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
 		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocuments();
 		await waitForValidation();
 	});
 
