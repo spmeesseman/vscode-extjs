@@ -3,7 +3,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import { deleteFile, writeFile } from "../../../../common/lib/fs";
 import { configuration } from "../../common/configuration";
-import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocContent, closeActiveDocuments } from "./helper";
+import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocContent, closeActiveDocuments, closeActiveDocument } from "./helper";
 
 
 suite("Document Tests", () =>
@@ -153,16 +153,10 @@ suite("Document Tests", () =>
 		// Open file that should be ignored
 		//
 		const jssUri = getDocUri("app/shared/src/test/Test.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
+		await activate(jssUri);
 		await waitForValidation();
 		await vscode.commands.executeCommand("vscode-extjs:waitReady");
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 
@@ -181,8 +175,7 @@ suite("Document Tests", () =>
 		vscode.window.showTextDocument(doc2);
 		vscode.window.showTextDocument(doc3);
 		await waitForValidation();
-		await waitForValidation();
-		await waitForValidation();
+		await closeActiveDocument();
 		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 	});
 

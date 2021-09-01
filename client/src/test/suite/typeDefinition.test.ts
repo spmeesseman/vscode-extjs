@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
@@ -101,20 +101,10 @@ suite("Type Definition Tests", () =>
 	test("Non-ExtJS document", async () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		}
-		catch (e) {
-			console.error(e);
-		}
+		await activate(jssUri);
 		await waitForValidation();
 		await testTypeDefinition(jssUri, new vscode.Position(1, 11), []);
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 

@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { configuration } from "../../common/configuration";
-import { getDocUri, activate, insertDocContent, toRange, waitForValidation, closeActiveDocuments } from "./helper";
+import { getDocUri, activate, insertDocContent, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
 
 
 suite("Method Signature Tests", () =>
@@ -284,24 +284,15 @@ suite("Method Signature Tests", () =>
 	test("Non-ExtJS document", async () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		}
-		catch (e) {
-			console.error(e);
-		}
+		await activate(jssUri);
 		await waitForValidation();
 		await testSignature(jssUri, new vscode.Position(2, 16), "(", {
 			activeParameter: 1,
 			activeSignature: 0,
 			signatures: getSigInfo("a, b")
 		}, false);
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await waitForValidation();
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 

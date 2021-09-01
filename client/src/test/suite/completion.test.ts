@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments } from "./helper";
+import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { configuration } from "../../common/configuration";
 import { quoteChar } from "../../common/clientUtils";
 
@@ -901,7 +901,7 @@ suite("Completion Tests", () =>
 			]
 		}, true, "config property of extended class");
 		await insertDocContent("", toRange(14, 0, 14, 1));
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 
@@ -924,7 +924,7 @@ suite("Completion Tests", () =>
 			items: []
 		}, true, "non-extjs file");
 		await waitForValidation();
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 
@@ -937,10 +937,7 @@ suite("Completion Tests", () =>
 		await testCompletion(jssUri, new vscode.Position(2, 12), ".", {
 			items: []
 		}, true, "non-extjs file");
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 

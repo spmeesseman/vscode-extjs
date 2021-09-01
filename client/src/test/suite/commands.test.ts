@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
 import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
@@ -204,14 +204,25 @@ suite("Command Tests", () =>
 	});
 
 
-	test("Dump cache to files", async () =>
+	test("Dump cache to files", async function()
 	{
+		this.timeout(45 * 1000);
 		await testCommand("dumpCache", "testFixture", "");
+		await waitForValidation();
+		await closeActiveDocuments();
 		await testCommand("dumpCache", "", 1);
+		await waitForValidation();
+		await closeActiveDocuments();
 		await testCommand("dumpCache", "testFixture");
+		await waitForValidation();
+		await closeActiveDocuments();
 		await testCommand("dumpCache");
+		await waitForValidation();
+		await closeActiveDocuments();
 		extjsLangMgr.setBusy(true);
 		await testCommand("dumpCache");
+		await waitForValidation();
+		await closeActiveDocuments();
 		extjsLangMgr.setBusy(false);
 		await waitForValidation();
 	});
@@ -219,7 +230,6 @@ suite("Command Tests", () =>
 
 	test("No active document", async () =>
 	{
-		await closeActiveDocuments();
 		await testCommand("waitReady");
 		await testCommand("ignoreError", ErrorCode.classNotFound);
 		await testCommand("ignoreError");
@@ -231,13 +241,13 @@ suite("Command Tests", () =>
 
 	test("Non-extjs document", async function()
 	{
-		await vscode.workspace.openTextDocument(getDocUri("app/js/script1.js"));
+		await activate(getDocUri("app/js/script1.js"));
 		await waitForValidation();
 		await testCommand("ignoreError", ErrorCode.classNotFound);
 		await testCommand("ignoreError");
 		await testCommand("ensureRequire", "physiciandropdown", "xtype");
 		await testCommand("ensureRequire", "users", "type");
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 

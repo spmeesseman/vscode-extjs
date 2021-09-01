@@ -188,20 +188,20 @@ suite("Config File Tests", () =>
 		await commands.executeCommand("vscode-extjs:waitReady");
 		extjsLangMgr.setTests(true);
 		//
-		// Reset (for local tests, this won't matter in a CI environment)
-		//
-		await configuration.update("include", settingsPaths);
-		await waitForValidation();
-		await configuration.update("frameworkDirectory", fwDirectory);
-		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
-		//
 		// Some additional coverage - force prompt w/o tests flag set
 		//
 		extjsLangMgr.setTests(false);
 		await configuration.update("include", [ "app" ]); // invalid path value must be name|path
 		await waitForValidation();
 		extjsLangMgr.setTests(true);
+		await commands.executeCommand("vscode-extjs:waitReady");
+		//
+		// Reset (for local tests, this won't matter in a CI environment)
+		//
+		await configuration.update("include", settingsPaths);
+		await waitForValidation();
+		await configuration.update("frameworkDirectory", fwDirectory);
+		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 

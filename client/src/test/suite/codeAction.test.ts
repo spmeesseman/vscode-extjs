@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
 import { defaultIgnoreTypes, shouldIgnoreType } from "../../common/clientUtils";
@@ -293,17 +293,10 @@ suite("Code Action Tests", () =>
 	test("Non-ExtJS document", async () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		}
-		catch (e) {
-			console.error(e);
-		}
+		await activate(jssUri);
 		await waitForValidation();
 		await testCodeAction(jssUri, toRange(2, 12, 2, 16), []);
-		await closeActiveDocuments();
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 

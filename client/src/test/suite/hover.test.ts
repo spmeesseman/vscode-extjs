@@ -5,7 +5,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, sleep, closeActiveDocuments } from "./helper";
+import { getDocUri, activate, waitForValidation, sleep, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
@@ -218,22 +218,16 @@ suite("Hover Tests", () =>
 		// Open non extjs doc inside of a classpath
 		//
 		const jssUri = getDocUri("app/js/script1.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
+		await activate(jssUri);
 		await waitForValidation();
 		//
 		// Line 145
 		// let cmp = this.down('physiciandropdown');
 		//
 		await testHover(jssUri, new vscode.Position(5, 12));
-
 		await waitForValidation();
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
+		await waitForValidation();
 	});
 
 });
