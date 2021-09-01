@@ -310,7 +310,7 @@ The first time the extension activates, it will index all ExtJS files found with
 
 ![app-publisher-cmdline-banner](https://github.com/spmeesseman/app-publisher/blob/master/res/readme/cmdline-banner.png?raw=true)
 
-This extension is released with the [app-publisher](https://github.com/spmeesseman/app-publisher) tool.
+This extension was released with the [app-publisher](https://github.com/spmeesseman/app-publisher) tool.
 
 ## Thank You
 
