@@ -80,12 +80,12 @@ class MethodSignatureProvider implements SignatureHelpProvider
         const params: ParameterInformation[] = [],
 			  matches = lineText.match(/([\w]+\.)/g),
               methodName = lineText.substring(lineText.lastIndexOf(".") + 1, lineText.indexOf("(")),
-              project = getWorkspaceProjectName(fsPath);
+              thisCmp = extjsLangMgr.getComponentByFile(fsPath, "   ", 2);
 
 		//
 		// Create signature parameter information
 		//
-        if (matches)
+        if (matches && thisCmp)
         {
             let cls = "";
             const _add = (method: IMethod) =>
@@ -122,8 +122,8 @@ class MethodSignatureProvider implements SignatureHelpProvider
                 cls += m;
             }
             cls = cls.substring(0, cls.length - 1); // remove trailing .
-            const cmp = extjsLangMgr.getComponent(cls, project, "   ", 2) ||
-                        extjsLangMgr.getComponentInstance(cls, project, position, fsPath, "   ", 2);
+            const cmp = extjsLangMgr.getComponent(cls, thisCmp.project, "   ", 2) ||
+                        extjsLangMgr.getComponentInstance(cls, thisCmp.project, position, thisCmp, "   ", 2);
 
             if (isComponent(cmp))
             {

@@ -458,7 +458,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             else if (fnText)
             {
                 log.write("   try instance-component tree", logLevel + 2, logPad);
-                const instComponents = this.getLocalInstanceComponents(fnText, lineCls, config.position, fsPath, config.thisCmp, logPad + "   ", logLevel + 1);
+                const instComponents = this.getLocalInstanceComponents(fnText, lineCls, config.position, config.thisCmp, logPad + "   ", logLevel + 1);
                 for (const ic of instComponents) {
                     _pushItems(true, ic);
                 }
@@ -868,12 +868,11 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private getLocalInstanceComponents(fnText: string, lineCls: string, position: Position, fsPath: string, component: IComponent, logPad: string, logLevel: number): IComponent[]
+    private getLocalInstanceComponents(fnText: string, lineCls: string, position: Position, thisCmp: IComponent, logPad: string, logLevel: number): IComponent[]
     {
         log.methodStart("get local instance components", logLevel, logPad);
 
-        const components: IComponent[] = [],
-              project = getWorkspaceProjectName(fsPath);
+        const components: IComponent[] = [];
 
         const _add = ((a: IExtJsBase[]) =>
         {
@@ -882,18 +881,18 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 for (const p of a)
                 {
                     if (p.name === lineCls) {
-                        const lCmp = extjsLangMgr.getComponentInstance(lineCls, project, position, fsPath, logPad + "   ", logLevel + 1) as IComponent;
+                        const lCmp = extjsLangMgr.getComponentInstance(lineCls, thisCmp.project, position, thisCmp, logPad + "   ", logLevel + 1) as IComponent;
                         components.push(lCmp);
                         break;
                     }
                 }
             }
             else {
-                const lCmp = extjsLangMgr.getComponentInstance(lineCls, project, position, fsPath, logPad + "   ", logLevel + 1) as IComponent;
+                const lCmp = extjsLangMgr.getComponentInstance(lineCls, thisCmp.project, position, thisCmp, logPad + "   ", logLevel + 1) as IComponent;
                 components.push(lCmp);
             }
         });
-        for (const m of component.methods)
+        for (const m of thisCmp.methods)
         {
             if (m.name === fnText)
             {
