@@ -12,7 +12,7 @@ import {
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
-    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral, isReturnStatement, ReturnStatement, FunctionExpression, assignmentExpression, identifier, isLVal
+    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral, isReturnStatement, ReturnStatement, FunctionExpression, assignmentExpression, identifier, isLVal, objectProperty
 } from "@babel/types";
 
 /**
@@ -360,6 +360,33 @@ function getPropertyValue(opjProperty: ObjectProperty)
 }
 
 
+function getVariableType(cls: string): VariableType
+{
+    switch (cls)
+    {
+        case "arr":
+        case "array":
+            return VariableType._arr;
+        case "bool":
+        case "boolean":
+            return VariableType._boolean;
+        case "int":
+        case "number":
+            return VariableType._number;
+        case "object":
+            return VariableType._object;
+        case "string":
+            return VariableType._string;
+        default:
+            if (cls === "*") {
+                cls = "any";
+                return VariableType._any;
+            }
+    }
+    return VariableType._class;
+}
+
+
 function isJsDocObject(object: any): object is (IMethod | IProperty | IConfig)
 {
     return "doc" in object;
@@ -525,15 +552,6 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nam
 }
 
 
-function parseStringLiteral(property: ObjectProperty): string | undefined
-{
-    if (isStringLiteral(property.value))
-    {
-        return property.value.value;
-    }
-}
-
-
 function parseBooleanLiteral(property: ObjectProperty): boolean
 {
     if (isBooleanLiteral(property.value))
@@ -568,9 +586,19 @@ function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRa
                         });
                         a.properties.forEach(p =>
                         {
-                            if (isObjectProperty(p) && isObjectExpression(p.value) && isIdentifier(p.key))
+                            if (isObjectProperty(p) && isIdentifier(p.key))
                             {
-                                pushRanges([ p ], p.key.name);
+                                const key = p.key.name;
+                                if (isObjectExpression(p.value)) {
+                                    pushRanges([ p.value ], key);
+                                }
+                                else if (isArrayExpression(p.value)) {
+                                    p.value.elements.forEach(e => {
+                                        if (isObjectExpression(e)) {
+                                            pushRanges([ e ], key);
+                                        }
+                                    });
+                                }
                             }
                         });
                     }
@@ -619,6 +647,75 @@ function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRa
     }
 
     return objectRanges;
+}
+
+
+function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, isPrivate: boolean, fsPath: string): IMethod[]
+{
+    const methods: IMethod[] = [];
+
+    //
+    // We don't want to parse the framework method's parameters and variables, set
+    // text to undefined if this is a framework file...
+    //
+    if (componentClass.startsWith("Ext.") &&  (fsPath.includes("@sencha") || fsPath.toLowerCase().includes("extjs"))) {
+        text = undefined;
+    }
+
+    for (const m of propertyMethods)
+    {
+        if (isFunctionExpression(m.value))
+        {
+            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
+            if (propertyName)
+            {
+                const doc = getJsDoc(propertyName, componentClass, m.leadingComments),
+                      params = parseParams(m, propertyName, text, componentClass, doc),
+                      variables = parseVariables(m, propertyName, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
+                methods.push({
+                    componentClass,
+                    doc,
+                    params,
+                    name: propertyName,
+                    start: m.loc!.start,
+                    end: m.loc!.end,
+                    variables,
+                    returns: doc?.returns,
+                    since: doc?.since,
+                    private: doc?.private || isPrivate,
+                    deprecated: doc?.deprecated || false,
+                    objectRanges: getMethodObjectRanges(m, propertyName),
+                    bodyStart: m.value.body.loc!.start,
+                    bodyEnd: m.value.body.loc!.end,
+                    static: doc?.static || isStatic,
+                    range: utils.toRange(m.loc!.start, m.loc!.end),
+                    value: undefined
+                });
+            }
+        }
+    }
+    return methods;
+}
+
+
+function parseMixins(propertyMixins: ObjectProperty)
+{
+    const mixins: IMixin[] = [];
+    if (isArrayExpression(propertyMixins.value))
+    {
+        mixins.push(...parseStringArray(propertyMixins));
+    }
+    else if (isObjectExpression(propertyMixins.value))
+    {
+        propertyMixins.value.properties.reduce<IMixin[]>((p, it) =>
+        {
+            if (it?.type === "ObjectProperty") {
+                mixins.push(...parseStringArray(it));
+            }
+            return p;
+        }, mixins);
+    }
+    return mixins;
 }
 
 
@@ -733,103 +830,6 @@ function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement
     pushRanges(props);
 
     return objectRanges;
-}
-
-
-
-function getVariableType(cls: string): VariableType
-{
-    switch (cls)
-    {
-        case "arr":
-        case "array":
-            return VariableType._arr;
-        case "bool":
-        case "boolean":
-            return VariableType._boolean;
-        case "int":
-        case "number":
-            return VariableType._number;
-        case "object":
-            return VariableType._object;
-        case "string":
-            return VariableType._string;
-        default:
-            if (cls === "*") {
-                cls = "any";
-                return VariableType._any;
-            }
-    }
-    return VariableType._class;
-}
-
-
-function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, isPrivate: boolean, fsPath: string): IMethod[]
-{
-    const methods: IMethod[] = [];
-
-    //
-    // We don't want to parse the framework method's parameters and variables, set
-    // text to undefined if this is a framework file...
-    //
-    if (componentClass.startsWith("Ext.") &&  (fsPath.includes("@sencha") || fsPath.toLowerCase().includes("extjs"))) {
-        text = undefined;
-    }
-
-    for (const m of propertyMethods)
-    {
-        if (isFunctionExpression(m.value))
-        {
-            const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
-            if (propertyName)
-            {
-                const doc = getJsDoc(propertyName, componentClass, m.leadingComments),
-                      params = parseParams(m, propertyName, text, componentClass, doc),
-                      variables = parseVariables(m, propertyName, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
-                methods.push({
-                    componentClass,
-                    doc,
-                    params,
-                    name: propertyName,
-                    start: m.loc!.start,
-                    end: m.loc!.end,
-                    variables,
-                    returns: doc?.returns,
-                    since: doc?.since,
-                    private: doc?.private || isPrivate,
-                    deprecated: doc?.deprecated || false,
-                    objectRanges: getMethodObjectRanges(m, propertyName),
-                    bodyStart: m.value.loc!.start,
-                    bodyEnd: m.value.loc!.end,
-                    static: doc?.static || isStatic,
-                    range: utils.toRange(m.loc!.start, m.loc!.end),
-                    value: undefined
-                });
-            }
-        }
-    }
-    return methods;
-}
-
-
-function parseMixins(propertyMixins: ObjectProperty)
-{
-    const mixins: IMixin[] = [];
-    if (isArrayExpression(propertyMixins.value))
-    {
-        mixins.push(...parseStringArray(propertyMixins));
-    }
-    else if (isObjectExpression(propertyMixins.value))
-    {
-        propertyMixins.value.properties.reduce<IMixin[]>((p, it) =>
-        {
-            if (it?.type === "ObjectProperty") {
-                mixins.push(...parseStringArray(it));
-            }
-            return p;
-        }, mixins);
-    }
-    return mixins;
 }
 
 
@@ -951,6 +951,15 @@ function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: strin
         block.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, nameSpace, isStatic, isPrivate));
     }
     return block;
+}
+
+
+function parseStringLiteral(property: ObjectProperty): string | undefined
+{
+    if (isStringLiteral(property.value))
+    {
+        return property.value.value;
+    }
 }
 
 

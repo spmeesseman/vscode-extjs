@@ -309,6 +309,41 @@ Ext.define('VSCodeExtJS',
 				labelField: 'name'
 			}
 		};
+	},
+
+	testFn13: function()
+	{
+		const tipWin = Ext.create(
+		{
+			xtype: 'window',
+			items: [
+			{
+				border: false,
+				layout: {
+					type: 'vbox',
+					align: 'stretch',
+					pack: 'start'
+				},
+				items: [
+				{
+					xtype: 'physiciandropdown'
+				}],
+				listeners:
+				{
+					afterrender: function() {},
+					beforedestroy: function() {}
+				}
+			}],
+			listeners:
+			{
+				show: function()
+				{
+				},
+				beforedestroy: function()
+				{
+				}
+			}
+		});
 	}
 
 });

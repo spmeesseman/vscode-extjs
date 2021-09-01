@@ -43,7 +43,7 @@ class ExtjsLanguageManager
 {   //
     // When an update requires a re-index, change the name of this flag
     //
-    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.8.1";
+    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.9.1";
 
     private isIndexing = false;
     private isValidating = false;
