@@ -105,7 +105,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
 
     private async processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
     {
-        if (e.affectsConfiguration("extjsIntellisense.enableTaskExplorer"))
+        if (e.affectsConfiguration("extjsIntellisense.enableTaskView"))
         {
             // main extension will handle this particular setting
         }

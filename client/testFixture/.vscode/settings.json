@@ -1,4 +1,4 @@
 {
     "editor.quickSuggestions": false,
-    "extjsIntellisense.enableTaskExplorer": false
+    "extjsIntellisense.enableTaskView": false
 }

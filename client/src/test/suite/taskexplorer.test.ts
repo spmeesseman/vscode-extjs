@@ -17,8 +17,8 @@ suite("Task Explorer Tests", () =>
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
-		taskExplorerEnabled = configuration.get<boolean>("enableTaskExplorer");
-		await configuration.update("enableTaskExplorer", true);
+		taskExplorerEnabled = configuration.get<boolean>("enableTaskView");
+		await configuration.update("enableTaskView", true);
 		await activate();
 		await waitForValidation();
 	});
@@ -29,7 +29,7 @@ suite("Task Explorer Tests", () =>
 		// Reset configuration
 		//
 		await configuration.update("validationDelay", validationDelay || 1250);
-		await configuration.update("enableTaskExplorer", taskExplorerEnabled);
+		await configuration.update("enableTaskView", taskExplorerEnabled);
 		await waitForValidation();
 	});
 

@@ -112,7 +112,7 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
 
 async function processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
 {
-    if (e.affectsConfiguration("extjsIntellisense.enableTaskExplorer") && configuration.get<boolean>("enableTaskExplorer"))
+    if (e.affectsConfiguration("extjsIntellisense.enableTaskView") && configuration.get<boolean>("enableTaskView"))
     {
         if (taskTree) {
             await taskTree.refresh("config");
@@ -138,7 +138,7 @@ function registerCommands(context: ExtensionContext)
 
 function registerExplorer(context: ExtensionContext): TaskTreeDataProvider | undefined
 {
-    // if (configuration.get<boolean>("enableTaskExplorer"))
+    // if (configuration.get<boolean>("enableTaskView"))
     // {
     //     const name = "extjsTaskExplorer";
     //     log.write("Register tasks tree provider '" + name + "'");
