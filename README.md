@@ -314,7 +314,7 @@ This extension is released with the [app-publisher](https://github.com/spmeessem
 
 ## Thank You
 
-Whenever I start a project I always look for a good base to start from and for this extension I lucked out and found a perfect base project written by **qzsiniong** from GitHub, his project is located [here](https://github.com/qzsiniong/vscode-extjs).
+Whenever I start a project I always look for a good base to start from and for this extension I lucked out and found a perfect one written by **qzsiniong** from GitHub, his project is located [here](https://github.com/qzsiniong/vscode-extjs).  That project has been scrapped as a base, but learning from it to build this current extension was invaluable. 
 
 ## Feedback & Contributing
 
