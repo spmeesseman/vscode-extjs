@@ -115,8 +115,7 @@ export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?
 export function value(msg: string, value: any, level?: number, logPad = "")
 {
     let logMsg = msg;
-    const spaces = msg && msg.length ? msg.length : (value === undefined ? 9 : 4);
-    for (let i = spaces; i < logValueWhiteSpace; i++) {
+    for (let i = msg.length; i < logValueWhiteSpace; i++) {
         logMsg += " ";
     }
 

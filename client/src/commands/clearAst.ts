@@ -42,7 +42,7 @@ function registerClearAstCommand(context: ExtensionContext)
 {
     fsStoragePath = context.globalStoragePath;
 	context.subscriptions.push(
-        commands.registerCommand("vscode-extjs:clearAst", async (project?: string, force = false, logPad = "") => { await clearAst(project, force, logPad); })
+        commands.registerCommand("vscode-extjs:clearAst", async (project?: string, force?: boolean, logPad?: string) => { await clearAst(project, force, logPad); })
     );
 }
 

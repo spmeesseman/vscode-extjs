@@ -33,7 +33,7 @@ class ExtjsCodeActionProvider implements CodeActionProvider
 
         if (!context.only || context.only?.value === CodeActionKind.QuickFix.value)
         {
-            context.diagnostics.filter(d => d.source === "vscode-extjs" && d.range.intersection(range)).forEach(d =>
+            context.diagnostics.filter(d => d.source === "vscode-extjs" && d.range.intersection(range) && d.code).forEach(d =>
             {
                 actions.push(...[{
                     title: "Ignore errors of this type (this line only)",

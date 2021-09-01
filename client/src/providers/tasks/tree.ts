@@ -150,7 +150,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             //
             await this.showSpecialTasks(true, true, undefined, "   ");
         }
-        log.methodDone("add/remove favorite", 1);
+        log.methodDone("add/remove favorite", 1, "");
     }
 
 
@@ -215,7 +215,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
 
         await me.refresh(selection instanceof TaskFile ? selection.taskSource : false, uri);
 
-        log.methodDone("add to excludes", 1);
+        log.methodDone("add to excludes", 1, "");
     }
 
 
@@ -1556,7 +1556,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             window.showInformationMessage("Executing task not found");
         }
 
-        log.methodDone("pause", 1);
+        log.methodDone("pause", 1, "");
     }
 
 
@@ -1858,7 +1858,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             this.stop(taskItem);
             await this.run(taskItem);
         }
-        log.methodDone("restart task", 1);
+        log.methodDone("restart task", 1, "");
     }
 
 
@@ -1874,7 +1874,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         else {
             window.showInformationMessage("Terminal not found");
         }
-        log.methodDone("resume task", 1);
+        log.methodDone("resume task", 1, "");
     }
 
 
@@ -1940,7 +1940,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             }
         }
 
-        log.methodDone("run task", 1);
+        log.methodDone("run task", 1, "");
     }
 
 
@@ -1981,7 +1981,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             await this.showSpecialTasks(true);
         }
 
-        log.methodDone("Run last task", 1);
+        log.methodDone("Run last task", 1, "");
     }
 
 
@@ -2313,7 +2313,7 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
             window.showInformationMessage("Executing task not found");
         }
 
-        log.methodDone("stop", 1);
+        log.methodDone("stop", 1, "");
     }
 
     private taskIdStartEvents: Map<string, NodeJS.Timeout> = new Map();
@@ -2340,14 +2340,14 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         //
         taskTimerId = setTimeout(async () =>
         {
-            log.methodStart("task started event", 1);
+            log.methodStart("task started event", 1, "");
             //
             // Show status bar message (if ON in settings)
             //
             this.showStatusMessage(task);
             const taskItem = await this.getTaskItems(taskId) as TaskItem;
             this.fireTaskChangeEvents(taskItem, "   ", 1);
-            log.methodDone("task started event", 1);
+            log.methodDone("task started event", 1, "");
         }, 50);
 
         this.taskIdStartEvents.set(taskId, taskTimerId);
@@ -2375,14 +2375,14 @@ export class TaskTreeDataProvider implements TreeDataProvider<TreeItem>
         //
         taskTimerId = setTimeout(async () =>
         {
-            log.methodStart("task finished event", 1);
+            log.methodStart("task finished event", 1, "");
             //
             // Hide status bar message (if ON in settings)
             //
             this.showStatusMessage(task);
             const taskItem = await this.getTaskItems(taskId, "   ", false, 2) as TaskItem;
             this.fireTaskChangeEvents(taskItem, "   ", 1);
-            log.methodDone("task finished event", 1);
+            log.methodDone("task finished event", 1, "");
         }, 50);
 
         this.taskIdStopEvents.set(taskId, taskTimerId);

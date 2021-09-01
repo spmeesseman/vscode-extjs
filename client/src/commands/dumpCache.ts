@@ -39,28 +39,20 @@ function dumpCache(project?: string, logPad = "   ", logLevel = 1)
 
             glob(fileGlob, { nocase: true, ignore: "flags/**", cwd: cmpPath }, async (err, files) =>
             {
-                if (err)
+                log.write(`   dumping ${files.length} cached ast files to formatted JSON files`, logLevel, logPad);
+                for (const f of files)
                 {
-                    log.error(err);
-                    reject(err);
+                    log.value("      file", f, logLevel, logPad);
+                    const fullPath = path.join(cmpPath, f),
+                          jso = JSON.parse(await readFile(fullPath)),
+                          nameSpace = path.basename(path.dirname(f)),
+                          projectSpace = project || f.substring(0, f.indexOf("/")) || f,
+                          tmpFile = path.join(tmpdir(), `${projectSpace}-${nameSpace}.json`);
+                    await writeFile(tmpFile, JSON.stringify(jso, undefined, 4));
+                    await window.showTextDocument(await workspace.openTextDocument(Uri.file(tmpFile)));
                 }
-                else
-                {
-                    log.write("   dumping all caches to temp files", logLevel, logPad);
-                    for (const f of files)
-                    {
-                        log.value("      file", f, logLevel, logPad);
-                        const fullPath = path.join(cmpPath, f),
-                            jso = JSON.parse(await readFile(fullPath)),
-                            nameSpace = path.basename(path.dirname(f)),
-                            projectSpace = project || f.substring(0, f.indexOf("/")) || f,
-                            tmpFile = path.join(tmpdir(), `${projectSpace}-${nameSpace}.json`);
-                        await writeFile(tmpFile, JSON.stringify(jso, undefined, 4));
-                        await window.showTextDocument(await workspace.openTextDocument(Uri.file(tmpFile)));
-                    }
-                    log.methodDone("dump cache command", logLevel, logPad);
-                    resolve(true);
-                }
+                log.methodDone("dump cache command", logLevel, logPad);
+                resolve(true);
             });
         }
         else {

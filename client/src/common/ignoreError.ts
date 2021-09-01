@@ -5,10 +5,9 @@ import { Position, Range, Selection, TextDocument, Uri, workspace, WorkspaceEdit
 import { EOL } from "os";
 
 
-async function addIgnoreError(error: IError, document: TextDocument | undefined, range: Range | Selection | undefined)
+async function addIgnoreError(error: IError, document: TextDocument, range: Range | Selection)
 {
-	let ignoreErrors: IError[] | undefined = configuration.get<IError[]>("ignoreErrors");
-	if (!ignoreErrors) ignoreErrors = [];
+	const ignoreErrors = configuration.get<IError[]>("ignoreErrors", []);
 
 	if (!range && error.code)
 	{
@@ -22,7 +21,7 @@ async function addIgnoreError(error: IError, document: TextDocument | undefined,
 		ignoreErrors.push(error);
 		await configuration.update("ignoreErrors", ignoreErrors);
 	}
-	else if (document && range)
+	else
 	{
 		const workspaceEdit = new WorkspaceEdit(),
 				line = document.lineAt(range.start.line),

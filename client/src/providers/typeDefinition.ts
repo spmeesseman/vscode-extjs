@@ -53,7 +53,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
             }
         }
 
-        log.methodDone("provide type definition", 1);
+        log.methodDone("provide type definition", 1, "");
         return location;
     }
 }

@@ -84,9 +84,7 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     //
     // Register the task provider
     //
-    if (configuration.get<boolean>("enableTaskExplorer")) {
-        taskTree = registerExplorer(context);
-    }
+    taskTree = registerExplorer(context);
 
     //
     // Register configurations/settings change watcher
@@ -114,15 +112,13 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
 
 async function processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
 {
-    if (e.affectsConfiguration("extjsIntellisense.enableTaskExplorer"))
+    if (e.affectsConfiguration("extjsIntellisense.enableTaskExplorer") && configuration.get<boolean>("enableTaskExplorer"))
     {
-        if (configuration.get<boolean>("enableTaskExplorer")) {
-            if (taskTree) {
-                await taskTree.refresh("config");
-            }
-            else {
-                taskTree = registerExplorer(context);
-            }
+        if (taskTree) {
+            await taskTree.refresh("config");
+        }
+        else {
+            taskTree = registerExplorer(context);
         }
     }
 }
@@ -142,22 +138,25 @@ function registerCommands(context: ExtensionContext)
 
 function registerExplorer(context: ExtensionContext): TaskTreeDataProvider | undefined
 {
-    // const name = "extjsTaskExplorer";
-    // log.write("Register tasks tree provider '" + name + "'");
-    // if (workspace.workspaceFolders)
+    // if (configuration.get<boolean>("enableTaskExplorer"))
     // {
-    //     const treeDataProvider = new TaskTreeDataProvider(name, context);
-    //     const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
-    //     views.set(name, treeView);
-    //     const view = views.get(name);
-    //     if (view) {
-    //         context.subscriptions.push(view);
-    //         log.write("   Tree data provider registered'" + name + "'");
+    //     const name = "extjsTaskExplorer";
+    //     log.write("Register tasks tree provider '" + name + "'");
+    //     if (workspace.workspaceFolders)
+    //     {
+    //         const treeDataProvider = new TaskTreeDataProvider(name, context);
+    //         const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
+    //         views.set(name, treeView);
+    //         const view = views.get(name);
+    //         if (view) {
+    //             context.subscriptions.push(view);
+    //             log.write("   Tree data provider registered'" + name + "'");
+    //         }
+    //         return treeDataProvider;
     //     }
-    //     return treeDataProvider;
-    // }
-    // else {
-    //     log.write("No workspace folders!!!");
+    //     else {
+    //         log.write("No workspace folders!!!");
+    //     }
     // }
     return undefined;
 }

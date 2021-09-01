@@ -2,12 +2,9 @@
 import { commands, ExtensionContext, Range, TextEditor, TextEditorEdit } from "vscode";
 
 
-function replaceText(textEditor: TextEditor, edit: TextEditorEdit, text: string | undefined, range: Range | undefined)
+function replaceText(edit: TextEditorEdit, text: string, range: Range)
 {
-	if (range && (text || text === ""))
-	{
-		edit.replace(range, text);
-	}
+	edit.replace(range, text);
 }
 
 
@@ -16,7 +13,7 @@ function registerReplaceTextCommand(context: ExtensionContext)
 	context.subscriptions.push(
         commands.registerTextEditorCommand("vscode-extjs:replaceText",
 										   (textEditor: TextEditor, edit: TextEditorEdit, text: string, range: Range) =>
-										   { replaceText(textEditor, edit, text, range); })
+										   { replaceText(edit, text, range); })
     );
 }
 

@@ -88,18 +88,15 @@ class ExtjsLanguageManager
     private changesToIEdits(changes: TextDocumentContentChangeEvent[])
     {
         const edits: IEdit[] = [];
-        if (changes)
+        for (const change of changes) // this should be replaced by language_server incremental document sync
         {
-            for (const change of changes) // this should be replaced by language_server incremental document sync
-            {
-                edits.push({
-                    start: change.rangeOffset,
-                    end: change.rangeOffset + change.rangeLength,
-                    length: change.rangeLength,
-                    text: change.text,
-                    range: toIRange(change.range)
-                });
-            }
+            edits.push({
+                start: change.rangeOffset,
+                end: change.rangeOffset + change.rangeLength,
+                length: change.rangeLength,
+                text: change.text,
+                range: toIRange(change.range)
+            });
         }
         return edits;
     }
@@ -142,69 +139,8 @@ class ExtjsLanguageManager
     }
 
 
-    getClsByPath(fsPath: string): string | undefined
-    {
-        const project = getWorkspaceProjectName(fsPath);
-        return this.components.find(c => project === c.project && c.fsPath === fsPath)?.componentClass;
-    }
-
-
-    getClsByProperty(property: string, project: string, cmpType: ComponentType): string | undefined
-    {
-        let cls: string | undefined;
-        if (cmpType === ComponentType.Widget) {
-            cls = this.components.find(c => project === c.project && c.xtypes.find(x => x.name.replace("widget.", "") === property))?.componentClass ||
-                  this.components.find(c => project === c.project && c.aliases.find(a => a.name.replace("widget.", "") === property))?.componentClass;
-        }
-        else if (cmpType === ComponentType.Store) {
-            cls = this.components.find(c => project === c.project && c.aliases.find(t => t.name === `store.${property}`))?.componentClass;
-        }
-        return cls;
-    }
-
-
-    getComponents()
-    {
-        return this.components;
-    }
-
-
-    getComponent(componentClass: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
-    {
-        log.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["project", project]]);
-        const component = extjs.getComponent(componentClass, project, this.components, position, thisCmp, undefined, logPad, logLevel);
-        log.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
-        return component;
-    }
-
-
-    getComponentNames(project: string): string[]
-    {
-        const cmps: string[] = [];
-        this.components.filter(c => c.project === project).forEach((c) => {
-            cmps.push(c.componentClass);
-        });
-        return cmps;
-    }
-
-
-    getComponentByFile(fsPath: string, logPad: string, logLevel: number): IComponent | undefined
-    {
-        let component: IComponent | undefined;
-        log.methodStart("get component by file", logLevel, logPad, false, [["component file", fsPath]]);
-        const cls = this.getClsByPath(fsPath),
-              project = getWorkspaceProjectName(fsPath);
-        if (cls) {
-            log.value("   component class", cls, logLevel + 1, logPad);
-            component = this.getComponent(cls, project, logPad, logLevel + 1);
-        }
-        log.methodDone("get component by file", logLevel, logPad);
-        return component;
-    }
-
-
     /**
-     * @method getComponentClass
+     * @method getClsByLinePosition
      *
      * Get component class name from an xtype, alias, or alternateClassName
      * Note that xtypes/aliases must be unique within an application for this /**
@@ -219,7 +155,7 @@ class ExtjsLanguageManager
      *
      * @returns {String}
      */
-    private getComponentClass(property: string, project: string, position: Position, lineText: string, fsPath: string | undefined, logPad: string, logLevel: number): string | undefined
+    private getClsByLinePosition(property: string, project: string, position: Position, lineText: string, fsPath: string | undefined, logPad: string, logLevel: number): string | undefined
     {
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
@@ -296,6 +232,67 @@ class ExtjsLanguageManager
 
         log.methodDone("get component class", logLevel, logPad, false, [["class", cmpClass]]);
         return cmpClass;
+    }
+
+
+    getClsByPath(fsPath: string): string | undefined
+    {
+        const project = getWorkspaceProjectName(fsPath);
+        return this.components.find(c => project === c.project && c.fsPath === fsPath)?.componentClass;
+    }
+
+
+    getClsByProperty(property: string, project: string, cmpType: 8 | 64): string | undefined
+    {
+        let cls: string | undefined;
+        if (cmpType === ComponentType.Widget) {
+            cls = this.components.find(c => project === c.project && c.xtypes.find(x => x.name.replace("widget.", "") === property))?.componentClass ||
+                  this.components.find(c => project === c.project && c.aliases.find(a => a.name.replace("widget.", "") === property))?.componentClass;
+        }
+        else { // if (cmpType === ComponentType.Store) {
+            cls = this.components.find(c => project === c.project && c.aliases.find(t => t.name === `store.${property}`))?.componentClass;
+        }
+        return cls;
+    }
+
+
+    getComponents()
+    {
+        return this.components;
+    }
+
+
+    getComponent(componentClass: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent): IComponent | undefined
+    {
+        log.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["project", project]]);
+        const component = extjs.getComponent(componentClass, project, this.components, position, thisCmp, undefined, logPad, logLevel);
+        log.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
+        return component;
+    }
+
+
+    getComponentNames(project: string): string[]
+    {
+        const cmps: string[] = [];
+        this.components.filter(c => c.project === project).forEach((c) => {
+            cmps.push(c.componentClass);
+        });
+        return cmps;
+    }
+
+
+    getComponentByFile(fsPath: string, logPad: string, logLevel: number): IComponent | undefined
+    {
+        let component: IComponent | undefined;
+        log.methodStart("get component by file", logLevel, logPad, false, [["component file", fsPath]]);
+        const cls = this.getClsByPath(fsPath),
+              project = getWorkspaceProjectName(fsPath);
+        if (cls) {
+            log.value("   component class", cls, logLevel + 1, logPad);
+            component = this.getComponent(cls, project, logPad, logLevel + 1);
+        }
+        log.methodDone("get component by file", logLevel, logPad);
+        return component;
     }
 
 
@@ -411,13 +408,16 @@ class ExtjsLanguageManager
     /**
      * @method getLineProperties
      *
-     * Get line properties by document position
+     * Get line properties by document position.  An important function for Hover, Definition,
+     * and Type Definition providers.
      *
      * @param document The TextDocument instance
      * @param position The position in the document to extract line properties for
      * @param logPad Padding to prepend to any logging
      *
      * @returns {Object}
+     * lineText: The entire line text
+     * lineTextCut: The line text cut at the current position (right side)
      * property: The text that is hovered over (and flash highlighted by VSCode UI)
      */
     getLineProperties(document: TextDocument, position: Position, logPad: string, logLevel: number): ILineProperties
@@ -460,7 +460,8 @@ class ExtjsLanguageManager
 
         //
         // Handle "this"
-        // TODO - handle 'this' for non-controller function with local this
+        // TODO - handle 'this' for non-controller function with local this\
+        // As of 0.8 we just set it to the main component
         //
         if (property === "this")
         {
@@ -682,12 +683,12 @@ class ExtjsLanguageManager
         }
         else if (cmpType === ComponentType.Method)
         {
-            cmpClass = this.getComponentClass(property, project, position, lineText, thisPath, logPad + "   ", logLevel);
+            cmpClass = this.getClsByLinePosition(property, project, position, lineText, thisPath, logPad + "   ", logLevel);
             if (cmpClass)
             {
                 component = this.getComponent(cmpClass, project, "   ", logLevel + 1);
                 //
-                // getComponentClass() will return the file class if this is a config getter/setter, so
+                // getClsByLinePosition() will return the file class if this is a config getter/setter, so
                 // check the methods mapping to see if it exists on the main component or not.  If it doesn't
                 // then check if its a config property getter/setter fn
                 //
@@ -711,7 +712,7 @@ class ExtjsLanguageManager
                     property = utils.lowerCaseFirstChar(property.substring(3));
                     cmpType = ComponentType.Config;
                     log.value("      config name", property, logLevel + 1, logPad);
-                    // cmpClass = this.getComponentClass(property, position, lineText, thisPath);
+                    // cmpClass = this.getClsByLinePosition(property, position, lineText, thisPath);
                 }
             }
         }
@@ -1809,7 +1810,7 @@ class ExtjsLanguageManager
 
         context.subscriptions.push(...disposables);
 
-        log.methodDone("Register file watchers", 1);
+        log.methodDone("Register file watchers", 1, "");
         return disposables;
     }
 

@@ -51,7 +51,7 @@ class ExtJsDefinitionProvider implements DefinitionProvider
                 };
             }
         }
-        log.methodDone("provide definition", 1);
+        log.methodDone("provide definition", 1, "");
         return location;
     }
 }

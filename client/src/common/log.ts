@@ -1,12 +1,13 @@
 
 import { configuration } from "./configuration";
-import { OutputChannel, ExtensionContext, commands, window } from "vscode";
+import { OutputChannel, ExtensionContext, commands, window, workspace, ConfigurationChangeEvent } from "vscode";
 
 
 const logValueWhiteSpace = 40;
 let writeToConsole = false;
 let writeToConsoleLevel = 2;
-let logOutputChannel: OutputChannel | undefined;
+let logOutputChannel: OutputChannel;
+let loggingEnabled = false;
 
 
 export function initLog(settingGrpName: string, dispName: string, context: ExtensionContext, showLog?: boolean)
@@ -19,13 +20,27 @@ export function initLog(settingGrpName: string, dispName: string, context: Exten
     context.subscriptions.push(
         commands.registerCommand(settingGrpName + ".showOutput", showLogOutput)
     );
+    loggingEnabled = configuration.get<boolean>("debugClient", false);
+    //
+    // Register configurations/settings change watcher
+    //
+    context.subscriptions.push(workspace.onDidChangeConfiguration(async e => { await processConfigChanges(context, e); }));
     showLogOutput(showLog);
+}
+
+
+async function processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
+{
+    if (e.affectsConfiguration("extjsIntellisense.debugClient"))
+    {
+        loggingEnabled = configuration.get<boolean>("debugClient", false);
+    }
 }
 
 
 function isLoggingEnabled()
 {
-    return configuration.get("debugClient") === true;
+    return loggingEnabled;
 }
 
 
@@ -92,106 +107,100 @@ export function error(msg: string | (string|Error)[] | Error, params?: (string|a
 }
 
 
-export function methodStart(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: (string|any)[][])
+export function methodStart(msg: string, level: number, logPad: string, doLogBlank?: boolean, params?: (string|any)[][])
 {
     if (isLoggingEnabled())
     {
-        const lLevel = level || 1;
         if (doLogBlank === true) {
-            blank(lLevel);
+            blank(level);
         }
-        write(logPad + "*start* " + msg, lLevel);
+        write(logPad + "*start* " + msg, level);
         if (params)
         {
             if (doLogBlank === true) {
-                blank(lLevel);
+                blank(level);
             }
             for (const [ n, v, l ] of params) {
-                value(logPad + "   " + n, v, l || lLevel + 1);
+                value(logPad + "   " + n, v, l || level + 1);
             }
         }
     }
 }
 
 
-export function methodDone(msg: string, level?: number, logPad = "", doLogBlank?: boolean, params?: (string|any)[][])
+export function methodDone(msg: string, level: number, logPad: string, doLogBlank?: boolean, params?: (string|any)[][])
 {
     if (isLoggingEnabled())
     {
-        const lLevel = level || 1;
         if (doLogBlank === true) {
-            blank(lLevel);
+            blank(level);
         }
         if (params)
         {
             for (const [ n, v, l ] of params) {
-                value(logPad + "   " + n, v, l || lLevel + 1);
+                value(logPad + "   " + n, v, l || level + 1);
             }
             if (doLogBlank === true) {
-                blank(lLevel);
+                blank(level);
             }
         }
-        write("*done* " + msg, lLevel, logPad);
+        write("*done* " + msg, level, logPad);
     }
 }
 
 
 export function value(msg: string, value: any, level?: number, logPad = "")
 {
-    let logMsg = msg;
-    const spaces = msg && msg.length ? msg.length : (value === undefined ? 9 : 4);
-    for (let i = spaces; i < logValueWhiteSpace - logPad.length; i++) {
-        logMsg += " ";
-    }
+    if (isLoggingEnabled())
+    {
+        let logMsg = msg;
+        for (let i = msg.length; i < logValueWhiteSpace - logPad.length; i++) {
+            logMsg += " ";
+        }
 
-    if (value || value === 0 || value === "" || value === false) {
-        logMsg += ": ";
-        logMsg += value.toString();
-    }
-    else if (value === undefined) {
-        logMsg += ": undefined";
-    }
-    else if (value === null) {
-        logMsg += ": null";
-    }
+        if (value || value === 0 || value === "" || value === false) {
+            logMsg += ": ";
+            logMsg += value.toString();
+        }
+        else if (value === undefined) {
+            logMsg += ": undefined";
+        }
+        else {
+            logMsg += ": null";
+        }
 
-    write(logMsg, level, logPad);
+        write(logMsg, level, logPad);
+    }
 }
 
 
-export function values(values: (string|any)[][], level?: number, logPad = "", doLogBlank?: boolean)
+export function values(values: (string|any)[][], level: number, logPad: string, doLogBlank?: boolean)
 {
     if (isLoggingEnabled())
     {
-        const lLevel = level || 1;
         if (doLogBlank === true) {
-            blank(lLevel);
+            blank(level);
         }
-        if (values)
-        {
-            for (const [ n, v, l ] of values) {
-                value(n, v, l || lLevel + 1, logPad);
-            }
+        for (const [ n, v, l ] of values) {
+            value(n, v, l || level + 1, logPad);
         }
     }
 }
 
 
-export function setWriteToConsole(set: boolean, level = 2)
+export function setWriteToConsole(set: boolean, level?: number)
 {
     writeToConsole = set;
-    writeToConsoleLevel = level;
+    writeToConsoleLevel = level || 1;
 }
 
 
 export function showLogOutput(show?: boolean)
 {
-    if (logOutputChannel) {
-        if (show) {
-            logOutputChannel.show();
-        }
-        // else {
-        //     logOutputChannel.hide();
-        // }
+    if (show) {
+        logOutputChannel.show();
     }
+    // else {
+    //     logOutputChannel.hide();
+    // }
 }
