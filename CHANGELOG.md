@@ -1,5 +1,31 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.9.0 (September 1st, 2021)
+
+### Bug Fixes
+
+- **General:** if cached component files are modfied while not running, they are not re-indexed on the next initialization
+- **Commands:** some internal commands should not show in command pallette
+- **Hover:** static/private method does not work
+- **Validation:** types within function expressions on the main object are always invalidated
+- **Completion:** does not work within call expressions without an assignment
+- **Validation:** all types in return objects are invalidated
+- **General:** conflicts with task explorer extension
+- **Hover:** exception seen in extensions log when hovering on a random string
+- **Completion:** selecting the 'string value' item from a value completion list should place the cursor between the quotes
+
+### Documentation
+
+- **Readme:** add additional screenshots to hover section
+
+### Features
+
+- add new command 'dumpCache' for debugging
+
+### Refactoring
+
+- **Validation:** add 'decimal', 'int', and 'list' to list of types that are not validated
+
 ## Version 0.8.0 (August 30th, 2021)
 
 ### Bug Fixes
