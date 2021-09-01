@@ -95,6 +95,9 @@ Diagnostics:
 		e.g. User Mgmt AppUtilities.js line 6978
 	☐ Invalidate inproper static/private call.
 		e.g. private call only on instances, static calls only on full classpath names or alternateClassNames
+	☐ Ensure require should examine requires block up the inheritance tree, and up reference tree
+		each requires should read the requires for that defined component, and up
+	☐ extend: 'Ext.app.ViewController' is invalidated
 
 JsDoc:
 
@@ -109,6 +112,8 @@ JsDoc:
 		commentParser.js
 		Put type header in parser instead of adding separately in completion provider
 		Format and remove all @ markers
+	☐ Object properties
+		e.g., xtype: 'viewtoolbar', noRemoteActions: true, ....' ... show doc for all ocnfigs/props like noRemoteActions
 
 Miscellaneous:
 

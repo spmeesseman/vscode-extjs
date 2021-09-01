@@ -1104,6 +1104,7 @@ class ExtjsLanguageManager
             {
                 if (!_isIndexed(conf.baseDir))
                 {
+                    const toRemove: IComponent[] = [];
                     processedDirs.push(conf.baseDir);
                     components = JSON.parse(storedComponents);
                     increment = Math.round(1 / components.length * cfgPct);
@@ -1112,6 +1113,10 @@ class ExtjsLanguageManager
                     //
                     for (const c of components)
                     {
+                        if (!await pathExists(c.fsPath)) {
+                            toRemove.push(c);
+                            continue;
+                        }
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
                         const tsKey = c.fsPath + "_TIMESTAMP",
                             lastModified = await getDateModified(c.fsPath);
@@ -1134,6 +1139,13 @@ class ExtjsLanguageManager
                             message: `: Indexing ${projectName} ${pct}%`
                         });
                     }
+
+                    //
+                    // Remove any components that do not exist anymore from the cache
+                    //
+                    toRemove.forEach(c => {
+                        this.removeComponentsFromCache(Uri.file(c.fsPath), conf.name);
+                    });
 
                     ++currentCfgIdx;
                     const nextInc = (currentCfgIdx * cfgPct) - 1,
