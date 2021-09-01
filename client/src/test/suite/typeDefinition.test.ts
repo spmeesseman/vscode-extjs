@@ -97,6 +97,7 @@ suite("Type Definition Tests", () =>
 		//
 		await testTypeDefinition(docUri, new vscode.Position(150, 3), []);
 		await testTypeDefinition(docUri, new vscode.Position(241, 16), []); // "type: 'string'"" hits shouldIgnoreType()
+		await testTypeDefinition(docUri, new vscode.Position(230, 16), []); // someClass.someMethod();
     });
 
 
