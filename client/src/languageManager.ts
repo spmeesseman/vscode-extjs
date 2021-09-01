@@ -1762,18 +1762,10 @@ class ExtjsLanguageManager
         // Build watcher glob from classpaths
         //
         const classPaths = [];
-        for (const c of this.config)
-        {
-            if (typeof(c.classpath) === "string" || c.classpath instanceof String)
-            {
-                log.write(`      Adding classpath ${c.classpath}`, 3);
-                classPaths.push(c.classpath.replace("\\", "/"));
-            }
-            else {
-                for (const cp of c.classpath) {
-                    log.write(`      Adding classpath ${cp}`, 3);
-                    classPaths.push(cp.replace("\\", "/"));
-                }
+        for (const c of this.config) {
+            for (const cp of c.classpath) {
+                log.write(`      Adding classpath ${cp}`, 3);
+                classPaths.push(cp.replace("\\", "/"));
             }
         }
 
