@@ -1,18 +1,18 @@
 
 export enum ComponentType
 {
-    None,
-    Config = 1 << 0,
-    Method = 1 << 1,
-    Property = 1 << 2,
-    Widget = 1 << 3,
-    Class = 1 << 4,
-    Model = 1 << 5,
-    Store = 1 << 6,
-    Type = 1 << 7,
-    XType = 1 << 8,
-    Layout = 1 << 9,
-    Instance = 1 << 10
+    None = 0,
+    Config = 1,
+    Method = 2,
+    Property = 4,
+    Widget = 8,
+    Class = 16,
+    Model = 32,
+    Store = 64,
+    Type = 128,
+    XType = 256,
+    Layout = 512,
+    Instance = 1024
 }
 
 
