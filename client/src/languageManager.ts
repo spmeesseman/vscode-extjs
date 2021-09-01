@@ -155,7 +155,7 @@ class ExtjsLanguageManager
      *
      * @returns {String}
      */
-    private getClsByLinePosition(property: string, project: string, position: Position, lineText: string, fsPath: string | undefined, logPad: string, logLevel: number): string | undefined
+    private getClsByLinePosition(property: string, project: string, position: Position, lineText: string, thisCmp: IComponent, logPad: string, logLevel: number): string | undefined
     {
         let cmpClass = "this", // getComponentByConfig(property);
             cmpClassPre, cmpClassPreIdx = -1, cutAt = 0;
@@ -215,16 +215,14 @@ class ExtjsLanguageManager
 
         if (cmpClass === "this")
         {
-            if (fsPath) {
-                cmpClass = this.getComponentByFile(fsPath, logPad + "   ", logLevel)?.componentClass || "";
-            }
+            cmpClass = thisCmp.componentClass;
         }
         //
         // Instances
         //
-        else if (!this.getComponent(cmpClass, project, logPad + "   ", logLevel, toIPosition(position)) && fsPath)
+        else if (!this.getComponent(cmpClass, project, logPad + "   ", logLevel, toIPosition(position)) && thisCmp)
         {
-            const instance = this.getComponentInstance(cmpClass, project, position, fsPath, logPad + "   ", logLevel);
+            const instance = this.getComponentInstance(cmpClass, project, position, thisCmp, logPad + "   ", logLevel);
             if (isComponent(instance)) {
                 cmpClass = instance.componentClass;
             }
@@ -242,7 +240,7 @@ class ExtjsLanguageManager
     }
 
 
-    getClsByProperty(property: string, project: string, cmpType: 8 | 64): string | undefined
+    getClsByProperty(property: string, project: string, cmpType: ComponentType.Widget | ComponentType.Store): string | undefined
     {
         let cls: string | undefined;
         if (cmpType === ComponentType.Widget) {
@@ -296,60 +294,66 @@ class ExtjsLanguageManager
     }
 
 
-    getComponentInstance(property: string, project: string, position: Position, fsPath: string, logPad: string, logLevel: number): IComponent | IPrimitive | undefined
+    /**
+     * Tries to map an instance of a component to it's class definition for a document opened in
+     * the VSCode editor
+     *
+     * @since 0.3.0
+     *
+     * @param property Property name
+     * @param project Current project
+     * @param position Current position in the document of the current active editor
+     * @param thisCmp The IComponent definition of the document opened in the current active editor
+     * @param logPad Log indentation to use
+     * @param logLevel Log level to base at
+     */
+    getComponentInstance(property: string, project: string, position: Position, thisCmp: IComponent, logPad: string, logLevel: number): IComponent | IPrimitive | undefined
     {
         log.methodStart("get component instance", logLevel, logPad, false, [["property", property], ["project", project]]);
 
-        const thisCls = this.getClsByPath(fsPath);
+        if (property === "this") {
+            log.methodDone("get component instance", logLevel, logPad, false, [["component class", "this"]]);
+            return thisCmp;
+        }
 
-        if (thisCls)
+        if (thisCmp)
         {
-            const cmp = this.getComponent(thisCls, project, logPad + "   ", logLevel, toIPosition(position));
-
-            if (property === "this") {
-                log.methodDone("get component instance", logLevel, logPad, false, [["component class", "this"]]);
-                return cmp;
+            for (const variable of thisCmp.privates)
+            {
+                // TODO - property hover - check private sec
             }
 
-            if (cmp)
+            for (const variable of thisCmp.statics)
             {
-                for (const variable of cmp.privates)
-                {
-                    // TODO - property hover - check private sec
-                }
+                // TODO - property hover - check static sec
+            }
 
-                for (const variable of cmp.statics)
+            for (const method of thisCmp.methods)
+            {
+                if (isPositionInRange(position, toVscodeRange(method.start, method.end)))
                 {
-                    // TODO - property hover - check static sec
-                }
-
-                for (const method of cmp.methods)
-                {
-                    if (isPositionInRange(position, toVscodeRange(method.start, method.end)))
-                    {
-                        let variable: IVariable | IParameter | undefined = method.variables?.find(v => v.name === property);
-                        if (!variable) {
-                            variable = method.params?.find(v => v.name === property);
-                            if (variable?.type !== VariableType._class) {
-                                variable = undefined;
-                            }
+                    let variable: IVariable | IParameter | undefined = method.variables?.find(v => v.name === property);
+                    if (!variable) {
+                        variable = method.params?.find(v => v.name === property);
+                        if (variable?.type !== VariableType._class) {
+                            variable = undefined;
                         }
-                        if (variable) {
-                            const cmp = this.getComponent(variable.componentClass, project, logPad + "   ", logLevel, toIPosition(position));
-                            if (cmp) {
-                                log.methodDone("get component instance", logLevel, logPad);
-                                return cmp;
-                            }
-                            else {
-                                log.methodDone("get component instance", logLevel, logPad);
-                                return {
-                                    name: variable.name,
-                                    start: variable.start,
-                                    end: variable.end,
-                                    componentClass: variable.componentClass,
-                                    range: utils.toRange(variable.start, variable.end)
-                                };
-                            }
+                    }
+                    if (variable) {
+                        const cmp = this.getComponent(variable.componentClass, project, logPad + "   ", logLevel, toIPosition(position));
+                        if (cmp) {
+                            log.methodDone("get component instance", logLevel, logPad);
+                            return cmp;
+                        }
+                        else {
+                            log.methodDone("get component instance", logLevel, logPad);
+                            return {
+                                name: variable.name,
+                                start: variable.start,
+                                end: variable.end,
+                                componentClass: variable.componentClass,
+                                range: utils.toRange(variable.start, variable.end)
+                            };
                         }
                     }
                 }
@@ -643,7 +647,6 @@ class ExtjsLanguageManager
         }
 
         let cmpClass: string | undefined;
-        const thisPath = window.activeTextEditor?.document?.uri.fsPath;
 
         log.value("   line text property (recalculated)", property, logLevel + 1, logPad);
         log.value("   line text component type", cmpType, logLevel + 1, logPad);
@@ -671,7 +674,7 @@ class ExtjsLanguageManager
             if (component = this.getComponent(property, project, logPad + "   ", logLevel, toIPosition(position), thisCmp)) {
                 cmpClass = component.componentClass;
             }
-            else if (component = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel)) {
+            else if (component = this.getComponentInstance(property, project, position, thisCmp, logPad + "   ", logLevel)) {
                 cmpClass = component.componentClass;
             }
             else if (component = this.getComponent(cmpClass, project, logPad + "   ", logLevel)) {
@@ -683,7 +686,7 @@ class ExtjsLanguageManager
         }
         else if (cmpType === ComponentType.Method)
         {
-            cmpClass = this.getClsByLinePosition(property, project, position, lineText, thisPath, logPad + "   ", logLevel);
+            cmpClass = this.getClsByLinePosition(property, project, position, lineText,  thisCmp, logPad + "   ", logLevel);
             if (cmpClass)
             {
                 component = this.getComponent(cmpClass, project, "   ", logLevel + 1);
@@ -715,6 +718,9 @@ class ExtjsLanguageManager
                     // cmpClass = this.getClsByLinePosition(property, position, lineText, thisPath);
                 }
             }
+            else {
+                cmpType = ComponentType.None;
+            }
         }
         //
         // Check to make sure it isn't a quoted string that isnt preceded by type/xtype, if
@@ -728,7 +734,7 @@ class ExtjsLanguageManager
         else if (new RegExp(`x?type\\s*:\\s*["']+${property}["']+`).test(allLineText) || !(new RegExp(`["']+[^"']*${property}\\s*[^"']*["']+`).test(allLineText)))
         {   // ComponentType.Property / ComponentType.Config | variable / parameter
             //
-            component = this.getComponentInstance(property, project, position, document.uri.fsPath, logPad + "   ", logLevel);
+            component = this.getComponentInstance(property, project, position, thisCmp, logPad + "   ", logLevel);
             if (!component) {
                 component = this.components.find(c => /* c.nameSpace === nameSpace && */
                                     c.project === project && c.componentClass === thisCmp.componentClass && c.properties.find(p => p.name === property)) ||
@@ -746,7 +752,7 @@ class ExtjsLanguageManager
             }
             else {
                 cmpClass = component.componentClass;
-                // cmpType = cmpType | ComponentType.Instance;
+                // cmpType = component.componentClass | ComponentType.Instance;
             }
         }
 
@@ -763,7 +769,7 @@ class ExtjsLanguageManager
             cmpType: cmpType || ComponentType.None,
             property,
             thisCmp,
-            thisClass: thisCmp?.componentClass,
+            thisClass: thisCmp.componentClass,
             callee,
             text,
             project,
