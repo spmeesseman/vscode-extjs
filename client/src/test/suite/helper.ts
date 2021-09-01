@@ -24,6 +24,10 @@ export async function activate(docUri?: Uri)
 {
 	const ext = extensions.getExtension("spmeesseman.vscode-extjs")!;
 	assert(ext, "Could not find extension");
+
+	const taskExplorerEnabled =  workspace.getConfiguration().get<boolean>("extjsIntellisense.enableTaskExplorer", true);
+	await workspace.getConfiguration().update("extjsIntellisense.enableTaskExplorer", true);
+
 	if (!activated)
 	{
 		extJsApi = await ext.activate();
@@ -38,6 +42,9 @@ export async function activate(docUri?: Uri)
 		} catch (e) {
 			console.error(e);
 		}
+	}
+	if (!taskExplorerEnabled) {
+		await workspace.getConfiguration().update("extjsIntellisense.enableTaskExplorer", taskExplorerEnabled);
 	}
 	extJsApi.extjsLangMgr.setTests(true);
 	return { extJsApi , doc };

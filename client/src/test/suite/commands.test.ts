@@ -38,7 +38,7 @@ suite("Command Tests", () =>
 		//
 		validationDelay = configuration.get<number>("validationDelay");
 		await configuration.update("validationDelay", 250);
-		const testsApi = await activate();
+		const testsApi = await activate(docUri);
 		extJsApi = testsApi.extJsApi;
 		extjsLangMgr = extJsApi.extjsLangMgr;
 		await waitForValidation();
@@ -63,9 +63,7 @@ suite("Command Tests", () =>
 
 	test("Ignore xtype errors", async function()
 	{
-		if (this && this.timeout) {
-			this.timeout(60 * 1000);
-		}
+		this.timeout(45 * 1000);
 
 		const activeDoc = vscode.window.activeTextEditor?.document;
 		//
@@ -104,7 +102,7 @@ suite("Command Tests", () =>
 
 	test("Ensure xtype", async () =>
 	{
-		await testCommand("ensureRequire", "userdropdown"); //  toRange(39, 9, 39, 23));
+		await testCommand("ensureRequire", "userdropdown", "xtype"); //  toRange(39, 9, 39, 23));
 		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the requires array
@@ -123,7 +121,7 @@ suite("Command Tests", () =>
 			console.error(e);
 		}
 		await waitForValidation();
-		await testCommand("ensureRequire", "userdropdown"); //  toRange(37, 9, 37, 23));
+		await testCommand("ensureRequire", "userdropdown", "xtype"); //  toRange(37, 9, 37, 23));
 		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the requires array
@@ -150,21 +148,25 @@ suite("Command Tests", () =>
 	});
 
 
-	test("Replace text no-parameter edge case", async () =>
+	test("Ensure type", async () =>
 	{
-		await testCommand("replaceText", "text");
-		await testCommand("replaceText");
+		await testCommand("ensureRequire", "users", "type"); //  toRange(39, 9, 39, 23));
+		await waitForValidation();
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
 
 	test("Ignore requires errors", async function()
-	{
+	{	//
+		// Increase timeout for this test (default 30s)
+		//
 		if (this && this.timeout) {
 			this.timeout(45 * 1000);
 		}
-
+		//
+		// Set configuration for this test
+		//
 		await configuration.update("ignoreErrors", []);
-
 		//
 		// Requires
 		//
@@ -181,15 +183,24 @@ suite("Command Tests", () =>
 		// Use the extension's vscode-extjs:ignoreError command
 		//
 		await testCommand("ignoreError", ErrorCode.classNotFound, doc, toRange(12, 9, 12, 45));
-		await waitForValidation();
+		//
+		// By document/file
+		//
 		await testCommand("ignoreError", ErrorCode.classNotFound, doc);
-		await waitForValidation();
-		await testCommand("ignoreError", "", ErrorCode.classNotFound);
-		await waitForValidation();
-
+		//
+		// Global
+		//
+		await testCommand("ignoreError", ErrorCode.classNotFound);
+		//
+		// Already exists
+		//
+		await testCommand("ignoreError", ErrorCode.classNotFound);
+		//
+		// CLose active editor
+		//
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		//
-		// Reset (for local tests, this won't matter in a CI environment)
+		// Reset configuration
 		//
 		await configuration.update("ignoreErrors", []);
 		await waitForValidation();
@@ -211,16 +222,29 @@ suite("Command Tests", () =>
 
 	test("No active document", async () =>
 	{
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		await waitForValidation();
-
+		while (vscode.window.activeTextEditor) {
+			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+			await waitForValidation();
+		}
 		await testCommand("waitReady");
 		await testCommand("ignoreError", ErrorCode.classNotFound);
 		await testCommand("ignoreError");
 		await testCommand("ensureRequire");
-		await testCommand("ensureRequire", "physiciandropdown");
-		await testCommand("replaceText", "text");
-		await testCommand("replaceText");
+		await testCommand("ensureRequire", "physiciandropdown", "xtype");
+		await testCommand("ensureRequire", "users", "type");
+	});
+
+
+	test("Non-extjs document", async function()
+	{
+		await vscode.workspace.openTextDocument(getDocUri("app/js/script1.js"));
+		await waitForValidation();
+		await testCommand("ignoreError", ErrorCode.classNotFound);
+		await testCommand("ignoreError");
+		await testCommand("ensureRequire", "physiciandropdown", "xtype");
+		await testCommand("ensureRequire", "users", "type");
+		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitForValidation();
 	});
 
 
