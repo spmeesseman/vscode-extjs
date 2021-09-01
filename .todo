@@ -35,6 +35,7 @@ Completion:
 			direction: "ASC"
 		}]
 		And place cursor into property value quotes. Can do for store filters, sorters, model fields, etc
+		Configurable template file?
 	☐ Models.  And the special config applied to 'fields'.
 	☐ Model property getter/setter when using associations
 	☐ Component store property string literal completion, like xtype/type
@@ -49,6 +50,9 @@ Completion:
 		i.e. GEMS.model, GEMS.store, 'model', 'store' completion does not show any items
 	☐ Highlight a word in a comment, type x, and the xtype completion items appear.
 		behind comments no completion should happen
+	☐ Ext.Ajax.* does not work
+		Probably more singletons likes this don't work too
+		Ajax is in completion list after Ext., but nothing with Ext.Ajax.
 
 Definition:
 
@@ -63,6 +67,7 @@ Diagnostics:
 	✔ 'uses' property.  same validation as for requires[] @done(21-08-15 18:46)
 	☐ packages not @sencha should have xtype validation.  currently not validated if namespace name begins w Ext
 	☐ (warning) for deprecated property/config/method/class use
+		configuration setting - on/off
 	✔ Requires - marks onvalid when a class reference is to an alternateClassName @done(21-08-13 15:33)
 		e.g. App.model.user.User as alternate but namespace sees App.model.User
 	☐ Method parameter validation against types in jsdoc
@@ -73,19 +78,20 @@ Diagnostics:
 	✔ Store - for 'model' field @done(21-08-26 14:08)
 	✔ The 'type' property is not validated right if not a store, i.e. 'layout' config "type: 'vbox'" @done(21-08-26 14:08)
 		map type aliases i.e. 'store.', 'layout.', etc
-	☐ Model fields
+	✔ Model fields @done(21-08-31 22:41)
 		for object param to create() and new
-	☐ Don't use inline Ext.define in controller files
+	☐ Invalidate inline Ext.define in controller files
+		configuration setting - on/off
 	✔ Model reference {} object - 'type' field is showing invalid @done(21-08-26 18:11)
 	✔ Model fields 'type' i.e. 'string' is getting validated and showing as no reference found @done(21-08-25 23:07)
 		make an 'ignoreTypes' srray setting, include 'string', 'number', etc, and user can add to list
-	☐ STore types are invalidated if they are not in 'store' or ciewModel 'stores'
+	☐ Store types are invalidated if they are not in 'store' or viewModel 'stores'
 		e.g. SettingsWinModel.js this.setStores()
 	☐ Action to ignore additional 'type' fields
 		should reference parent object - can leave types on for stores, etc, but turn off for other parent obj
 	☐ Add grid 'filter' type to validation
 		Grid filter usees 'type' to reference stores in some cases e.g. User Mgmt grid.js filter: { type: 'yesno' ... }
-	☐ Deeply nested store types still invalidate
+	✔ Deeply nested store types still invalidate @done(21-09-01 00:45)
 		e.g. User Mgmt AppUtilities.js line 6978
 	☐ Invalidate inproper static/private call.
 		e.g. private call only on instances, static calls only on full classpath names or alternateClassNames
@@ -123,11 +129,6 @@ Miscellaneous:
 	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index 
 	✘ FS cache - check to see if can get away with not persisting object range info @cancelled(21-08-29 07:17)
 		i think this is only used on the active document, which is always re-indexed anyway when opened
-	☐ New command and explorer tray to insert ExtJs code snippets
-		e.g. an Ext.create('Ext.util.DelayedTask', {...
-		create Ext.define file from template
-			Prompt for dir/filename
-		map to shortcut keys setting
 	✔ Namespace can be removed from mapping references throughout code @done(21-08-26 18:12)
 	☐ Packages referenced from app.json should have own cache location
 		use pkg namespace name extracted from pacage.json in pkg dir
@@ -146,6 +147,17 @@ Miscellaneous:
 Signature:
 
 	☐ Static create() for stores/models/?
+	☐ DataUtils.ajaxRequest no signature
+		Other DataUtils.*?
+
+Task View:
+	
+	✔ Shell @done(21-08-29 10:22)
+	☐ ExtJs code snippets
+		e.g. an Ext.create('Ext.util.DelayedTask', {...
+	☐ create Ext.define file from template
+		Prompt for dir/filename, or add to open empty document
+	☐ map to shortcut keys setting
 
 Type Definition:
 
