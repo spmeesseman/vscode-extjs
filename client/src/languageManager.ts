@@ -1204,7 +1204,7 @@ class ExtjsLanguageManager
                         log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, logLevel + 1, logPad);
                         log.write(`       ${dir}`, logLevel + 1, logPad);
 
-                        const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
+                        const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`, "**/{test,tests,spec}/**");
                         for (const uri of uris)
                         {
                             log.write(`   Index file ${++currentFile} of ${numFiles}`, logLevel + 2, logPad);
