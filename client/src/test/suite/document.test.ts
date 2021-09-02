@@ -146,9 +146,7 @@ suite("Document Tests", () =>
 		await waitForValidation();
 		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		// assert(!extjsLangMgr.getComponent("VSCodeExtJS.T3322est", "testFixture", "", 1));
-		// assert(!extjsLangMgr.getComponent("VSCodeExtJS.T22est", "testFixture", "", 1));
-		// assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1));
+		assert(!extjsLangMgr.getComponent("VSCodeExtJS.T3322est", "testFixture", "", 1));
 	});
 
 
