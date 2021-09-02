@@ -15,8 +15,9 @@ suite("Completion Tests", () =>
 	let validationDelay: number | undefined;
 
 
-	suiteSetup(async () =>
+	suiteSetup(async function()
     {
+		this.timeout(60000);
 		const config = vscode.workspace.getConfiguration();
 		//
 		// Set debounce to minimum for test
@@ -106,7 +107,7 @@ suite("Completion Tests", () =>
 				items: [
 					{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start A");
+			}, true, "inline property start A2");
 		}
 
 		try {
@@ -114,14 +115,14 @@ suite("Completion Tests", () =>
 				items: [
 					{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start");
+			}, true, "inline property start E");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(95, 3), "E", {
 				items: [
 					{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start");
+			}, true, "inline property start E2");
 		}
 
 		try {
@@ -129,14 +130,14 @@ suite("Completion Tests", () =>
 				items: [
 					{ label: "Utils", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start");
+			}, true, "inline property start U");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(95, 3), "U", {
 				items: [
 					{ label: "Utils", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start");
+			}, true, "inline property start U2");
 		}
 
 		try {
@@ -145,7 +146,7 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start");
+			}, true, "inline property start V");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(95, 3), "V", {
@@ -153,7 +154,7 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start");
+			}, true, "inline property start V2");
 		}
 
 		//
@@ -164,14 +165,14 @@ suite("Completion Tests", () =>
 				items: [
 					{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start U");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(95, 0), "U", {
 				items: [
 					{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start U2");
 		}
 		try {
 			await testCompletion(docUri, new vscode.Position(95, 0), "V", {
@@ -179,7 +180,7 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start V");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(95, 0), "V", {
@@ -187,14 +188,14 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start V2");
 		}
 		//
 		// Outside function 0 results
 		//
 		await testCompletion(docUri, new vscode.Position(97, 0), "", {
 			items: []
-		});
+		}, false, "inline outside function 0 results");
 
 		//
 		// Inside method callee expression (parameter)
@@ -207,42 +208,42 @@ suite("Completion Tests", () =>
 				items: [
 					{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start A");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 46), "A", {
 				items: [
 					{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start A2");
 		}
 		try {
 			await testCompletion(docUri, new vscode.Position(74, 46), "E", {
 				items: [
 					{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start E");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 46), "E", {
 				items: [
 					{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start E2");
 		}
 		try {
 			await testCompletion(docUri, new vscode.Position(74, 46), "U", {
 				items: [
 					{ label: "Utils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start U");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 46), "U", {
 				items: [
 					{ label: "Utils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start U2");
 		}
 		try {
 			await testCompletion(docUri, new vscode.Position(74, 46), "V", {
@@ -250,7 +251,7 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start V");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 46), "V", {
@@ -258,7 +259,7 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start V2");
 		}
 
 		//
@@ -272,42 +273,42 @@ suite("Completion Tests", () =>
 				items: [
 					{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start A");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 48), "A", {
 				items: [
 					{ label: "AppUtils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start A2");
 		}
 		try {
 			await testCompletion(docUri, new vscode.Position(74, 48), "E", {
 				items: [
 					{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start E");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 48), "E", {
 				items: [
 					{ label: "Ext", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start E2");
 		}
 		try {
 			await testCompletion(docUri, new vscode.Position(74, 48), "U", {
 				items: [
 					{ label: "Utils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start U");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 48), "U", {
 				items: [
 					{ label: "Utils", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start U2");
 		}
 		try {
 			await testCompletion(docUri, new vscode.Position(74, 48), "V", {
@@ -315,7 +316,7 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start V");
 		}
 		catch {
 			await testCompletion(docUri, new vscode.Position(74, 48), "V", {
@@ -323,7 +324,7 @@ suite("Completion Tests", () =>
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			});
+			}, true, "inline property start V2");
 		}
 	});
 
@@ -1110,9 +1111,21 @@ async function testCompletion(docUri: vscode.Uri, position: vscode.Position, tri
 		expectedCompletionList.items.forEach((expectedItem, i) => {
 			assert.strictEqual(
 				actualCompletionList.items.filter((item) =>
-				{
-					return item.kind === expectedItem.kind && (item.label.replace(/ /g, "") === expectedItem.label.replace(/ /g, "") ||
-							item.insertText?.toString().replace(/ /g, "") === expectedItem.insertText?.toString().replace(/ /g, ""));
+				{   //
+					// No idea what happened, but vscode engine updated to 1.60 and all of a sudden
+					// getting weird errors 'item.label.replace is not a function'.  and its a
+					// string.  no idea.  Every single release something like this happens that
+					// has to be worked around and its getting very very annoying.  So now we have
+					// to catch whatever is going on here as the engine is returning some funky
+					// completion items.  Even JSON.stringified 'item' and item.label came out just
+					// fine.  No idea how that could be.
+					//
+					try {
+						return item.kind === expectedItem.kind && (item.label.replace(/ /g, "") === expectedItem.label.replace(/ /g, "") ||
+							   item.insertText?.toString().replace(/ /g, "") === expectedItem.insertText?.toString().replace(/ /g, ""));
+					}
+					catch {
+					}
 				}).length, shouldShow ? 1 : 0, expectedItem.label + " not found" + (testDesc ? ` (${testDesc})` : "")
 			);
 		});
