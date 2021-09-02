@@ -850,25 +850,6 @@ class ExtjsLanguageManager
     }
 
 
-    getNamespaceFromClass(componentClass: string, project: string, logPad: string, logLevel: number)
-    {
-        let nameSpace: string | undefined;
-        log.methodStart("get namespace from class", logLevel, logPad, false, [["component class", componentClass]]);
-        if (componentClass.indexOf(".") !== -1)
-        {
-            nameSpace = componentClass.substring(0, componentClass.indexOf("."));
-        }
-        else {
-            const aCmp = this.components.find(c => project === c.project && componentClass === c.componentClass);
-            if (aCmp) {
-                nameSpace = aCmp.componentClass.substring(0, aCmp.componentClass.indexOf("."));
-            }
-        }
-        log.methodDone("get namespace from class", logLevel, logPad, false, [["namespace", nameSpace]]);
-        return nameSpace || componentClass;
-    }
-
-
     getPropertyPosition(property: string, cmpType: ComponentType, componentClass: string, project: string, isStatic: boolean, logPad: string, logLevel: number)
     {
         let start = new Position(0, 0),
@@ -884,14 +865,11 @@ class ExtjsLanguageManager
 
         const _setPosition = ((o: IExtJsBase) =>
         {
-            if (o.start && o.end)
-            {
-                log.write("   setting position", logLevel + 1, logPad);
-                log.value("      start line", o.start?.line, logLevel + 2, logPad);
-                log.value("      end line", o.end?.line, logLevel + 2, logPad);
-                start = toVscodePosition(o.start);
-                end = toVscodePosition(o.end);
-            }
+            log.write("   setting position", logLevel + 1, logPad);
+            log.value("      start line", o.start.line, logLevel + 2, logPad);
+            log.value("      end line", o.end.line, logLevel + 2, logPad);
+            start = toVscodePosition(o.start);
+            end = toVscodePosition(o.end);
         });
 
         if (pObject)
@@ -987,13 +965,12 @@ class ExtjsLanguageManager
         log.write("get sub-component names", logLevel, logPad);
         log.value("   component class part", clsPart, logLevel + 1, logPad);
 
-        this.components.forEach((c) => {
+        this.components.forEach((c) =>
+        {
             if (c.componentClass.startsWith(clsPart))
             {
                 const subCMp = c.componentClass.replace(clsPart + ".", "").split(".")[0];
-                if (!subComponentNames.includes(subCMp)) {
-                    subComponentNames.push(subCMp);
-                }
+                subComponentNames.push(subCMp);
             }
         });
 
