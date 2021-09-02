@@ -1,5 +1,12 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.9.1 (September 1st, 2021)
+
+### Bug Fixes
+
+- **Indexer:** if a cached file is removed or renamed, the indexer fails on startup.
+- **Indexer:** properties found that are 2 levels deep or more in an object range that is an expression of an assignment are invalidated.
+
 ## Version 0.9.0 (September 1st, 2021)
 
 ### Bug Fixes
