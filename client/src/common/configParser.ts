@@ -345,11 +345,41 @@ export class ConfigParser
                       toolkit = configuration.get<string>("toolkit", "classic");
                 for (const d of dirs)
                 {
-                    const wsPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit);
+                    const wsRelPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit),
+                          wsFullPath = d.replace(/\$\{workspace.dir\}/, baseDir).replace(/\$\{toolkit.name\}/, toolkit);
                     log.write("      add dependency package", 1, logPad);
-                    log.value("         path", wsPath, 1, logPad);
-                    if (!conf.classpath.includes(wsPath)) {
-                        conf.classpath.push(wsPath);
+                    log.value("         path", wsRelPath, 1, logPad);
+                    const packageJsonFile = path.normalize(path.join(wsFullPath, "package.json"));
+                    if (await pathExists(packageJsonFile))
+                    {
+                        const packageJson = json5.parse(await readFile(packageJsonFile));
+                        let packageClsPath = packageJson.sencha?.classpath;
+                        if (packageClsPath)
+                        {
+                            if (!(packageClsPath instanceof Array))
+                            {
+                                packageClsPath = [ packageClsPath ];
+                            }
+                            for (const clsPath of packageClsPath)
+                            {   // eslint-disable-next-line no-template-curly-in-string
+                                const fClsPath = clsPath.replace("${package.dir}", wsRelPath);
+                                if (confs.length > 1 && packageJson.sencha?.namespace === "Ext")
+                                {
+                                    if (!confs[1].classpath.includes(fClsPath)) {
+                                        confs[1].classpath.push(fClsPath);
+                                    }
+                                }
+                                else if (!conf.classpath.includes(fClsPath)) {
+                                    conf.classpath.push(fClsPath);
+                                }
+                            }
+                        }
+                        else if (!conf.classpath.includes(wsRelPath)) {
+                            conf.classpath.push(wsRelPath);
+                        }
+                    }
+                    else if (!conf.classpath.includes(wsRelPath)) {
+                        conf.classpath.push(wsRelPath);
                     }
                 }
             }

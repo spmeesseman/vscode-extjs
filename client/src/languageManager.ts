@@ -43,7 +43,7 @@ class ExtjsLanguageManager
 {   //
     // When an update requires a re-index, change the name of this flag
     //
-    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.9.1";
+    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.9.2";
 
     private isIndexing = false;
     private isValidating = false;
@@ -1202,6 +1202,7 @@ class ExtjsLanguageManager
                     if (!_isIndexed(dir))
                     {
                         log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, logLevel + 1, logPad);
+                        log.write(`       ${dir}`, logLevel + 1, logPad);
 
                         const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
                         for (const uri of uris)
