@@ -26,7 +26,7 @@ async function indexFiles(project?: string, clean = true, logPad = "")
     }
     await extjsLangMgr.indexFiles(project);
 
-    log.methodStart("index files command", 1, logPad);
+    log.methodDone("index files command", 1, logPad);
 }
 
 
