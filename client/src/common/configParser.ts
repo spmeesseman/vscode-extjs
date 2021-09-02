@@ -67,6 +67,7 @@ export class ConfigParser
             }
             catch {
                 window.showWarningMessage(`Invalid .extjsrc file ${path} - invalid JSON`);
+                continue;
             }
             if (conf && conf.classpath && conf.name)
             {
@@ -113,6 +114,8 @@ export class ConfigParser
                         window.showWarningMessage(`Invalid framework path ${uri.fsPath} - does not exist`);
                     }
                 }
+
+                // const buildDir = conf.build ? conf.build.dir.replace(/\$\{workspace.dir\}[/\\]{1}/, "") : undefined,
 
                 config.push(conf);
             }
