@@ -299,7 +299,7 @@ function getJsDoc(property: string, componentClass: string, comments: readonly C
 }
 
 
-function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | undefined)
+function getMethodAst(objEx: ObjectProperty, text: string | undefined)
 {
     if (!text) {
         return undefined;
@@ -327,7 +327,7 @@ function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | 
             subText = subText.replace(matches[0], `${matches[1].trim()} function ${propertyName} (`);
         }
         else {
-            subText = subText.replace(matches[0], `function ${propertyName} (`);
+            subText = subText.replace(matches[0], `function _${propertyName}(`);
         }
     }
 
@@ -335,8 +335,96 @@ function getMethodAst(objEx: ObjectProperty, methodName: string, text: string | 
         return parse(subText);
     }
     catch (e) {
-        log.error(["failed to parse variables for method " + methodName, e.toString()]);
+        log.error([`failed to parse method ${propertyName} for ast`, subText, e]);
     }
+}
+
+
+function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRange[]
+{
+    const objectRanges: IObjectRange[] = [];
+
+    if (isFunctionExpression(m.value))
+    {
+        const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p) || isAssignmentExpression(p) || isReturnStatement(p));
+
+        if (propertyObjects && propertyObjects.length)
+        {
+            const pushRanges = (args: any, name: string) =>
+            {
+                for (const a of args)
+                {
+                    if (isObjectExpression(a))
+                    {
+                        objectRanges.push({
+                            start: a.loc!.start,
+                            end: a.loc!.end,
+                            type: a.type,
+                            name
+                        });
+                        a.properties.forEach(p =>
+                        {
+                            if (isObjectProperty(p) && isIdentifier(p.key))
+                            {
+                                const key = p.key.name;
+                                if (isObjectExpression(p.value)) {
+                                    pushRanges([ p.value ], key);
+                                }
+                                else if (isArrayExpression(p.value)) {
+                                    p.value.elements.forEach(e => {
+                                        if (isObjectExpression(e)) {
+                                            pushRanges([ e ], key);
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            };
+
+            propertyObjects.forEach((o) =>
+            {
+                if (isVariableDeclaration(o))
+                {
+                    for (const d of o.declarations)
+                    {
+                        if (isCallExpression(d.init) || isNewExpression(d.init))
+                        {
+                            pushRanges(d.init.arguments, methodName);
+                        }
+                        if (isAwaitExpression(d.init))
+                        {
+                            if (isCallExpression(d.init.argument))
+                            {
+                                pushRanges(d.init.argument.arguments, methodName);
+                            }
+                            else {
+                                log.error("Unhandled Object Range: unexpected await syntax", [["method name", methodName]]);
+                            }
+                        }
+                    }
+                }
+                else if (isExpressionStatement(o))
+                {
+                    if (isCallExpression(o.expression)) {
+                        pushRanges(o.expression.arguments, methodName);
+                    }
+                    else if (isAssignmentExpression(o.expression) && isCallExpression(o.expression.right)) {
+                        pushRanges(o.expression.right.arguments, methodName);
+                    }
+                }
+                else if (isReturnStatement(o))
+                {
+                    if (isObjectExpression(o.argument)) {
+                        pushRanges([ o.argument ], methodName);
+                    }
+                }
+            });
+        }
+    }
+
+    return objectRanges;
 }
 
 
@@ -413,6 +501,16 @@ function logProperties(property: string, properties: (IMethod | IProperty | ICon
             }
         });
     }
+}
+
+
+function parseBooleanLiteral(property: ObjectProperty): boolean
+{
+    if (isBooleanLiteral(property.value))
+    {
+        return property.value.value;
+    }
+    return false;
 }
 
 
@@ -552,104 +650,6 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nam
 }
 
 
-function parseBooleanLiteral(property: ObjectProperty): boolean
-{
-    if (isBooleanLiteral(property.value))
-    {
-        return property.value.value;
-    }
-    return false;
-}
-
-
-function getMethodObjectRanges(m: ObjectProperty, methodName: string): IObjectRange[]
-{
-    const objectRanges: IObjectRange[] = [];
-
-    if (isFunctionExpression(m.value))
-    {
-        const propertyObjects = m.value.body.body.filter(p => isExpressionStatement(p) || isVariableDeclaration(p) || isAssignmentExpression(p) || isReturnStatement(p));
-
-        if (propertyObjects && propertyObjects.length)
-        {
-            const pushRanges = (args: any, name: string) =>
-            {
-                for (const a of args)
-                {
-                    if (isObjectExpression(a))
-                    {
-                        objectRanges.push({
-                            start: a.loc!.start,
-                            end: a.loc!.end,
-                            type: a.type,
-                            name
-                        });
-                        a.properties.forEach(p =>
-                        {
-                            if (isObjectProperty(p) && isIdentifier(p.key))
-                            {
-                                const key = p.key.name;
-                                if (isObjectExpression(p.value)) {
-                                    pushRanges([ p.value ], key);
-                                }
-                                else if (isArrayExpression(p.value)) {
-                                    p.value.elements.forEach(e => {
-                                        if (isObjectExpression(e)) {
-                                            pushRanges([ e ], key);
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    }
-                }
-            };
-
-            propertyObjects.forEach((o) =>
-            {
-                if (isVariableDeclaration(o))
-                {
-                    for (const d of o.declarations)
-                    {
-                        if (isCallExpression(d.init) || isNewExpression(d.init))
-                        {
-                            pushRanges(d.init.arguments, methodName);
-                        }
-                        if (isAwaitExpression(d.init))
-                        {
-                            if (isCallExpression(d.init.argument))
-                            {
-                                pushRanges(d.init.argument.arguments, methodName);
-                            }
-                            else {
-                                log.error("Unhandled Object Range: unexpected await syntax", [["method name", methodName]]);
-                            }
-                        }
-                    }
-                }
-                else if (isExpressionStatement(o))
-                {
-                    if (isCallExpression(o.expression)) {
-                        pushRanges(o.expression.arguments, methodName);
-                    }
-                    else if (isAssignmentExpression(o.expression) && isCallExpression(o.expression.right)) {
-                        pushRanges(o.expression.right.arguments, methodName);
-                    }
-                }
-                else if (isReturnStatement(o))
-                {
-                    if (isObjectExpression(o.argument)) {
-                        pushRanges([ o.argument ], methodName);
-                    }
-                }
-            });
-        }
-    }
-
-    return objectRanges;
-}
-
-
 function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, isPrivate: boolean, fsPath: string): IMethod[]
 {
     const methods: IMethod[] = [];
@@ -670,8 +670,8 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             if (propertyName)
             {
                 const doc = getJsDoc(propertyName, componentClass, m.leadingComments),
-                      params = parseParams(m, propertyName, text, componentClass, doc),
-                      variables = parseVariables(m, propertyName, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
+                      params = parseParams(m, text, componentClass, doc),
+                      variables = parseVariables(m, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
                 methods.push({
                     componentClass,
                     doc,
@@ -888,14 +888,16 @@ function parseStringArray(property: ObjectProperty)
 }
 
 
-function parseParams(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, jsdoc: IJsDoc | undefined): IParameter[]
+function parseParams(objEx: ObjectProperty, text: string | undefined, parentCls: string, jsdoc: IJsDoc | undefined): IParameter[]
 {
-    const params: IParameter[] = [];
+    const params: IParameter[] = [],
+          methodName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
+
     if (!text || !methodName) {
         return params;
     }
 
-    const ast = getMethodAst(objEx, methodName, text),
+    const ast = getMethodAst(objEx, text),
           node = ast?.program.body[0];
 
     if (isFunctionDeclaration(node))
@@ -963,9 +965,11 @@ function parseStringLiteral(property: ObjectProperty): string | undefined
 }
 
 
-function parseVariables(objEx: ObjectProperty, methodName: string, text: string | undefined, parentCls: string, lineOffset: number, params?: IParameter[]): IVariable[]
+function parseVariables(objEx: ObjectProperty, text: string | undefined, parentCls: string, lineOffset: number, params?: IParameter[]): IVariable[]
 {
-    const variables: IVariable[] = [];
+    const variables: IVariable[] = [],
+          methodName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
+
     if (!text || !methodName) {
         return variables;
     }
@@ -981,7 +985,7 @@ function parseVariables(objEx: ObjectProperty, methodName: string, text: string 
         variables.push(v);
     });
 
-    const ast = getMethodAst(objEx, methodName, text);
+    const ast = getMethodAst(objEx, text);
     traverse(ast,
     {
         ExpressionStatement(path)
