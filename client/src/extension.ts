@@ -19,6 +19,7 @@ import { initFsStorage } from "./common/fsStorage";
 import { TaskTreeDataProvider } from "./providers/tasks/tree";
 import { configuration } from "./common/configuration";
 import { ExtJsTaskProvider } from "./providers/tasks/task";
+import { IComponent, IPosition } from "../../common";
 
 
 let client: LanguageClient;
@@ -32,6 +33,7 @@ export let extjsLangMgr: ExtjsLanguageManager;
 
 export interface IExtjsLanguageManager
 {
+    getComponent: (componentClass: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent) => IComponent | undefined;
     getLineProperties: (document: TextDocument, position: Position, logPad: string, logLevel: number) => ILineProperties;
     setBusy: (busy: boolean) => void;
     setTests: (tests: boolean) => void;
