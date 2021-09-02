@@ -1105,7 +1105,6 @@ class ExtjsLanguageManager
                 if (!_isIndexed(conf.baseDir))
                 {
                     const toRemove: IComponent[] = [];
-                    processedDirs.push(conf.baseDir);
                     components = JSON.parse(storedComponents);
                     increment = Math.round(1 / components.length * cfgPct);
                     //
@@ -1144,8 +1143,15 @@ class ExtjsLanguageManager
                     // Remove any components that do not exist anymore from the cache
                     //
                     toRemove.forEach(c => {
-                        this.removeComponentsFromCache(Uri.file(c.fsPath), conf.name);
+                        this.removeComponentFromCache(c.fsPath, conf.name);
                     });
+
+                    //
+                    // Push all the classpaths for this config into processed dirs array
+                    //
+                    for (const dir of conf.classpath) {
+                        processedDirs.push(dir);
+                    }
 
                     ++currentCfgIdx;
                     const nextInc = (currentCfgIdx * cfgPct) - 1,
@@ -1175,15 +1181,7 @@ class ExtjsLanguageManager
             {
                 let currentDir = 0,
                     currentFile = 0;
-                components = []; // clear component defs from last loop iteration
-
-                //
-                // Status bar
-                //
-                // const statusBarSpace = window.createStatusBarItem(StatusBarAlignment.Left, -10000);
-                // statusBarSpace.tooltip = "ExtJs Language Server is building the syntax tree";
-                // statusBarSpace.text = getStatusString(0);
-                // statusBarSpace.show();
+                    components = []; // clear component defs from last loop iteration
 
                 for (const dir of conf.classpath)
                 {
@@ -1599,40 +1597,32 @@ class ExtjsLanguageManager
     }
 
 
-    private async removeComponentsFromCache(uri: Uri, nameSpace: string)
+    private async removeComponentFromCache(fsPath: string, nameSpace: string)
     {
-        const fsPath = uri.fsPath,
-              project = getWorkspaceProjectName(fsPath),
-              baseDir = this.getAppJsonDir(fsPath),
+        const baseDir = this.getAppJsonDir(fsPath),
               storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
               storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
 
         log.methodStart("remove file from cache", 1, "", true, [["path", fsPath]]);
 
-        const componentClass = this.getClsByPath(fsPath),
-              componentNs = componentClass ? this.getNamespaceFromClass(componentClass, project, "   ", 2) : undefined;
-
-        if (componentClass && componentNs)
-        {
-            log.value("   removing component class", componentClass, 2);
-            this.components.filter((c) => c.fsPath === uri.fsPath).forEach((c, i) =>
-            {   //
-                // Update memory cache
-                //
-                this.components.splice(i, 1);
-                //
-                // Update fs cache
-                //
-                for (let i = 0; i < storedComponents.length; i++)
+        log.value("   removing component", fsPath, 2);
+        this.components.filter((c) => c.fsPath === fsPath).forEach((c, i) =>
+        {   //
+            // Update memory cache
+            //
+            this.components.splice(i, 1);
+            //
+            // Update fs cache
+            //
+            for (let i = 0; i < storedComponents.length; i++)
+            {
+                if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
                 {
-                    if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
-                    {
-                        this.components.splice(i, 1);
-                        break;
-                    }
+                    this.components.splice(i, 1);
+                    break;
                 }
-            });
-        }
+            }
+        });
 
         log.methodDone("remove file from cache", 1, "", true);
     }
@@ -1704,7 +1694,7 @@ class ExtjsLanguageManager
 
     private async watcherDocumentDelete(uri: Uri, nameSpace: string) // (e: FileDeleteEvent)
     {
-        await this.removeComponentsFromCache(uri, nameSpace);
+        await this.removeComponentFromCache(uri.fsPath, nameSpace);
         const activeTextDocument = window.activeTextEditor?.document;
         await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
     }
@@ -1749,7 +1739,7 @@ class ExtjsLanguageManager
                 //
                 else if (e.document.lineAt(change.range.start).text.includes("Ext.define"))
                 {
-                    this.removeComponentsFromCache(e.document.uri, this.getNamespace(e.document));
+                    this.removeComponentFromCache(e.document.uri.fsPath, this.getNamespace(e.document));
                 }
             }
             //
