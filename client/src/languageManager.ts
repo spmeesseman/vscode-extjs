@@ -1298,7 +1298,8 @@ class ExtjsLanguageManager
         log.methodStart("indexing " + fsPath, logLevel, logPad, true, [[ "namespace", nameSpace ], [ "persist", saveToCache ], [ "one call", oneCall ]]);
 
         const uriFile = Uri.file(fsPath),
-              wsPath = workspace.getWorkspaceFolder(uriFile)?.uri.fsPath;
+              wsPath = workspace.getWorkspaceFolder(uriFile)?.uri.fsPath,
+              project = getWorkspaceProjectName(fsPath);
         let skipExcludeCheck = false;
 
         //
@@ -1368,7 +1369,12 @@ class ExtjsLanguageManager
         // it's a javascript file if necessary (file watchers only watch classpath js files, so if
         // this is a filewatcher event it's guaranteed to be a js file).)
         //
-        if (!utils.isExtJsFile(text)) {
+        if (!utils.isExtJsFile(text))
+        {
+            const oldComponent = this.components.find(c => c.fsPath === fsPath && c.nameSpace === nameSpace && c.project === project);
+            if (oldComponent) {
+                await this.removeFileFromCache(fsPath, nameSpace, "   ", logLevel);
+            }
             this.isIndexing = false;
             return;
         }
@@ -1376,8 +1382,7 @@ class ExtjsLanguageManager
         //
         // Request 'parse file' from server
         //
-        const project = getWorkspaceProjectName(fsPath),
-              components = await this.serverRequest.parseExtJsFile(fsPath, project, nameSpace, text, edits || []),
+        const components = await this.serverRequest.parseExtJsFile(fsPath, project, nameSpace, text, edits || []),
               cached = await this.processComponents(components, project, oneCall, logPad + "   ", logLevel + 1);
         //
         // Log, cache, if there were some components indexed...
