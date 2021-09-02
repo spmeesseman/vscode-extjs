@@ -13,7 +13,7 @@ async function ignoreError(code: number, document: TextDocument, range: Range | 
 		await addIgnoreError({
 			code, fsPath: document.uri.fsPath
 		}, document, range);
-		await extjsLangMgr.validateDocument(activeTextDocument, extjsLangMgr.getNamespace(activeTextDocument));
+		await extjsLangMgr.validateDocument(activeTextDocument, extjsLangMgr.getNamespace(activeTextDocument), "", 1);
 	}
 }
 

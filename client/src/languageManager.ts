@@ -57,6 +57,9 @@ class ExtjsLanguageManager
     private components: IComponent[] = [];
     private isTests = false;
     private currentLineCount = 0;
+    private addingComponentFile: Uri | undefined;
+    private deletingComponentFile: Uri | undefined;
+
 
     //
     // TODO - Mappings rework
@@ -1142,8 +1145,8 @@ class ExtjsLanguageManager
                     //
                     // Remove any components that do not exist anymore from the cache
                     //
-                    toRemove.forEach(c => {
-                        this.removeComponentFromCache(c.fsPath, conf.name);
+                    toRemove.forEach(async c => {
+                        await this.removeFileFromCache(c.fsPath, conf.name, "   ", logLevel + 1);
                     });
 
                     //
@@ -1273,6 +1276,7 @@ class ExtjsLanguageManager
 
     private async indexAndValidateFile(document: TextDocument, edits?: IEdit[])
     {
+        log.methodStart("index and validate file", 1, "", false);
         const ns = this.getNamespace(document);
         //
         // Index the file, don't save to fs cache, we'll persist to fs cache when the
@@ -1283,14 +1287,15 @@ class ExtjsLanguageManager
         // Validate document
         //
         if (components && components.length > 0) {
-            await this.validateDocument(document, ns, edits);
+            await this.validateDocument(document, ns, "   ", 2, edits);
         }
+        log.methodDone("index and validate file", 1, "");
     }
 
 
     async indexFile(fsPath: string, nameSpace: string, saveToCache: boolean, document: TextDocument | Uri, oneCall: boolean, logPad: string, logLevel: number, edits?: IEdit[]): Promise<IComponent[] | undefined>
     {
-        log.methodStart("indexing " + fsPath, logLevel, logPad, true, [[ "namespace", nameSpace ]]);
+        log.methodStart("indexing " + fsPath, logLevel, logPad, true, [[ "namespace", nameSpace ], [ "persist", saveToCache ], [ "one call", oneCall ]]);
 
         const uriFile = Uri.file(fsPath),
               wsPath = workspace.getWorkspaceFolder(uriFile)?.uri.fsPath;
@@ -1338,6 +1343,16 @@ class ExtjsLanguageManager
         }
 
         //
+        // Set 'indexing' flag ***before our first promise await***, and hide toolbar indexing button
+        // The 'oneCall' flag is set when the indexing is being done on the active document only. For
+        // bulk/all indexing, this is handled by caller
+        //
+        if (oneCall) {
+            this.isIndexing = true;
+            showReIndexButton(false);
+        }
+
+        //
         // Get components for this file from the Language Server
         //
         let text: string | undefined;
@@ -1354,17 +1369,8 @@ class ExtjsLanguageManager
         // this is a filewatcher event it's guaranteed to be a js file).)
         //
         if (!utils.isExtJsFile(text)) {
+            this.isIndexing = false;
             return;
-        }
-
-        //
-        // Set 'indexing' flag, hide toolbar indexing button
-        // The 'oneCall' flag is set when the indexing is being done on the active document only
-        // For bulk indexing, this is handled by caller
-        //
-        if (oneCall) {
-            this.isIndexing = true;
-            showReIndexButton(false);
         }
 
         //
@@ -1373,12 +1379,23 @@ class ExtjsLanguageManager
         const project = getWorkspaceProjectName(fsPath),
               components = await this.serverRequest.parseExtJsFile(fsPath, project, nameSpace, text, edits || []),
               cached = await this.processComponents(components, project, oneCall, logPad + "   ", logLevel + 1);
-
         //
-        // Save to fs cache if caller has specified to, and if we parsed some components
+        // Log, cache, if there were some components indexed...
         //
-        if (cached && components.length > 0 && saveToCache) {
-            this.persistComponent(fsPath, nameSpace, components[0]);
+        if (components.length > 0)
+        {   //
+            // Log some info about the indexed component(s)
+            //
+            log.values([
+                ["# of components indexed", components.length], ["cached", cached],
+                ["1st indexed component class", components[0].componentClass]
+            ], logLevel + 1, logPad + "   ");
+            //
+            // Save to fs cache if caller has specified to
+            //
+            if (cached && saveToCache) {
+                await this.persistComponents(fsPath, nameSpace, components, logPad + "   ", logLevel + 1);
+            }
         }
 
         //
@@ -1391,7 +1408,7 @@ class ExtjsLanguageManager
             showReIndexButton();
         }
 
-        log.methodDone("indexing " + fsPath, logLevel, logPad, true);
+        log.methodDone("indexing " + fsPath, logLevel, logPad);
 
         return components;
     }
@@ -1478,30 +1495,41 @@ class ExtjsLanguageManager
     }
 
 
-    private async persistComponent(fsPath: string, nameSpace: string, component: IComponent)
+    private async persistComponents(fsPath: string, nameSpace: string, components: IComponent[], logPad: string, logLevel: number)
     {
-        let exists = false;
         const baseDir = this.getAppJsonDir(fsPath),
               storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
               storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
 
-        for (let i = 0; i < storedComponents.length; i++)
-        {
-            if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
-            {
-                exists = true;
-                storedComponents[i] = component;
-                break;
-            }
-        }
+        log.methodStart("persist components", logLevel, logPad, false, [
+            [ "namespace", nameSpace ], ["# of components", components.length], [ "path", fsPath ]
+        ]);
 
-        if (!exists) {
-            storedComponents.push(component);
+        for (const component of components)
+        {
+            let exists = false;
+            log.value("   persist ", component.componentClass, logLevel, logPad);
+            for (let i = 0; i < storedComponents.length; i++)
+            {
+                if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
+                {
+                    exists = true;
+                    storedComponents[i] = component;
+                    log.write("      replaced", logLevel, logPad);
+                    break;
+                }
+            }
+            if (!exists) {
+                storedComponents.push(component);
+                log.write("      pushed", logLevel, logPad);
+            }
         }
 
         await fsStorage.update(storageKey, JSON.stringify(storedComponents));
         await storage.update(storageKey + "_TIMESTAMP", new Date());
         await storage.update(fsPath + "_TIMESTAMP", new Date());
+
+        log.methodDone("persist components", logLevel, logPad);
     }
 
 
@@ -1513,7 +1541,7 @@ class ExtjsLanguageManager
             return false;
         }
 
-        log.methodStart("process components", logLevel, logPad, true, [[ "# of stored components", components.length ]]);
+        log.methodStart("process components", logLevel, logPad, false, [[ "# of components to process", components.length ]]);
 
         //
         // Process the specified component(s) / update memory cache
@@ -1532,23 +1560,21 @@ class ExtjsLanguageManager
             // filesystem is the same as the method param fsPath. The 'isFileEdit' argument will be
             // `false`` when the processing is being done from indexAll().
             //
+            // In the case of a file rename, both 'deletingComponentFile' && 'addingComponentFile'
+            // will be set to respective uri's
+            //
             if (isFileEdit)
             {
                 const shouldBeFsPath = this.clsToFilesMapping[project] ? this.clsToFilesMapping[project][componentClass] : undefined;
-                if (shouldBeFsPath && shouldBeFsPath !== fsPath)
+                if (shouldBeFsPath && shouldBeFsPath !== fsPath && (!this.deletingComponentFile || this.deletingComponentFile.fsPath !== shouldBeFsPath))
                 {
-                    log.write("   ignoring duplicate component " + componentClass, logLevel + 1, logPad);
-                    log.write("   filesystem path already mapped to " + shouldBeFsPath, logLevel + 1, logPad);
+                    log.write("   ignoring duplicate component " + componentClass, logLevel, logPad);
+                    log.write("   filesystem path already mapped to " + shouldBeFsPath, logLevel, logPad);
                     continue;
                 }
             }
 
-            log.write("   process component " + componentClass, logLevel + 1, logPad);
-            log.values([
-                ["namespace", nameSpace], ["# of widgets", widgets.length], ["# of xtypes", xtypes.length],
-                ["# of methods", methods.length], ["# of config properties", configs.length], ["# of properties", properties.length],
-                ["# of aliases", aliases.length], ["fs path", fsPath ]
-            ], logLevel + 1, logPad + "      ");
+            log.write("   process component " + componentClass, logLevel, logPad);
 
             //
             // Map the filesystem path <-> component class.  Do a check to see if there are duplicate
@@ -1575,21 +1601,28 @@ class ExtjsLanguageManager
             // Update memory cache
             //
             log.write("      update memory cache", logLevel + 1, logPad);
-            const idx = this.components.findIndex((c) => c.componentClass === componentClass && project === c.project);
+            const idx = this.components.findIndex((c) => c.componentClass === componentClass && project === c.project && fsPath === c.fsPath);
             if (idx >= 0) {
                 this.components.splice(idx, 1, cmp);
+                log.write("         replaced", logLevel + 1, logPad);
             }
             else {
                 this.components.push(cmp);
+                log.write("         pushed", logLevel + 1, logPad);
             }
 
-            log.write("      parsed component parts:", logLevel + 3, logPad);
+            log.write("      parsed component parts:", logLevel + 2, logPad);
+            log.values([
+                ["namespace", nameSpace], ["# of widgets", widgets.length], ["# of xtypes", xtypes.length],
+                ["# of methods", methods.length], ["# of config properties", configs.length], ["# of properties", properties.length],
+                ["# of aliases", aliases.length], ["fs path", fsPath ]
+            ], logLevel + 2, logPad + "         ");
             log.values([
                 [ "configs", JSON.stringify(cmp.configs, undefined, 3)],
                 [ "methods", JSON.stringify(cmp.methods, undefined, 3)],
                 [ "property", JSON.stringify(cmp.properties, undefined, 3)],
                 [ "widget", JSON.stringify(cmp.widgets, undefined, 3)]
-            ], logLevel + 3, logPad + "   ");
+            ], logLevel + 3, logPad + "         ");
             log.write("   done processing component " + componentClass, logLevel + 1, logPad);
         }
 
@@ -1598,34 +1631,57 @@ class ExtjsLanguageManager
     }
 
 
-    private async removeComponentFromCache(fsPath: string, nameSpace: string)
+    private async removeFileFromCache(fsPath: string, nameSpace: string, logPad: string, logLevel: number)
     {
         const baseDir = this.getAppJsonDir(fsPath),
               storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
-              storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey) || "[]");
+              storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey) || "[]"),
+              removedPersisted: IComponent[] = [],
+              removedMemory: IComponent[] = [];
 
-        log.methodStart("remove file from cache", 1, "", true, [["path", fsPath]]);
+        log.methodStart("remove file from cache", logLevel, logPad, logPad === "", [["path", fsPath]]);
 
-        log.value("   removing component", fsPath, 2);
-        this.components.filter((c) => c.fsPath === fsPath).forEach((c, i) =>
-        {   //
-            // Update memory cache
-            //
-            this.components.splice(i, 1);
-            //
-            // Update fs cache
-            //
-            for (let i = 0; i < storedComponents.length; i++)
+        //
+        // Memory cache
+        //
+        for (let i = 0; i < this.components.length; i++)
+        {
+            if (this.components[i].fsPath === fsPath && this.components[i].nameSpace === nameSpace)
             {
-                if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
-                {
-                    this.components.splice(i, 1);
-                    break;
-                }
+                const removed: IComponent = this.components.splice(i, 1)[0];
+                removedMemory.push(removed);
+                log.value("   removed from memory cache", removedMemory[removedMemory.length - 1].componentClass, logLevel, logPad);
+                log.value("      index", i, logLevel, logPad);
+                log.value("      path", removed.fsPath, logLevel, logPad);
+                --i;
             }
-        });
+        }
 
-        log.methodDone("remove file from cache", 1, "", true);
+        //
+        // Persisted fs cache
+        //
+        for (let i = 0; i < storedComponents.length; i++)
+        {
+            if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
+            {
+                const removed: IComponent = storedComponents.splice(i, 1)[0];
+                removedPersisted.push(removed);
+                log.value("   removed from persisted cache", removed.componentClass, logLevel, logPad);
+                log.value("      index", i, logLevel, logPad);
+                log.value("      path", removed.fsPath, logLevel, logPad);
+                --i;
+            }
+        }
+
+        if (removedPersisted.length > 0) {
+            await fsStorage.update(storageKey, JSON.stringify(storedComponents));
+            await storage.update(storageKey + "_TIMESTAMP", new Date());
+            await storage.update(fsPath + "_TIMESTAMP", undefined);
+        }
+
+        log.methodDone("remove file from cache", logLevel, logPad, false, [
+            ["# removed from memory cache", removedMemory.length], ["# removed from persisted cache", removedPersisted.length]
+        ]);
     }
 
 
@@ -1653,7 +1709,7 @@ class ExtjsLanguageManager
     }
 
 
-    async validateDocument(textDocument: TextDocument | undefined, nameSpace: string, edits?: IEdit[])
+    async validateDocument(textDocument: TextDocument | undefined, nameSpace: string, logPad: string, logLevel: number, edits?: IEdit[])
     {
         const text = textDocument?.getText();
         this.currentLineCount = textDocument?.lineCount || 0;
@@ -1667,6 +1723,7 @@ class ExtjsLanguageManager
         else //
         {   // Validate
             //
+            log.methodStart("validate document", logLevel, logPad, logPad === "");
             const project = getWorkspaceProjectName(textDocument.uri.fsPath);
             this.isValidating = true;
             if (await pathExists(path.join(this.fsStoragePath, project))) {
@@ -1677,6 +1734,7 @@ class ExtjsLanguageManager
             // }
             showReIndexButton(true);
             this.isValidating = false;
+            log.methodDone("validate document", logLevel, logPad, true);
         }
     }
 
@@ -1693,18 +1751,46 @@ class ExtjsLanguageManager
     }
 
 
-    private async watcherDocumentDelete(uri: Uri, nameSpace: string) // (e: FileDeleteEvent)
+    private async watcherDocumentChange(uri: Uri, nameSpace: string)
     {
-        await this.removeComponentFromCache(uri.fsPath, nameSpace);
-        const activeTextDocument = window.activeTextEditor?.document;
-        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument));
+        log.methodStart("watcher document change", 1, "", true);
+        await commands.executeCommand("vscode-extjs:waitReady");
+        await this.indexFile(uri.fsPath, this.getNamespace(uri), true, uri, true, "   ", 1);
+        log.methodDone("watcher document change", 1, "", true);
     }
 
 
-    private watcherOpenDocumentChange(e: TextDocumentChangeEvent)
+    private async watcherDocumentCreate(uri: Uri, nameSpace: string)
+    {
+        log.methodStart("watcher document create", 1, "", true);
+        this.addingComponentFile = uri;
+        await commands.executeCommand("vscode-extjs:waitReady");
+        await this.indexFile(uri.fsPath, this.getNamespace(uri), true, uri, true, "   ", 1);
+        const activeTextDocument = window.activeTextEditor?.document;
+        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument), "   ", 2);
+        this.addingComponentFile = undefined;
+        log.methodDone("watcher document create", 1, "", true);
+    }
+
+
+    private async watcherDocumentDelete(uri: Uri, nameSpace: string)
+    {
+        log.methodStart("watcher document delete", 1, "", true);
+        this.deletingComponentFile = uri;
+        await commands.executeCommand("vscode-extjs:waitReady");
+        await this.removeFileFromCache(uri.fsPath, nameSpace, "   ", 1);
+        const activeTextDocument = window.activeTextEditor?.document;
+        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument), "   ", 2);
+        this.deletingComponentFile = undefined;
+        log.methodDone("watcher document delete", 1, "", true);
+    }
+
+
+    private async watcherOpenDocumentChange(e: TextDocumentChangeEvent)
     {
         if (e.contentChanges.length > 0 && e.document.languageId === "javascript" && utils.isExtJsFile(e.document.getText()))
         {
+            log.methodStart("watcher open document change", 1, "", true);
             //
             // Clear debounce timeout if still pending
             //
@@ -1740,7 +1826,7 @@ class ExtjsLanguageManager
                 //
                 else if (e.document.lineAt(change.range.start).text.includes("Ext.define"))
                 {
-                    this.removeComponentFromCache(e.document.uri.fsPath, this.getNamespace(e.document));
+                    await this.removeFileFromCache(e.document.uri.fsPath, this.getNamespace(e.document), "   ", 1);
                 }
             }
             //
@@ -1759,6 +1845,7 @@ class ExtjsLanguageManager
             }, debounceMs, e.document,  e.contentChanges);
 
             this.reIndexTaskIds.set(e.document.uri.fsPath, taskId);
+            log.methodDone("watcher open document change", 1, "", true);
         }
     }
 
@@ -1809,17 +1896,17 @@ class ExtjsLanguageManager
         //
         // Javascript watchers
         //
-        disposables.push(jsWatcher.onDidChange(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e, true, "", 1); }, this));
-        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.indexFile(e.fsPath, this.getNamespace(e), true, e, true, "", 1); }, this));
+        disposables.push(jsWatcher.onDidChange(async (e) => { await this.watcherDocumentChange(e, this.getNamespace(e)); }, this));
+        disposables.push(jsWatcher.onDidCreate(async (e) => { await this.watcherDocumentCreate(e, this.getNamespace(e)); }, this));
         disposables.push(jsWatcher.onDidDelete(async (e) => { await this.watcherDocumentDelete(e, this.getNamespace(e)); }, this));
         //
         // Active editor changed (processes open-document too)
         //
-        disposables.push(window.onDidChangeActiveTextEditor(async (e) => { await this.validateDocument(e?.document, this.getNamespace(e?.document)); }, this));
+        disposables.push(window.onDidChangeActiveTextEditor(async (e) => { await this.validateDocument(e?.document, this.getNamespace(e?.document), "", 1); }, this));
         //
         // Open document text change
         //
-        disposables.push(workspace.onDidChangeTextDocument((e) => { this.watcherOpenDocumentChange(e); }, this));
+        disposables.push(workspace.onDidChangeTextDocument(async (e) => { await this.watcherOpenDocumentChange(e); }, this));
         //
         // Register configurations/settings change watcher
         //
@@ -1834,10 +1921,12 @@ class ExtjsLanguageManager
 
     private async watcherSettingsChange(e: ConfigurationChangeEvent)
     {
+        log.methodStart("watcher settings change", 1, "", true);
+
         if (e.affectsConfiguration("extjsIntellisense.ignoreErrors"))
         {
             const document = window.activeTextEditor?.document;
-            await this.validateDocument(document, this.getNamespace(document));
+            await this.validateDocument(document, this.getNamespace(document), "   ", 2);
         }
         else if (e.affectsConfiguration("extjsIntellisense.include") || e.affectsConfiguration("extjsIntellisense.frameworkDirectory"))
         {
@@ -1848,6 +1937,8 @@ class ExtjsLanguageManager
                 await this.initializeInternal();
             }
         }
+
+        log.methodDone("watcher settings change", 1, "", true);
     }
 
 }
