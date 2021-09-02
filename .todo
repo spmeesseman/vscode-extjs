@@ -148,6 +148,8 @@ Miscellaneous:
 	☐ Aliases should not be added to xtypes for widget scraping now that all is implemented
 		syntaxTree.js parseClassDef
 	✔ Renamed/moved file doesnt get cached.  validates, but no hover, completion, etc @done(21-08-28 10:24)
+	☐ if a doc is edited, closed w/o saving, mem cache needs to be reset
+		fs cache will hold previous value still, since no persist until save
 
 Signature:
 
