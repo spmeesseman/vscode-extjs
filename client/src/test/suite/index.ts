@@ -22,6 +22,15 @@ import "source-map-support/register";
 import { argv } from "process";
 
 //
+// Specify files to test.  SHould be * for full test, use filename for debugging
+// specific tests themselves.
+//
+const fileToTest = "*";
+// const fileToTest = "hover";
+// const fileToTest = "commands";
+// const fileToTest = "completion";
+
+//
 // Linux: prevent a weird NPE when mocha on Linux requires the window size from the TTY
 // Since we are not running in a tty environment, we just implement he method statically
 //
@@ -230,7 +239,7 @@ export async function run(): Promise<void>
     //
     // Add all files to the test suite
     //
-    const files = glob.sync("**/*.test.js", { cwd: testsRoot });
+    const files = glob.sync(`**/${fileToTest}.test.js`, { cwd: testsRoot });
     files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
 
     const failures: number = await new Promise(resolve => mocha.run(resolve));

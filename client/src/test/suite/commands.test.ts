@@ -73,23 +73,17 @@ suite("Command Tests", () =>
 		// File only
 		//
 		await testCommand("ignoreError", ErrorCode.syntaxAllCaps, activeDoc);
-		await waitForValidation();
 		//
 		// Global
 		//
 		await testCommand("ignoreError", ErrorCode.syntaxAllCaps);
-		await waitForValidation();
 		//
 		// Xtype
 		//
 		await testCommand("ignoreError", ErrorCode.xtypeNoRequires, activeDoc);
-		await waitForValidation();
 		await testCommand("ignoreError", ErrorCode.xtypeNoRequires);
-		await waitForValidation();
 		await testCommand("ignoreError", ErrorCode.xtypeNotFound, activeDoc);
-		await waitForValidation();
 		await testCommand("ignoreError", ErrorCode.xtypeNotFound);
-		await waitForValidation();
 		//
 		// Reset (for local tests, this won't matter in a CI environment)
 		//
@@ -101,7 +95,6 @@ suite("Command Tests", () =>
 	test("Ensure xtype", async () =>
 	{
 		await testCommand("ensureRequire", "userdropdown", "xtype"); //  toRange(39, 9, 39, 23));
-		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the requires array
 		// entry we just put in, so that rest of the tests don't fail due to line # shifts !
@@ -111,10 +104,9 @@ suite("Command Tests", () =>
 		//
 		// Test a file without an existing requires block
 		//
-		getDocUri("app/shared/src/main/Main.js");
+		await activate(getDocUri("app/shared/src/main/Main.js"));
 		await waitForValidation();
 		await testCommand("ensureRequire", "userdropdown", "xtype"); //  toRange(37, 9, 37, 23));
-		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the requires array
 		// entry we just put in, so that rest of the tests don't fail due to line # shifts !
@@ -122,22 +114,21 @@ suite("Command Tests", () =>
 		await vscode.commands.executeCommand("vscode-extjs:replaceText", "", toRange(8, 4, 11, 0));
 		await waitForValidation();
 
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		//
 		// Test a file that has an xtype ref where the xtype doesnt exist
 		//
 		await activate(getDocUri("app/classic/src/main/BadXType.js"));
 		await waitForValidation();
 		await testCommand("ensureRequire", "comboisnotanywhere"); //  toRange(17, 9, 17, 29));
-		await waitForValidation();
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+
+		await closeActiveDocument();
 	});
 
 
 	test("Ensure type", async () =>
 	{
 		await testCommand("ensureRequire", "users", "type"); //  toRange(39, 9, 39, 23));
-		await waitForValidation();
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 	});
 
@@ -173,10 +164,10 @@ suite("Command Tests", () =>
 		//
 		// Global already exists
 		//
-		// await testCommand("ignoreError", ErrorCode.classError);
-		// await testCommand("ignoreError", ErrorCode.classError);
-		// await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc);
-		// await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc);
+		await testCommand("ignoreError", ErrorCode.classError);
+		await testCommand("ignoreError", ErrorCode.classError);
+		await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc);
+		await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc);
 		//
 		// CLose active editor
 		//
@@ -193,19 +184,16 @@ suite("Command Tests", () =>
 	{
 		this.timeout(45 * 1000);
 		await testCommand("dumpCache", "testFixture", "");
-		await waitForValidation();
 		await closeActiveDocuments();
 		await testCommand("dumpCache", "", 1);
-		await waitForValidation();
 		await closeActiveDocuments();
 		await testCommand("dumpCache", "testFixture");
-		await waitForValidation();
 		await closeActiveDocuments();
 		await testCommand("dumpCache");
-		await waitForValidation();
 		await closeActiveDocuments();
 		extjsLangMgr.setBusy(true);
-		await testCommand("dumpCache");
+		await vscode.commands.executeCommand("vscode-extjs:dumpCache");
+		await waitForValidation(false);
 		await waitForValidation(false);
 		await closeActiveDocuments();
 		extjsLangMgr.setBusy(false);
@@ -258,5 +246,5 @@ suite("Command Tests", () =>
 async function testCommand(command: string, ...args: any[])
 {
 		await vscode.commands.executeCommand("vscode-extjs:" + command, ...args);
-		await waitForValidation();
+		await waitForValidation(false);
 }
