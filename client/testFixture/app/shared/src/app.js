@@ -351,6 +351,12 @@ Ext.define('VSCodeExtJS',
 		const patient = new VSCodeExtJS.common.PhysicianDropdown();
 		new VSCodeExtJS.common.PhysicianDropdown();
 		new Ext.util.DelayedTask(() => {}).delay(100);
+		//
+		// Some comments
+		// VSCodeExtJS.
+		//VSCodeExtJS.
+		//
+		
 	},
 
 });

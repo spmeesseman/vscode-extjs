@@ -994,16 +994,32 @@ suite("Completion Tests", () =>
 		// 4  * The VSCodeExtJS app root namespace.
 		// 5  */
 		//
-		await insertDocContent("VSCodeExtJS", toRange(2, 3, 2, 3));
+		await insertDocContent("VSCodeExtJS.", toRange(2, 3, 2, 3));
 		await waitForValidation();
-		await testCompletion(docUri, new vscode.Position(2, 14), ".", {
-			items: []
-		}, true, "behind comment method");
+		await testCompletion(docUri, new vscode.Position(2, 15), ".", {
+			items: [{ label: "common", kind: vscode.CompletionItemKind.Class }]
+		}, false, "behind comment method");
 		//
 		// Remove added text, set document back to initial state
 		//
-		await insertDocContent("", toRange(2, 3, 2, 14));
+		await insertDocContent("", toRange(2, 3, 2, 15));
 		await waitForValidation();
+		//
+		// Line 355
+		// 354 //
+		// 355 // Some comments
+		// 356 //
+		// 357 //
+		//
+		await testCompletion(docUri, new vscode.Position(355, 17), ".", {
+			items: [{ label: "common", kind: vscode.CompletionItemKind.Class }]
+		}, false, "behind comment method");
+		//
+		// No space after //
+		//
+		await testCompletion(docUri, new vscode.Position(356, 16), ".", {
+			items: [{ label: "common", kind: vscode.CompletionItemKind.Class }]
+		}, false, "behind comment method");
 	});
 
 
