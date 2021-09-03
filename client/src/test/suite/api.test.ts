@@ -11,8 +11,9 @@ suite("API Tests", () =>
 	let extjsLangMgr: IExtjsLanguageManager;
 
 
-	suiteSetup(async () =>
+	suiteSetup(async function()
     {
+		this.timeout(45 * 1000);
 		const testsApi = await activate();
 		extJsApi = testsApi.extJsApi;
 		extjsLangMgr = extJsApi.extjsLangMgr;

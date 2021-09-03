@@ -79,6 +79,15 @@ suite("Definition Tests", () =>
 			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
 			range: toRange(6, 0, 55, 2)
 		}]);
+		//
+		// app.js Line 351
+		// \t\tconst patient = new VSCodeExtJS.common.PatientDropdown();
+		//
+		await testDefinition(docUri, new vscode.Position(350, 45), [
+		{
+			uri: getDocUri("app/classic/src/common/PhysicianDropdown.js"),
+			range: toRange(6, 0, 55, 2)
+		}]);
     });
 
 

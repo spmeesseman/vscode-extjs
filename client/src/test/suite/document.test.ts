@@ -13,6 +13,7 @@ suite("Document Tests", () =>
 	const docUri = getDocUri("app/shared/src/app.js");
 	const newDocPath = getDocPath("app/shared/src/app2.js");
 	const newDocPath2 = getDocPath("app/shared/src/app3.js");
+	const dupPathDoc = getDocPath("app/shared/src/app4.js");
 	const newDocPathToDelete = getDocPath("app/shared/src/app4.js");
 	let validationDelay: number | undefined;
 	let ignoreErrors: any[];
@@ -60,9 +61,29 @@ suite("Document Tests", () =>
 		workspaceEdit.replace(docUri, toRange(95, 0, 95, 0), "\t\tVSCodeExtJS.AppUtilities.alertError('This is a test');");
 		await waitForValidation();
 		//
+		// Trigger persist to fs cache
+		//
+		await vscode.workspace.saveAll();
+		await waitForValidation();
+		//
 		// Use the extension's vscode-extjs:replaceText command to erase the text we just inserted
 		//
 		await vscode.commands.executeCommand("vscode-extjs:replaceText", "        ", toRange(95, 0, 95, 56));
+		await waitForValidation();
+		//
+		// Trigger persist to fs cache
+		//
+		await vscode.workspace.saveAll();
+		await waitForValidation();
+		//
+		// Trigger the de-bouncer
+		//
+		await configuration.update("validationDelay", 1000);
+		workspaceEdit.replace(docUri, toRange(95, 0, 95, 0), "c");
+		workspaceEdit.replace(docUri, toRange(95, 0, 95, 0), "b");
+		workspaceEdit.replace(docUri, toRange(95, 0, 95, 0), "a");
+		workspaceEdit.replace(docUri, toRange(95, 0, 95, 3), "");
+		await configuration.update("validationDelay", 250); // set back to minimum validation delay
 		await waitForValidation();
 	});
 
@@ -81,6 +102,8 @@ suite("Document Tests", () =>
         );
 		await waitForValidation();
 
+		await closeActiveDocument();
+
 		await writeFile(
             newDocPathToDelete,
 			"Ext.define('VSCodeExtJS.Test2',\r\n" +
@@ -92,6 +115,8 @@ suite("Document Tests", () =>
             "});\r\n"
         );
 		await waitForValidation();
+
+		await activate(docUri); // re-open main document
 
 		let c = extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1);
 		assert(c?.fsPath === newDocPath);
@@ -150,11 +175,29 @@ suite("Document Tests", () =>
 	});
 
 
+	test("Create duplicate class file", async () =>
+	{
+		await writeFile(
+            dupPathDoc,
+			"Ext.define('VSCodeExtJS.AppUtilities',\r\n" +
+            "{\r\n" +
+            '    "prop1": "vscode-taskexplorer",\r\n' +
+            '    "config":{\r\n' +
+            '        "cfg1": "node ./node_modules/vscode/bin/test",\r\n' +
+            "    }\r\n" +
+            "});\r\n"
+        );
+		await waitForValidation();
+	});
+
+
 	test("Delete document", async () =>
 	{
 		await deleteFile(newDocPath2);
 		await waitForValidation();
+		await closeActiveDocument(); // close all files, no active editor
 		await deleteFile(newDocPathToDelete);
+		await deleteFile(dupPathDoc);
 		await waitForValidation();
 		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1));
@@ -199,7 +242,7 @@ suite("Document Tests", () =>
 		}
 		await waitForValidation();
 		await vscode.commands.executeCommand("vscode-extjs:waitReady");
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		await waitForValidation();
 	});
 

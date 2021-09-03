@@ -47,13 +47,20 @@ suite("Hover Tests", () =>
 
 
 	test("Classes", async () =>
-	{
-		await waitForValidation();
+	{   //
+		// .create()
+		//
 		await waitForValidation();
 		await testHover(docUri, new vscode.Position(71, 4), "VSCodeExtJS");
 		await testHover(docUri, new vscode.Position(71, 17), "VSCodeExtJS.AppUtilities");
 		// await testHover(docUri, new vscode.Position(74, 17), "VSCodeExtJS.common");
 		await testHover(docUri, new vscode.Position(74, 23), "VSCodeExtJS.common.PhysicianDropdown");
+		//
+		// app.js Line 351
+		// \t\tconst patient = new VSCodeExtJS.common.PatientDropdown();
+		//
+		await testHover(docUri, new vscode.Position(350, 26), "VSCodeExtJS");
+		await testHover(docUri, new vscode.Position(350, 45), "VSCodeExtJS.common.PhysicianDropdown");
 	});
 
 
@@ -152,6 +159,10 @@ suite("Hover Tests", () =>
 		// is also of (x)type "users"
 		//
 		await testHover(docUri, new vscode.Position(201, 13), "store users: VSCodeExtJS.store.user.Users");
+		//
+		// In a filter config object
+		//
+		await testHover(docUri, new vscode.Position(273, 15), "store users: VSCodeExtJS.store.user.Users");
 	});
 
 

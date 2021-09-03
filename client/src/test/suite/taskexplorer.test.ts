@@ -36,7 +36,14 @@ suite("Task Explorer Tests", () =>
 
 	test("Get build tasks", async () =>
 	{
+	});
 
+
+	test("Trigger refresh", async () =>
+	{
+		await configuration.update("enableTaskView", true);
+		await configuration.update("enableTaskView", false);
+		await configuration.update("enableTaskView", true);
 	});
 
 });

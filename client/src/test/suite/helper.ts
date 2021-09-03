@@ -1,11 +1,8 @@
 
-import {
-    Disposable, ExtensionContext, extensions, TextDocumentChangeEvent, Range, Position,
-    TextEditor, TextDocument, window, workspace, Uri, ConfigurationChangeEvent, commands, TextDocumentContentChangeEvent
-} from "vscode";
 import * as path from "path";
 import * as assert from "assert";
 import { ExtJsApi } from "../../extension";
+import { extensions, TextEditor, TextDocument, window, workspace, Uri, commands, Range, Position } from "vscode";
 
 export let doc: TextDocument;
 export let editor: TextEditor;
@@ -13,8 +10,8 @@ export let editor: TextEditor;
 
 let activated = false;
 let extJsApi: ExtJsApi;
-const serverActivationDelay = 2000;
-const invalidationDelay = 2000;
+const serverActivationDelay = 2500;
+const invalidationDelay = 500;
 
 
 /**
@@ -25,13 +22,15 @@ export async function activate(docUri?: Uri)
 	const ext = extensions.getExtension("spmeesseman.vscode-extjs")!;
 	assert(ext, "Could not find extension");
 
-	const taskExplorerEnabled =  workspace.getConfiguration().get<boolean>("extjsIntellisense.enableTaskView", true);
-	await workspace.getConfiguration().update("extjsIntellisense.enableTaskView", true);
-
 	if (!activated)
 	{
+		const taskExplorerEnabled =  workspace.getConfiguration().get<boolean>("extjsIntellisense.enableTaskView", true);
+		await workspace.getConfiguration().update("extjsIntellisense.enableTaskView", true);
 		extJsApi = await ext.activate();
 		await sleep(serverActivationDelay); // Wait for server activation
+		if (!taskExplorerEnabled) {
+			await workspace.getConfiguration().update("extjsIntellisense.enableTaskView", taskExplorerEnabled);
+		}
 		activated = true;
 	}
 	if (docUri) {
@@ -42,9 +41,6 @@ export async function activate(docUri?: Uri)
 		} catch (e) {
 			console.error(e);
 		}
-	}
-	if (!taskExplorerEnabled) {
-		await workspace.getConfiguration().update("extjsIntellisense.enableTaskView", taskExplorerEnabled);
 	}
 	extJsApi.extjsLangMgr.setTests(true);
 	return { extJsApi , doc };
