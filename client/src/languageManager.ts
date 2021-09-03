@@ -1526,6 +1526,20 @@ class ExtjsLanguageManager
 
         log.methodStart("process components", logLevel, logPad, false, [[ "# of components to process", components.length ]]);
 
+        const isToolkitFilePair = (file1: string, file2: string) =>
+        {   //
+            // TODO - Scan classic/modern IConfig
+            // This will need a config to add the path's of a project's modern/classic
+            // folder names in a multi-profile project.  Or maybe we can scan the IConfig from
+            // ExtjsLanguageMgr.
+            //
+            // This is good enough for now 9/3/2021 v0.9.1.
+            //
+            const regexClassic = /[\/\\](?:classic|desktop)[\/\\]/;
+            const regexModern = /[\/\\](?:modern|phone|mobile)[\/\\]/;
+            return (regexClassic.test(file1) && regexModern.test(file2)) || (regexModern.test(file1) && regexClassic.test(file2));
+        };
+
         //
         // Process the specified component(s) / update memory cache
         //
@@ -1567,13 +1581,15 @@ class ExtjsLanguageManager
             if (!this.clsToFilesMapping[project]) {
                 this.clsToFilesMapping[project] = {};
             }
-            if (this.clsToFilesMapping[project][componentClass] && fsPath !== this.clsToFilesMapping[project][componentClass])
+            let mappedFile = this.clsToFilesMapping[project][componentClass];
+            if (mappedFile && fsPath !== mappedFile && !isToolkitFilePair(fsPath, mappedFile))
             {
                 window.showWarningMessage(`Duplicate component class names found - ${componentClass}`);
             }
             this.clsToFilesMapping[project][componentClass] = cmp.fsPath;
             cmp.aliases.forEach((a) => {
-                if (this.clsToFilesMapping[project][a.name] && fsPath !== this.clsToFilesMapping[project][a.name])
+                mappedFile = this.clsToFilesMapping[project][a.name];
+                if (mappedFile && fsPath !== mappedFile && !isToolkitFilePair(fsPath, mappedFile))
                 {
                     window.showWarningMessage(`Duplicate component alias names found - ${a.name}`);
                 }
