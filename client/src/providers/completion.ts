@@ -89,7 +89,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
         const completionItems: CompletionItem[] = [],
               quotesRegex = new RegExp(`(?<=(?:"|')[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?=(?:("|')))$`),
-              commentRegex = new RegExp(`(?<=(?:\\/\\/|[ ]+\\*|\\/\\*\\*)[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?<!(?:\\*\\/))$`),
+              commentRegex = new RegExp(`(?<=\\/\\/|\\s*\\*\\s*|\\/\\*\\*[^;]*)(?<!\\*\\/)[^.\\*\\/]+${text}`),
               inComments = commentRegex.test(lineText),
               inQuotes = quotesRegex.test(lineText);
 
