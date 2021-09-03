@@ -271,7 +271,7 @@ Ext.define('VSCodeExtJS',
                     frontMatch: false,
                     store:
                     {
-                        type: 'users'
+						type: 'users'
                     }
                 }, 
                 renderer: function(value, meta, record) 
@@ -344,6 +344,13 @@ Ext.define('VSCodeExtJS',
 				}
 			}
 		});
-	}
+	},
+
+	testFn14: function(a, b)
+	{
+		const patient = new VSCodeExtJS.common.PhysicianDropdown();
+		new VSCodeExtJS.common.PhysicianDropdown();
+		new Ext.util.DelayedTask(() => {}).delay(100);
+	},
 
 });
