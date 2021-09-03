@@ -10,19 +10,13 @@ suite("Diagnostics Tests", () =>
 
 	let ignoreErrors: any[];
 	const docUri = getDocUri("app/shared/src/app.js");
-	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
-    {	//
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
+    {
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
 		await configuration.update("ignoreErrors", []);
 		await activate(docUri);
-		await waitForValidation();
 	});
 
 
@@ -30,13 +24,7 @@ suite("Diagnostics Tests", () =>
     {
 		await configuration.update("ignoreErrors", ignoreErrors);
 		await waitForValidation();
-		//
-		// Reset validation delay setting back to original value
-		//
-		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
 		await closeActiveDocuments();
-		await waitForValidation();
 	});
 
 

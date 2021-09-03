@@ -12,22 +12,16 @@ suite("Completion Tests", () =>
 	const docUri = getDocUri("app/shared/src/app.js");
 	let quickSuggest: boolean | undefined;
 	let ignoreErrors: any[];
-	let validationDelay: number | undefined;
 
 
 	suiteSetup(async function()
     {
 		this.timeout(60000);
-		const config = vscode.workspace.getConfiguration();
-		//
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
-		await waitForValidation();
+		await activate(docUri);
 		//
 		// Set `quick suggest` setting
 		//
+		const config = vscode.workspace.getConfiguration();
 		quickSuggest = config.get<boolean>("editor.quickSuggestions");
 		await config.update("editor.quickSuggestions", true);
 		await waitForValidation();
@@ -37,11 +31,6 @@ suite("Completion Tests", () =>
 		ignoreErrors = configuration.get<any[]>("ignoreErrors", []);
 		await configuration.update("ignoreErrors", []);
 		await waitForValidation();
-		//
-		// Open default test document
-		//
-		await activate(docUri);
-		await waitForValidation();
 	});
 
 
@@ -50,22 +39,15 @@ suite("Completion Tests", () =>
 		// Reset `quick suggest` setting
 		//
 		await vscode.workspace.getConfiguration().update("editor.quickSuggestions", quickSuggest);
-		await waitForValidation();
 		//
 		// Reset `ignore errors` setting
 		//
 		await configuration.update("ignoreErrors", ignoreErrors);
 		await waitForValidation();
 		//
-		// Reset `validation delay` setting
-		//
-		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
-		//
-		// Close active document
+		// Close active documents
 		//
 		await closeActiveDocuments();
-		await waitForValidation();
 	});
 
 
@@ -1027,7 +1009,6 @@ suite("Completion Tests", () =>
 	{
 		const physDdUri = getDocUri("app/classic/src/common/PhysicianDropdown.js");
 		await activate(physDdUri);
-		await waitForValidation();
 		await testCompletion(physDdUri, new vscode.Position(14, 0), "u", {
 			items: [
 				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
@@ -1052,7 +1033,6 @@ suite("Completion Tests", () =>
 		}, true, "config property of extended class");
 		await insertDocContent("", toRange(14, 0, 14, 1));
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 
@@ -1069,13 +1049,10 @@ suite("Completion Tests", () =>
 		//
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await waitForValidation();
 		await testCompletion(jssUri, new vscode.Position(4, 0), "A", {
 			items: []
 		}, true, "non-extjs file");
-		await waitForValidation();
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 
@@ -1083,12 +1060,10 @@ suite("Completion Tests", () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await waitForValidation();
 		await testCompletion(jssUri, new vscode.Position(2, 12), ".", {
 			items: []
 		}, true, "non-extjs file");
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 });

@@ -23,7 +23,6 @@ suite("Hover Tests", () =>
 		validationDelay = configuration.get<number>("validationDelay", 1250);
 		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await activate(docUri);
-		await waitForValidation();
 	});
 
 
@@ -34,7 +33,6 @@ suite("Hover Tests", () =>
 		await configuration.update("validationDelay", validationDelay);
 		await waitForValidation();
 		await closeActiveDocuments();
-		await waitForValidation();
 	});
 
 
@@ -202,14 +200,7 @@ suite("Hover Tests", () =>
 		// Open non extjs doc inside of a classpath
 		//
 		const storeUri = getDocUri("app/shared/src/store/Activities.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(storeUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
-		await waitForValidation();
+		await activate(storeUri);
 		//
 		// Line 7
 		// model: 'VSCodeExtJS.model.Activity'
@@ -229,7 +220,6 @@ suite("Hover Tests", () =>
 		//
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await waitForValidation();
 		//
 		// Line 145
 		// let cmp = this.down('physiciandropdown');

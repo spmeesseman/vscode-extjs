@@ -15,7 +15,6 @@ suite("Document Tests", () =>
 	const newDocPath2 = getDocPath("app/shared/src/app3.js");
 	const dupPathDoc = getDocPath("app/shared/src/app4.js");
 	const newDocPathToDelete = getDocPath("app/shared/src/app4.js");
-	let validationDelay: number | undefined;
 	let ignoreErrors: any[];
 	let extJsApi: ExtJsApi;
 	let extjsLangMgr: IExtjsLanguageManager;
@@ -30,10 +29,7 @@ suite("Document Tests", () =>
 		const testsApi = await activate(docUri);
 		extJsApi = testsApi.extJsApi;
 		extjsLangMgr = extJsApi.extjsLangMgr;
-		await waitForValidation();
-		validationDelay = configuration.get<number>("validationDelay");
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await configuration.update("ignoreErrors", []);
 		await configuration.update("debugClient", true);
 		await waitForValidation();
@@ -45,10 +41,8 @@ suite("Document Tests", () =>
 		// Reset validation delay setting back to original value
 		//
 		await configuration.update("ignoreErrors", ignoreErrors);
-		await configuration.update("validationDelay", validationDelay || 1250);
 		await waitForValidation();
 		await closeActiveDocuments();
-		await waitForValidation();
 	});
 
 
@@ -141,7 +135,6 @@ suite("Document Tests", () =>
 		// Inline changing of class name in Ext.define()
 		//
 		await activate(getDocUri(newDocPath2));
-		await waitForValidation();
 
 		insertDocContent("22", toRange(0, 25, 0, 25));
 		await waitForValidation();
@@ -213,16 +206,12 @@ suite("Document Tests", () =>
 		// Open non extjs doc outside of a classpath
 		//
 		await activate(getDocUri("js/script1.js"));
-		await waitForValidation();
 		await closeActiveDocument();
-		await waitForValidation();
 		//
 		// Open non extjs doc inside of a classpath
 		//
 		await activate(getDocUri("app/js/script1.js"));
-		await waitForValidation();
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 
@@ -232,9 +221,7 @@ suite("Document Tests", () =>
 		//
 		const jssUri = getDocUri("app/shared/src/test/Test.js");
 		await activate(jssUri);
-		await waitForValidation();
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 

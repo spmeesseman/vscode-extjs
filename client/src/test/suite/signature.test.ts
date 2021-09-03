@@ -9,28 +9,16 @@ suite("Method Signature Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
-	let validationDelay: number | undefined;
-
 
 	suiteSetup(async () =>
-    {   //
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
+    {
 		await activate(docUri);
-		await waitForValidation();
 	});
 
 
 	suiteTeardown(async () =>
-    {   //
-		// Reset validation delay setting back to original value
-		//
-		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
+    {
 		await closeActiveDocuments();
-		await waitForValidation();
 	});
 
 
@@ -285,15 +273,12 @@ suite("Method Signature Tests", () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await waitForValidation();
 		await testSignature(jssUri, new vscode.Position(2, 16), "(", {
 			activeParameter: 1,
 			activeSignature: 0,
 			signatures: getSigInfo("a, b")
 		}, false);
-		await waitForValidation();
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 });

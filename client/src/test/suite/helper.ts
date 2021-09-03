@@ -3,6 +3,7 @@ import * as path from "path";
 import * as assert from "assert";
 import { ExtJsApi } from "../../extension";
 import { extensions, TextEditor, TextDocument, window, workspace, Uri, commands, Range, Position } from "vscode";
+import { configuration } from "../../common/configuration";
 
 export let doc: TextDocument;
 export let editor: TextEditor;
@@ -11,8 +12,9 @@ export let editor: TextEditor;
 let activated = false;
 let extJsApi: ExtJsApi;
 const serverActivationDelay = 2500;
-const invalidationDelay = 500;
-
+const invalidationDelay = 400;
+let docValidationDelay: number | undefined;
+let taskExplorerEnabled: boolean;
 
 /**
  * Activates the spmeesseman.vscode-extjs extension
@@ -24,13 +26,19 @@ export async function activate(docUri?: Uri)
 
 	if (!activated)
 	{
-		const taskExplorerEnabled =  workspace.getConfiguration().get<boolean>("extjsIntellisense.enableTaskView", true);
+		taskExplorerEnabled =  workspace.getConfiguration().get<boolean>("extjsIntellisense.enableTaskView", true);
 		await workspace.getConfiguration().update("extjsIntellisense.enableTaskView", true);
 		extJsApi = await ext.activate();
 		await sleep(serverActivationDelay); // Wait for server activation
 		if (!taskExplorerEnabled) {
 			await workspace.getConfiguration().update("extjsIntellisense.enableTaskView", taskExplorerEnabled);
 		}
+		//
+		// Set debounce to minimum for tests
+		//
+		docValidationDelay = configuration.get<number>("validationDelay");
+		await configuration.update("validationDelay", 250);
+		extJsApi.extjsLangMgr.setTests(true);
 		activated = true;
 	}
 	if (docUri) {
@@ -38,12 +46,19 @@ export async function activate(docUri?: Uri)
 			doc = await workspace.openTextDocument(docUri);
 			editor = await window.showTextDocument(doc);
 			assert(window.activeTextEditor, "No active editor");
+			await waitForValidation();
 		} catch (e) {
 			console.error(e);
 		}
 	}
-	extJsApi.extjsLangMgr.setTests(true);
 	return { extJsApi , doc };
+}
+
+
+export async function cleanup()
+{
+	await configuration.update("validationDelay", docValidationDelay);
+	await workspace.getConfiguration().update("extjsIntellisense.enableTaskView", taskExplorerEnabled);
 }
 
 
@@ -55,6 +70,7 @@ export async function closeActiveDocument()
 	catch (e) {
 		console.error(e);
 	}
+	// await waitForValidation();
 }
 
 
@@ -68,6 +84,7 @@ export async function closeActiveDocuments()
 	catch (e) {
 		console.error(e);
 	}
+	// await waitForValidation();
 }
 
 

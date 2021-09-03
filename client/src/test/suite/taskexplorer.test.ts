@@ -1,8 +1,6 @@
 
-import * as vscode from "vscode";
-import * as assert from "assert";
 import { configuration } from "../../common/configuration";
-import { getDocUri, activate, insertDocContent, toRange, waitForValidation } from "./helper";
+import { activate, waitForValidation } from "./helper";
 
 
 suite("Task Explorer Tests", () =>
@@ -20,7 +18,6 @@ suite("Task Explorer Tests", () =>
 		taskExplorerEnabled = configuration.get<boolean>("enableTaskView");
 		await configuration.update("enableTaskView", true);
 		await activate();
-		await waitForValidation();
 	});
 
 

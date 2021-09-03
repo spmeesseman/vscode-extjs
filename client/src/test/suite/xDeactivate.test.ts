@@ -1,6 +1,6 @@
 
 import { deactivate } from "../../extension";
-import { activate, waitForValidation } from "./helper";
+import { activate, cleanup } from "./helper";
 
 
 suite("Deactivate extension", () =>
@@ -10,10 +10,14 @@ suite("Deactivate extension", () =>
 		await activate();
 	});
 
-	test("Deactivate", async () =>
+	test("Deactivate extension", async () =>
 	{
-		deactivate();
-		waitForValidation();
+		await deactivate();
+	});
+
+	test("Cleanup", async () =>
+	{
+		await cleanup();
 	});
 
 });

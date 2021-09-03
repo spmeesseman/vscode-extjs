@@ -9,32 +9,17 @@ suite("Definition Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
-	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
     {
-		//
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
 		await activate(docUri);
-		await waitForValidation();
 	});
 
 
 	suiteTeardown(async () =>
-    {   //
-		// Reset validation delay setting back to original value
-		//
-		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
-		await waitForValidation();
+    {
+		await closeActiveDocument();
 	});
 
 
@@ -316,10 +301,8 @@ suite("Definition Tests", () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await waitForValidation();
 		await testDefinition(jssUri, new vscode.Position(1, 11), []);
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 });

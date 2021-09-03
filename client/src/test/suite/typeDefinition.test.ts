@@ -2,35 +2,23 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
-import { configuration } from "../../common/configuration";
 
 
 suite("Type Definition Tests", () =>
 {
 
 	const docUri = getDocUri("app/shared/src/app.js");
-	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
-    {   //
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
+    {
 		await activate(docUri);
-		await waitForValidation();
 	});
 
 
 	suiteTeardown(async () =>
-    {   //
-		// Reset validation delay setting back to original value
-		//
-		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
+    {
 		await closeActiveDocuments();
-		await waitForValidation();
 	});
 
 
@@ -102,10 +90,8 @@ suite("Type Definition Tests", () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await waitForValidation();
 		await testTypeDefinition(jssUri, new vscode.Position(1, 11), []);
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 });

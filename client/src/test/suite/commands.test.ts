@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
-import { ErrorCode, IError } from "../../../../common";
+import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
 import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
 
@@ -17,7 +17,6 @@ suite("Command Tests", () =>
 	let extJsApi: ExtJsApi;
 	let extjsLangMgr: IExtjsLanguageManager;
 	const docUri = getDocUri("app/shared/src/app.js");
-	let validationDelay: number | undefined;
 	let logEnabled: boolean | undefined;
 	let ignoreErrors: any[];
 
@@ -25,6 +24,9 @@ suite("Command Tests", () =>
 	suiteSetup(async function()
     {
 		this.timeout(45 * 1000);
+		const testsApi = await activate(docUri);
+		extJsApi = testsApi.extJsApi;
+		extjsLangMgr = extJsApi.extjsLangMgr;
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
 		await configuration.update("ignoreErrors", []);
 		//
@@ -34,14 +36,6 @@ suite("Command Tests", () =>
 		//
 		logEnabled = configuration.get<boolean>("debugClient");
 		await configuration.update("debugClient", true);
-		//
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250);
-		const testsApi = await activate(docUri);
-		extJsApi = testsApi.extJsApi;
-		extjsLangMgr = extJsApi.extjsLangMgr;
 		await waitForValidation();
 	});
 
@@ -52,10 +46,7 @@ suite("Command Tests", () =>
 		await waitForValidation();
 		await configuration.update("ignoreErrors", ignoreErrors);
 		await waitForValidation();
-		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
 		await closeActiveDocuments();
-		await waitForValidation();
 	});
 
 
@@ -105,7 +96,6 @@ suite("Command Tests", () =>
 		// Test a file without an existing requires block
 		//
 		await activate(getDocUri("app/shared/src/main/Main.js"));
-		await waitForValidation();
 		await testCommand("ensureRequire", "userdropdown", "xtype"); //  toRange(37, 9, 37, 23));
 		//
 		// Use the extension's vscode-extjs:replaceText command to erase the requires array
@@ -119,7 +109,6 @@ suite("Command Tests", () =>
 		// Test a file that has an xtype ref where the xtype doesnt exist
 		//
 		await activate(getDocUri("app/classic/src/main/BadXType.js"));
-		await waitForValidation();
 		await testCommand("ensureRequire", "comboisnotanywhere"); //  toRange(17, 9, 17, 29));
 
 		await closeActiveDocument();
@@ -148,7 +137,6 @@ suite("Command Tests", () =>
 		// Requires
 		//
 		const doc = await activate(getDocUri("app/classic/src/main/BadRequire.js"));
-		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:ignoreError command
 		//
@@ -215,7 +203,6 @@ suite("Command Tests", () =>
 	test("Non-extjs document", async function()
 	{
 		await activate(getDocUri("app/js/script1.js"));
-		await waitForValidation();
 		await testCommand("ignoreError", ErrorCode.classNotFound);
 		await testCommand("ignoreError");
 		await testCommand("ensureRequire", "physiciandropdown", "xtype");

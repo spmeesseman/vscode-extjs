@@ -2,10 +2,12 @@
 import * as path from "path";
 import { commands, workspace } from "vscode";
 import { copyFile, deleteFile, renameFile, writeFile } from "../../../../common";
-import { getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange, closeActiveDocument } from "./helper";
 import { storage } from "../../common/storage";
 import { configuration } from "../../common/configuration";
 import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
+import {
+	getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange, closeActiveDocument, closeActiveDocuments
+} from "./helper";
 
 
 suite("Config File Tests", () =>
@@ -17,16 +19,10 @@ suite("Config File Tests", () =>
 	const appJsonUri = getDocUri("app.json");
 	const appJsonPath = getDocPath("app.json");
 	const extjsrcPath = getDocPath(".extjsrc.json");
-	let validationDelay: number | undefined;
 
 
 	suiteSetup(async () =>
     {   //
-		// Set debounce to minimum for test
-		//
-		validationDelay = configuration.get<number>("validationDelay");
-		await configuration.update("validationDelay", 250); // set to minimum validation delay
-		//
 		// Just some additional coverage, as of 3/7/21 this isn't covered but want to leave
 		// in the fn implementation (case with a default value supplied in call to get)
 		//
@@ -38,16 +34,8 @@ suite("Config File Tests", () =>
 
 
 	suiteTeardown(async () =>
-    {   //
-		// Reset validation delay setting back to original value
-		//
-		await configuration.update("validationDelay", validationDelay || 1250);
-		await waitForValidation();
-		try {
-			await commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
-		await waitForValidation();
+    {
+		await closeActiveDocuments();
 	});
 
 
@@ -340,7 +328,6 @@ suite("Config File Tests", () =>
 	{
 		await closeActiveDocument();
 		await activate(appJsonUri);
-		await waitForValidation();
 		await copyFile(appJsonPath, path.join(path.dirname(appJsonPath), "_app.json"));
 		await insertDocContent("", toRange(43, 4, 101, 6)); // clear classic/modern properties
 		await workspace.saveAll();

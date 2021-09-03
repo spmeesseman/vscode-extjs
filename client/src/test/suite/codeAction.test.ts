@@ -4,7 +4,7 @@ import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
-import { defaultIgnoreTypes, shouldIgnoreType } from "../../common/clientUtils";
+import { defaultIgnoreTypes } from "../../common/clientUtils";
 
 
 suite("Code Action Tests", () =>
@@ -15,22 +15,16 @@ suite("Code Action Tests", () =>
 
 	suiteSetup(async () =>
     {
+		await activate(docUri);
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
 		await configuration.update("ignoreErrors", []);
-		await activate(docUri);
-		await waitForValidation();
 	});
 
 
 	suiteTeardown(async () =>
     {
 		await configuration.update("ignoreErrors", ignoreErrors);
-		await waitForValidation();
-		try {
-			await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		}
-		catch {}
-		await waitForValidation();
+		await closeActiveDocuments();
 	});
 
 
@@ -294,10 +288,8 @@ suite("Code Action Tests", () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await waitForValidation();
 		await testCodeAction(jssUri, toRange(2, 12, 2, 16), []);
 		await closeActiveDocument();
-		await waitForValidation();
 	});
 
 });
