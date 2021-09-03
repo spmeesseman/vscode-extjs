@@ -119,7 +119,10 @@ export function toRange(sLine: number, sChar: number, eLine: number, eChar: numb
 }
 
 
-export async function waitForValidation()
+export async function waitForValidation(doWaitReady?: boolean)
 {
 	await sleep(invalidationDelay);
+	if (doWaitReady !== false) {
+		await commands.executeCommand("vscode-extjs:waitReady");
+	}
 }

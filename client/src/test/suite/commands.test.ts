@@ -2,7 +2,7 @@
 import * as vscode from "vscode";
 import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
-import { ErrorCode } from "../../../../common";
+import { ErrorCode, IError } from "../../../../common";
 import { configuration } from "../../common/configuration";
 import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
 
@@ -22,8 +22,9 @@ suite("Command Tests", () =>
 	let ignoreErrors: any[];
 
 
-	suiteSetup(async () =>
+	suiteSetup(async function()
     {
+		this.timeout(45 * 1000);
 		ignoreErrors = configuration.get<any[]>("ignoreErrors");
 		await configuration.update("ignoreErrors", []);
 		//
@@ -110,13 +111,7 @@ suite("Command Tests", () =>
 		//
 		// Test a file without an existing requires block
 		//
-		try {
-			const doc = await vscode.workspace.openTextDocument(getDocUri("app/shared/src/main/Main.js"));
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
+		getDocUri("app/shared/src/main/Main.js");
 		await waitForValidation();
 		await testCommand("ensureRequire", "userdropdown", "xtype"); //  toRange(37, 9, 37, 23));
 		await waitForValidation();
@@ -131,13 +126,7 @@ suite("Command Tests", () =>
 		//
 		// Test a file that has an xtype ref where the xtype doesnt exist
 		//
-		try {
-			const doc = await vscode.workspace.openTextDocument(getDocUri("app/classic/src/main/BadXType.js"));
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
+		await activate(getDocUri("app/classic/src/main/BadXType.js"));
 		await waitForValidation();
 		await testCommand("ensureRequire", "comboisnotanywhere"); //  toRange(17, 9, 17, 29));
 		await waitForValidation();
@@ -167,35 +156,31 @@ suite("Command Tests", () =>
 		//
 		// Requires
 		//
-		let doc = null;
-		try {
-			doc = await vscode.workspace.openTextDocument(getDocUri("app/classic/src/main/BadRequire.js"));
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
+		const doc = await activate(getDocUri("app/classic/src/main/BadRequire.js"));
 		await waitForValidation();
 		//
 		// Use the extension's vscode-extjs:ignoreError command
 		//
-		await testCommand("ignoreError", ErrorCode.classNotFound, doc, toRange(12, 9, 12, 45));
+		await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc, toRange(12, 9, 12, 45));
 		//
 		// By document/file
 		//
-		await testCommand("ignoreError", ErrorCode.classNotFound, doc);
+		await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc);
 		//
 		// Global
 		//
 		await testCommand("ignoreError", ErrorCode.classNotFound);
 		//
-		// Already exists
+		// Global already exists
 		//
-		await testCommand("ignoreError", ErrorCode.classNotFound);
+		// await testCommand("ignoreError", ErrorCode.classError);
+		// await testCommand("ignoreError", ErrorCode.classError);
+		// await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc);
+		// await testCommand("ignoreError", ErrorCode.classNotFound, doc.doc);
 		//
 		// CLose active editor
 		//
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		//
 		// Reset configuration
 		//
@@ -221,7 +206,7 @@ suite("Command Tests", () =>
 		await closeActiveDocuments();
 		extjsLangMgr.setBusy(true);
 		await testCommand("dumpCache");
-		await waitForValidation();
+		await waitForValidation(false);
 		await closeActiveDocuments();
 		extjsLangMgr.setBusy(false);
 		await waitForValidation();

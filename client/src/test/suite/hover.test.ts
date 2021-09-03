@@ -42,7 +42,6 @@ suite("Hover Tests", () =>
 	{
 		await vscode.commands.executeCommand("vscode-extjs:indexFiles");
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 

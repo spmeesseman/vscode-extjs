@@ -55,7 +55,6 @@ suite("Config File Tests", () =>
 	{
 		await renameFile(appJsonPath, path.join(path.dirname(appJsonPath), "_app.json"));
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -69,7 +68,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 
 		await writeFile(
             extjsrcPath,
@@ -79,7 +77,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -92,7 +89,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -107,7 +103,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -122,7 +117,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -137,7 +131,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -152,7 +145,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -167,7 +159,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -181,7 +172,6 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -192,14 +182,12 @@ suite("Config File Tests", () =>
 		await configuration.update("frameworkDirectory", "c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\extjs");
 		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\app" ]);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Set tests to 'false' to cover branch for user prompt for config file change
 		//
 		extjsLangMgr.setTests(false);
 		await configuration.update("frameworkDirectory", undefined);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		extjsLangMgr.setTests(true);
 		//
 		// Some additional coverage - force prompt w/o tests flag set
@@ -208,7 +196,7 @@ suite("Config File Tests", () =>
 		await configuration.update("include", [ "app" ]); // invalid path value must be name|path
 		await waitForValidation();
 		extjsLangMgr.setTests(true);
-		await commands.executeCommand("vscode-extjs:waitReady");
+		await waitForValidation();
 		//
 		// Reset (for local tests, this won't matter in a CI environment)
 		//
@@ -216,7 +204,6 @@ suite("Config File Tests", () =>
 		await waitForValidation();
 		await configuration.update("frameworkDirectory", fwDirectory);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -228,15 +215,12 @@ suite("Config File Tests", () =>
 		//
 		await configuration.update("include", [ "app" ]); // invalid path value must be name|path
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		await configuration.update("include", [ "VSCodeExtJS|" ]);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjsBadPath" ]);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Reset (for local tests, this won't matter in a CI environment)
 		//
@@ -244,7 +228,6 @@ suite("Config File Tests", () =>
 		await waitForValidation();
 		await configuration.update("frameworkDirectory", fwDirectory);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -252,7 +235,6 @@ suite("Config File Tests", () =>
 	{
 		await renameFile(path.join(path.dirname(appJsonPath), "_app.json"), appJsonPath);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -265,7 +247,6 @@ suite("Config File Tests", () =>
 		await insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Reset
 		//
@@ -273,7 +254,6 @@ suite("Config File Tests", () =>
 		await workspace.saveAll();
 
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Set tests to 'false' to cover branch for user prompt for config file change
 		//
@@ -281,14 +261,12 @@ suite("Config File Tests", () =>
 		await insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Reset framework path to "extjs"
 		//
 		await insertDocContent("extjs", toRange(3, 16, 3, 40));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		extjsLangMgr.setTests(true);
 	});
 
@@ -302,14 +280,12 @@ suite("Config File Tests", () =>
 		await insertDocContent("", toRange(11, 8, 11, 70));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Now remove packages property
 		//
 		await insertDocContent("", toRange(8, 5, 13, 5));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Reset
 		//
@@ -321,7 +297,6 @@ suite("Config File Tests", () =>
     }`, toRange(8, 5, 8, 5));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -334,14 +309,12 @@ suite("Config File Tests", () =>
 		await insertDocContent("", toRange(3, 8, 3, 22));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Now remove frameworks property
 		//
 		await insertDocContent("", toRange(1, 4, 4, 6));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		//
 		// Reset
 		//
@@ -351,7 +324,6 @@ suite("Config File Tests", () =>
     },`, toRange(1, 4, 1, 4));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -359,23 +331,20 @@ suite("Config File Tests", () =>
 	{
 		await renameFile(wsJsonUri.fsPath, path.join(path.dirname(wsJsonUri.fsPath), "_ws.json"));
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		await renameFile(path.join(path.dirname(wsJsonUri.fsPath), "_ws.json"), wsJsonUri.fsPath);
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
 	test("app.json remove classpath", async () =>
 	{
-		await commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		await activate(appJsonUri);
 		await waitForValidation();
 		await copyFile(appJsonPath, path.join(path.dirname(appJsonPath), "_app.json"));
 		await insertDocContent("", toRange(43, 4, 101, 6)); // clear classic/modern properties
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -384,7 +353,6 @@ suite("Config File Tests", () =>
 		await insertDocContent("\"classpath\": \"app\",", toRange(43, 4, 43, 40));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 
@@ -393,8 +361,7 @@ suite("Config File Tests", () =>
 		await insertDocContent("", toRange(1, 4, 1, 26)); // clear classic/modern properties
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
-		await commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		extjsLangMgr.setTests(false);
 		await deleteFile(appJsonPath);
 		await renameFile(path.join(path.dirname(appJsonPath), "_app.json"), appJsonPath);
@@ -409,11 +376,9 @@ suite("Config File Tests", () =>
 		await insertDocContent("aaa^", toRange(0, 0, 0, 4));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		await insertDocContent("{", toRange(0, 0, 0, 4));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		await closeActiveDocument();
 	});
 
@@ -424,11 +389,9 @@ suite("Config File Tests", () =>
 		await insertDocContent("aaa^", toRange(0, 0, 0, 4));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		await insertDocContent("{", toRange(0, 0, 0, 4));
 		await workspace.saveAll();
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 		await closeActiveDocument();
 	});
 
@@ -437,7 +400,6 @@ suite("Config File Tests", () =>
 	{
 		await commands.executeCommand("vscode-extjs:indexFiles");
 		await waitForValidation();
-		await commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 });

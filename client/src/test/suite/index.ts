@@ -5,8 +5,10 @@
 //
 import * as path from "path";
 import * as Mocha from "mocha";
+// const { colors } = require("mocha/lib/reporters/base");
+// const {colors, symbols} = require("mocha/lib/reporters/base");
 const NYC = require("nyc");
-const foreground = require("foreground-child");
+// const foreground = require("foreground-child");
 import * as glob from "glob";
 
 // import * as baseConfig from "@istanbuljs/nyc-config-typescript";
@@ -222,6 +224,8 @@ export async function run(): Promise<void>
         //     }
         // }
     });
+    // colors.slow = 33;
+    // symbols.ok = "";
 
     //
     // Add all files to the test suite

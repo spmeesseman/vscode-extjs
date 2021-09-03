@@ -131,8 +131,6 @@ suite("Document Tests", () =>
 		await renameFile(newDocPath, newDocPath2);
 		await waitForValidation();
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		const c = extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1);
 		assert(c?.fsPath === newDocPath2);
 	});
@@ -150,7 +148,6 @@ suite("Document Tests", () =>
 
 		insertDocContent("33", toRange(0, 25, 0, 25));
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 
 		await vscode.workspace.saveAll();
 		await waitForValidation();
@@ -169,7 +166,6 @@ suite("Document Tests", () =>
 		insertDocContent("", toRange(0, 0, 6, 3));
 		await vscode.workspace.saveAll();
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.T3322est", "testFixture", "", 1));
 	});
@@ -199,7 +195,6 @@ suite("Document Tests", () =>
 		await deleteFile(newDocPathToDelete);
 		await deleteFile(dupPathDoc);
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1));
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test2", "testFixture", "", 1));
 	});
@@ -217,31 +212,15 @@ suite("Document Tests", () =>
 	{   //
 		// Open non extjs doc outside of a classpath
 		//
-		let jssUri = getDocUri("js/script1.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
+		await activate(getDocUri("js/script1.js"));
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await closeActiveDocument();
 		await waitForValidation();
 		//
 		// Open non extjs doc inside of a classpath
 		//
-		jssUri = getDocUri("app/js/script1.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(jssUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
+		await activate(getDocUri("app/js/script1.js"));
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await closeActiveDocument();
 		await waitForValidation();
 	});
@@ -254,7 +233,6 @@ suite("Document Tests", () =>
 		const jssUri = getDocUri("app/shared/src/test/Test.js");
 		await activate(jssUri);
 		await waitForValidation();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 		await closeActiveDocument();
 		await waitForValidation();
 	});
@@ -275,7 +253,6 @@ suite("Document Tests", () =>
 		vscode.window.showTextDocument(doc3);
 		await waitForValidation();
 		await closeActiveDocument();
-		await vscode.commands.executeCommand("vscode-extjs:waitReady");
 	});
 
 });
