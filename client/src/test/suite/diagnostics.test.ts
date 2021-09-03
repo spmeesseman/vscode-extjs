@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments } from "./helper";
+import { getDocUri, activate, toRange, waitForValidation, closeActiveDocument, closeActiveDocuments } from "./helper";
 import { configuration } from "../../common/configuration";
 
 
@@ -47,6 +47,20 @@ suite("Diagnostics Tests", () =>
 			{ message: "The referenced xtype \"userdropdown\" does not have a corresponding requires directive.", range: toRange(39, 9, 39, 23), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" },
 			{ message: "The referenced xtype \"userdropdown\" does not have a corresponding requires directive.", range: toRange(173, 9, 173, 23), severity: vscode.DiagnosticSeverity.Warning, source: "vscode-extjs" }
 		]);
+	});
+
+
+	test("node_modules packages no validation", async() =>
+	{
+		await closeActiveDocument();
+		await activate(getDocUri("node_modules/@spmeesseman/extjs-pkg/src/shared/src/Utilities.js"));
+	});
+
+
+	test("Ext namespace no validation", async() =>
+	{
+		await closeActiveDocument();
+		await activate(getDocUri("node_modules/@sencha/ext-core/src/ext-all-debug.js"));
 	});
 
 });
