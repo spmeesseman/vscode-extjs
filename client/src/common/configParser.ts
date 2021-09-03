@@ -199,17 +199,17 @@ export class ConfigParser
 
         if (!conf)
         {
-            window.showWarningMessage(`Invalid .extjsrc file ${uri.fsPath} - invalid JSON`);
+            window.showWarningMessage(`Invalid app.json file ${uri.fsPath} - invalid JSON`);
             return confs;
         }
         else if (!conf.name)
         {
-            window.showWarningMessage(`Invalid .extjsrc file ${uri.fsPath} - no 'name' property found`);
+            window.showWarningMessage(`Invalid app.json file ${uri.fsPath} - no 'name' property found`);
             return confs;
         }
         else if (!conf.classpath && (!conf.classic || !conf.classic.classpath) && (!conf.modern || !conf.modern.classpath))
         {
-            window.showWarningMessage(`Invalid .extjsrc file ${uri.fsPath} - no 'classpath' properties found`);
+            window.showWarningMessage(`Invalid app.json file ${uri.fsPath} - no 'classpath' properties found`);
             return confs;
         }
 
@@ -267,7 +267,10 @@ export class ConfigParser
             try {
                 wsConf = json5.parse(await readFile(wsDotJsonFsPath));
             }
-            catch { wsConf = undefined; }
+            catch {
+                wsConf = undefined;
+                window.showWarningMessage(`Invalid workspace.json file ${uri.fsPath} - invalid JSON`);
+            }
 
             if (wsConf && wsConf.frameworks && wsConf.frameworks.ext)
             {   //
@@ -341,13 +344,15 @@ export class ConfigParser
                 }
             }
 
-            if (wsConf.packages && wsConf.packages.dir)
+            if (wsConf && wsConf.packages && wsConf.packages.dir)
             {
                 log.write("   process workspace.json dependency packages from packages.dir", 1, logPad);
                 const dirs = wsConf.packages.dir.split(","),
                       toolkit = configuration.get<string>("toolkit", "classic");
                 for (const d of dirs)
                 {
+                    let packageNs: string | undefined;
+                    const packageClsPaths: string[] = [];
                     const wsRelPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit),
                           wsFullPath = d.replace(/\$\{workspace.dir\}/, baseDir).replace(/\$\{toolkit.name\}/, toolkit);
                     log.write("      add dependency package", 1, logPad);
@@ -356,29 +361,50 @@ export class ConfigParser
                     if (await pathExists(packageJsonFile))
                     {
                         const packageJson = json5.parse(await readFile(packageJsonFile));
-                        let packageClsPath = packageJson.sencha?.classpath;
-                        if (packageClsPath)
+                        if (packageJson.sencha)
                         {
-                            if (!(packageClsPath instanceof Array))
+                            packageNs = packageJson.sencha.namespace;
+                            if (packageJson.sencha.classpath)
                             {
-                                packageClsPath = [ packageClsPath ];
+                                let packageClsPath =  packageJson.sencha.classpath;
+                                if (!(packageClsPath instanceof Array)) {
+                                    packageClsPath = [ packageClsPath ];
+                                }
+                                packageClsPaths.push(...packageClsPath);
                             }
-                            for (const clsPath of packageClsPath)
-                            {   // eslint-disable-next-line no-template-curly-in-string
-                                const fClsPath = clsPath.replace("${package.dir}", wsRelPath);
-                                if (confs.length > 1 && packageJson.sencha?.namespace === "Ext")
-                                {
-                                    if (!confs[1].classpath.includes(fClsPath)) {
-                                        confs[1].classpath.push(fClsPath);
-                                    }
+                            if (packageJson.sencha.classic)
+                            {
+                                let packageClsPathClassic = packageJson.sencha.classic.classpath;
+                                if (!(packageClsPathClassic instanceof Array)) {
+                                    packageClsPathClassic = [ packageClsPathClassic ];
                                 }
-                                else if (!conf.classpath.includes(fClsPath)) {
-                                    conf.classpath.push(fClsPath);
+                                packageClsPaths.push(...packageClsPathClassic);
+                            }
+                            if (packageJson.sencha.modern)
+                            {
+                                let packageClsPathModern = packageJson.sencha.modern.classpath;
+                                if (!(packageClsPathModern instanceof Array)) {
+                                    packageClsPathModern = [ packageClsPathModern ];
                                 }
+                                packageClsPaths.push(...packageClsPathModern);
                             }
                         }
-                        else if (!conf.classpath.includes(wsRelPath)) {
-                            conf.classpath.push(wsRelPath);
+                    }
+                    if (packageClsPaths.length > 0)
+                    {
+                        for (const clsPath of packageClsPaths)
+                        {   //
+                            // eslint-disable-next-line no-template-curly-in-string
+                            const fClsPath = clsPath.replace("${package.dir}", wsRelPath);
+                            if (confs.length > 1 && packageNs === "Ext")
+                            {
+                                if (!confs[1].classpath.includes(fClsPath)) {
+                                    confs[1].classpath.push(fClsPath);
+                                }
+                            }
+                            else if (!conf.classpath.includes(fClsPath)) {
+                                conf.classpath.push(fClsPath);
+                            }
                         }
                     }
                     else if (!conf.classpath.includes(wsRelPath)) {
