@@ -1715,9 +1715,10 @@ class ExtjsLanguageManager
         //
         // Check to make sure it's an ExtJs file
         //
-        if (!text || !textDocument || textDocument.languageId !== "javascript" || !utils.isExtJsFile(text))
+        let isNodeModuesFile = false;
+        if (!text || !textDocument || textDocument.languageId !== "javascript" || !utils.isExtJsFile(text) || nameSpace === "Ext" || ((isNodeModuesFile = textDocument.uri.fsPath.includes("node_modules")) === true))
         {
-            showReIndexButton(false);
+            showReIndexButton(nameSpace === "Ext" || isNodeModuesFile);
         }
         else //
         {   // Validate
