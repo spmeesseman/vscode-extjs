@@ -17,8 +17,8 @@ suite("Document Tests", () =>
 	const newDocPath = getDocPath("app/shared/src/app2.js");
 	const newDocPath2 = getDocPath("app/shared/src/app3.js");
 	const dupPathDoc = getDocPath("app/shared/src/app4.js");
-	const newDocPathToDelete = getDocPath("app/shared/src/app4.js");
-	const invalidPathDoc = getDocPath("app/shared/src/app5.js");
+	const newDocPathToDelete = getDocPath("app/shared/src/app5.js");
+	const invalidPathDoc = getDocPath("app/shared/src/app6.js");
 	let ignoreErrors: any[];
 	let extJsApi: ExtJsApi;
 	let extjsLangMgr: IExtjsLanguageManager;
@@ -26,6 +26,7 @@ suite("Document Tests", () =>
 
 	suiteSetup(async function ()
     {
+		this.timeout(45 * 1000);
 		const testsApi = await activate(docUri);
 		extJsApi = testsApi.extJsApi;
 		extjsLangMgr = extJsApi.extjsLangMgr;
@@ -205,7 +206,7 @@ suite("Document Tests", () =>
             '    "config":{\r\n' +
             '        "cfg1": "node ./node_modules/vscode/bin/test",\r\n' +
             "    }\r\n" +
-            "\r\n"
+            "\r\n" // <- missing closing });
         );
 		await waitForValidation();
 	});
