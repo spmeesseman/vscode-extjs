@@ -114,6 +114,9 @@ JsDoc:
 		Format and remove all @ markers
 	☐ Object properties
 		e.g., xtype: 'viewtoolbar', noRemoteActions: true, ....' ... show doc for all ocnfigs/props like noRemoteActions
+	☐ Method doc needs work
+		title line should contain params
+		i think doc is better in one spot than the other, i.e. completion vs.hover, cant remember
 
 Miscellaneous:
 
