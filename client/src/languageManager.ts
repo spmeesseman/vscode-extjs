@@ -334,13 +334,8 @@ class ExtjsLanguageManager
         {
             if (isPositionInRange(position, toVscodeRange(method.start, method.end)))
             {
-                let variable: IVariable | IParameter | undefined = method.variables?.find(v => v.name === property);
-                if (!variable) {
-                    variable = method.params?.find(v => v.name === property);
-                    if (variable?.type !== VariableType._class) {
-                        variable = undefined;
-                    }
-                }
+                const variable: IVariable | IParameter | undefined = method.variables.find(v => v.name === property) ||
+                                                                     method.params.find(v => v.name === property && v.type === VariableType._class);
                 if (variable) {
                     const cmp = this.getComponent(variable.componentClass, project, logPad + "   ", logLevel, toIPosition(position));
                     if (cmp) {
@@ -1093,10 +1088,8 @@ class ExtjsLanguageManager
                         {
                             log.write(`   Index modified file ${c.fsPath}`, logLevel + 1, logPad);
                             const cmps = await this.indexFile(c.fsPath, c.nameSpace, false, Uri.file(c.fsPath), false, "   ", logLevel + 2);
-                            if (cmps) {
-                                await this.processComponents(cmps, projectName, false, "   ", logLevel + 2);
-                                await storage.update(tsKey, (new Date()).toString());
-                            }
+                            await this.processComponents(cmps, projectName, false, "   ", logLevel + 2);
+                            await storage.update(tsKey, (new Date()).toString());
                         }
                         pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
                         progress.report({
