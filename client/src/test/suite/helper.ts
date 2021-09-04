@@ -90,7 +90,7 @@ export async function closeActiveDocuments()
 
 export const getDocPath = (p: string) =>
 {
-	return path.resolve(__dirname, "../../../../client/testFixture", p);
+	return path.normalize(path.resolve(__dirname, "../../../../client/testFixture", p));
 };
 
 
@@ -136,9 +136,9 @@ export function toRange(sLine: number, sChar: number, eLine: number, eChar: numb
 }
 
 
-export async function waitForValidation(doWaitReady?: boolean)
+export async function waitForValidation(doWaitReady?: boolean, delay?: number)
 {
-	await sleep(invalidationDelay);
+	await sleep(delay || invalidationDelay);
 	if (doWaitReady !== false) {
 		await commands.executeCommand("vscode-extjs:waitReady");
 	}

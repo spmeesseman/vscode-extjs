@@ -48,6 +48,8 @@ suite("API Tests", () =>
 		extjsLangMgr.setBusy(false);
 		await commands.executeCommand("vscode-extjs:indexFiles", undefined, false);
 		await waitForValidation();
+		await commands.executeCommand("vscode-extjs:indexFiles", "VSCodeExtJS", false); // invalid project name
+		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:indexFiles", "testFixture");
 		await waitForValidation();
 		await commands.executeCommand("vscode-extjs:indexFiles", "testFixture", false, "   ");

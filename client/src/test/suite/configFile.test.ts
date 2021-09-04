@@ -55,8 +55,7 @@ suite("Config File Tests", () =>
             '    "name": "Ext"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 
 		await writeFile(
             extjsrcPath,
@@ -65,8 +64,7 @@ suite("Config File Tests", () =>
             '    "name": "Ext"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
@@ -78,8 +76,7 @@ suite("Config File Tests", () =>
             '    "classpath": "extjs"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
@@ -93,8 +90,7 @@ suite("Config File Tests", () =>
             '    "buildDir": "build"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
@@ -108,7 +104,7 @@ suite("Config File Tests", () =>
             '    "framework": "c:\\\\Projects\\\\vscode\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
@@ -122,7 +118,7 @@ suite("Config File Tests", () =>
             '    "framework": "c:\\\\Projects\\\\vscodeInvalid\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
@@ -136,7 +132,7 @@ suite("Config File Tests", () =>
             '    "framework": "c:\\\\Code\\\\sencha"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
@@ -150,7 +146,7 @@ suite("Config File Tests", () =>
             '    "framework": "c:\\\\Projects\\\\vscode\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
@@ -163,31 +159,18 @@ suite("Config File Tests", () =>
             '    "name": "VSCodeExtJS"\r\n' +
             "}\r\n"
         );
-		await waitForValidation();
+		await waitForValidation(true, 1000);
 	});
 
 
-	test("Extension path settings", async () =>
+	test("Extension path settings - include", async () =>
 	{
-		const fwDirectory = configuration.get<string>("frameworkDirectory", undefined);
 		const settingsPaths = configuration.get<string[]>("include", []);
-		//
-		// Set global framework path
-		//
-		await configuration.update("frameworkDirectory", "c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\extjs");
-		await waitForValidation();
 		//
 		// Set include paths
 		//
 		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\app" ]);
 		await waitForValidation();
-		//
-		// Set tests to 'false' to cover branch for user prompt for config file change
-		//
-		extjsLangMgr.setTests(false);
-		await configuration.update("frameworkDirectory", undefined);
-		await waitForValidation();
-		extjsLangMgr.setTests(true);
 		//
 		// Some additional coverage - force prompt w/o tests flag set
 		//
@@ -197,20 +180,45 @@ suite("Config File Tests", () =>
 		extjsLangMgr.setTests(true);
 		await waitForValidation();
 		//
-		// Reset (for local tests, this won't matter in a CI environment)
+		// Reset configuration settings
 		//
 		await configuration.update("include", settingsPaths);
 		await waitForValidation();
+	});
+
+
+	test("Extension path settings - framework directory", async () =>
+	{
+		const fwDirectory = configuration.get<string>("frameworkDirectory", undefined);
+		//
+		// Set global framework path
+		//
+		await configuration.update("frameworkDirectory", "c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\extjs");
+		await waitForValidation();
+		//
+		// Set global framework path outside workspace dir
+		//
+		await configuration.update("frameworkDirectory", "c:\\Sencha\\extjs\\ext-7.2\\classic\\classic\\src");
+		await waitForValidation();
+		//
+		// Set tests to 'false' to cover branch for user prompt for config file change
+		//
+		extjsLangMgr.setTests(false);
+		await configuration.update("frameworkDirectory", undefined);
+		await waitForValidation();
+		extjsLangMgr.setTests(true);
+		//
+		// Reset configuration settings
+		//
 		await configuration.update("frameworkDirectory", fwDirectory);
 		await waitForValidation();
 	});
 
 
-	test("Invalid extension path settings", async () =>
+	test("Invalid extension path settings - include", async () =>
 	{
-		const fwDirectory = configuration.get<string>("frameworkDirectory", undefined);
 		const settingsPaths = configuration.get<string[]>("include", []);
-		await configuration.update("frameworkDirectory", "extjs");
+		await waitForValidation();
 		//
 		await configuration.update("include", [ "app" ]); // invalid path value must be name|path
 		await waitForValidation();
@@ -224,8 +232,6 @@ suite("Config File Tests", () =>
 		// Reset (for local tests, this won't matter in a CI environment)
 		//
 		await configuration.update("include", settingsPaths);
-		await waitForValidation();
-		await configuration.update("frameworkDirectory", fwDirectory);
 		await waitForValidation();
 	});
 
@@ -272,7 +278,9 @@ suite("Config File Tests", () =>
 
 
 	test("Workspace.json package.dir", async function()
-	{   //
+	{
+		this.timeout(45 * 1000);
+		//
 		// Remove packages.dir property
 		//
 		await insertDocContent("", toRange(11, 8, 11, 70));

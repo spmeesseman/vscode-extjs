@@ -1,8 +1,10 @@
 
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { deleteFile, renameFile, writeFile } from "../../../../common/lib/fs";
+import { deleteFile, renameFile, writeFile } from "../../../../common";
+import { getTimestampKey } from "../../common/clientUtils";
 import { configuration } from "../../common/configuration";
+import { storage } from "../../common/storage";
 import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
 import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocContent, closeActiveDocuments, closeActiveDocument } from "./helper";
 
@@ -10,6 +12,7 @@ import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocC
 suite("Document Tests", () =>
 {
 
+	const docPath = getDocPath("app/shared/src/app.js");
 	const docUri = getDocUri("app/shared/src/app.js");
 	const newDocPath = getDocPath("app/shared/src/app2.js");
 	const newDocPath2 = getDocPath("app/shared/src/app3.js");
@@ -79,6 +82,17 @@ suite("Document Tests", () =>
 	});
 
 
+	test("Non-notified document edit", async () =>
+	{
+		const d = new Date();
+		d.setDate(d.getDate() - 2);
+		await storage.update(getTimestampKey(docPath), d.toString());
+		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:indexFiles", "testFixture", false);
+		await waitForValidation();
+	});
+
+
 	test("Add new documents", async () =>
 	{
 		await writeFile(
@@ -123,7 +137,6 @@ suite("Document Tests", () =>
 		await waitForValidation();
 		await waitForValidation();
 		await waitForValidation();
-		await waitForValidation();
 		const c = extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1);
 		assert(c?.fsPath === newDocPath2);
 	});
@@ -161,7 +174,6 @@ suite("Document Tests", () =>
 		await waitForValidation();
 		await waitForValidation();
 		await waitForValidation();
-		await waitForValidation();
 		await closeActiveDocument();
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.T3322est", "testFixture", "", 1));
 	});
@@ -183,7 +195,7 @@ suite("Document Tests", () =>
 	});
 
 
-	test("Innvalid ExtJS document", async () =>
+	test("Invalid ExtJS document", async () =>
 	{
 		await writeFile(
             invalidPathDoc,
@@ -204,13 +216,25 @@ suite("Document Tests", () =>
 		await deleteFile(newDocPath2);
 		await waitForValidation();
 		await closeActiveDocument(); // close all files, no active editor
-		await deleteFile(newDocPathToDelete);
-		await waitForValidation();
 		await deleteFile(dupPathDoc);
 		await waitForValidation();
 		await deleteFile(invalidPathDoc);
 		await waitForValidation();
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1));
+	});
+
+
+	test("Non-notified document delete", async () =>
+	{
+		assert(extjsLangMgr.getComponent("VSCodeExtJS.Test2", "testFixture", "", 1));
+		extjsLangMgr.setTests({
+			disableFileWatchers: true
+		});
+		await deleteFile(newDocPathToDelete);
+		await waitForValidation();
+		await vscode.commands.executeCommand("vscode-extjs:indexFiles", "testFixture", false);
+		await waitForValidation();
+		extjsLangMgr.setTests(true);
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test2", "testFixture", "", 1));
 	});
 

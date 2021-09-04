@@ -36,7 +36,7 @@ export interface IExtjsLanguageManager
     getComponent: (componentClass: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent) => IComponent | undefined;
     getLineProperties: (document: TextDocument, position: Position, logPad: string, logLevel: number) => ILineProperties;
     setBusy: (busy: boolean) => void;
-    setTests: (tests: boolean) => void;
+    setTests: (tests: boolean | { disableFileWatchers: boolean }) => void;
 }
 
 export interface ExtJsApi
