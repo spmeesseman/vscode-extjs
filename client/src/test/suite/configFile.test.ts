@@ -324,7 +324,7 @@ suite("Config File Tests", () =>
 		await insertDocContent(`,
     "packages":
     {
-        "dir": "\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg2,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg3,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg4,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg5",
+        "dir": "\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg2,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg3,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg4,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg5,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg6",
         "extract": "\${workspace.dir}/packages/remote"
     }`, toRange(8, 5, 8, 5));
 		await workspace.saveAll();
