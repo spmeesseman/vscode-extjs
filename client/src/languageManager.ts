@@ -1179,14 +1179,15 @@ class ExtjsLanguageManager
                 log.blank();
                 log.write(`   Indexing ${numFiles} files in ${conf.classpath.length} classpath directories`, logLevel, logPad);
 
-                for (const dir of conf.classpath)
+                for (let dir of conf.classpath)
                 {
                     if (!_isIndexed(dir))
                     {
                         log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, logLevel + 1, logPad);
                         log.write(`       ${dir}`, logLevel + 1, logPad);
 
-                        const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`, "**/{test,tests,spec}/**");
+                        dir = !path.isAbsolute(dir) ? path.join(conf.baseWsDir, dir) : dir;
+                        const uris = await workspace.findFiles(`${dir}/**/*.js`, "**/{test,tests,spec}/**");
                         for (const uri of uris)
                         {
                             log.write(`   Index file ${++currentFile} of ${numFiles}`, logLevel + 2, logPad);
