@@ -127,7 +127,7 @@ export function pick<T, K extends keyof T>(obj: T, ...keys: K[])
 
 export function pushIfNotExists(arr: any[], item: any)
 {
-    if (arr.indexOf(item) === -1) {
+    if (item && arr.indexOf(item) === -1) {
         arr.push(item);
     }
 }

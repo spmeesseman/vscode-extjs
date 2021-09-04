@@ -36,6 +36,25 @@ export function documentEol(document: TextDocument)
  }
 
 
+ export function getStorageKey(fsPath: string, nameSpace: string)
+ {
+     const uriFile = Uri.file(fsPath),
+           wsf = workspace.getWorkspaceFolder(uriFile);
+     let sFile = path.join(path.basename(uriFile.fsPath), nameSpace, "components.json");
+     if (wsf) {
+         const projectName = path.basename(wsf.uri.fsPath);
+         sFile = path.join(projectName, fsPath.replace(wsf.uri.fsPath, ""), nameSpace, "components.json");
+     }
+     return sFile;
+ }
+
+
+ export function getTimestampKey(fsPath: string)
+ {
+     return fsPath + "_TIMESTAMP";
+ }
+
+
 export function getWorkspaceProjectName(fsPath: string)
  {
      let project = path.basename(fsPath);

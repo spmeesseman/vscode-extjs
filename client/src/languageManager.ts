@@ -5,11 +5,11 @@ import {
 } from "vscode";
 import {
     IConfig, IComponent, IMethod, IConf, IProperty, utils, ComponentType,
-    IVariable, VariableType, IExtJsBase, IPrimitive, IParameter, extjs, IPosition, IEdit
+    IVariable, VariableType, IExtJsBase, IPrimitive, IParameter, extjs, IPosition, IEdit, IPropertyValue
 } from  "../../common";
 
 import {
-    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded, documentEol, getWorkspaceProjectName, toIPosition, toIRange
+    toVscodeRange, toVscodePosition, isPositionInRange, isComponent, isExcluded, documentEol, getWorkspaceProjectName, toIPosition, toIRange, getStorageKey, getTimestampKey
 } from "./common/clientUtils";
 import * as log from "./common/log";
 import * as path from "path";
@@ -56,6 +56,7 @@ class ExtjsLanguageManager
     private configParser: ConfigParser;
     private components: IComponent[] = [];
     private isTests = false;
+    private testsCfg: { disableFileWatchers: boolean } = { disableFileWatchers: false };
     private currentLineCount = 0;
     private addingComponentFile: Uri | undefined;
     private deletingComponentFile: Uri | undefined;
@@ -110,17 +111,13 @@ class ExtjsLanguageManager
         const aliases: string[] = [];
         this.components.filter(c => project === c.project).forEach((c) => {
             c.aliases.forEach((a) => {
-                if (!aliases.includes(a.name)) {
-                    aliases.push(a.name);
-                }
+                utils.pushIfNotExists(aliases, a.name);
             });
             //
             // The main application class that extends Ext.app.Application...
             //
-            c.properties.filter(p => p.name === "name" && c.extend?.endsWith(".app.Application")).forEach((p) => {
-                if (!aliases.includes(p.componentClass) && p.value) {
-                    aliases.push(p.value.value);
-                }
+            c.properties.filter(p => p.value && p.name === "name" && c.extend?.endsWith(".app.Application")).forEach((p) => {
+                utils.pushIfNotExists(aliases, (p.value as IPropertyValue).value);
             });
         });
         return aliases;
@@ -129,7 +126,6 @@ class ExtjsLanguageManager
 
     private getAppJsonDir(fsPath: string)
     {
-        // this.config.find((c) => fsPath.indexOf(c.baseDir) !== -1)?.baseDir
         let appJsonDir = path.dirname(fsPath);
         for (const conf of this.config)
         {
@@ -139,6 +135,7 @@ class ExtjsLanguageManager
             }
         }
         return appJsonDir;
+        // return this.config.filter(c => fsPath.includes(c.baseDir)).map(c => c.baseDir)[0] || path.dirname(fsPath);
     }
 
 
@@ -1009,19 +1006,6 @@ class ExtjsLanguageManager
     }
 
 
-    private getCmpStorageFileName(fsPath: string, nameSpace: string)
-    {
-        const uriFile = Uri.file(fsPath),
-              wsf = workspace.getWorkspaceFolder(uriFile);
-        let sFile = path.join(path.basename(uriFile.fsPath), nameSpace, "components.json");
-        if (wsf) {
-            const projectName = path.basename(wsf.uri.fsPath);
-            sFile = path.join(projectName, fsPath.replace(wsf.uri.fsPath, ""), nameSpace, "components.json");
-        }
-        return sFile;
-    }
-
-
     private async indexAll(progress: Progress<any>, logPad: string, logLevel: number, project?: string)
     {
         log.methodStart("index all", logLevel, logPad, true, [
@@ -1051,7 +1035,7 @@ class ExtjsLanguageManager
 
         for (const conf of this.config)
         {
-            log.value("   process config", conf.name, 1, logPad);
+            log.value("   process configuration", conf.name, 1, logPad);
             log.values([
                 ["wsDir", conf.wsDir], ["baseWsDir", conf.baseWsDir], ["baseDir", conf.baseDir], ["classpath", conf.classpath.toString()]
             ], 2, logPad + "   ");
@@ -1062,7 +1046,7 @@ class ExtjsLanguageManager
                 numFiles = 0,
                 increment: number | undefined;
 
-            log.value("   projectName", projectName, 2, logPad);
+            log.value("   project", projectName, 2, logPad);
 
             if (project) {
                 if (project.toLowerCase() !== projectName.toLowerCase()) {
@@ -1075,8 +1059,9 @@ class ExtjsLanguageManager
                 increment: 0,
                 message: `: Indexing ${projectName} ${pct}%`
             });
+            await utils.timeout(1); // let progress update
 
-            const storageKey = this.getCmpStorageFileName(conf.baseDir, conf.name),
+            const storageKey = getStorageKey(conf.baseDir, conf.name),
                   storedComponents = !forceProjectAstIndexing ? await fsStorage.get(storageKey) : undefined;
             //
             // Get components for this directory from local storage if exists
@@ -1098,19 +1083,19 @@ class ExtjsLanguageManager
                             continue;
                         }
                         this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
-                        const tsKey = c.fsPath + "_TIMESTAMP",
+                        const tsKey = getTimestampKey(c.fsPath),
                             lastModified = await getDateModified(c.fsPath);
                         //
                         // If the file's been modified since the last time it's been indexed, then re-index
                         // and update the in-memory component array
                         //
-                        if (lastModified && lastModified > storage.get<Date>(tsKey, new Date()))
+                        if (lastModified && lastModified > new Date(storage.get<string>(tsKey, (new Date()).toString())))
                         {
                             log.write(`   Index modified file ${c.fsPath}`, logLevel + 1, logPad);
                             const cmps = await this.indexFile(c.fsPath, c.nameSpace, false, Uri.file(c.fsPath), false, "   ", logLevel + 2);
                             if (cmps) {
                                 await this.processComponents(cmps, projectName, false, "   ", logLevel + 2);
-                                await storage.update(tsKey, new Date());
+                                await storage.update(tsKey, (new Date()).toString());
                             }
                         }
                         pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
@@ -1135,7 +1120,7 @@ class ExtjsLanguageManager
                     }
 
                     ++currentCfgIdx;
-                    const inc = Math.round(cfgPct * currentCfgIdx),
+                    const inc = pct = Math.round(cfgPct * currentCfgIdx),
                           nextInc = inc - 1,
                           nextInc2 = inc - 2;
 
@@ -1157,6 +1142,7 @@ class ExtjsLanguageManager
                         increment,
                         message: `: Indexing ${projectName} ${inc}%`
                     });
+                    await utils.timeout(1); // let progress update
                 }
             }
             else // index the file via the language server
@@ -1194,15 +1180,9 @@ class ExtjsLanguageManager
                             //
                             // Index this file and process its components
                             //
-                            try {
-                                const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, false, logPad + "   ", logLevel);
-                                if (cmps) {
-                                    components.push(...cmps);
-                                }
-                            }
-                            catch (e) {
-                                log.error(e);
-                                break;
+                            const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, false, logPad + "   ", logLevel);
+                            if (cmps) {
+                                components.push(...cmps);
                             }
                             //
                             // Report progress
@@ -1220,7 +1200,7 @@ class ExtjsLanguageManager
                 }
 
                 ++currentCfgIdx;
-                const inc = Math.round(currentCfgIdx * cfgPct),
+                const inc = pct = Math.round(currentCfgIdx * cfgPct),
                       nextInc = inc - 1,
                       nextInc2 = inc - 2;
 
@@ -1234,14 +1214,21 @@ class ExtjsLanguageManager
                 //
                 if (components.length > 0) {
                     await fsStorage.update(storageKey, JSON.stringify(components));
-                    await storage.update(storageKey + "_TIMESTAMP", new Date());
+                    components.forEach(async c => {
+                        await storage.update(getTimestampKey(c.fsPath), (new Date()).toString());
+                    });
+                    await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
                 }
 
                 progress.report({
                     increment,
                     message: `: Indexing ${projectName} ${inc}%`
                 });
+                await utils.timeout(1); // let progress update
             }
+
+            log.value("   configuration processed successfully", conf.name, 1, logPad);
+            log.value("      percent complete", pct, 1, logPad);
         }
 
         //
@@ -1421,15 +1408,7 @@ class ExtjsLanguageManager
             cancellable: false,
             title: "ExtJs"
         },
-        async (progress) =>
-        {
-            try {
-                await this.indexAll(progress, "", 1, project);
-            }
-            catch (e) {
-                log.error(e);
-            }
-        });
+        async (progress) => this.indexAll(progress, "", 1, project));
         //
         // Validate and index the active js document, if there is one
         //
@@ -1484,7 +1463,7 @@ class ExtjsLanguageManager
     private async persistComponents(fsPath: string, nameSpace: string, components: IComponent[], logPad: string, logLevel: number)
     {
         const baseDir = this.getAppJsonDir(fsPath),
-              storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
+              storageKey = getStorageKey(baseDir, nameSpace),
               storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey, "[]") as string);
 
         log.methodStart("persist components", logLevel, logPad, false, [
@@ -1512,8 +1491,8 @@ class ExtjsLanguageManager
         }
 
         await fsStorage.update(storageKey, JSON.stringify(storedComponents));
-        await storage.update(storageKey + "_TIMESTAMP", new Date());
-        await storage.update(fsPath + "_TIMESTAMP", new Date());
+        await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
+        await storage.update(getTimestampKey(fsPath), (new Date()).toString());
 
         log.methodDone("persist components", logLevel, logPad);
     }
@@ -1636,7 +1615,7 @@ class ExtjsLanguageManager
     private async removeFileFromCache(fsPath: string, nameSpace: string, logPad: string, logLevel: number)
     {
         const baseDir = this.getAppJsonDir(fsPath),
-              storageKey = this.getCmpStorageFileName(baseDir, nameSpace),
+              storageKey = getStorageKey(baseDir, nameSpace),
               storedComponents: any[] = JSON.parse(await fsStorage.get(storageKey, "[]") as string),
               removedPersisted: IComponent[] = [],
               removedMemory: IComponent[] = [];
@@ -1677,8 +1656,8 @@ class ExtjsLanguageManager
 
         if (removedPersisted.length > 0) {
             await fsStorage.update(storageKey, JSON.stringify(storedComponents));
-            await storage.update(storageKey + "_TIMESTAMP", new Date());
-            await storage.update(fsPath + "_TIMESTAMP", undefined);
+            await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
+            await storage.update(getTimestampKey(fsPath), undefined);
         }
 
         log.methodDone("remove file from cache", logLevel, logPad, false, [
@@ -1705,9 +1684,10 @@ class ExtjsLanguageManager
      * @private
      * @since 0.3.0
      */
-    setTests(tests: boolean)
+    setTests(tests: boolean | { disableFileWatchers: boolean })
     {
-        this.isTests = tests;
+        this.isTests = !!tests;
+        this.testsCfg = !(typeof tests === "boolean") ? tests : { disableFileWatchers: false };
     }
 
 
@@ -1757,8 +1737,11 @@ class ExtjsLanguageManager
     private async watcherDocumentChange(uri: Uri, nameSpace: string)
     {
         log.methodStart("watcher document change", 1, "", true);
-        await commands.executeCommand("vscode-extjs:waitReady");
-        await this.indexFile(uri.fsPath, this.getNamespace(uri), true, uri, true, "   ", 1);
+        if (!this.testsCfg.disableFileWatchers)
+        {
+            await commands.executeCommand("vscode-extjs:waitReady");
+            await this.indexFile(uri.fsPath, this.getNamespace(uri), true, uri, true, "   ", 1);
+        }
         log.methodDone("watcher document change", 1, "", true);
     }
 
@@ -1766,12 +1749,15 @@ class ExtjsLanguageManager
     private async watcherDocumentCreate(uri: Uri, nameSpace: string)
     {
         log.methodStart("watcher document create", 1, "", true);
-        this.addingComponentFile = uri;
-        await commands.executeCommand("vscode-extjs:waitReady");
-        await this.indexFile(uri.fsPath, this.getNamespace(uri), true, uri, true, "   ", 1);
-        const activeTextDocument = window.activeTextEditor?.document;
-        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument), "   ", 2);
-        this.addingComponentFile = undefined;
+        if (!this.testsCfg.disableFileWatchers)
+        {
+            this.addingComponentFile = uri;
+            await commands.executeCommand("vscode-extjs:waitReady");
+            await this.indexFile(uri.fsPath, this.getNamespace(uri), true, uri, true, "   ", 1);
+            const activeTextDocument = window.activeTextEditor?.document;
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument), "   ", 2);
+            this.addingComponentFile = undefined;
+        }
         log.methodDone("watcher document create", 1, "", true);
     }
 
@@ -1779,13 +1765,16 @@ class ExtjsLanguageManager
     private async watcherDocumentDelete(uri: Uri, nameSpace: string)
     {
         log.methodStart("watcher document delete", 1, "", true);
-        this.deletingComponentFile = uri;
-        await commands.executeCommand("vscode-extjs:waitReady");
-        await this.removeFileFromCache(uri.fsPath, nameSpace, "   ", 1);
-        const activeTextDocument = window.activeTextEditor?.document;
-        await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument), "   ", 2);
-        this.deletingComponentFile = undefined;
-        log.methodDone("watcher document delete", 1, "", true);
+        if (!this.testsCfg.disableFileWatchers)
+        {
+            this.deletingComponentFile = uri;
+            await commands.executeCommand("vscode-extjs:waitReady");
+            await this.removeFileFromCache(uri.fsPath, nameSpace, "   ", 1);
+            const activeTextDocument = window.activeTextEditor?.document;
+            await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument), "   ", 2);
+            this.deletingComponentFile = undefined;
+            log.methodDone("watcher document delete", 1, "", true);
+        }
     }
 
 
