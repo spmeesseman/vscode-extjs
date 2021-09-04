@@ -51,19 +51,8 @@ class ExtJsHoverProvider implements HoverProvider
                 const isStatic = !!component && lineTextCut.includes(cmpClass + ".") && !(component as IComponent).singleton,
                       method = extjsLangMgr.getMethod(cmpClass, property, project, isStatic, "   ", 2);
                 log.value("   provide class hover info", property, 2);
-                if (method) { // it could happen, if this fires immediately following en edit
-                    if (!method.doc || !method.doc.title || method.doc.pType !== "method")
-                    {
-                        let returns = "";
-                        if (method.returns) {
-                            const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase();
-                            returns = method.returns ? `: returns ${returnsText}` : "";
-                        }
-                        hover = this.getHover(`function ${text}${returns}`, method.doc);
-                    }
-                    else {
-                        hover = this.getHover(method.doc.title, method.doc);
-                    }
+                if (method && method.doc) {
+                    hover = this.getHover(method.doc.title, method.doc);
                 }
             }
             else if (cmpType === ComponentType.Property)
@@ -163,7 +152,7 @@ class ExtJsHoverProvider implements HoverProvider
     {
         if (jsdoc && jsdoc.body)
         {
-            return new Hover(new MarkdownString().appendCodeblock(title || jsdoc.title).appendMarkdown(jsdoc.body));
+            return new Hover(new MarkdownString().appendCodeblock(title).appendMarkdown(jsdoc.body));
         }
         else {
             return new Hover(new MarkdownString().appendCodeblock(title));
