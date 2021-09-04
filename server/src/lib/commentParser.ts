@@ -626,6 +626,10 @@ class CommentParser
                 jsdoc.pType = types.pType;
                 jsdoc.type = types.vType;
             }
+            else if (!jsdoc.type) {
+                const types = this.getTypes(line);
+                jsdoc.type = types.vType;
+            }
 
             if (indented && mode !== MarkdownStringMode.Code)
             {
