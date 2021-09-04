@@ -65,7 +65,7 @@
         "build-common": "tsc -p ./common",
         "build-tsc": "npm run build-common && npm run tsc-build",
         "coverage-clean": "rimraf .nyc_output && rimraf coverage",
-        "coverage-open_report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" file://c:/Projects/vscode/vscode-extjs/coverage/index.html",
+        "coverage-open_report": "cmd /c \"C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe\" file://c:/Projects/vscode-extjs/coverage/index.html",
         "coverage-full_on": "tools\\enable-full-coverage.sh",
         "coverage-full_off": "tools\\enable-full-coverage.sh --off",
         "coverage-publish_to_codecov": "node_modules/.bin/codecov --disable=gcov --disable=detect --env=CODECOV_TOKEN2",
