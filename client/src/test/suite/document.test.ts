@@ -15,6 +15,7 @@ suite("Document Tests", () =>
 	const newDocPath2 = getDocPath("app/shared/src/app3.js");
 	const dupPathDoc = getDocPath("app/shared/src/app4.js");
 	const newDocPathToDelete = getDocPath("app/shared/src/app4.js");
+	const invalidPathDoc = getDocPath("app/shared/src/app5.js");
 	let ignoreErrors: any[];
 	let extJsApi: ExtJsApi;
 	let extjsLangMgr: IExtjsLanguageManager;
@@ -182,13 +183,32 @@ suite("Document Tests", () =>
 	});
 
 
+	test("Innvalid ExtJS document", async () =>
+	{
+		await writeFile(
+            invalidPathDoc,
+			"Ext.define('VSCodeExtJS.AppUtilities',\r\n" +
+            "{\r\n" +
+            '    "prop1": "vscode-taskexplorer",\r\n' +
+            '    "config":{\r\n' +
+            '        "cfg1": "node ./node_modules/vscode/bin/test",\r\n' +
+            "    }\r\n" +
+            "\r\n"
+        );
+		await waitForValidation();
+	});
+
+
 	test("Delete document", async () =>
 	{
 		await deleteFile(newDocPath2);
 		await waitForValidation();
 		await closeActiveDocument(); // close all files, no active editor
 		await deleteFile(newDocPathToDelete);
+		await waitForValidation();
 		await deleteFile(dupPathDoc);
+		await waitForValidation();
+		await deleteFile(invalidPathDoc);
 		await waitForValidation();
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1));
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.Test2", "testFixture", "", 1));

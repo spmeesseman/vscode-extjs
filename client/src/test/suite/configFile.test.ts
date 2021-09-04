@@ -46,7 +46,7 @@ suite("Config File Tests", () =>
 	});
 
 
-	test("Add back extjsrc config", async () =>
+	test("Extjsrc config", async () =>
 	{
 		await writeFile(
             extjsrcPath,
@@ -56,6 +56,7 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation();
+		await waitForValidation();
 
 		await writeFile(
             extjsrcPath,
@@ -64,6 +65,7 @@ suite("Config File Tests", () =>
             '    "name": "Ext"\r\n' +
             "}\r\n"
         );
+		await waitForValidation();
 		await waitForValidation();
 	});
 
@@ -76,6 +78,7 @@ suite("Config File Tests", () =>
             '    "classpath": "extjs"\r\n' +
             "}\r\n"
         );
+		await waitForValidation();
 		await waitForValidation();
 	});
 
@@ -90,6 +93,7 @@ suite("Config File Tests", () =>
             '    "buildDir": "build"\r\n' +
             "}\r\n"
         );
+		await waitForValidation();
 		await waitForValidation();
 	});
 
@@ -156,7 +160,7 @@ suite("Config File Tests", () =>
             extjsrcPath,
 			"{\r\n" +
             '    "classpath": "",\r\n' +
-            '    "name": "Ext"\r\n' +
+            '    "name": "VSCodeExtJS"\r\n' +
             "}\r\n"
         );
 		await waitForValidation();
@@ -167,7 +171,14 @@ suite("Config File Tests", () =>
 	{
 		const fwDirectory = configuration.get<string>("frameworkDirectory", undefined);
 		const settingsPaths = configuration.get<string[]>("include", []);
+		//
+		// Set global framework path
+		//
 		await configuration.update("frameworkDirectory", "c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\extjs");
+		await waitForValidation();
+		//
+		// Set include paths
+		//
 		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\app" ]);
 		await waitForValidation();
 		//
