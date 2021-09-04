@@ -13,151 +13,29 @@ export class ConfigParser
 
     async getConfig(): Promise<IConf[]>
     {
-        const config: IConf[] = [],
-			  confUris = await workspace.findFiles("**/.extjsrc{.json,}"),
-              appDotJsonUris = await workspace.findFiles("**/app.json"),
-              settingsPaths = configuration.get<string[]>("include", []);
-
-        // workspace.workspaceFolders?.map(folder => folder.uri.path)
-
+        const config: IConf[] = [];
         log.methodStart("get extjs configuration", 1, "", true);
-
         //
         // Specific directories set directly in user settings, the `include` setting
         //
-        for (const sPath of settingsPaths)
-        {
-            const pathParts = sPath.split("|");
-            if (pathParts.length === 2 && pathParts[1])
-            {   //
-                // Only include paths that exist in the active workspace
-                //
-                const sWsFolder = workspace.getWorkspaceFolder(Uri.file(pathParts[1]));
-                if (sWsFolder)
-                {
-                    log.value("   add settings conf", sPath, 1);
-                    const sConf: IConf = {
-                        classpath: [ pathParts[1] ],
-                        name: pathParts[0],
-                        baseDir: path.dirname(pathParts[1]),
-                        baseWsDir: ".",
-                        buildDir: "",
-                        wsDir: sWsFolder.uri.fsPath
-                    };
-                    this.logConf(sConf);
-                    config.push(sConf);
-                }
-            }
-            else {
-                window.showWarningMessage(`Invalid include path ${sPath} - must be 'namespace|path'`);
-            }
-        }
-
+        await this.parseSettings(config);
         //
         // The `.extjsrc` config files
         //
-        for (const uri of confUris)
-        {
-            const fileSystemPath = uri.fsPath,
-                  confJson = await readFile(fileSystemPath);
-
-            let conf: IConf | undefined;
-            try {
-                conf = json5.parse(confJson);
-            }
-            catch {
-                window.showWarningMessage(`Invalid .extjsrc file ${path} - invalid JSON`);
-                continue;
-            }
-            if (conf && conf.classpath && conf.name)
-            {
-                const baseDir = path.dirname(uri.fsPath),
-                      wsDir = (workspace.getWorkspaceFolder(uri) as WorkspaceFolder).uri.fsPath;
-                //
-                // baseWsDir should be the relative path from the workspace folder root to the app.json
-                // file.  The Language Manager will use workspace.findFiles which will require a path
-                // relative to a workspace folder.
-                //
-                const baseWsDir = path.dirname(uri.fsPath.replace(wsDir, ""))
-                                .replace(/\\/g, "/").substring(1); // trim leading path sep
-
-                if (!(conf.classpath instanceof Array)) {
-                    conf.classpath = [ conf.classpath ];
-                }
-
-                conf.baseDir = baseDir;
-                conf.baseWsDir = baseWsDir;
-                conf.wsDir = wsDir;
-
-                log.value("   add .extjsrc conf", fileSystemPath, 1);
-                this.logConf(conf);
-                config.push(conf);
-
-                if (conf.framework)
-                {
-                    if (await pathExists(conf.framework))
-                    {
-                        const fwConf: IConf = {
-                            classpath: [ path.relative(baseDir, conf.framework) ],
-                            name: "Ext",
-                            baseDir,
-                            baseWsDir: ".", // path.relative(baseDir, conf.framework),
-                            buildDir: "",
-                            wsDir: conf.framework,
-                            frameworkDir: conf.framework
-                        };
-                        log.value("   add framework conf from .extjsrc", conf.framework, 1);
-                        this.logConf(conf);
-                        config.push(fwConf);
-                    }
-                    else {
-                        window.showWarningMessage(`Invalid framework path ${uri.fsPath} - does not exist`);
-                    }
-                }
-
-                // const buildDir = conf.build ? conf.build.dir.replace(/\$\{workspace.dir\}[/\\]{1}/, "") : undefined,
-
-                config.push(conf);
-            }
-        }
-
+        await this.parseExtjsrcFiles(config);
 		//
 		// Frameworkdirectory, as specified in VSCode settings.  If not specified, the app.json
 		// parser will read the first framework directory found when parsing workspace.json.
 		//
-        const fwDirectory = configuration.get<string>("frameworkDirectory");
-		if (fwDirectory)
-		{
-            if (await pathExists(fwDirectory))
-            {
-                const fwConf: IConf = {
-                    classpath: [ fwDirectory ],
-                    name: "Ext",
-                    baseDir: fwDirectory,
-                    baseWsDir: ".",
-                    buildDir: "",
-                    wsDir: workspace.getWorkspaceFolder(Uri.file(fwDirectory))?.uri.fsPath || fwDirectory,
-                    frameworkDir: fwDirectory
-                };
-                log.value("   add framework path from settings", fwDirectory, 1);
-                this.logConf(fwConf);
-                config.push(fwConf);
-            }
-            else {
-                window.showWarningMessage(`Invalid framework path ${fwDirectory} - does not exist`);
-            }
-		}
-
+        await this.parseSettingsFrameworkPath(config);
         //
         // The `app.json` files
         //
-        for (const uri of appDotJsonUris)
-        {
-            await this.parseAppDotJson(uri, config, "   ");
-        }
-
+        await this.parseAppDotJsonFiles(config);
+        //
+        // All done
+        //
         log.methodDone("get extjs configuration", 1, "", true, [["# of configured projects found", config.length]]);
-
         return config;
     }
 
@@ -175,6 +53,16 @@ export class ConfigParser
     }
 
 
+    private async parseAppDotJsonFiles(config: IConf[])
+    {
+        const appDotJsonUris = await workspace.findFiles("**/app.json");
+        for (const uri of appDotJsonUris)
+        {
+            await this.parseAppDotJson(uri, config, "   ");
+        }
+    }
+
+
     private async parseAppDotJson(uri: Uri, config: IConf[], logPad: string)
     {
         log.methodStart("parse app.json", 1, logPad, true, [["path", uri.fsPath]]);
@@ -182,13 +70,7 @@ export class ConfigParser
         const fileSystemPath = uri.fsPath,
               baseDir = path.dirname(uri.fsPath),
               wsDir = (workspace.getWorkspaceFolder(uri) as WorkspaceFolder).uri.fsPath,
-              //
-              // baseWsDir should be the relative path from the workspace folder root to the app.json
-              // file.  The Language Manager will use workspace.findFiles which will require a path
-              // relative to a workspace folder.
-              //
-              baseWsDir = path.dirname(uri.fsPath.replace(wsDir, ""))
-                              .replace(/\\/g, "/").substring(1), // trim leading path sep
+              baseWsDir = path.dirname(path.normalize(path.relative(wsDir, uri.fsPath))),
               confs: IConf[] = [];
 
         let conf: IConf | undefined;
@@ -376,6 +258,69 @@ export class ConfigParser
     }
 
 
+    private async parseExtjsrcFiles(config: IConf[])
+    {
+        const confUris = await workspace.findFiles("**/.extjsrc{.json,}");
+
+        for (const uri of confUris)
+        {
+            const fileSystemPath = uri.fsPath,
+                  confJson = await readFile(fileSystemPath);
+
+            let conf: IConf | undefined;
+            try {
+                conf = json5.parse(confJson);
+            }
+            catch {
+                window.showWarningMessage(`Invalid .extjsrc file ${path} - invalid JSON`);
+                continue;
+            }
+            if (conf && conf.classpath && conf.name)
+            {
+                const baseDir = path.dirname(uri.fsPath),
+                      wsDir = (workspace.getWorkspaceFolder(uri) as WorkspaceFolder).uri.fsPath;
+                if (!(conf.classpath instanceof Array)) {
+                    conf.classpath = [ conf.classpath ];
+                }
+
+                conf.baseDir = baseDir;
+                conf.baseWsDir = path.dirname(path.normalize(path.relative(wsDir, uri.fsPath)));
+                conf.wsDir = wsDir;
+
+                log.value("   add .extjsrc conf", fileSystemPath, 1);
+                this.logConf(conf);
+                config.push(conf);
+
+                if (conf.framework)
+                {
+                    if (await pathExists(conf.framework))
+                    {
+                        const fwConf: IConf = {
+                            classpath: [ path.normalize(path.relative(baseDir, conf.framework)) ],
+                            name: "Ext",
+                            baseDir,
+                            baseWsDir: ".", // path.relative(baseDir, conf.framework),
+                            buildDir: "",
+                            wsDir: conf.framework,
+                            frameworkDir: conf.framework
+                        };
+                        log.value("   add framework conf from .extjsrc", conf.framework, 1);
+                        this.logConf(conf);
+                        config.push(fwConf);
+                    }
+                    else {
+                        window.showWarningMessage(`Invalid framework path ${uri.fsPath} - does not exist`);
+                    }
+                }
+
+                // const buildDir = conf.build ? conf.build.dir.replace(/\$\{workspace.dir\}[/\\]{1}/, "") : undefined,
+
+                config.push(conf);
+            }
+        }
+    }
+
+
     private async parsePackageJson(packageJsonFile: string, baseDir: string, logPad: string, includeDependency?: RegExp)
     {
         let ns: string | undefined;
@@ -399,7 +344,7 @@ export class ConfigParser
                 {
                     for (const dep in packageJson.dependencies)
                     {
-                        if (packageJson.dependencies.hasOwnProperty(dep) && includeDependency.test(dep))
+                        if (includeDependency.test(dep))
                         {
                             const fwPath = path.normalize(path.join(baseDir, "node_modules", dep, "package.json"));
                             classpath.push(...(await this.parsePackageJson(fwPath, baseDir, logPad + "   ", includeDependency)).classpath);
@@ -445,6 +390,68 @@ export class ConfigParser
 
         log.methodDone("parse package.json", 1, logPad);
         return { classpath, ns };
+    }
+
+
+    private async parseSettings(config: IConf[])
+    {
+        const settingsPaths = configuration.get<string[]>("include", []);
+
+        for (const sPath of settingsPaths)
+        {
+            const pathParts = sPath.split("|");
+            if (pathParts.length === 2 && pathParts[1])
+            {   //
+                // Only include paths that exist in the active workspace
+                //
+                const sWsFolder = workspace.getWorkspaceFolder(Uri.file(pathParts[1]));
+                if (sWsFolder && path.isAbsolute(pathParts[1]))
+                {
+                    log.value("   add settings conf", sPath, 1);
+                    const clsPathRel = path.normalize(path.relative(sWsFolder.uri.fsPath, pathParts[1]));
+                    const sConf: IConf = {
+                        classpath: [ clsPathRel ],
+                        name: pathParts[0],
+                        baseDir: path.normalize(pathParts[1]),
+                        baseWsDir: clsPathRel,
+                        buildDir: "",
+                        wsDir: sWsFolder.uri.fsPath
+                    };
+                    this.logConf(sConf);
+                    config.push(sConf);
+                }
+            }
+            else {
+                window.showWarningMessage(`Invalid include path ${sPath} - must be 'namespace|path'`);
+            }
+        }
+    }
+
+
+    private async parseSettingsFrameworkPath(config: IConf[])
+    {
+        const fwDirectory = configuration.get<string>("frameworkDirectory");
+		if (fwDirectory)
+		{
+            if (await pathExists(fwDirectory))
+            {
+                const fwConf: IConf = {
+                    classpath: [ path.normalize(fwDirectory) ],
+                    name: "Ext",
+                    baseDir: fwDirectory,
+                    baseWsDir: ".",
+                    buildDir: "",
+                    wsDir: workspace.getWorkspaceFolder(Uri.file(fwDirectory))?.uri.fsPath || fwDirectory,
+                    frameworkDir: fwDirectory
+                };
+                log.value("   add framework path from settings", fwDirectory, 1);
+                this.logConf(fwConf);
+                config.push(fwConf);
+            }
+            else {
+                window.showWarningMessage(`Invalid framework path ${fwDirectory} - does not exist`);
+            }
+		}
     }
 
 }
