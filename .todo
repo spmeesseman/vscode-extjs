@@ -36,7 +36,7 @@ Completion:
 		}]
 		And place cursor into property value quotes. Can do for store filters, sorters, model fields, etc
 		Configurable template file?
-	☐ Models.  And the special config applied to 'fields'.
+	✔ Models.  And the special config applied to 'fields'. @done(21-09-04 13:18)
 	☐ Model property getter/setter when using associations
 	☐ Component store property string literal completion, like xtype/type
 	☐ Store model property string literal completion, like xtype/type
@@ -48,7 +48,7 @@ Completion:
 		Scan for GEMS.user= in alll files?  Or create static file mapping to types (like eslint globals)
 	☐ Main app inline
 		i.e. GEMS.model, GEMS.store, 'model', 'store' completion does not show any items
-	☐ Highlight a word in a comment, type x, and the xtype completion items appear.
+	✔ Highlight a word in a comment, type x, and the xtype completion items appear. @done(21-09-04 13:19)
 		behind comments no completion should happen
 	☐ Ext.Ajax.* does not work
 		Probably more singletons likes this don't work too
@@ -93,11 +93,11 @@ Diagnostics:
 		Grid filter usees 'type' to reference stores in some cases e.g. User Mgmt grid.js filter: { type: 'yesno' ... }
 	✔ Deeply nested store types still invalidate @done(21-09-01 00:45)
 		e.g. User Mgmt AppUtilities.js line 6978
-	☐ Invalidate inproper static/private call.
+	☐ Invalidate improper static/private call.
 		e.g. private call only on instances, static calls only on full classpath names or alternateClassNames
 	☐ Ensure require should examine requires block up the inheritance tree, and up reference tree
 		each requires should read the requires for that defined component, and up
-	☐ extend: 'Ext.app.ViewController' is invalidated
+	✔ extend: 'Ext.app.ViewController' is invalidated @done(21-09-04 13:20)
 
 JsDoc:
 
@@ -131,7 +131,7 @@ Miscellaneous:
 		Separate again using project name (workspace dir name)
 		currently only [namespace][componentname].  needs to be [project][namespace][componentname]
 	✔ Indexing should disable when opening an ExtJs file but the project has not been indexed (no .extjsrc or app.json) @done(21-08-13 16:52)
-	☐ When workspace opens, should be able to detect files that have been modified outside the env and re-index 
+	✔ When workspace opens, should be able to detect files that have been modified outside the env and re-index @done(21-09-04 00:17)
 	✘ FS cache - check to see if can get away with not persisting object range info @cancelled(21-08-29 07:17)
 		i think this is only used on the active document, which is always re-indexed anyway when opened
 	✔ Namespace can be removed from mapping references throughout code @done(21-08-26 18:12)
