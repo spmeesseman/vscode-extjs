@@ -21,8 +21,10 @@ suite("Config File Tests", () =>
 	const extjsrcPath = getDocPath(".extjsrc.json");
 
 
-	suiteSetup(async () =>
-    {   //
+	suiteSetup(async function ()
+    {
+		this.timeout(45 * 1000);
+		//
 		// Just some additional coverage, as of 3/7/21 this isn't covered but want to leave
 		// in the fn implementation (case with a default value supplied in call to get)
 		//
@@ -283,7 +285,7 @@ suite("Config File Tests", () =>
 		//
 		// Remove packages.dir property
 		//
-		await insertDocContent("", toRange(11, 8, 11, 70));
+		await insertDocContent("", toRange(11, 8, 11, 2000));
 		await workspace.saveAll();
 		await waitForValidation();
 		//
@@ -340,12 +342,28 @@ suite("Config File Tests", () =>
 	});
 
 
-	test("app.json remove classpath", async () =>
+	test("app.json remove modern classpath", async () =>
 	{
 		await closeActiveDocument();
 		await activate(appJsonUri);
 		await copyFile(appJsonPath, path.join(path.dirname(appJsonPath), "_app.json"));
-		await insertDocContent("", toRange(43, 4, 101, 6)); // clear classic/modern properties
+		await insertDocContent("\r\n\r\n\r\n", toRange(75, 8, 78, 10));
+		await workspace.saveAll();
+		await waitForValidation();
+	});
+
+
+	test("app.json remove classic configuration", async () =>
+	{
+		await insertDocContent("", toRange(43, 4, 71, 6));
+		await workspace.saveAll();
+		await waitForValidation();
+	});
+
+
+	test("app.json remove modern configuration", async () =>
+	{
+		await insertDocContent("", toRange(45, 4, 73, 6));
 		await workspace.saveAll();
 		await waitForValidation();
 	});
@@ -361,9 +379,14 @@ suite("Config File Tests", () =>
 
 	test("app.json remove name", async () =>
 	{
-		await insertDocContent("", toRange(1, 4, 1, 26)); // clear classic/modern properties
+		await insertDocContent("", toRange(1, 4, 1, 26)); // remove 'name' property
 		await workspace.saveAll();
 		await waitForValidation();
+	});
+
+
+	test("Restore app.json", async () =>
+	{
 		await closeActiveDocument();
 		extjsLangMgr.setTests(false);
 		await deleteFile(appJsonPath);

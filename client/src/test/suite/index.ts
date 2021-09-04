@@ -26,6 +26,8 @@ import { argv } from "process";
 // specific tests themselves.
 //
 const fileToTest = "*";
+// const fileToTest = "configFile";
+// const fileToTest = "document";
 // const fileToTest = "hover";
 // const fileToTest = "commands";
 // const fileToTest = "completion";
