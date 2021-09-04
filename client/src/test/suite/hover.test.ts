@@ -48,22 +48,22 @@ suite("Hover Tests", () =>
 		// .create()
 		//
 		await waitForValidation();
-		await testHover(docUri, new vscode.Position(71, 4), "VSCodeExtJS");
-		await testHover(docUri, new vscode.Position(71, 17), "VSCodeExtJS.AppUtilities");
+		await testHover(docUri, new vscode.Position(71, 4), "class VSCodeExtJS: VSCodeExtJS");
+		await testHover(docUri, new vscode.Position(71, 17), "singleton AppUtilities: VSCodeExtJS.AppUtilities");
 		// await testHover(docUri, new vscode.Position(74, 17), "VSCodeExtJS.common");
 		await testHover(docUri, new vscode.Position(74, 23), "VSCodeExtJS.common.PhysicianDropdown");
 		//
 		// app.js Line 351
 		// \t\tconst patient = new VSCodeExtJS.common.PatientDropdown();
 		//
-		await testHover(docUri, new vscode.Position(350, 26), "VSCodeExtJS");
-		await testHover(docUri, new vscode.Position(350, 45), "VSCodeExtJS.common.PhysicianDropdown");
+		await testHover(docUri, new vscode.Position(350, 26), "class VSCodeExtJS: VSCodeExtJS");
+		await testHover(docUri, new vscode.Position(350, 45), "class PhysicianDropdown: VSCodeExtJS.common.PhysicianDropdown");
 	});
 
 
 	test("Class methods", async () =>
 	{
-		await testHover(docUri, new vscode.Position(71, 28), "VSCodeExtJS.AppUtilities.alertError");
+		await testHover(docUri, new vscode.Position(71, 28), "function alertError: returns boolean");
 		// await testHover(docUri, new vscode.Position(74, 40), "VSCodeExtJS.common.PhysicianDropdown.create");
 	});
 
@@ -85,7 +85,7 @@ suite("Hover Tests", () =>
 	test("Aliases", async () =>
 	{
 		await testHover(docUri, new vscode.Position(72, 4), "singleton AppUtilities: VSCodeExtJS.AppUtilities");
-		await testHover(docUri, new vscode.Position(72, 12), "VSCodeExtJS.AppUtilities.alertError");
+		await testHover(docUri, new vscode.Position(72, 12), "function alertError: returns boolean");
 	});
 
 
@@ -113,7 +113,7 @@ suite("Hover Tests", () =>
 		// Line 82 - Primitive
 		// const pin = phys.getPinNumber();
 		//
-		await testHover(docUri, new vscode.Position(81, 15), "VSCodeExtJS.common.PhysicianDropdown");
+		await testHover(docUri, new vscode.Position(81, 15), ": VSCodeExtJS.common.PhysicianDropdown");
 		//
 		// Line 82 - Primitive
 		// const pin = phys.getPinNumber();
@@ -123,7 +123,7 @@ suite("Hover Tests", () =>
 		// Line 83
 		// phys.delete();
 		//
-		await testHover(docUri, new vscode.Position(82, 3), "VSCodeExtJS.common.PhysicianDropdown");
+		await testHover(docUri, new vscode.Position(82, 3), ": VSCodeExtJS.common.PhysicianDropdown");
 	});
 
 
@@ -141,11 +141,11 @@ suite("Hover Tests", () =>
 		// Line 95
 		// phys3.load(b);
 		//
-		await testHover(docUri, new vscode.Position(94, 10), "function load: return void");
+		await testHover(docUri, new vscode.Position(94, 10), "function load: returns void");
 	});
 
 
-	test("Methods parameters", async () =>
+	test("Method parameters", async () =>
 	{   //
 		// Line 89 - method parameter 'a'
 		// phys2.save(a);
