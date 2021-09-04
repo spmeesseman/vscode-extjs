@@ -16,7 +16,6 @@ suite("Completion Tests", () =>
 
 	suiteSetup(async function()
     {
-		this.timeout(60000);
 		await activate(docUri);
 		//
 		// Set `quick suggest` setting

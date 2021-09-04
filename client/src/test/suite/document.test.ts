@@ -22,10 +22,6 @@ suite("Document Tests", () =>
 
 	suiteSetup(async function ()
     {
-		this.timeout(60 * 1000);
-		//
-		// Set debounce to minimum for test
-		//
 		const testsApi = await activate(docUri);
 		extJsApi = testsApi.extJsApi;
 		extjsLangMgr = extJsApi.extjsLangMgr;
@@ -125,6 +121,8 @@ suite("Document Tests", () =>
 		await renameFile(newDocPath, newDocPath2);
 		await waitForValidation();
 		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
 		const c = extjsLangMgr.getComponent("VSCodeExtJS.Test", "testFixture", "", 1);
 		assert(c?.fsPath === newDocPath2);
 	});
@@ -144,6 +142,7 @@ suite("Document Tests", () =>
 
 		await vscode.workspace.saveAll();
 		await waitForValidation();
+		await waitForValidation();
 
 		//
 		// Renamed the class name, so VSCodeExtJS.T3322est should  now exist
@@ -159,7 +158,10 @@ suite("Document Tests", () =>
 		insertDocContent("", toRange(0, 0, 6, 3));
 		await vscode.workspace.saveAll();
 		await waitForValidation();
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+		await waitForValidation();
+		await waitForValidation();
+		await waitForValidation();
+		await closeActiveDocument();
 		assert(!extjsLangMgr.getComponent("VSCodeExtJS.T3322est", "testFixture", "", 1));
 	});
 

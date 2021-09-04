@@ -246,6 +246,7 @@ suite("Config File Tests", () =>
 		// Set tests to 'false' to cover branch for user prompt for config file change
 		//
 		extjsLangMgr.setTests(false);
+		//
 		await insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
 		await workspace.saveAll();
 		await waitForValidation();
@@ -260,9 +261,7 @@ suite("Config File Tests", () =>
 
 
 	test("Workspace.json package.dir", async function()
-	{
-		this.timeout(60 * 1000);
-		//
+	{   //
 		// Remove packages.dir property
 		//
 		await insertDocContent("", toRange(11, 8, 11, 70));
@@ -280,7 +279,7 @@ suite("Config File Tests", () =>
 		await insertDocContent(`,
     "packages":
     {
-        "dir": "\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg",
+        "dir": "\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg2,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg3,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg4",
         "extract": "\${workspace.dir}/packages/remote"
     }`, toRange(8, 5, 8, 5));
 		await workspace.saveAll();
@@ -289,9 +288,7 @@ suite("Config File Tests", () =>
 
 
 	test("Workspace.json frameworks.ext", async function()
-	{
-		this.timeout(60 * 1000);
-		//
+	{   //
 		// Remove frameworks.ext property
 		//
 		await insertDocContent("", toRange(3, 8, 3, 22));

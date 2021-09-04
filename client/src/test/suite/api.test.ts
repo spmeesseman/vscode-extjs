@@ -26,7 +26,7 @@ suite("API Tests", () =>
 	});
 
 
-	test("Clear AST", async function()
+	test("Clear AST", async () =>
 	{
 		await commands.executeCommand("vscode-extjs:clearAst", "testFixture");
 		await waitForValidation();
@@ -38,7 +38,7 @@ suite("API Tests", () =>
 
 	test("Indexing", async function()
 	{
-		this.timeout(60 * 1000);
+		this.timeout(45 * 1000);
 		await commands.executeCommand("vscode-extjs:indexFiles");
 		extjsLangMgr.setBusy(false);
 		await commands.executeCommand("vscode-extjs:indexFiles");

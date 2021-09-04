@@ -23,7 +23,6 @@ suite("Command Tests", () =>
 
 	suiteSetup(async function()
     {
-		this.timeout(45 * 1000);
 		const testsApi = await activate(docUri);
 		extJsApi = testsApi.extJsApi;
 		extjsLangMgr = extJsApi.extjsLangMgr;
@@ -52,8 +51,6 @@ suite("Command Tests", () =>
 
 	test("Ignore xtype errors", async function()
 	{
-		this.timeout(45 * 1000);
-
 		const activeDoc = vscode.window.activeTextEditor?.document;
 		//
 		// Edge no params shouldexit gracefully w/ no processing
@@ -122,14 +119,8 @@ suite("Command Tests", () =>
 	});
 
 
-	test("Ignore requires errors", async function()
+	test("Ignore requires errors", async () =>
 	{	//
-		// Increase timeout for this test (default 30s)
-		//
-		if (this && this.timeout) {
-			this.timeout(45 * 1000);
-		}
-		//
 		// Set configuration for this test
 		//
 		await configuration.update("ignoreErrors", []);
@@ -170,7 +161,6 @@ suite("Command Tests", () =>
 
 	test("Dump cache to files", async function()
 	{
-		this.timeout(45 * 1000);
 		await testCommand("dumpCache", "testFixture", "");
 		await closeActiveDocuments();
 		await testCommand("dumpCache", "", 1);
