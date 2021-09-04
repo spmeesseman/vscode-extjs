@@ -1108,9 +1108,10 @@ class ExtjsLanguageManager
                     //
                     // Remove any components that do not exist anymore from the cache
                     //
-                    toRemove.forEach(async c => {
-                        await this.removeFileFromCache(c.fsPath, conf.name, "   ", logLevel + 1);
-                    });
+                    for (const c of toRemove) {
+                        await this.removeFileFromCache(c.fsPath, conf.name, this.components, "   ", logLevel + 1);
+                        await this.removeFileFromCache(c.fsPath, conf.name, components, "   ", logLevel + 1, false);
+                    }
 
                     //
                     // Push all the classpaths for this config into processed dirs array
@@ -1214,9 +1215,9 @@ class ExtjsLanguageManager
                 //
                 if (components.length > 0) {
                     await fsStorage.update(storageKey, JSON.stringify(components));
-                    components.forEach(async c => {
+                    for (const c of components) {
                         await storage.update(getTimestampKey(c.fsPath), (new Date()).toString());
-                    });
+                    }
                     await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
                 }
 
@@ -1341,7 +1342,7 @@ class ExtjsLanguageManager
         {
             const oldComponent = this.components.find(c => c.fsPath === fsPath && c.nameSpace === nameSpace && c.project === project);
             if (oldComponent) {
-                await this.removeFileFromCache(fsPath, nameSpace, "   ", logLevel);
+                await this.removeFileFromCache(fsPath, nameSpace, this.components, "   ", logLevel);
             }
             this.isIndexing = false;
             return;
@@ -1612,7 +1613,7 @@ class ExtjsLanguageManager
     }
 
 
-    private async removeFileFromCache(fsPath: string, nameSpace: string, logPad: string, logLevel: number)
+    private async removeFileFromCache(fsPath: string, nameSpace: string, components: IComponent[], logPad: string, logLevel: number, removeFromFsCache?: boolean)
     {
         const baseDir = this.getAppJsonDir(fsPath),
               storageKey = getStorageKey(baseDir, nameSpace),
@@ -1625,11 +1626,11 @@ class ExtjsLanguageManager
         //
         // Memory cache
         //
-        for (let i = 0; i < this.components.length; i++)
+        for (let i = 0; i < components.length; i++)
         {
-            if (this.components[i].fsPath === fsPath && this.components[i].nameSpace === nameSpace)
+            if (components[i].fsPath === fsPath && components[i].nameSpace === nameSpace)
             {
-                const removed: IComponent = this.components.splice(i, 1)[0];
+                const removed: IComponent = components.splice(i, 1)[0];
                 removedMemory.push(removed);
                 log.value("   removed from memory cache", removedMemory[removedMemory.length - 1].componentClass, logLevel, logPad);
                 log.value("      index", i, logLevel, logPad);
@@ -1641,23 +1642,26 @@ class ExtjsLanguageManager
         //
         // Persisted fs cache
         //
-        for (let i = 0; i < storedComponents.length; i++)
+        if (removeFromFsCache !== false)
         {
-            if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
+            for (let i = 0; i < storedComponents.length; i++)
             {
-                const removed: IComponent = storedComponents.splice(i, 1)[0];
-                removedPersisted.push(removed);
-                log.value("   removed from persisted cache", removed.componentClass, logLevel, logPad);
-                log.value("      index", i, logLevel, logPad);
-                log.value("      path", removed.fsPath, logLevel, logPad);
-                --i;
+                if (storedComponents[i].fsPath === fsPath && storedComponents[i].nameSpace === nameSpace)
+                {
+                    const removed: IComponent = storedComponents.splice(i, 1)[0];
+                    removedPersisted.push(removed);
+                    log.value("   removed from persisted cache", removed.componentClass, logLevel, logPad);
+                    log.value("      index", i, logLevel, logPad);
+                    log.value("      path", removed.fsPath, logLevel, logPad);
+                    --i;
+                }
             }
-        }
 
-        if (removedPersisted.length > 0) {
-            await fsStorage.update(storageKey, JSON.stringify(storedComponents));
-            await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
-            await storage.update(getTimestampKey(fsPath), undefined);
+            if (removedPersisted.length > 0) {
+                await fsStorage.update(storageKey, JSON.stringify(storedComponents));
+                await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
+                await storage.update(getTimestampKey(fsPath), undefined);
+            }
         }
 
         log.methodDone("remove file from cache", logLevel, logPad, false, [
@@ -1769,7 +1773,7 @@ class ExtjsLanguageManager
         {
             this.deletingComponentFile = uri;
             await commands.executeCommand("vscode-extjs:waitReady");
-            await this.removeFileFromCache(uri.fsPath, nameSpace, "   ", 1);
+            await this.removeFileFromCache(uri.fsPath, nameSpace, this.components, "   ", 1);
             const activeTextDocument = window.activeTextEditor?.document;
             await this.validateDocument(activeTextDocument, this.getNamespace(activeTextDocument), "   ", 2);
             this.deletingComponentFile = undefined;
@@ -1818,7 +1822,7 @@ class ExtjsLanguageManager
                 //
                 else if (e.document.lineAt(change.range.start).text.includes("Ext.define"))
                 {
-                    await this.removeFileFromCache(e.document.uri.fsPath, this.getNamespace(e.document), "   ", 1);
+                    await this.removeFileFromCache(e.document.uri.fsPath, this.getNamespace(e.document), this.components, "   ", 1);
                 }
             }
             //
