@@ -6,7 +6,7 @@ import {
 import { extjsLangMgr } from "../extension";
 import * as log from "../common/log";
 import { ComponentType, utils } from "../../../common";
-import { shouldIgnoreType } from "../common/clientUtils";
+import { getPropertyRange } from "../common/clientUtils";
 
 
 class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
@@ -40,7 +40,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
             {
                 const uri = Uri.file(fsPath),
                       { start, end } = extjsLangMgr.getPropertyPosition(property, cmpType, cmpClass, project, false, "   ", 2),
-                      range = extjsLangMgr.getPropertyRange(property, thisClass, start, end, position);
+                      range = getPropertyRange(property, thisClass, start, end, position);
                 log.value("   fsPath", uri.fsPath, 2);
                 //
                 // Provide a `Location` object to VSCode

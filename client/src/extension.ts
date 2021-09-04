@@ -8,7 +8,6 @@ import registerReplaceTextCommand from "./commands/replaceText";
 import registerIgnoreErrorCommand from "./commands/ignoreError";
 import registerWaitReadyCommand from "./commands/waitReady";
 import registerDumpCacheCommand from "./commands/dumpCache";
-import ExtjsLanguageManager, { ILineProperties } from "./languageManager";
 import ServerRequest from "./common/ServerRequest";
 import { views } from "./providers/tasks/views";
 import { ConfigurationChangeEvent, Disposable, ExtensionContext, OutputChannel, Position, tasks, TextDocument, window, workspace } from "vscode";
@@ -19,7 +18,8 @@ import { initFsStorage } from "./common/fsStorage";
 import { TaskTreeDataProvider } from "./providers/tasks/tree";
 import { configuration } from "./common/configuration";
 import { ExtJsTaskProvider } from "./providers/tasks/task";
-import { IComponent, IPosition } from "../../common";
+import { ExtJsApi, IExtjsLanguageManager } from "./common/interface";
+import ExtjsLanguageManager from "./languageManager";
 
 
 let client: LanguageClient;
@@ -28,22 +28,7 @@ let disposables: Disposable[];
 const clients: Map<string, LanguageClient> = new Map();
 
 export const providers: Map<string, ExtJsTaskProvider> = new Map();
-export let extjsLangMgr: ExtjsLanguageManager;
-
-
-export interface IExtjsLanguageManager
-{
-    getComponent: (componentClass: string, project: string, logPad: string, logLevel: number, position?: IPosition, thisCmp?: IComponent) => IComponent | undefined;
-    getLineProperties: (document: TextDocument, position: Position, logPad: string, logLevel: number) => ILineProperties;
-    setBusy: (busy: boolean) => void;
-    setTests: (tests: boolean | { disableFileWatchers: boolean }) => void;
-}
-
-export interface ExtJsApi
-{
-    extjsLangMgr: IExtjsLanguageManager;
-    client: LanguageClient;
-}
+export let extjsLangMgr: IExtjsLanguageManager;
 
 
 export async function activate(context: ExtensionContext): Promise<ExtJsApi>

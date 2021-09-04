@@ -20,23 +20,7 @@ import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
-
-
-export interface ILineProperties
-{
-    property: string;
-    cmpClass?: string;
-    callee?: string;
-    calleeCmp?: IExtJsBase;
-    thisClass?: string;
-    thisCmp?: IComponent;
-    cmpType: ComponentType;
-    text: string;
-    lineText: string;
-    lineTextCut: string;
-    project: string;
-    component: IComponent | IPrimitive | undefined;
-}
+import { ILineProperties, ITestsConfig } from "./common/interface";
 
 
 class ExtjsLanguageManager
@@ -56,7 +40,7 @@ class ExtjsLanguageManager
     private configParser: ConfigParser;
     private components: IComponent[] = [];
     private isTests = false;
-    private testsCfg: { disableFileWatchers: boolean } = { disableFileWatchers: false };
+    private testsCfg: ITestsConfig = {};
     private currentLineCount = 0;
     private addingComponentFile: Uri | undefined;
     private deletingComponentFile: Uri | undefined;
@@ -880,7 +864,7 @@ class ExtjsLanguageManager
         }
 
         log.methodDone("get property position", logLevel, logPad);
-        return { start, end };
+        return { start, end } as Range;
     }
 
 
@@ -910,27 +894,6 @@ class ExtjsLanguageManager
 
         log.methodDone("get property by component class", logLevel, logPad, false, [["property", prop?.name]]);
         return prop;
-    }
-
-
-    getPropertyRange(property: string, thisClass: string | undefined, start: Position, end: Position, currentPosition: Position)
-    {
-        let range = new Range(start, end);
-        //
-        // If the position is within the range of the goto definition, the provided definition will be
-        // ignored by VSCode.  For example, consider the base class `VSCodeExtJS`, and the following
-        // method call in one of it's own methods:
-        //
-        //     VSCodeExtJS.common.UserDropdown.create();
-        //
-        // The range of `VSCodeExtJS` is within class itself, so just reset the range to just be the
-        // start position.  In this case the property 'VSCodeExtJS` is equal to the class 'VSCodeExtJS'.
-        //
-        if (thisClass === property && isPositionInRange(currentPosition, range))
-        {
-            range = new Range(start, start);
-        }
-        return range;
     }
 
 
@@ -1008,7 +971,7 @@ class ExtjsLanguageManager
         ]);
 
         const processedDirs: string[] = [],
-              cfgPct = this.config && this.config.length ? 100 / this.config.length : 100;
+              cfgPct = (this.config && this.config.length ? 100 / this.config.length : 100) - 2;
         let currentCfgIdx = 0,
             components: IComponent[] = [],
             pct = 0;
@@ -1023,11 +986,14 @@ class ExtjsLanguageManager
             await commands.executeCommand("vscode-extjs:clearAst", undefined, true, logPad + "   ");
         }
 
-        const _isIndexed = ((dir: string) =>
+        const _isIndexed = ((dirOrFile: string) =>
         {
-            return !!processedDirs.find((d) => d === dir);
+            return !!processedDirs.find((d) => dirOrFile.includes(d));
         });
 
+        //
+        // Process each IConf parsed by the configParser
+        //
         for (const conf of this.config)
         {
             log.value("   process configuration", conf.name, 1, logPad);
@@ -1043,6 +1009,11 @@ class ExtjsLanguageManager
 
             log.value("   project", projectName, 2, logPad);
 
+            //
+            // Check if `projectName` (the workspace project for this component file) matches
+            // the project specified by the caller.  If `project` wasn't specified, then we're
+            // indexing all workspace projects
+            //
             if (project) {
                 if (project.toLowerCase() !== projectName.toLowerCase()) {
                     log.write("   skip project", 1, logPad);
@@ -1050,175 +1021,166 @@ class ExtjsLanguageManager
                 }
             }
 
-            progress.report({
-                increment: 0,
-                message: `: Indexing ${projectName} ${pct}%`
-            });
-            await utils.timeout(1); // let progress update
+            //
+            // Update progress percent
+            //
+            await this.updateIndexingProgress(progress, "Indexing", projectName, pct, 0, true);
 
-            const storageKey = getStorageKey(conf.baseDir, conf.name),
-                  storedComponents = !forceProjectAstIndexing ? await fsStorage.get(storageKey) : undefined;
             //
             // Get components for this directory from local storage if exists
             //
+            const storageKey = getStorageKey(conf.baseDir, conf.name),
+                  storedComponents = !forceProjectAstIndexing ? await fsStorage.get(storageKey) : undefined;
+            //
+            // Process components from fs cache or re-index
+            //
             if (storedComponents && needsReIndex === false)
             {
-                if (!_isIndexed(conf.baseDir))
-                {
-                    const toRemove: IComponent[] = [];
-                    components = JSON.parse(storedComponents);
-                    increment = Math.round(1 / components.length * cfgPct);
+                const toRemove: IComponent[] = [];
+                components = JSON.parse(storedComponents);
+                increment = Math.round(1 / components.length * cfgPct);
+                //
+                // Request load components from server
+                //
+                for (const c of components.filter(c => !_isIndexed(c.fsPath)))
+                {   //
+                    // Ensure the component path still exists, it may have been deleted while the
+                    // language server wasn't running, if this is a startup
                     //
-                    // Request load components from server
+                    if (!await pathExists(c.fsPath)) {
+                        toRemove.push(c);
+                        continue;
+                    }
                     //
-                    for (const c of components)
+                    // Map directory name to namespace in memory map
+                    //
+                    this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
+                    const tsKey = getTimestampKey(c.fsPath),
+                        lastModified = await getDateModified(c.fsPath);
+                    //
+                    // If the file's been modified since the last time it's been indexed, then re-index
+                    // and update the in-memory component array
+                    //
+                    if (lastModified && lastModified > new Date(storage.get<string>(tsKey, (new Date()).toString())))
                     {
-                        if (!await pathExists(c.fsPath)) {
-                            toRemove.push(c);
-                            continue;
-                        }
-                        this.dirNamespaceMap.set(path.dirname(c.fsPath), conf.name);
-                        const tsKey = getTimestampKey(c.fsPath),
-                            lastModified = await getDateModified(c.fsPath);
-                        //
-                        // If the file's been modified since the last time it's been indexed, then re-index
-                        // and update the in-memory component array
-                        //
-                        if (lastModified && lastModified > new Date(storage.get<string>(tsKey, (new Date()).toString())))
-                        {
-                            log.write(`   Index modified file ${c.fsPath}`, logLevel + 1, logPad);
-                            const cmps = await this.indexFile(c.fsPath, c.nameSpace, false, Uri.file(c.fsPath), false, "   ", logLevel + 2);
-                            await this.processComponents(cmps, projectName, false, "   ", logLevel + 2);
-                            await storage.update(tsKey, (new Date()).toString());
-                        }
-                        pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
-                        progress.report({
-                            increment,
-                            message: `: Indexing ${projectName} ${pct}%`
-                        });
+                        log.write(`   Index modified file ${c.fsPath}`, logLevel + 1, logPad);
+                        const cmps = await this.indexFile(c.fsPath, c.nameSpace, false, Uri.file(c.fsPath), false, "   ", logLevel + 2);
+                        await this.processComponents(cmps, projectName, false, "   ", logLevel + 2);
+                        await storage.update(tsKey, (new Date()).toString());
                     }
 
-                    //
-                    // Remove any components that do not exist anymore from the cache
-                    //
-                    for (const c of toRemove) {
-                        await this.removeFileFromCache(c.fsPath, conf.name, this.components, "   ", logLevel + 1);
-                        await this.removeFileFromCache(c.fsPath, conf.name, components, "   ", logLevel + 1, false);
-                    }
-
-                    //
-                    // Push all the classpaths for this config into processed dirs array
-                    //
-                    for (const dir of conf.classpath) {
-                        processedDirs.push(dir);
-                    }
-
-                    ++currentCfgIdx;
-                    const inc = pct = Math.round(cfgPct * currentCfgIdx),
-                          nextInc = inc - 1,
-                          nextInc2 = inc - 2;
-
-                    progress.report({
-                        increment,
-                        message: `: Caching ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
-                    });
-
-                    await this.serverRequest.loadExtJsComponent(JSON.stringify(components), projectName);
-
-                    progress.report({
-                        increment,
-                        message: `: Caching ${projectName} ${Math.round(nextInc > pct ? nextInc : pct)}%`
-                    });
-
-                    await this.processComponents(components, projectName, false, "   ", logLevel + 1);
-
-                    progress.report({
-                        increment,
-                        message: `: Indexing ${projectName} ${inc}%`
-                    });
-                    await utils.timeout(1); // let progress update
+                    pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
+                    await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment);
                 }
+                //
+                // Remove any components that do not exist anymore from the cache
+                //
+                for (const c of toRemove) {
+                    await this.removeFileFromCache(c.fsPath, conf.name, this.components, "   ", logLevel + 1);
+                    await this.removeFileFromCache(c.fsPath, conf.name, components, "   ", logLevel + 1, false);
+                }
+                //
+                // Push all the classpaths for this config into processed dirs array
+                //
+                for (const dir of conf.classpath) {
+                    processedDirs.push(dir);
+                }
+                //
+                // Udpdate progress percent
+                //
+                ++currentCfgIdx;
+                pct = Math.round(cfgPct * currentCfgIdx);
+                await this.updateIndexingProgress(progress, "Caching", projectName, pct, increment);
+                //
+                // Update server
+                //
+                await this.serverRequest.loadExtJsComponent(JSON.stringify(components), projectName);
+                //
+                // Udpdate progress percent
+                //
+                await this.updateIndexingProgress(progress, "Caching", projectName, ++pct, increment);
+                //
+                // Process component, map namespace, cache to memory
+                //
+                await this.processComponents(components, projectName, false, "   ", logLevel + 1);
+                //
+                // Udpdate progress percent
+                //
+                await this.updateIndexingProgress(progress, "Indexing", projectName, ++pct, increment, true);
             }
             else // index the file via the language server
             {
                 let currentDir = 0,
                     currentFile = 0;
                     components = []; // clear component defs from last loop iteration
-
-                for (const dir of conf.classpath)
+                //
+                // Count files to process for the progress status calculation
+                //
+                for (const dir of conf.classpath.filter(c => !_isIndexed(c)))
                 {
-                    if (!_isIndexed(dir))
-                    {
-                        const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
-                        numFiles += uris.length;
-                    }
+                    const uris = await workspace.findFiles(`${path.join(conf.baseWsDir, dir)}/**/*.js`);
+                    numFiles += uris.length;
                 }
-
+                //
+                // Set progress increment
+                //
                 increment = Math.round(1 / numFiles * cfgPct);
-
                 log.blank();
                 log.write(`   Indexing ${numFiles} files in ${conf.classpath.length} classpath directories`, logLevel, logPad);
-
-                for (let dir of conf.classpath)
+                //
+                // Scan each classpath for extjs files and index
+                //
+                for (let dir of conf.classpath.filter(c => !_isIndexed(c)))
                 {
-                    if (!_isIndexed(dir))
+                    log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, logLevel + 1, logPad);
+                    log.write(`       ${dir}`, logLevel + 1, logPad);
+
+                    dir = !path.isAbsolute(dir) ? path.join(conf.baseWsDir, dir) : dir;
+                    const uris = await workspace.findFiles(`${dir}/**/*.js`, "**/{test,tests,spec}/**");
+                    for (const uri of uris)
                     {
-                        log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, logLevel + 1, logPad);
-                        log.write(`       ${dir}`, logLevel + 1, logPad);
-
-                        dir = !path.isAbsolute(dir) ? path.join(conf.baseWsDir, dir) : dir;
-                        const uris = await workspace.findFiles(`${dir}/**/*.js`, "**/{test,tests,spec}/**");
-                        for (const uri of uris)
-                        {
-                            log.write(`   Index file ${++currentFile} of ${numFiles}`, logLevel + 2, logPad);
-                            //
-                            // Index this file and process its components
-                            //
-                            const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, false, logPad + "   ", logLevel);
-                            if (cmps) {
-                                components.push(...cmps);
-                            }
-                            //
-                            // Report progress
-                            //
-                            pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
-                            progress.report({
-                                increment,
-                                message: `: Indexing ${projectName} ${pct}%`
-                            });
-                            // statusBarSpace.text = getStatusString(pct);
+                        log.write(`   Index file ${++currentFile} of ${numFiles}`, logLevel + 2, logPad);
+                        //
+                        // Index this file and process its components
+                        //
+                        const cmps = await this.indexFile(uri.fsPath, conf.name, false, uri, false, logPad + "   ", logLevel);
+                        if (cmps) {
+                            components.push(...cmps);
                         }
-                        processedDirs.push(dir);
-                        this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
+                        //
+                        // Report progress
+                        //
+                        pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
+                        await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment);
                     }
+                    processedDirs.push(dir);
+                    this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
                 }
-
+                //
+                // Udpdate progress percent
+                //
+                let inc = 2;
                 ++currentCfgIdx;
-                const inc = pct = Math.round(currentCfgIdx * cfgPct),
-                      nextInc = inc - 1,
-                      nextInc2 = inc - 2;
-
-                progress.report({
-                    increment,
-                    message: `: Caching ${projectName} ${Math.round(nextInc2 > pct ? nextInc2 : (nextInc > pct ? nextInc : pct))}%`
-                });
-
+                pct = Math.round(currentCfgIdx * cfgPct);
+                await this.updateIndexingProgress(progress, "Caching", projectName, pct, increment);
                 //
                 // Update entire component tree in fs cache
                 //
-                if (components.length > 0) {
+                if (components.length > 0)
+                {
+                    --inc;
                     await fsStorage.update(storageKey, JSON.stringify(components));
+                    await this.updateIndexingProgress(progress, "Caching", projectName, ++pct, increment);
                     for (const c of components) {
                         await storage.update(getTimestampKey(c.fsPath), (new Date()).toString());
                     }
                     await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
                 }
-
-                progress.report({
-                    increment,
-                    message: `: Indexing ${projectName} ${inc}%`
-                });
-                await utils.timeout(1); // let progress update
+                //
+                // Udpdate progress percent
+                //
+                pct += inc;
+                await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment, true);
             }
 
             log.value("   configuration processed successfully", conf.name, 1, logPad);
@@ -1681,11 +1643,23 @@ class ExtjsLanguageManager
      * @private
      * @since 0.3.0
      */
-    setTests(tests: boolean | { disableFileWatchers: boolean })
+    setTests(tests: boolean | ITestsConfig)
     {
         this.isTests = !!tests;
-        this.testsCfg = !(typeof tests === "boolean") ? tests : { disableFileWatchers: false };
+        this.testsCfg = !(typeof tests === "boolean") ? tests : {};
     }
+
+
+    private async updateIndexingProgress(prog: Progress<any>, task: string, proj: string, pct: number, inc: number, doAwait?: boolean)
+    {
+        prog.report({
+            increment: inc,
+            message: `: ${task} ${proj} ${pct}%`
+        });
+        if (doAwait === true) {
+            await utils.timeout(1); // let progress update
+        }
+    };
 
 
     async validateDocument(textDocument: TextDocument | undefined, nameSpace: string, logPad: string, logLevel: number, edits?: IEdit[])
@@ -1721,13 +1695,16 @@ class ExtjsLanguageManager
 
     private async watcherConfigChange(e: Uri)
     {
-        const project = getWorkspaceProjectName(e.fsPath),
-              msg = `${project} config file modified, re-index all files?`,
-              action = !this.isTests ? await window.showInformationMessage(msg, "Yes", "No") : "Yes";
-        if (action === "Yes") {
-            await commands.executeCommand("vscode-extjs:clearAst", project);
-            await this.initializeInternal();
-        }
+        // if (this.testsCfg.disableConfigurationWatchers !== true)
+        // {
+            const project = getWorkspaceProjectName(e.fsPath),
+                msg = `${project} config file modified, re-index all files?`,
+                action = !this.isTests ? await window.showInformationMessage(msg, "Yes", "No") : "Yes";
+            if (action === "Yes") {
+                await commands.executeCommand("vscode-extjs:clearAst", project);
+                await this.initializeInternal();
+            }
+        // }
     }
 
 

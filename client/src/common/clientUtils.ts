@@ -168,6 +168,27 @@ export function getPortableDataPath()
 }
 
 
+export function getPropertyRange(property: string, thisClass: string | undefined, start: Position, end: Position, currentPosition: Position)
+{
+    let range = new Range(start, end);
+    //
+    // If the position is within the range of the goto definition, the provided definition will be
+    // ignored by VSCode.  For example, consider the base class `VSCodeExtJS`, and the following
+    // method call in one of it's own methods:
+    //
+    //     VSCodeExtJS.common.UserDropdown.create();
+    //
+    // The range of `VSCodeExtJS` is within class itself, so just reset the range to just be the
+    // start position.  In this case the property 'VSCodeExtJS` is equal to the class 'VSCodeExtJS'.
+    //
+    if (thisClass === property && isPositionInRange(currentPosition, range))
+    {
+        range = new Range(start, start);
+    }
+    return range;
+}
+
+
 export function getUserDataPath(platform?: string)
 {
     let userPath: string | undefined = "";

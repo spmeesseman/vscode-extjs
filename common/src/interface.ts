@@ -106,6 +106,10 @@ export interface IConf
     /**
      * The base directory of the configuration file, relative to the worksace
      * directory.  Relative path.
+     * The relative path from the workspace folder root to the app.json file.
+     * The Language Manager will use workspace.findFiles which will require a path
+     * relative to a workspace folder.
+     *
      */
     baseWsDir: string;
     bootstrap?: any;
