@@ -401,6 +401,14 @@ suite("Config File Tests", () =>
 	});
 
 
+	test("app.json add base array classpath", async () =>
+	{
+		await insertDocContent("\"classpath\": [\"app\"],", toRange(43, 4, 43, 42));
+		await workspace.saveAll();
+		await waitForValidation();
+	});
+
+
 	test("app.json remove name", async () =>
 	{
 		await insertDocContent("", toRange(1, 4, 1, 26)); // remove 'name' property

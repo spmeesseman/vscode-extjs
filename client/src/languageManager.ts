@@ -769,7 +769,7 @@ class ExtjsLanguageManager
         let method: IMethod | undefined,
             methods: IMethod[] | undefined;
 
-        const component = this.getComponent(componentClass, project, logPad + "   ", logLevel);
+        let component = this.getComponent(componentClass, project, logPad + "   ", logLevel);
         if (component) {
             const privateMethods = component.privates.filter((c) => extjs.isMethod(c)) as IMethod[];
             methods = !isStatic ? [...component.methods, ...privateMethods ] :
@@ -783,6 +783,12 @@ class ExtjsLanguageManager
             log.value("      end (line/col)", m.end.line + ", " + m.end.column, logLevel + 2, logPad);
             method = m;
         });
+
+        while (!method && component && component.extend)
+        {
+            method = this.getMethod(component.extend, property, project, isStatic, logPad + "   ", logLevel);
+            component = this.getComponent(component.extend, project, logPad + "   ", logLevel + 1);
+        }
 
         log.methodDone("get method by property", logLevel, logPad, false, [["method", method?.name]]);
         return method;
@@ -1038,7 +1044,7 @@ class ExtjsLanguageManager
             {
                 const toRemove: IComponent[] = [];
                 components = JSON.parse(storedComponents);
-                increment = Math.round(1 / components.length * cfgPct);
+                increment = Math.round(1 / components.length * (cfgPct + 2));
                 //
                 // Request load components from server
                 //
@@ -1124,7 +1130,7 @@ class ExtjsLanguageManager
                 //
                 // Set progress increment
                 //
-                increment = Math.round(1 / numFiles * cfgPct);
+                increment = Math.round(1 / numFiles * (cfgPct + 2));
                 log.blank();
                 log.write(`   Indexing ${numFiles} files in ${conf.classpath.length} classpath directories`, logLevel, logPad);
                 //
@@ -1186,6 +1192,11 @@ class ExtjsLanguageManager
             log.value("   configuration processed successfully", conf.name, 1, logPad);
             log.value("      percent complete", pct, 1, logPad);
         }
+
+        //
+        // Udpdate progress percent since we might be at 98 or 99, we're all done 100%
+        //
+        await this.updateIndexingProgress(progress, "Indexing", "complete", 100, 0, true);
 
         //
         // The 'forceReIndexOnUpdateFlag' is set before a release in the case where a re-index

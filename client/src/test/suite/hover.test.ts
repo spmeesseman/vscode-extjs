@@ -68,14 +68,14 @@ suite("Hover Tests", () =>
 	});
 
 
-	test("Privates", async () =>
+	test("Private methods and properties", async () =>
 	{
 		await testHover(docUri, new vscode.Position(94, 28), "function stopAllPriv: returns string");
 		await testHover(docUri, new vscode.Position(228, 44)); // <- improper non-static, returns nothing
 	});
 
 
-	test("Statics", async () =>
+	test("Static methods and properties", async () =>
 	{
 		await testHover(docUri, new vscode.Position(192, 44), "function stopAll: returns boolean");
 		await testHover(docUri, new vscode.Position(231, 44)); // undefined static method returns nothing
@@ -124,6 +124,39 @@ suite("Hover Tests", () =>
 		// phys.delete();
 		//
 		await testHover(docUri, new vscode.Position(82, 3), "VSCodeExtJS.common.PhysicianDropdown");
+	});
+
+
+	test("Methods with returns", async () =>
+	{   //
+		// Line 82
+		// const pin = phys.getPinNumber();
+		//
+		await testHover(docUri, new vscode.Position(81, 24), "function getPinNumber: returns string");
+	});
+
+
+	test("Inherited instance methods", async () =>
+	{   //
+		// Line 95
+		// phys3.load(b);
+		//
+		await testHover(docUri, new vscode.Position(94, 10), "function load: return void");
+	});
+
+
+	test("Methods parameters", async () =>
+	{   //
+		// Line 89 - method parameter 'a'
+		// phys2.save(a);
+		//
+		await testHover(docUri, new vscode.Position(88, 13), "Test a");
+		await testHover(docUri, new vscode.Position(94, 13), "Test b");
+		//
+		// Line 304 - method parameter 'displayField'
+		// text: displayField
+		// TODO - Not working
+		// await testHover(docUri, new vscode.Position(303, 13), "");
 	});
 
 
