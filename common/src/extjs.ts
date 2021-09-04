@@ -1,6 +1,6 @@
 
 import * as utils from "./utils";
-import { IAlias, IAlternateClassName, IComponent, IConfig, ILogger, IMethod, IPosition, IProperty, IRange, IRequire, IType, IWidget, IXtype } from "./interface";
+import { IAlias, IAlternateClassName, IComponent, IConfig, ILogger, IMethod, IParameter, IPosition, IProperty, IRange, IRequire, IType, IWidget, IXtype } from "./interface";
 
 
 export function getComponent(componentClass: string | undefined, project: string, components: IComponent[], position?: IPosition, thisCmp?: IComponent, logger?: ILogger, logPad = "", logLevel = 1): IComponent | undefined
@@ -193,6 +193,12 @@ export function isAlternateClassName(component: any): component is IAlternateCla
 export function isMethod(component: any): component is IMethod
 {
     return !!component && "variables" in component;
+}
+
+
+export function isParameter(component: any): component is IParameter
+{
+    return !!component && "methodName" in component && "type" in component;
 }
 
 

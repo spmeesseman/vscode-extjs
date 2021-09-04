@@ -52,12 +52,18 @@ class ExtJsHoverProvider implements HoverProvider
                       method = extjsLangMgr.getMethod(cmpClass, property, project, isStatic, "   ", 2);
                 log.value("   provide class hover info", property, 2);
                 if (method) { // it could happen, if this fires immediately following en edit
-                    let returns = "";
-                    if (method.returns) {
-                        const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase();
-                        returns = method.returns ? `: returns ${returnsText}` : "";
+                    if (!method.doc || !method.doc.title || method.doc.pType !== "method")
+                    {
+                        let returns = "";
+                        if (method.returns) {
+                            const returnsText = method.returns?.replace(/\{/g, "").replace(/\} ?/g, " - ").toLowerCase();
+                            returns = method.returns ? `: returns ${returnsText}` : "";
+                        }
+                        hover = this.getHover(`function ${text}${returns}`, method.doc);
                     }
-                    hover = this.getHover(`function ${text}${returns}`, method.doc);
+                    else {
+                        hover = this.getHover(method.doc.title, method.doc);
+                    }
                 }
             }
             else if (cmpType === ComponentType.Property)
@@ -80,7 +86,7 @@ class ExtJsHoverProvider implements HoverProvider
                         }
                         hover = this.getHover(`${varType} ${text}: ${cmp.componentClass}`, cmp.doc);
                     }
-                    else if (thisClass && callee && isPrimitive(cmp))
+                    else if (callee && isPrimitive(cmp))
                     {   //
                         // A primitive may have it's component class set to an instance object, e.g.:
                         //

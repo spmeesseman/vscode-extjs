@@ -8,9 +8,8 @@ import * as log from "./log";
 enum MarkdownChars
 {
     NewLine = "  \n",
-    TypeWrapBegin = "[",
-    TypeWrapEnd = "]",
     Bold = "**",
+    Code = "    ",
     Italic = "*",
     BoldItalicStart = "_**",
     BoldItalicEnd = "**_",
@@ -75,9 +74,10 @@ class CommentParser
 				case "@class":
 					mode = MarkdownStringMode.Class;
 					break;
-				// case "{@link":
-				//     mode = MarkdownStringMode.Link;
-				//     break;
+				case "@link":
+                case "{@link":
+				    mode = MarkdownStringMode.Link;
+				    break;
 				case "@property":
 					mode = MarkdownStringMode.Property;
 					break;
@@ -139,22 +139,25 @@ class CommentParser
         let classLine = line.trim();
 
         if (classLine.match(/@[\w]+ /))
-        {
-            const lineParts = line.trim().split(" ");
-            classLine = this.italic(lineParts[0], false, true);
-            if (lineParts.length > 1)
-            {
-                lineParts.shift();
-                classLine += this.bold(lineParts[0], true, true);
-                if (lineParts.length > 1)
-                {
-                    lineParts.shift();
-                    classLine += MarkdownChars.NewLine + lineParts.join(" ");
-                }
-            }
+        {   //
+            // v0.10 - replaced w/ .title property
+            //
+            // const lineParts = line.trim().split(" ");
+            // classLine = this.italic(lineParts[0], false, true);
+            // if (lineParts.length > 1)
+            // {
+            //     lineParts.shift();
+            //     classLine += this.bold(lineParts[0], true, true);
+            //     if (lineParts.length > 1)
+            //     {
+            //         lineParts.shift();
+            //         classLine += MarkdownChars.NewLine + lineParts.join(" ");
+            //     }
+            // }
         }
-
-        this.pushMarkdown(classLine, jsdoc);
+        else {
+            this.pushMarkdown(classLine, jsdoc);
+        }
 
         log.value("      insert class line", classLine, 5);
     }
@@ -162,49 +165,84 @@ class CommentParser
 
     private handleDeprecatedLine(line: string, jsdoc: IJsDoc)
     {
-        let textLine = line.trim();
-        textLine = this.italic(textLine, false, true);
+        let rtnLine: string,
+            match;
+
+        match = line.match(/@deprecated ?(.+)*/);
+        if (match)
+        {
+            const [ _, comment ] = match;
+            rtnLine = `${this.bold("deprecated")} ${comment}`;
+        }
+        else {
+            rtnLine = this.bold("deprecated");
+        }
 
         jsdoc.deprecated = true;
-        this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
 
-        log.value("      insert deprecated line", textLine, 5);
+        this.pushMarkdown(`${MarkdownChars.NewLine}${rtnLine}`, jsdoc);
+
+        log.value("      insert deprecated line", line.trim(), 5);
+    }
+
+
+    private handleLinkLine(line: string, jsdoc: IJsDoc)
+    {
+        let textLine = line.trim();
+        if (textLine.match(/\{\s*@link [\w]+\s*\}/))
+        {
+            textLine = textLine.replace(/\{\s*@link [\w]+\s*\}/, (matched) => {
+                return this.boldItalic(matched);
+            });
+        }
+        log.value("      insert text line", textLine, 5);
+        this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
     }
 
 
     private handlePrivateLine(line: string, jsdoc: IJsDoc)
     {
         let textLine = line.trim();
-        textLine = this.italic(textLine, false, true);
-
+        // textLine = this.italic(textLine, false, true);
         jsdoc.private = true;
-        this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
-
+        this.pushMarkdown(`${MarkdownChars.NewLine}${this.bold("private")}`, jsdoc);
         log.value("      insert private line", textLine, 5);
     }
 
 
     private handleObjectLine(line: string, property: string, jsdoc: IJsDoc)
     {
-        let cfgLine = "";
+        let cfgLine = line.trim();
 
-        if (line.startsWith("@")) {
-            const lineParts = line.split(property);
-            cfgLine = lineParts[0] + this.boldItalic(property) + " " + lineParts[1];
+        if (line.startsWith("@"))
+        {   //
+            // v0.10 - replaced w/ .title property
+            //
+            // const lineParts = line.split(property);
+            // cfgLine = lineParts[0] + this.boldItalic(property) + " " + lineParts[1];
         }
         else {
-            cfgLine = line.trim();
+            this.pushMarkdown(`${MarkdownChars.NewLine}${cfgLine}`, jsdoc);
         }
-
-        this.pushMarkdown(MarkdownChars.NewLine + cfgLine, jsdoc);
 
         log.value("      insert object line", cfgLine, 5);
     }
 
 
-    private handleParamLine(line: string, trailers: string[], useCode: boolean, doc: string, jsdoc: IJsDoc)
+    /**
+     * 'Parameter' mode is turn on when an `@param` tag is encountered.  It remains turned on
+     * until another @ tag is encountered, treating each line as documentation for the param
+     *
+     * @param line The current line text
+     * @param trailers Array of lines that will be inserted after all lines in the parameter
+     * documentation have been processed
+     * @param useCode Indicates its the first line in the doc
+     * @param doc The parsed jsdoc from the ast
+     * @param jsdoc The IJsDoc instance
+     */
+    private handleParamLine(line: string, trailers: string[], doc: string, jsdoc: IJsDoc)
     {
-        if (!line.startsWith("@"))
+        if (!line.startsWith("@")) // append previous parameter documentation line
         {
             log.value("      insert param text line", line, 5);
             this.pushMarkdown(line, jsdoc);
@@ -307,36 +345,29 @@ class CommentParser
             title: `${lineType} ${lineProperty}${lineValue ? ": defaults to " + lineValue : ""}`
         });
 
-        let paramLine: string;
+        let paramLine = `${MarkdownChars.Code}parameter ${lineProperty}: ${lineType}`;
+        if (lineTrail) {
+            // paramLine += `${MarkdownChars.NewLine}${MarkdownChars.LongDash} ${lineTrail}`;
+            paramLine += `${MarkdownChars.NewLine}${lineTrail}`;
+        }
 
-        if (!useCode)
-        {
-            paramLine = this.italic("@param", false, true) + this.boldItalic(lineProperty, false, true) +
-                        this.italic(MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd);
-            if (lineTrail) {
-                paramLine += (" " + MarkdownChars.LongDash + lineTrail);
-            }
-            if (!jsdoc.body.endsWith(MarkdownChars.NewLine))
-            {
-                this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
-            }
-            this.pushMarkdown(paramLine, jsdoc);
+        //
+        // Put some space between each parameter description
+        //
+        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
         }
-        else {
-            paramLine = lineProperty + " " + MarkdownChars.TypeWrapBegin + lineType + MarkdownChars.TypeWrapEnd;
-            if (lineTrail) {
-                paramLine += " - " + lineTrail;
-            }
-            // this.pushMarkdown(`    ${paramLine}`, jsdoc);
-            this.pushMarkdown(paramLine, jsdoc);
+        if (!jsdoc.body.endsWith(`${MarkdownChars.NewLine}${MarkdownChars.NewLine}${MarkdownChars.NewLine}`)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
         }
+    
+        this.pushMarkdown(paramLine, jsdoc);
 
         log.value("      param line", paramLine, 5);
 
         if (lineValue)
         {
-            trailers.push(MarkdownChars.NewLine + "- " + this.italic("Defaults to:") + " `" +
-                        lineValue.replace(/`/g, "") + "`" +  MarkdownChars.NewLine +  MarkdownChars.NewLine);
+            trailers.push(`${MarkdownChars.NewLine} ${this.italic("Defaults to:")} \`${lineValue.replace(/`/g, "")}\`${MarkdownChars.NewLine}${MarkdownChars.NewLine}`);
         }
         else {
             this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
@@ -346,27 +377,22 @@ class CommentParser
 
     private handleReturnsLine(line: string, jsdoc: IJsDoc)
     {
-        const rtnLineParts = line.trim().split(" ");
-        let rtnLine = MarkdownChars.Italic + rtnLineParts[0] + MarkdownChars.Italic + " ";
+        let rtnLine: string,
+            match;
 
-        rtnLineParts.shift();
-        rtnLine += rtnLineParts.join(" ");
-
-        let match;
-        match = rtnLine.match(/\*@return[s]{0,1}\* \{([A-Za-z]+)\}/);
-        if (match) {
-            const [ _, returns ] = match;
+        match = line.match(/@return[s]{0,1} +\{([A-Za-z*.]+)\} +(.+)*/);
+        if (match)
+        {
+            const [ _, returns, comment ] = match;
             jsdoc.returns = returns.toLowerCase();
+            rtnLine = `${MarkdownChars.Code}returns: ${jsdoc.returns}${MarkdownChars.NewLine}${comment}`;
+        }
+        else {
+            jsdoc.returns = "void";
+            rtnLine = `${MarkdownChars.Code}returns: ${jsdoc.returns}`;
         }
 
-        rtnLine = rtnLine.replace(/\*@return[s]{0,1}\* \{[A-Za-z]+\}/, (matched) => {
-            return matched.replace(/\{[A-Za-z]+\}/, (matched2) => {
-                return this.italic(matched2.replace("{", MarkdownChars.TypeWrapBegin)
-                                    .replace("}", MarkdownChars.TypeWrapEnd));
-            });
-        });
-
-        this.pushMarkdown(MarkdownChars.NewLine + rtnLine, jsdoc);
+        this.pushMarkdown(`${MarkdownChars.NewLine}${rtnLine}`, jsdoc);
 
         log.value("      insert returns line", rtnLine, 5);
     }
@@ -374,31 +400,32 @@ class CommentParser
 
     private handleSinceLine(line: string, jsdoc: IJsDoc)
     {
-        let textLine = line.trim();
-        const lineParts = line.trim().split(" ");
-        textLine = this.italic(lineParts[0], false, true);
-        if (lineParts.length > 1)
+        let rtnLine: string;
+
+        let match;
+        match = line.match(/@since +[vV]*(?:ersion)* *([0-9.-]+)*/);
+        if (match)
         {
-            lineParts.shift();
-            if (!lineParts[0].startsWith("v") && !lineParts[0].startsWith("V")) {
-                lineParts[0] = "v" + lineParts[0];
-            }
-            textLine += lineParts.join(" ");
-
-            jsdoc.since = lineParts[0];
-            this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
-
-            log.value("      insert since line", textLine, 5);
+            const [ _, version ] = match;
+            jsdoc.since = `v${version}`;
+            rtnLine = `${MarkdownChars.NewLine}${MarkdownChars.Italic}since version ${version}${MarkdownChars.Italic}`;
         }
+        else {
+            jsdoc.since = "?";
+            rtnLine = `${MarkdownChars.NewLine}${MarkdownChars.Italic}since version ?${MarkdownChars.Italic}`;
+        }
+
+        this.pushMarkdown(`${MarkdownChars.NewLine}${rtnLine}`, jsdoc);
+        log.value("      insert since line", rtnLine, 5);
     }
 
 
     private handleTagLine(line: string, jsdoc: IJsDoc)
     {
-        let textLine = line.trim();
-        textLine = this.italic(textLine, false, true);
-        this.pushMarkdown(textLine, jsdoc);
-        log.value("      insert tag line", textLine, 5);
+        // let textLine = line.trim().replace("@", "");
+        // textLine = this.italic(textLine, false, true);
+        // this.pushMarkdown(textLine, jsdoc);
+        // log.value("      insert tag line", textLine, 5);
     }
 
 
@@ -414,12 +441,6 @@ class CommentParser
                 textLine += lineParts.join(" ");
             }
         }
-        if (textLine.match(/\{\s*@link [\w]+\s*\}/))
-        {
-            textLine = textLine.replace(/\{\s*@link [\w]+\s*\}/, (matched) => {
-                return this.boldItalic(matched);
-        });
-        }
         log.value("      insert text line", textLine, 5);
         this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
     }
@@ -432,13 +453,61 @@ class CommentParser
     }
 
 
+    private populateTitle(property: string, componentClass: string, jsdoc:IJsDoc)
+    {   
+        //
+        // Type title - mocks js ls
+        //
+
+        let privateText = "";
+        if (jsdoc.private) {
+            privateText = `${MarkdownChars.NewLine}private ${jsdoc.pType}`;
+        }
+        let staticText = "";
+        if (jsdoc.static) {
+            staticText = `${MarkdownChars.NewLine}static ${jsdoc.pType}`;
+        }
+
+        if (jsdoc.pType === "method")
+        {
+            let params = jsdoc.params.map(p => p.name).join(", ") || "none";
+            jsdoc.title = `function ${property}: returns ${jsdoc.returns}${privateText}${staticText}${MarkdownChars.NewLine}parameters:  ${params}`;
+        }
+        else if (jsdoc.pType === "property")
+        {
+            jsdoc.title = `property ${property}: ${jsdoc.type}${privateText}${staticText}`;
+        }
+        else if (jsdoc.pType === "cfg")
+        {
+            jsdoc.title = `config ${property}: ${jsdoc.type}`;
+        }
+        else if (jsdoc.pType === "param")
+        {
+            jsdoc.title = `parameter ${property}: ${jsdoc.type}`;
+        }
+        else
+        {
+            let clsShortName = property;
+            if (clsShortName.includes(".")) {
+                clsShortName = clsShortName.substring(clsShortName.lastIndexOf(".") + 1);
+            }
+            if (jsdoc.singleton) {
+                jsdoc.title = `singleton ${clsShortName}: ${componentClass}${privateText}${staticText}`;
+            }
+            else {
+                jsdoc.title = `${jsdoc.pType} ${clsShortName}: ${componentClass}${privateText}${staticText}`;
+            }
+        }
+    }
+
+
     private pushMarkdown(doc: string, jsdoc: IJsDoc)
     {
         jsdoc.body += doc;
     }
 
 
-    toIJsDoc(property: string, componentClass: string, comment: string | undefined, logPad = ""): IJsDoc | undefined
+    toIJsDoc(property: string, pType: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comment: string | undefined, logPad = ""): IJsDoc | undefined
     {
         if (!comment || !property) {
             return;
@@ -448,7 +517,7 @@ class CommentParser
             body: "",
             deprecated: false,
             private: false,
-            pType: "unknown",
+            pType,
             returns: "",
             since: "",
             singleton: false,
@@ -504,7 +573,7 @@ class CommentParser
             // .trim();
 
         const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/),
-              maxLines = 75;
+              maxLines = 100;
         let mode: MarkdownStringMode | undefined,
             indented = "",
             previousMode: MarkdownStringMode | undefined,
@@ -595,7 +664,7 @@ class CommentParser
             }
             else if (mode === MarkdownStringMode.Param)
             {
-                this.handleParamLine(line, trailers, currentLine === 0, commentFmt, jsdoc);
+                this.handleParamLine(line, trailers, commentFmt, jsdoc);
             }
             else if (mode === MarkdownStringMode.Code)
             {
@@ -622,6 +691,10 @@ class CommentParser
             {
                 this.handleTagLine(line, jsdoc);
             }
+            else if (mode === MarkdownStringMode.Link)
+            {
+                this.handleLinkLine(line, jsdoc);
+            }
             else
             {
                 this.handleTextLine(line, jsdoc);
@@ -633,14 +706,20 @@ class CommentParser
             }
         }
 
-        //
-        // Type title - mocks js ls
-        //
-        let clsShortName = property;
-        if (clsShortName.includes(".")) {
-            clsShortName = clsShortName.substring(clsShortName.lastIndexOf(".") + 1);
+        if (isPrivate && !jsdoc.private) {
+            jsdoc.private = !!isPrivate;
         }
-        jsdoc.title = `${jsdoc.pType} ${clsShortName}: ${componentClass}`;
+        if (isStatic && !jsdoc.static) {
+            jsdoc.static = !!isStatic;
+        }
+        if (isSingleton && !jsdoc.singleton) {
+            jsdoc.singleton = !!isSingleton;
+        }
+        if (jsdoc.pType === "method" && !jsdoc.returns) {
+            jsdoc.returns = "void";
+        }
+
+        this.populateTitle(property, componentClass, jsdoc);
 
         log.methodDone("build markdown string from comment", 4, logPad);
         return jsdoc;
@@ -649,7 +728,7 @@ class CommentParser
 }
 
 
-export function parseDoc(property: string, componentClass: string, doc: string, logPad = "")
+export function parseDoc(property: string, type: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, doc: string, logPad = "")
 {
-    return (new CommentParser()).toIJsDoc(property, componentClass, doc, logPad)
+    return (new CommentParser()).toIJsDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, doc, logPad)
 }

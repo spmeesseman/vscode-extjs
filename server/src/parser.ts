@@ -102,13 +102,6 @@ export async function parseExtJsFile(options: IServerRequest)
                             range: utils.toRange(path.node.loc!.start, path.node.loc!.end)
                         };
 
-                        if (isExpressionStatement(path.container)) {
-                            componentInfo.doc = getJsDoc(args[0].value, args[0].value, path.container.leadingComments);
-                            componentInfo.since = componentInfo.doc?.since;
-                            componentInfo.private = componentInfo.doc?.private;
-                            componentInfo.deprecated = componentInfo.doc?.deprecated;
-                        }
-
                         parsedComponents.push(componentInfo);
 
                         log.blank(1);
@@ -130,19 +123,26 @@ export async function parseExtJsFile(options: IServerRequest)
                         const propertyProperty = args[1].properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
                         const propertyObjects = args[1].properties.filter(p => isObjectProperty(p));
 
-                        if (isObjectProperty(propertyExtend))
-                        {
-                            componentInfo.extend = parseStringLiteral(propertyExtend);
-                            if (componentInfo.extend) {
-                                logProperties("extend", [ componentInfo.extend ]);
-                            }
-                        }
-
                         if (isObjectProperty(propertySingleton))
                         {
                             componentInfo.singleton = parseBooleanLiteral(propertySingleton);
                             if (componentInfo.singleton) {
                                 logProperties("singleton", [ componentInfo.singleton.toString() ]);
+                            }
+                        }
+
+                        if (isExpressionStatement(path.container)) {
+                            componentInfo.doc = getJsDoc(args[0].value, "class", args[0].value, false, false, componentInfo.singleton, path.container.leadingComments);
+                            componentInfo.since = componentInfo.doc?.since;
+                            componentInfo.private = componentInfo.doc?.private;
+                            componentInfo.deprecated = componentInfo.doc?.deprecated;
+                        }
+
+                        if (isObjectProperty(propertyExtend))
+                        {
+                            componentInfo.extend = parseStringLiteral(propertyExtend);
+                            if (componentInfo.extend) {
+                                logProperties("extend", [ componentInfo.extend ]);
                             }
                         }
 
@@ -289,13 +289,13 @@ function cacheComponents(componentsToCache: IComponent[])
 }
 
 
-function getJsDoc(property: string, componentClass: string, comments: readonly Comment[] | null)
+function getJsDoc(property: string,  type: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comments: readonly Comment[] | null)
 {
     let commentsStr = "";
     comments?.forEach((c) => {
         commentsStr += c.value;
     });
-    return commentsStr ? parseDoc(property, componentClass, commentsStr, "   ") : undefined;
+    return commentsStr ? parseDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, commentsStr, "   ") : undefined;
 }
 
 
@@ -623,7 +623,7 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nam
                 const name = isIdentifier(it.key) ? it.key.name : undefined;
                 if (name)
                 {
-                    const doc = getJsDoc(name, componentClass, it.leadingComments);
+                    const doc = getJsDoc(name, "cfg", componentClass, false, false, false, it.leadingComments);
                     p.push({
                         doc, name,
                         since: doc?.since,
@@ -669,7 +669,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
             if (propertyName)
             {
-                const doc = getJsDoc(propertyName, componentClass, m.leadingComments),
+                const doc = getJsDoc(propertyName, "method", componentClass, isPrivate, isStatic, false, m.leadingComments),
                       params = parseParams(m, text, componentClass, doc),
                       variables = parseVariables(m, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
                 methods.push({
@@ -843,7 +843,7 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
             const name = isIdentifier(p.key) ? p.key.name : undefined;
             if (name && ignoreProperties.indexOf(name) === -1)
             {
-                const doc = getJsDoc(name, componentClass, p.leadingComments);
+                const doc = getJsDoc(name, "property", componentClass, isPrivate, isStatic, false, p.leadingComments);
                 properties.push({
                     doc, name,
                     start: p.loc!.start,
