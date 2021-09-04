@@ -1135,8 +1135,9 @@ class ExtjsLanguageManager
                     }
 
                     ++currentCfgIdx;
-                    const nextInc = (currentCfgIdx * cfgPct) - 1,
-                          nextInc2 = (currentCfgIdx * cfgPct) - 2;
+                    const inc = Math.round(cfgPct * currentCfgIdx),
+                          nextInc = inc - 1,
+                          nextInc2 = inc - 2;
 
                     progress.report({
                         increment,
@@ -1154,7 +1155,7 @@ class ExtjsLanguageManager
 
                     progress.report({
                         increment,
-                        message: `: Indexing ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
+                        message: `: Indexing ${projectName} ${inc}%`
                     });
                 }
             }
@@ -1218,8 +1219,9 @@ class ExtjsLanguageManager
                 }
 
                 ++currentCfgIdx;
-                const nextInc = (currentCfgIdx * cfgPct) - 1,
-                      nextInc2 = (currentCfgIdx * cfgPct) - 2;
+                const inc = Math.round(currentCfgIdx * cfgPct),
+                      nextInc = inc - 1,
+                      nextInc2 = inc - 2;
 
                 progress.report({
                     increment,
@@ -1236,7 +1238,7 @@ class ExtjsLanguageManager
 
                 progress.report({
                     increment,
-                    message: `: Indexing ${projectName} ${Math.round(currentCfgIdx * cfgPct)}%`
+                    message: `: Indexing ${projectName} ${inc}%`
                 });
             }
         }
@@ -1886,7 +1888,7 @@ class ExtjsLanguageManager
               jsWatcher = workspace.createFileSystemWatcher(clsPathGlob),
               confWatcher = workspace.createFileSystemWatcher("**/{.extjsrc,.extjsrc.json,app.json,workspace.json}");
         //
-        // Config watcher
+        // Configuration file watcher
         //
         disposables.push(confWatcher.onDidChange(async (e) => { await this.watcherConfigChange(e); }, this));
         disposables.push(confWatcher.onDidDelete(async (e) => { await this.watcherConfigChange(e); }, this));
