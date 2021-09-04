@@ -1,7 +1,7 @@
 
 import * as path from "path";
 import * as assert from "assert";
-import { ExtJsApi } from "../../extension";
+import { ExtJsApi } from "../../common/interface";
 import { extensions, TextEditor, TextDocument, window, workspace, Uri, commands, Range, Position } from "vscode";
 import { configuration } from "../../common/configuration";
 

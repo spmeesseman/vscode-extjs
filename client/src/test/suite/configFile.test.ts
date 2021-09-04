@@ -4,7 +4,7 @@ import { commands, workspace } from "vscode";
 import { copyFile, deleteFile, renameFile, writeFile } from "../../../../common";
 import { storage } from "../../common/storage";
 import { configuration } from "../../common/configuration";
-import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
+import { ExtJsApi, IExtjsLanguageManager } from "../../common/interface";
 import {
 	getDocUri, waitForValidation, activate, getDocPath, insertDocContent, toRange, closeActiveDocument, closeActiveDocuments
 } from "./helper";
@@ -103,7 +103,7 @@ suite("Config File Tests", () =>
 			"{\r\n" +
             '    "classpath": [ "app" ],\r\n' +
             '    "name": "VSCodeExtJS",\r\n' +
-            '    "framework": "c:\\\\Projects\\\\vscode\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
+            '    "framework": "c:\\\\Projects\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
             "}\r\n"
         );
 		await waitForValidation(true, 1000);
@@ -112,6 +112,9 @@ suite("Config File Tests", () =>
 
 	test("Extjsrc duplicated classpath", async () =>
 	{
+		const settingsPaths = configuration.get<string[]>("include", []);
+		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode-extjs\\client\\testFixture\\app" ]);
+		await waitForValidation();
 		await writeFile(
             extjsrcPath,
 			"{\r\n" +
@@ -120,6 +123,14 @@ suite("Config File Tests", () =>
             "}\r\n"
         );
 		await waitForValidation(true, 1000);
+		await waitForValidation();
+		await (commands.executeCommand("vscode-extjs:indexFiles", "testFixture", false));
+		await waitForValidation();
+		//
+		// Reset configuration settings
+		//
+		await configuration.update("include", settingsPaths);
+		await waitForValidation();
 	});
 
 
@@ -130,7 +141,7 @@ suite("Config File Tests", () =>
 			"{\r\n" +
             '    "classpath": [ "app" ],\r\n' +
             '    "name": "VSCodeExtJS",\r\n' +
-            '    "framework": "c:\\\\Projects\\\\vscodeInvalid\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
+            '    "framework": "c:\\\\Projects\\\\vscode-extjs-invalid\\\\client\\\\testFixture\\\\extjs"\r\n' +
             "}\r\n"
         );
 		await waitForValidation(true, 1000);
@@ -158,7 +169,7 @@ suite("Config File Tests", () =>
 			"{\r\n" +
             '    "classpath": "app",\r\n' +
             '    "name": "VSCodeExtJS"\r\n' + // <- no comma
-            '    "framework": "c:\\\\Projects\\\\vscode\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
+            '    "framework": "c:\\\\Projects\\\\vscode-extjs\\\\client\\\\testFixture\\\\extjs"\r\n' +
             "}\r\n"
         );
 		await waitForValidation(true, 1000);
@@ -184,7 +195,7 @@ suite("Config File Tests", () =>
 		//
 		// Set include paths
 		//
-		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\app" ]);
+		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode-extjs\\client\\testFixture\\app" ]);
 		await waitForValidation();
 		//
 		// Some additional coverage - force prompt w/o tests flag set
@@ -208,7 +219,7 @@ suite("Config File Tests", () =>
 		//
 		// Set global framework path
 		//
-		await configuration.update("frameworkDirectory", "c:\\Projects\\vscode\\vscode-extjs\\client\\testFixture\\extjs");
+		await configuration.update("frameworkDirectory", "c:\\Projects\\vscode-extjs\\client\\testFixture\\extjs");
 		await waitForValidation();
 		//
 		// Set global framework path outside workspace dir
@@ -241,7 +252,7 @@ suite("Config File Tests", () =>
 		await configuration.update("include", [ "VSCodeExtJS|" ]);
 		await waitForValidation();
 		//
-		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode\\vscode-extjsBadPath" ]);
+		await configuration.update("include", [ "VSCodeExtJS|c:\\Projects\\vscode-extjsBadPath" ]);
 		await waitForValidation();
 		//
 		// Reset (for local tests, this won't matter in a CI environment)
@@ -313,7 +324,7 @@ suite("Config File Tests", () =>
 		await insertDocContent(`,
     "packages":
     {
-        "dir": "\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg2,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg3,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg4",
+        "dir": "\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg2,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg3,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg4,\${workspace.dir}/node_modules/@spmeesseman/extjs-pkg5",
         "extract": "\${workspace.dir}/packages/remote"
     }`, toRange(8, 5, 8, 5));
 		await workspace.saveAll();

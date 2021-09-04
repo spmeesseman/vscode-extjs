@@ -4,7 +4,7 @@ import * as assert from "assert";
 import { getDocUri, activate, toRange, waitForValidation, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { ErrorCode } from "../../../../common";
 import { configuration } from "../../common/configuration";
-import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
+import { ExtJsApi, IExtjsLanguageManager } from "../../common/interface";
 
 
 suite("Command Tests", () =>

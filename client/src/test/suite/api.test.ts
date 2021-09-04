@@ -2,7 +2,7 @@ import { commands, Position } from "vscode";
 import { configuration } from "../../common/configuration";
 import { quoteChar } from "../../common/clientUtils";
 import { activate, closeActiveDocument, getDocUri, waitForValidation } from "./helper";
-import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
+import { ExtJsApi, IExtjsLanguageManager } from "../../common/interface";
 
 
 suite("API Tests", () =>

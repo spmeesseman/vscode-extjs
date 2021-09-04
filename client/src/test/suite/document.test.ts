@@ -5,7 +5,7 @@ import { deleteFile, renameFile, writeFile } from "../../../../common";
 import { getTimestampKey } from "../../common/clientUtils";
 import { configuration } from "../../common/configuration";
 import { storage } from "../../common/storage";
-import { ExtJsApi, IExtjsLanguageManager } from "../../extension";
+import { ExtJsApi, IExtjsLanguageManager } from "../../common/interface";
 import { getDocUri, waitForValidation, activate, toRange, getDocPath, insertDocContent, closeActiveDocuments, closeActiveDocument } from "./helper";
 
 
