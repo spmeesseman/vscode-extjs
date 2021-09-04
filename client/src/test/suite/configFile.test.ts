@@ -110,6 +110,19 @@ suite("Config File Tests", () =>
 	});
 
 
+	test("Extjsrc duplicated classpath", async () =>
+	{
+		await writeFile(
+            extjsrcPath,
+			"{\r\n" +
+            '    "classpath": [ "app", "app" ],\r\n' +
+            '    "name": "VSCodeExtJS",\r\n' +
+            "}\r\n"
+        );
+		await waitForValidation(true, 1000);
+	});
+
+
 	test("Extjsrc add invalid framework directory", async () =>
 	{
 		await writeFile(
