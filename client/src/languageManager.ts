@@ -1095,7 +1095,7 @@ class ExtjsLanguageManager
                 // Udpdate progress percent
                 //
                 ++currentCfgIdx;
-                pct = Math.round(cfgPct * currentCfgIdx);
+                pct = Math.round(cfgPct * currentCfgIdx + ((currentCfgIdx - 1) * 2));
                 await this.updateIndexingProgress(progress, "Caching", projectName, pct, increment);
                 //
                 // Update server
@@ -1156,7 +1156,7 @@ class ExtjsLanguageManager
                         //
                         // Report progress
                         //
-                        pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / numFiles * (100 / this.config.length)));
+                        pct = Math.round((cfgPct * currentCfgIdx + ((currentCfgIdx - 1) * 2)) + (++currentFileIdx / numFiles * (100 / this.config.length)));
                         await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment);
                     }
                     processedDirs.push(dir);
@@ -1167,7 +1167,7 @@ class ExtjsLanguageManager
                 //
                 let inc = 2;
                 ++currentCfgIdx;
-                pct = Math.round(currentCfgIdx * cfgPct);
+                pct = Math.round(currentCfgIdx * cfgPct + ((currentCfgIdx - 1) * 2));
                 await this.updateIndexingProgress(progress, "Caching", projectName, pct, increment);
                 //
                 // Update entire component tree in fs cache
