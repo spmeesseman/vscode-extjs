@@ -359,4 +359,21 @@ Ext.define('VSCodeExtJS',
 		
 	},
 
+	/**
+	 * For testing primitive hover
+	 */
+	testFn15: function()
+	{
+		const xTestVar = "";
+		let yTestVar = window.location;
+		var zTestVar = someFunction();
+		const xTestVar2 = "",
+			  yTestVar2 = window.location,
+			  zTestVar2 = someFunction();
+
+		
+		
+		
+	}
+
 });

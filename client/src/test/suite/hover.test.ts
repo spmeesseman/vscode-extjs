@@ -228,6 +228,46 @@ suite("Hover Tests", () =>
     });
 
 
+	test("Unknown variables / primitives", async () =>
+	{   //
+		// Line 145
+		// let cmp = this.down('physiciandropdown');
+		// THis should eventually work and this will be moved to instance variables test
+		//
+		await testHover(docUri, new vscode.Position(144, 8));
+		//
+		// Line 367
+		// const xTestVar = "";
+		//
+		await testHover(docUri, new vscode.Position(366, 12));
+		//
+		// Line 368
+		// let yTestVar = window.location;
+		//
+		await testHover(docUri, new vscode.Position(367, 10));
+		//
+		// Line 369
+		// var zTestVar = someFunction();
+		//
+		await testHover(docUri, new vscode.Position(368, 10));
+		//
+		// Line 370
+		// const xTestVar2 = "",
+		//
+		await testHover(docUri, new vscode.Position(369, 12));
+		//
+		// Line 371
+		// yTestVar2 = window.location,
+		//
+		await testHover(docUri, new vscode.Position(370, 12));
+		//
+		// Line 372
+		// zTestVar2 = someFunction();
+		//
+		await testHover(docUri, new vscode.Position(371, 12));
+	});
+
+
 	test("Store properties", async () =>
 	{   //
 		// Open non extjs doc inside of a classpath
