@@ -150,6 +150,13 @@ Miscellaneous:
 	✔ Renamed/moved file doesnt get cached.  validates, but no hover, completion, etc @done(21-08-28 10:24)
 	☐ if a doc is edited, closed w/o saving, mem cache needs to be reset
 		fs cache will hold previous value still, since no persist until save
+	☐ Review namespace usage
+		is it correct to use 'name' property from app.json
+		namespace property in package.json files sencha cfg
+		namespace property in sass ad other app.json cfg objects
+	☐ Support post Cmd6.7+ projects with npm installed ext-core
+	☐ Cmd project package.json
+		subfolders property, refernces to all cmd packages
 
 Signature:
 
