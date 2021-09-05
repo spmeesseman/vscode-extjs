@@ -1,5 +1,40 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.10.0 (September 5th, 2021)
+
+### Bug Fixes
+
+- **Logging:** error instances are not properly logged
+- **Utils:** isPositionInRange modified
+- **Completion:** does not work if first keyword immediately folows a semi-colon
+- **Hover:** does not display for properties and configs from extended classes
+- **Indexer:** intellisense still works for a non-notified delete of a class file until after vscode restart
+- **Indexer:** files modified outside editor while not running are not re-indexed when vscode is started
+- **Indexer:** fails to parse full framework path set in vscode settings
+- **Indexer:** package reference base directories are added as classpaths without parsing a package.json for the classpaths
+- **Validation:** Ext namespace files and package file found in node_modules folder should not be validated
+- **Warnings:** duplicate class warning is shown for 2 classes one defined for classic tk and onefor modern
+- **Completion:** should not be active behind comments
+- **Config Parser:** workspace.json referenced packages are being added as classpath by root, w/o checking package.json sencha.classpath property
+- **Config Parser:** invalid json in extjsrc.json file not handled properly
+- **Indexer:** when a document is cleared/blanked, it isnot removed from the component cache
+- **General:** moving and renaming files causes intellisense for the defined components in the file to stop working until restart
+- **Indexer:** fails to parse variables for functions that have keyword names e.g. delete()
+- **Indexer:** sencha packages referenced in workspace.json are being added to the project namespace ast cache instead of the Ext namespace ast cache
+- **Logging:** indexer command logs method start when finished
+- **Indexer:** component ast from the core framework classpath is not loaded from the fs cache on startup in an app.json based project
+
+### Features
+
+- **General:** support intellisense for variables set by up / down / prev / next using itemId
+- **General:** support intellisense for variables set by up / down / prev / next
+- **Jsdoc:** improve formatting, layout and readability of hover, completion, and signature documentation.
+
+### Refactoring
+
+- **Indexer:** ignore files located in paths underneath a 'test', 'tests', or 'spec' directory.
+- **Hover:** instance variables that are separated w/ semi-colon on same line not working
+
 ## Version 0.9.1 (September 1st, 2021)
 
 ### Bug Fixes
