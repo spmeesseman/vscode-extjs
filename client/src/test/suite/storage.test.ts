@@ -25,7 +25,7 @@ suite("Storage Tests", () =>
 	});
 
 
-	test("Global storage", async () =>
+	test("Data paths", async () =>
 	{   //
 		// The fs module on dev test will run through win32 path get.  Simulate
 		// path get here for linux and mac for increased coverage since we're only
@@ -158,7 +158,11 @@ suite("Storage Tests", () =>
 		process.env.APPDATA = dataPath2;
 		process.env.USERPROFILE = dataPath3;
 		process.env.VSCODE_APPDATA = dataPath4;
-		//
+	});
+
+
+	test("Global Storage", async () =>
+	{   //
 		// Some basic read/writes
 		//
 		await storage.update("storage_test_1", "test1");
@@ -168,15 +172,6 @@ suite("Storage Tests", () =>
 		assert.strictEqual(value, "test1");
 		value = storage.get<string>("storage_test_nodefault");
 		assert.strictEqual(value, undefined);
-	});
-
-
-	test("Filesystem storage keys", async () =>
-	{
-		let key = getStorageKey("some\\path\\file.txt", "VSCodeExtJS");
-		assert(key === path.normalize("file.txt\\VSCodeExtJS\\components.json"));
-		key = getStorageKey("c:\\Projects\\vscode-extjs\\client\\testFixture", "VSCodeExtJS");
-		assert(key === path.normalize("testFixture\\VSCodeExtJS\\components.json"));
 	});
 
 
@@ -209,6 +204,15 @@ suite("Storage Tests", () =>
 		await commands.executeCommand("vscode-extjs:indexFiles");
 		await waitForValidation();
 		assert(extjsLangMgr.getComponent("VSCodeExtJS", "testFixture", "", 1));
+	});
+
+
+	test("Filesystem storage keys", async () =>
+	{
+		let key = getStorageKey("some\\path\\file.txt", "VSCodeExtJS");
+		assert(key === path.normalize("file.txt\\VSCodeExtJS\\components.json"));
+		key = getStorageKey("c:\\Projects\\vscode-extjs\\client\\testFixture", "VSCodeExtJS");
+		assert(key === path.normalize("testFixture\\VSCodeExtJS\\components.json"));
 	});
 
 });
