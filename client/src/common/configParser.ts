@@ -363,7 +363,7 @@ export class ConfigParser
                     }
                     classpath.push(...packageClsPath);
                 }
-                if (packageJson.sencha.classic)
+                if (packageJson.sencha.classic && packageJson.sencha.classic.classpath)
                 {
                     let packageClsPathClassic: string | string[] = packageJson.sencha.classic.classpath;
                     if (!(packageClsPathClassic instanceof Array)) {
@@ -371,7 +371,7 @@ export class ConfigParser
                     }
                     classpath.push(...packageClsPathClassic);
                 }
-                if (packageJson.sencha.modern)
+                if (packageJson.sencha.modern && packageJson.sencha.modern.classpath)
                 {
                     let packageClsPathModern: string | string[] = packageJson.sencha.modern.classpath;
                     if (!(packageClsPathModern instanceof Array)) {

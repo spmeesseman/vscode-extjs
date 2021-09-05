@@ -95,18 +95,18 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
 
 
 
-async function processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
-{
-    if (e.affectsConfiguration("extjsIntellisense.enableTaskView") && configuration.get<boolean>("enableTaskView"))
-    {
-        if (taskTree) {
-            await taskTree.refresh("config");
-        }
-        else {
-            taskTree = registerExplorer(context);
-        }
-    }
-}
+// async function processConfigChanges(context: ExtensionContext, e: ConfigurationChangeEvent)
+// {
+//     if (e.affectsConfiguration("extjsIntellisense.enableTaskView") && configuration.get<boolean>("enableTaskView"))
+//     {
+//         if (taskTree) {
+//             await taskTree.refresh("config");
+//         }
+//         else {
+//             taskTree = registerExplorer(context);
+//         }
+//     }
+// }
 
 
 function registerCommands(context: ExtensionContext)
@@ -121,30 +121,30 @@ function registerCommands(context: ExtensionContext)
 }
 
 
-function registerExplorer(context: ExtensionContext): TaskTreeDataProvider | undefined
-{
-    // if (configuration.get<boolean>("enableTaskView"))
-    // {
-    //     const name = "extjsTaskExplorer";
-    //     log.write("Register tasks tree provider '" + name + "'");
-    //     if (workspace.workspaceFolders)
-    //     {
-    //         const treeDataProvider = new TaskTreeDataProvider(name, context);
-    //         const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
-    //         views.set(name, treeView);
-    //         const view = views.get(name);
-    //         if (view) {
-    //             context.subscriptions.push(view);
-    //             log.write("   Tree data provider registered'" + name + "'");
-    //         }
-    //         return treeDataProvider;
-    //     }
-    //     else {
-    //         log.write("No workspace folders!!!");
-    //     }
-    // }
-    return undefined;
-}
+// function registerExplorer(context: ExtensionContext): TaskTreeDataProvider | undefined
+// {
+//     // if (configuration.get<boolean>("enableTaskView"))
+//     // {
+//     //     const name = "extjsTaskExplorer";
+//     //     log.write("Register tasks tree provider '" + name + "'");
+//     //     if (workspace.workspaceFolders)
+//     //     {
+//     //         const treeDataProvider = new TaskTreeDataProvider(name, context);
+//     //         const treeView = window.createTreeView(name, { treeDataProvider, showCollapseAll: true });
+//     //         views.set(name, treeView);
+//     //         const view = views.get(name);
+//     //         if (view) {
+//     //             context.subscriptions.push(view);
+//     //             log.write("   Tree data provider registered'" + name + "'");
+//     //         }
+//     //         return treeDataProvider;
+//     //     }
+//     //     else {
+//     //         log.write("No workspace folders!!!");
+//     //     }
+//     // }
+//     return undefined;
+// }
 
 
 async function run(context: ExtensionContext)

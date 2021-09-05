@@ -1405,6 +1405,36 @@ function postParse(components: IComponent[], postTasks: any[])
         }
     }
 
+    // const mainAppComponent = components.find(c => c.extend === "Ext.app.Application");
+    // if (mainAppComponent)
+    // {
+    //     components.filter(c => c.componentClass !== mainAppComponent.componentClass).forEach(c => {
+    //         c.methods.forEach(m => {
+    //             m.variables.forEach(v => {
+    //                 if (v.name === mainAppComponent.name)
+    //                 {
+    //                     mainAppComponent.statics.push({ ...{
+    //                         doc, name,
+    //                         start: p.loc!.start,
+    //                         end: p.loc!.end,
+    //                         since: doc?.since,
+    //                         private: doc?.private || isPrivate,
+    //                         deprecated: doc?.deprecated || false,
+    //                         componentClass,
+    //                         static: doc?.static || isStatic,
+    //                         range: utils.toRange(p.loc!.start, p.loc!.end),
+    //                         value: {
+    //                             start: p.value.loc!.start,
+    //                             end: p.value.loc!.end,
+    //                             value: getPropertyValue(p)
+    //                         }
+    //                     }, ...v});
+    //                 }
+    //             });
+    //         });
+    //     });
+    // }
+
     cacheComponents(components);
 
     return components;
