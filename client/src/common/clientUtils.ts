@@ -247,15 +247,8 @@ export function isPositionInObjectRange(position: Position, component: IComponen
         if (!method) {
             isInObject = isPositionInRange(position, toVscodeRange(component.bodyStart, component.bodyEnd));
         }
-        else
-        {
-            for (const o of method.objectRanges)
-            {
-                isInObject = isPositionInRange(position, toVscodeRange(o.start, o.end));
-                if (isInObject) {
-                    break;
-                }
-            }
+        else {
+            isInObject = !!method.objectRanges.find(o => isPositionInRange(position, toVscodeRange(o.start, o.end)));
         }
     }
 
