@@ -1,10 +1,8 @@
 
 import * as vscode from "vscode";
 import * as completion from "./completion";
-import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments, closeActiveDocument } from "./helper";
+import { getDocUri, activate, waitForValidation, closeActiveDocuments } from "./helper";
 import { configuration } from "../../common/configuration";
-import { quoteChar } from "../../common/clientUtils";
 
 
 suite("Completion Tests (Unix EOL)", () =>
@@ -49,6 +47,7 @@ suite("Completion Tests (Unix EOL)", () =>
 		//
 		await closeActiveDocuments();
 	});
+
 
 	test("This methods", async () =>
 	{

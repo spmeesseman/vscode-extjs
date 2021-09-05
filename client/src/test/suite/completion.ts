@@ -1,7 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { waitForValidation, insertDocContent, toRange, closeActiveDocuments, closeActiveDocument, activate, getDocUri } from "./helper";
+import { waitForValidation, insertDocContent, toRange } from "./helper";
 import { configuration } from "../../common/configuration";
 import { quoteChar } from "../../common/clientUtils";
 

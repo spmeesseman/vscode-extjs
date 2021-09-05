@@ -1,10 +1,8 @@
 
 import * as vscode from "vscode";
 import * as completion from "./completion";
-import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments, closeActiveDocument, doc } from "./helper";
+import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { configuration } from "../../common/configuration";
-import { quoteChar } from "../../common/clientUtils";
 
 
 suite("Completion Tests", () =>
