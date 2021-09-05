@@ -370,6 +370,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         if (lineCls.includes(" ")) {
             lineCls = lineCls.substring(lineCls.lastIndexOf(" ") + 1);
         }
+        if (lineCls.includes(";")) {
+            lineCls = lineCls.substring(lineCls.lastIndexOf(";") + 1);
+        }
 
         const _pushItems = ((instance: boolean, cmp?: IComponent) =>
         {
