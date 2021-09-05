@@ -31,6 +31,7 @@ const fileToTest = "*";
 // const fileToTest = "hover";
 // const fileToTest = "commands";
 // const fileToTest = "completion";
+// const fileToTest = "storage";
 
 //
 // Linux: prevent a weird NPE when mocha on Linux requires the window size from the TTY
