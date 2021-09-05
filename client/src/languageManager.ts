@@ -1156,7 +1156,7 @@ class ExtjsLanguageManager
                         //
                         // Report progress
                         //
-                        pct = Math.round((cfgPct * currentCfgIdx + ((currentCfgIdx - 1) * 2)) + (++currentFileIdx / numFiles * (100 / this.config.length)));
+                        pct = Math.round((cfgPct * currentCfgIdx + (currentCfgIdx * 2)) + (++currentFileIdx / numFiles * (100 / this.config.length)));
                         await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment);
                     }
                     processedDirs.push(dir);
