@@ -93,8 +93,8 @@ export function isExcluded(uriPath: string)
 export function isPositionInRange(position: Position, range: Range)
 {
     return (position.line > range.start.line && position.line < range.end.line) ||
-           (position.line === range.start.line && position.character >= range.start.character) ||
-           (position.line === range.end.line && position.character <= range.end.character);
+           (position.character >= range.start.character && position.character <= range.end.character &&
+            position.line === range.start.line);
 }
 
 
