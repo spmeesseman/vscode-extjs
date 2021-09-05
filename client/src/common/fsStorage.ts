@@ -37,7 +37,7 @@ class FsStorage
         {
             const projectStoragePath = path.normalize(path.join(this.baseStoragePath, project));
             if (await fs.pathExists(projectStoragePath)) {
-                await fs.deleteDir(this.baseStoragePath);
+                await fs.deleteDir(projectStoragePath);
             }
         }
     }
