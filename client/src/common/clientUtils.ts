@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import * as minimatch from "minimatch";
 import { Range, Position, TextDocument, EndOfLine, Uri, workspace } from "vscode";
-import { IPosition, IComponent, IExtJsBase, IPrimitive, IObjectRange, IRange, IMethod } from "../../../common";
+import { IPosition, IComponent, IExtJsBase, IPrimitive, IObjectRange, IRange, IMethod, pathExists } from "../../../common";
 import { configuration } from "./configuration";
 import { existsSync } from "fs";
 
@@ -45,7 +45,7 @@ export function documentEol(document: TextDocument)
          const projectName = path.basename(wsf.uri.fsPath);
          sFile = path.join(projectName, fsPath.replace(wsf.uri.fsPath, ""), nameSpace, "components.json");
      }
-     return sFile;
+     return path.normalize(sFile);
  }
 
 
@@ -92,19 +92,9 @@ export function isExcluded(uriPath: string)
 
 export function isPositionInRange(position: Position, range: Range)
 {
-    if (position.line > range.start.line && position.line < range.end.line) {
-        return true;
-    }
-    else if (position.line === range.start.line)
-    {
-        return position.character >= range.start.character;
-    }
-    else if (position.line === range.end.line)
-    {
-        return position.character <= range.end.character;
-    }
-    return false;
-    // return extjs.isPositionInRange(toIPosition(position), toIRange(range));
+    return (position.line > range.start.line && position.line < range.end.line) ||
+           (position.line === range.start.line && position.character >= range.start.character) ||
+           (position.line === range.end.line && position.character <= range.end.character);
 }
 
 
@@ -150,21 +140,10 @@ export function getPortableDataPath()
     if (process.env.VSCODE_PORTABLE)
     {
         const uri = Uri.parse(process.env.VSCODE_PORTABLE);
-        if (uri)
-        {
-            if (existsSync(uri.fsPath))
-            {
-                try {
-                    const fullPath = path.join(uri.fsPath, "user-data", "User");
-                    return fullPath;
-                }
-                catch (e) {
-                    return;
-                }
-            }
+        if (uri && existsSync(uri.fsPath)) {
+            return path.join(uri.fsPath, "user-data", "User");
         }
     }
-    return;
 }
 
 
@@ -192,11 +171,10 @@ export function getPropertyRange(property: string, thisClass: string | undefined
 export function getUserDataPath(platform?: string)
 {
     let userPath: string | undefined = "";
-
     //
     // Check if data path was passed on the command line
     //
-    if (process.argv)
+    if (process.argv && process.argv.length > 0)
     {
         let argvIdx = existsInArray(process.argv, "--user-data-dir");
         if (argvIdx !== false && typeof argvIdx === "number" && argvIdx >= 0 && argvIdx < process.argv.length) {
@@ -244,7 +222,7 @@ function getDefaultUserDataPath(platform?: string)
                 appDataPath = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
                 break;
             default:
-                throw new Error("Platform not supported");
+                return ".";
         }
     }
     return path.join(appDataPath, "vscode");

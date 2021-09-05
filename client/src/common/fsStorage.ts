@@ -31,10 +31,14 @@ class FsStorage
     }
 
 
-    public async clear()
+    public async clear(project: string)
     {
-        if (this.baseStoragePath && await fs.pathExists(this.baseStoragePath)) {
-            await fs.deleteDir(this.baseStoragePath);
+        if (this.baseStoragePath && await fs.pathExists(this.baseStoragePath))
+        {
+            const projectStoragePath = path.normalize(path.join(this.baseStoragePath, project));
+            if (await fs.pathExists(projectStoragePath)) {
+                await fs.deleteDir(this.baseStoragePath);
+            }
         }
     }
 
