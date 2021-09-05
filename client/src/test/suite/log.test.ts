@@ -78,6 +78,8 @@ suite("Logging Tests", () =>
 		log.setWriteToConsole(true, 2);
 		log.write("Test", 1);
 		log.value("Test", "value", 1);
+		log.write("Test no write", 3);
+		log.value("Test no write", "value", 3);
 		log.error("Test error");
 		log.error([ "Test error 1", "Test error 2" ]);
 		log.setWriteToConsole(false);
