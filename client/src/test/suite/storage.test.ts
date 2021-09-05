@@ -194,6 +194,11 @@ suite("Storage Tests", () =>
 		await fsStorage.clear("testFixture");
 		await waitForValidation();
 		//
+		// Clear storage invalid project
+		//
+		await fsStorage.clear("testFixtureInvalid");
+		await waitForValidation();
+		//
 		// Check component no longer exists
 		//
 		await waitForValidation();
