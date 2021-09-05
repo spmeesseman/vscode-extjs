@@ -72,7 +72,8 @@ suite("Completion Tests", () =>
 		//
 		// I don't know why the hell a random completion fails in this test.
 		// I've tried everything.  Latest is warpping in try/catch and retry
-		// on one failure.  Wth.
+		// on one failure.  Wth.  Marking with asterisks on each fail to see if it's
+		// coming at a particular area
 		//
 		// Inside function
 		//

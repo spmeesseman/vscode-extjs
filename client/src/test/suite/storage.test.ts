@@ -123,11 +123,30 @@ suite("Storage Tests", () =>
 		dataPath = getUserDataPath("invalid_platform");
 		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0");
 		//
+		// Set environment variables for specific test
 		//
+		process.env.VSCODE_APPDATA = "C:\\Code\\data\\user-data\\User\\workspaceStorage";
+		dataPath = getUserDataPath("linux");
+		assert.strictEqual(dataPath, "C:\\Code\\data\\user-data\\User\\workspaceStorage\\vscode");
+		dataPath = getUserDataPath("win32");
+		assert.strictEqual(dataPath, "C:\\Code\\data\\user-data\\User\\workspaceStorage\\vscode");
+		dataPath = getUserDataPath("darwin");
+		assert.strictEqual(dataPath, "C:\\Code\\data\\user-data\\User\\workspaceStorage\\vscode");
+		dataPath = getUserDataPath("invalid_platform");
+		assert.strictEqual(dataPath, "C:\\Code\\data\\user-data\\User\\workspaceStorage\\vscode");
+		//
+		// Set portable / invalid platform
 		//
 		process.env.VSCODE_PORTABLE = "C:\\Code\\data\\user-data\\User\\workspaceStorage";
 		dataPath = getUserDataPath("invalid_platform");
 		assert.strictEqual(dataPath, "C:\\Code\\data\\user-data\\User\\workspaceStorage\\user-data\\User");
+		//
+		// Empty platform
+		//
+		dataPath = getUserDataPath("");
+		process.env.VSCODE_PORTABLE = "";
+		dataPath = getUserDataPath("");
+		//
 		//
 		// Restore process argv
 		//
