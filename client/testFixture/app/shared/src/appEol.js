@@ -5,6 +5,7 @@
  */
 Ext.define('VSCodeExtJS.VSCodeExtJSEol',
 {
+
 	requires: [
 	    'VSCodeExtJS.AppUtilities',
 	    'VSCodeExtJS.common.PatientDropdown',
