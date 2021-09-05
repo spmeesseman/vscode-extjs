@@ -271,7 +271,7 @@ suite("Config File Tests", () =>
 
 	test("Open tooling extjs framework location", async function()
 	{
-		this.timeout(45 * 1000);
+		this.timeout(50 * 1000);
 		//
 		// Write an open tooling extjs framework location
 		//
@@ -305,7 +305,7 @@ suite("Config File Tests", () =>
 
 	test("Workspace.json package.dir", async function()
 	{
-		this.timeout(45 * 1000);
+		this.timeout(50 * 1000);
 		//
 		// Remove packages.dir property
 		//

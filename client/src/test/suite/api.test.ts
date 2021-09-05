@@ -71,7 +71,7 @@ suite("API Tests", () =>
 	});
 
 
-	test("Miscellaneous api coverage", async() =>
+	test("Miscellaneous edge cases", async() =>
 	{   //
 		// Do some extension api usage that'll improve coverage...
 		//
@@ -79,6 +79,5 @@ suite("API Tests", () =>
 		extjsLangMgr.getLineProperties(api.doc, new Position(0, 0), "", 1);
 		await closeActiveDocument();
 	});
-
 
 });
