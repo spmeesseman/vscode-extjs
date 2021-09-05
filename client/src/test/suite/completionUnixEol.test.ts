@@ -2,16 +2,15 @@
 import * as vscode from "vscode";
 import * as completion from "./completion";
 import * as assert from "assert";
-import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments, closeActiveDocument, doc } from "./helper";
+import { getDocUri, activate, waitForValidation, insertDocContent, toRange, closeActiveDocuments, closeActiveDocument } from "./helper";
 import { configuration } from "../../common/configuration";
 import { quoteChar } from "../../common/clientUtils";
 
 
-suite("Completion Tests", () =>
+suite("Completion Tests (Unix EOL)", () =>
 {
 
-	const docUri = getDocUri("app/shared/src/app.js");
-	const eolUri = getDocUri("app/shared/src/appEol.js");
+	const docUri = getDocUri("app/shared/src/appEol.js");
 	let quickSuggest: boolean | undefined;
 	let ignoreErrors: any[];
 
@@ -51,9 +50,9 @@ suite("Completion Tests", () =>
 		await closeActiveDocuments();
 	});
 
-
 	test("This methods", async () =>
 	{
+		await activate(docUri);
 		await completion.thisMethod(docUri);
 	});
 
@@ -166,61 +165,9 @@ suite("Completion Tests", () =>
 	});
 
 
-	test("Config properties of extended class", async () =>
-	{
-		const physDdUri = getDocUri("app/classic/src/common/PhysicianDropdown.js");
-		await activate(physDdUri);
-		await completion.testCompletion(physDdUri, new vscode.Position(14, 0), "u", {
-			items: [
-				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
-			]
-		}, true, "config property of extended class");
-		await completion.testCompletion(physDdUri, new vscode.Position(14, 0), "r", {
-			items: [
-				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
-			]
-		}, true, "config property of extended class");
-		await insertDocContent("u", toRange(14, 1, 14, 1));
-		await completion.testCompletion(physDdUri, new vscode.Position(14, 1), "s", {
-			items: [
-				{ label: "userName UserDropdown config", kind: vscode.CompletionItemKind.Property }
-			]
-		}, true, "config property of extended class");
-		await insertDocContent("r", toRange(14, 1, 14, 2));
-		await completion.testCompletion(physDdUri, new vscode.Position(14, 1), "e", {
-			items: [
-				{ label: "readOnly UserDropdown", kind: vscode.CompletionItemKind.Property }
-			]
-		}, true, "config property of extended class");
-		await insertDocContent("", toRange(14, 0, 14, 1));
-		await closeActiveDocument();
-	});
-
-
 	test("No completion", async () =>
 	{
 		await completion.none(docUri);
-		//
-		// Open non extjs doc outside of a classpath
-		//
-		const jssUri = getDocUri("app/js/script1.js");
-		await activate(jssUri);
-		await completion.testCompletion(jssUri, new vscode.Position(4, 0), "A", {
-			items: []
-		}, true, "non-extjs file");
-		await closeActiveDocument();
-	});
-
-
-	test("Non-ExtJS document", async () =>
-	{
-		await closeActiveDocument();
-		const jssUri = getDocUri("app/js/script1.js");
-		await activate(jssUri);
-		await completion.testCompletion(jssUri, new vscode.Position(2, 12), ".", {
-			items: []
-		}, false, "non-extjs file");
-		await closeActiveDocument();
 	});
 
 });
