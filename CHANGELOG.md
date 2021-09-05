@@ -1,5 +1,11 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.10.2 (September 5th, 2021)
+
+### Bug Fixes
+
+- **Configuration Parser:** package references that have a sencha.modern or sencha.classic object definition in package.json are incorrectly parsed and cause the indexer to fail
+
 ## Version 0.10.1 (September 5th, 2021)
 
 ### Refactoring
