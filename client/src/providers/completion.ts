@@ -138,7 +138,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         // completionItems.push({
         //     label: "Ext.create",
         //     kind: CompletionItemKind.Keyword,
-        //     insertText: `Ext.create(\"\",${EOL}{${EOL}${EOL}});`, // SnippetString('Good ${1|morning,afternoon,evening|}. It is ${1}, right?')
+        //     insertText: `Ext.create(\"\",${config.eol}{${config.eol}${config.eol}});`, // SnippetString('Good ${1|morning,afternoon,evening|}. It is ${1}, right?')
         //     // documentation: new MarkdownString("Inserts a snippet that lets you select the _appropriate_ part of the day for your greeting.")
         // });
 

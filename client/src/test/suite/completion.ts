@@ -295,7 +295,8 @@ export async function inlineClass(uri: vscode.Uri)
 		await testCompletion(uri, new vscode.Position(95, 0), "V", {
 			items: [
 				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
-				{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
+				{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }// ,
+				// { label: "VSCodeExtJSEol", kind: vscode.CompletionItemKind.Class }
 			]
 		}, true, "inline property start V2");
 	}
@@ -503,8 +504,7 @@ export async function inlineModelField(uri: vscode.Uri)
 
 
 export async function inlineProperty(uri: vscode.Uri)
-{
-	//
+{   //
 	// Inside object - 'u' trigger
 	// Line 121-123
 	// const phys = Ext.create('VSCodeExtJS.common.PatientDropdown', {

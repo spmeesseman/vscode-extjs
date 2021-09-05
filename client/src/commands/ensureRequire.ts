@@ -3,9 +3,8 @@ import * as json5 from "json5";
 import * as log from "../common/log";
 import { commands, ExtensionContext, window, workspace, WorkspaceEdit } from "vscode";
 import { IRequire, extjs, utils, IComponent } from "../../../common";
-import { quoteChar, toVscodePosition, toVscodeRange } from "../common/clientUtils";
+import { quoteChar, toVscodePosition, toVscodeRange, documentEol } from "../common/clientUtils";
 import { extjsLangMgr } from "../extension";
-import { EOL } from "os";
 
 
 async function ensureRequires(xtype: string | undefined, type: "type" | "xtype" = "xtype")
@@ -17,7 +16,8 @@ async function ensureRequires(xtype: string | undefined, type: "type" | "xtype" 
 
 	log.methodStart("Command - Ensure requires", 1, "", true);
 
-	const fsPath = document.uri.fsPath,
+	const eol = documentEol(document),
+		  fsPath = document.uri.fsPath,
 		  thisCmp = extjsLangMgr.getComponentByFile(fsPath, "   ", 3) as IComponent,
 		  workspaceEdit = new WorkspaceEdit(),					   // ^ isExtJsFile() ensures it ;)
 		  quote = quoteChar();
@@ -59,9 +59,9 @@ async function ensureRequires(xtype: string | undefined, type: "type" | "xtype" 
 										.sort();
 
 			const requiresBlock = json5.stringify(Array.from(new Set(_requires)))
-										.replace(/\[/, "[" + EOL + pad + "    ")
-										.replace(/,/g, "," + EOL + pad + "    ")
-										.replace(/\]/, EOL + pad + "]")
+										.replace(/\[/, "[" + eol + pad + "    ")
+										.replace(/,/g, "," + eol + pad + "    ")
+										.replace(/\]/, eol + pad + "]")
 										.replace(/"/g, quote);
 			workspaceEdit.replace(document.uri, range, "requires: " + requiresBlock);
 			workspace.applyEdit(workspaceEdit);
@@ -83,9 +83,9 @@ async function ensureRequires(xtype: string | undefined, type: "type" | "xtype" 
 				pad += lineText[i];
 			}
 			const requiresBlock = json5.stringify(Array.from(componentClasses))
-									.replace(/\[/, "[" + EOL + pad + "    ")
-									.replace(/,/g, "," + EOL + pad + "    ")
-									.replace(/\]/, EOL + pad + "]," + EOL + EOL);
+									.replace(/\[/, "[" + eol + pad + "    ")
+									.replace(/,/g, "," + eol + pad + "    ")
+									.replace(/\]/, eol + pad + "]," + eol + eol);
 
 			workspaceEdit.insert(document.uri, toVscodePosition(start), pad + "requires: " + requiresBlock);
 			workspace.applyEdit(workspaceEdit);
