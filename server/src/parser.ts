@@ -5,14 +5,17 @@ import * as log from "./lib/log";
 import { parseDoc } from "./lib/commentParser";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable, extjs,
-    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType, IMixin, IAlternateClassName, IServerRequest, IJsDoc
+    DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange,
+    IWidget, IType, IMixin, IAlternateClassName, IServerRequest, IJsDoc
 } from "../../common";
 import {
     isArrayExpression, isIdentifier, isObjectExpression, Comment, isObjectProperty, isExpressionStatement,
     isStringLiteral, ObjectProperty, StringLiteral, isFunctionExpression, ObjectExpression, isNewExpression,
     isVariableDeclaration, isVariableDeclarator, isCallExpression, isMemberExpression, isFunctionDeclaration,
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
-    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement, isObjectMethod, isSpreadElement, ArrayExpression, Expression, isExpression, isLiteral, isNullLiteral, isRegExpLiteral, isRegexLiteral, isReturnStatement, ReturnStatement, FunctionExpression, assignmentExpression, identifier, isLVal, objectProperty
+    VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement,
+    isObjectMethod, isSpreadElement, isExpression, isReturnStatement, ReturnStatement, FunctionExpression,
+    identifier, isLVal
 } from "@babel/types";
 
 /**
@@ -276,9 +279,7 @@ export async function parseExtJsFile(options: IServerRequest)
         }
     }
 
-    cacheComponents(parsedComponents);
-
-    return parsedComponents;
+    return postParse(parsedComponents, postTasks);
 }
 
 
@@ -1392,4 +1393,19 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
     });
 
     return xType;
+}
+
+
+function postParse(components: IComponent[], postTasks: any[])
+{
+    for (const task of postTasks)
+    {
+        if (utils.isFunction(task.fn)) {
+            task.fn(components, ...task.args);
+        }
+    }
+
+    cacheComponents(components);
+
+    return components;
 }

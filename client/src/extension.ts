@@ -64,19 +64,17 @@ export async function activate(context: ExtensionContext): Promise<ExtJsApi>
     // Register internal task providers.  Npm, VScode type tasks are provided
     // by VSCode, not internally.
     //
-    const taskProvider = new ExtJsTaskProvider();
-    context.subscriptions.push(tasks.registerTaskProvider("extjs", taskProvider));
-    providers.set("extjs", taskProvider);
-
+    // const taskProvider = new ExtJsTaskProvider();
+    // context.subscriptions.push(tasks.registerTaskProvider("extjs", taskProvider));
+    // providers.set("extjs", taskProvider);
     //
     // Register the task provider
     //
-    taskTree = registerExplorer(context);
-
+    // taskTree = registerExplorer(context);
     //
     // Register configurations/settings change watcher
     //
-    context.subscriptions.push(workspace.onDidChangeConfiguration(async e => { await processConfigChanges(context, e); }));
+    // context.subscriptions.push(workspace.onDidChangeConfiguration(async e => { await processConfigChanges(context, e); }));
 
     //
     // Language Manager
