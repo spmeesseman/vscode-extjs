@@ -143,7 +143,7 @@ Ext.define('VSCodeExtJS',
 	testFn6: function()
 	{
 		let cmp = this.down('physiciandropdown');
-		cmp.load("test");
+		cmp.load("test");cmp.load("test2");
 	},
 
 	testFn7: function()

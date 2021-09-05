@@ -124,6 +124,25 @@ suite("Hover Tests", () =>
 		// phys.delete();
 		//
 		await testHover(docUri, new vscode.Position(82, 3), ": VSCodeExtJS.common.PhysicianDropdown");
+		//
+		// Line 145
+		// let cmp = this.down('physiciandropdown');
+		//
+		await testHover(docUri, new vscode.Position(144, 8), "let cmp: VSCodeExtJS.common.PhysicianDropdown");
+		//
+		// Line 146
+		// cmp.load("test");
+		//
+		await testHover(docUri, new vscode.Position(145, 4), "let cmp: VSCodeExtJS.common.PhysicianDropdown");
+	});
+
+
+	test("Local variable methods", async () =>
+	{   //
+		// Line 146
+		// cmp.load("test");
+		//
+		await testHover(docUri, new vscode.Position(145, 8), "function load: returns void");
 	});
 
 
@@ -230,12 +249,6 @@ suite("Hover Tests", () =>
 
 	test("Unknown variables / primitives", async () =>
 	{   //
-		// Line 145
-		// let cmp = this.down('physiciandropdown');
-		// THis should eventually work and this will be moved to instance variables test
-		//
-		await testHover(docUri, new vscode.Position(144, 8));
-		//
 		// Line 367
 		// const xTestVar = "";
 		//

@@ -478,6 +478,29 @@ suite("Completion Tests", () =>
 			]
 		});
 		//
+		// Line 145
+		//
+		// 143 ...
+		// 144 let cmp = this.down('physiciandropdown');
+		// 145 cmp.load("test");cmp.load("test2");
+		//
+		await testCompletion(docUri, new vscode.Position(144, 5), ".", {
+			items: [
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method },
+				// { label: "getPinNumberInternal (private)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
+			]
+		});
+		await testCompletion(docUri, new vscode.Position(144, 22), ".", {
+			items: [
+				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method },
+				// { label: "getPinNumberInternal (private)", kind: vscode.CompletionItemKind.Method },
+				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
+			]
+		});
+		//
 		// Revert settings
 		//
 		await configuration.update("intellisenseIncludeDeprecated", incDeprecated);
