@@ -339,4 +339,6 @@ export interface IWidget extends IExtJsBase
 export interface IXtype extends IWidget
 {
     type: "xtype";
+    itemId?: string;
+    id?: string;
 }

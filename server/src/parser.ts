@@ -4,7 +4,7 @@ import traverse from "@babel/traverse";
 import * as log from "./lib/log";
 import { parseDoc } from "./lib/commentParser";
 import {
-    ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable,
+    ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable, extjs,
     DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange, IWidget, IType, IMixin, IAlternateClassName, IServerRequest, IJsDoc
 } from "../../common";
 import {
@@ -272,7 +272,7 @@ export async function parseExtJsFile(options: IServerRequest)
     for (const task of postTasks)
     {
         if (utils.isFunction(task.fn)) {
-            task.fn(parsedComponents);
+            task.fn(parsedComponents, ...task.args);
         }
     }
 
@@ -1197,18 +1197,13 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
     //
     // Get instance component class
     //
-    let instCls = "Primitive";
-    const isClsInstantiate = callerCls === "Ext" || callee.property.name === "create" ||
-                             (callerCls !== "Ext" && (callee.property.name === "down" || callee.property.name === "up" ||
-                              callee.property.name === "next" || callee.property.name === "prev"));
-    if (isClsInstantiate)
+    let instCls: string;
+    const isClsInstantiate = callee.property.name === "create" ||
+                             callee.property.name === "down" || callee.property.name === "up" ||
+                             callee.property.name === "next" || callee.property.name === "prev";
+    if (isClsInstantiate && isStringLiteral(args[0]))
     {
-        if (!isStringLiteral(args[0])) {
-            return;
-        }
-        else {
-            instCls = args[0].value;
-        }
+        instCls = args[0].value;
     }
     else {
         instCls = callerCls;
@@ -1222,22 +1217,7 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
         instCls += ("." + callee.property.name);
     }
 
-    //
-    // e.g. this.down('dropdowncommon')
-    //
-    // TODO - Add support for down('#itemid') - this will not capture string with #
-    //        will need some sort of post-processing to accomplish this, to scan widget tree
-    //        for the widget with the itemid.  Do other down/up scenarios too.
-    //
-    if (instCls[0] === "#")
-    {
-        //
-    }
-
-    //
-    // Add thr variable to the component's IVariables array
-    //
-    return {
+    const variable: IVariable = {
         name: varName,
         declaration: DeclarationType[node.kind],
         start: node.declarations[0].loc!.start,
@@ -1246,17 +1226,49 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
         methodName,
         range: utils.toRange(node.declarations[0].loc!.start, node.declarations[0].loc!.end)
     };
+
+    //
+    // itemId/id post-processing task
+    // e.g. this.down('#thisItemId')
+    //
+    if (instCls[0] === "#")
+    {
+        postTasks.push(
+        {
+            args: [ instCls, parentCls, variable ],
+            fn: (components: IComponent[], instanceCls: string, thisCls: string, variable: IVariable) =>
+            {
+                const component = components.find(c => c.componentClass === thisCls);
+                if (component)
+                {
+                    for (const w of component.widgets)
+                    {
+                        if (extjs.isXType(w) && w.itemId === instanceCls.replace("#", ""))
+                        {
+                            variable.componentClass = w.name; // w.componentClass;
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    //
+    // Add thr variable to the component's IVariables array
+    //
+    return variable;
 }
 
 
 function parseWidgets(objEx: ObjectExpression, text: string, component: IComponent, nodeName: "type" | "xtype")
 {
-    let lastProperty = "Ext.define";
+    let lastProperty = "Ext.define",
+        lastItemId: string | undefined;
     const xType: (IXtype | IType)[] = [];
     const line = objEx.loc!.start.line - 1;
     const column = objEx.loc!.start.column;
 
-    const _add = ((v: StringLiteral, parentProperty: string) =>
+    const _add = ((v: StringLiteral, parentProperty: string, itemId?: string) =>
     {   //
         // CHeck the widgets we parsed on this component so we don't add something
         // that the user is currently typing in
@@ -1307,7 +1319,8 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
             componentClass: component.componentClass,
             type: nodeName,
             parentProperty,
-            range: utils.toRange(start, end)
+            range: utils.toRange(start, end),
+            itemId
         });
     });
 
@@ -1317,13 +1330,32 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
             return;
         }
 
-        if (n.key.name !== nodeName || !isStringLiteral(v)) { // && !isArrayExpression(v))) {
+        if (nodeName === "xtype" && n.key.name === "itemId" && isStringLiteral(v))
+        {
+            lastItemId = undefined;
+            if (xType.length)
+            {
+                const xt = xType[xType.length - 1];
+                if (extjs.isXType(xt)) {
+                    xt.itemId = v.value;
+                }
+            }
+            else {
+                lastItemId = v.value;
+            }
+            return;
+        }
+
+        if (n.key.name !== nodeName || !isStringLiteral(v))
+        {
             lastProperty = n.key.name;
+            lastItemId = undefined;
             return;
         }
 
         if (isStringLiteral(v)) {
-            _add(v, lastProperty);
+            _add(v, lastProperty, lastItemId);
+            lastItemId = undefined;
         }
         // else
         // {

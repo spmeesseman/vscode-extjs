@@ -168,7 +168,7 @@ Ext.define('VSCodeExtJS',
 	},
 	{ 
 		xtype: "patientdropdown",
-
+		itemId: 'thisPatItemId'
 	},
 	{
 		xtype: 'userdropdown',
@@ -356,7 +356,7 @@ Ext.define('VSCodeExtJS',
 		// VSCodeExtJS.
 		//VSCodeExtJS.
 		//
-		
+		const xyz = this.down('#thisPatItemId');
 	},
 
 	/**
