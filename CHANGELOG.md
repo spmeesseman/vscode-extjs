@@ -1,5 +1,11 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.10.1 (September 5th, 2021)
+
+### Refactoring
+
+- disable task view, not meant to be enabled yet
+
 ## Version 0.10.0 (September 5th, 2021)
 
 ### Bug Fixes
