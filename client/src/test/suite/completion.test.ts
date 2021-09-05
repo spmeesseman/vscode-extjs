@@ -121,7 +121,7 @@ suite("Completion Tests", () =>
 			}, true, "inline property start U2");
 		}
 
-		try {
+		try { // *
 			await testCompletion(docUri, new vscode.Position(95, 3), "V", {
 				items: [
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
@@ -484,7 +484,7 @@ suite("Completion Tests", () =>
 		// 144 let cmp = this.down('physiciandropdown');
 		// 145 cmp.load("test");cmp.load("test2");
 		//
-		await testCompletion(docUri, new vscode.Position(144, 5), ".", {
+		await testCompletion(docUri, new vscode.Position(145, 6), ".", {
 			items: [
 				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
 				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method },
@@ -492,7 +492,7 @@ suite("Completion Tests", () =>
 				{ label: "getPinNumberInternal (private) (since v1.0.2)", kind: vscode.CompletionItemKind.Method }
 			]
 		});
-		await testCompletion(docUri, new vscode.Position(144, 22), ".", {
+		await testCompletion(docUri, new vscode.Position(145, 23), ".", {
 			items: [
 				{ label: "getPinNumber (since v1.0.0)", kind: vscode.CompletionItemKind.Method },
 				{ label: "getPin (deprecated)", kind: vscode.CompletionItemKind.Method },
