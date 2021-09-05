@@ -121,7 +121,7 @@ suite("Completion Tests", () =>
 			}, true, "inline property start U2");
 		}
 
-		try { // *
+		try { // **
 			await testCompletion(docUri, new vscode.Position(95, 3), "V", {
 				items: [
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
@@ -132,10 +132,15 @@ suite("Completion Tests", () =>
 		catch {
 			await testCompletion(docUri, new vscode.Position(95, 3), "V", {
 				items: [
+					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class }
+				]
+			}, true, "inline property start V2");
+			await testCompletion(docUri, new vscode.Position(95, 3), "V", {
+				items: [
 					{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
 					{ label: "VSCodeExtJSApp", kind: vscode.CompletionItemKind.Class }
 				]
-			}, true, "inline property start V2");
+			}, true, "inline property start V3");
 		}
 
 		//
