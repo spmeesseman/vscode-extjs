@@ -46,6 +46,7 @@ export async function parseExtJsFile(options: IServerRequest)
     }
 
     const text = nodeAst.text;
+    const postTasks: any[] = [];
 
     //
     // Construct our syntax tree to be able to serve the goods
@@ -208,13 +209,13 @@ export async function parseExtJsFile(options: IServerRequest)
 
                         if (isObjectProperty(propertyPrivates))
                         {
-                            componentInfo.privates.push(...parsePropertyBlock(propertyPrivates, componentInfo.componentClass, nameSpace, false, true, text, fsPath));
+                            componentInfo.privates.push(...parsePropertyBlock(propertyPrivates, componentInfo.componentClass, nameSpace, false, true, text, fsPath, postTasks));
                         }
                         logProperties("privates", componentInfo.privates);
 
                         if (isObjectProperty(propertyStatics))
                         {
-                            componentInfo.statics.push(...parsePropertyBlock(propertyStatics, componentInfo.componentClass, nameSpace, true, false, text, fsPath));
+                            componentInfo.statics.push(...parsePropertyBlock(propertyStatics, componentInfo.componentClass, nameSpace, true, false, text, fsPath, postTasks));
                         }
                         logProperties("statics", componentInfo.statics);
 
@@ -231,7 +232,7 @@ export async function parseExtJsFile(options: IServerRequest)
 
                         if (propertyMethod && propertyMethod.length)
                         {
-                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, false, false, fsPath));
+                            componentInfo.methods.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentInfo.componentClass, false, false, fsPath, postTasks));
                             componentInfo.methods.forEach((m) => {
                                 // componentInfo.objectRanges.push({ start: m.bodyStart, end: m.bodyEnd, type: "ObjectExpression" });
                                 componentInfo.objectRanges.push(...m.objectRanges);
@@ -267,6 +268,13 @@ export async function parseExtJsFile(options: IServerRequest)
             }
         }
     });
+
+    for (const task of postTasks)
+    {
+        if (utils.isFunction(task.fn)) {
+            task.fn(parsedComponents);
+        }
+    }
 
     cacheComponents(parsedComponents);
 
@@ -650,7 +658,7 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nam
 }
 
 
-function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, isPrivate: boolean, fsPath: string): IMethod[]
+function parseMethods(propertyMethods: ObjectProperty[], text: string | undefined, componentClass: string, isStatic: boolean, isPrivate: boolean, fsPath: string, postTasks: any[]): IMethod[]
 {
     const methods: IMethod[] = [];
 
@@ -671,7 +679,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             {
                 const doc = getJsDoc(propertyName, "method", componentClass, isPrivate, isStatic, false, m.leadingComments),
                       params = parseParams(m, text, componentClass, doc),
-                      variables = parseVariables(m, text, componentClass, (m.value.loc?.start.line || 1) - 1, params);
+                      variables = parseVariables(m, text, componentClass, (m.value.loc?.start.line || 1) - 1, postTasks, params);
                 methods.push({
                     componentClass,
                     doc,
@@ -941,7 +949,7 @@ function parseParams(objEx: ObjectProperty, text: string | undefined, parentCls:
 }
 
 
-function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: string, nameSpace: string, isStatic: boolean, isPrivate: boolean, text: string | undefined, fsPath: string)
+function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: string, nameSpace: string, isStatic: boolean, isPrivate: boolean, text: string | undefined, fsPath: string, postTasks: any[])
 {
     const block: (IMethod| IProperty)[] = [];
     if (isObjectExpression(staticsConfig.value))
@@ -949,7 +957,7 @@ function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: strin
         const propertyMethod = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && isFunctionExpression(p.value));
         const propertyProperty = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
 
-        block.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, isStatic, isPrivate, fsPath));
+        block.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, isStatic, isPrivate, fsPath, postTasks));
         block.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, nameSpace, isStatic, isPrivate));
     }
     return block;
@@ -965,7 +973,7 @@ function parseStringLiteral(property: ObjectProperty): string | undefined
 }
 
 
-function parseVariables(objEx: ObjectProperty, text: string | undefined, parentCls: string, lineOffset: number, params?: IParameter[]): IVariable[]
+function parseVariables(objEx: ObjectProperty, text: string | undefined, parentCls: string, lineOffset: number, postTasks: any[], params?: IParameter[]): IVariable[]
 {
     const variables: IVariable[] = [],
           methodName = isIdentifier(objEx.key) ? objEx.key.name : undefined;
@@ -1011,7 +1019,7 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
                     const declarator = variableDeclarator(id, rightExpression),
                             declaration = variableDeclaration("let", [ declarator ]);
                     declarator.loc = { ...rightExpression.loc } as SourceLocation;
-                    const variable = parseVariable(declaration, declarator, identifier.name, methodName, parentCls);
+                    const variable = parseVariable(declaration, declarator, identifier.name, methodName, parentCls, postTasks);
                     if (variable) {
                         _add(variable);
                     }
@@ -1059,7 +1067,7 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
                     return;
                 }
 
-                const variable = parseVariable(node, dec, dec.id.name, methodName, parentCls);
+                const variable = parseVariable(node, dec, dec.id.name, methodName, parentCls, postTasks);
                 if (variable) {
                     _add(variable);
                 }
@@ -1071,7 +1079,7 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
 }
 
 
-function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varName: string, methodName: string, parentCls: string): IVariable | undefined
+function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varName: string, methodName: string, parentCls: string, postTasks: any[]): IVariable | undefined
 {
     let isNewExp = false,
         callee,
@@ -1190,8 +1198,10 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
     // Get instance component class
     //
     let instCls = "Primitive";
-    const isFramework = callerCls === "Ext";
-    if (isFramework)
+    const isClsInstantiate = callerCls === "Ext" || callee.property.name === "create" ||
+                             (callerCls !== "Ext" && (callee.property.name === "down" || callee.property.name === "up" ||
+                              callee.property.name === "next" || callee.property.name === "prev"));
+    if (isClsInstantiate)
     {
         if (!isStringLiteral(args[0])) {
             return;
@@ -1210,6 +1220,18 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
     if (isNewExp)
     {
         instCls += ("." + callee.property.name);
+    }
+
+    //
+    // e.g. this.down('dropdowncommon')
+    //
+    // TODO - Add support for down('#itemid') - this will not capture string with #
+    //        will need some sort of post-processing to accomplish this, to scan widget tree
+    //        for the widget with the itemid.  Do other down/up scenarios too.
+    //
+    if (instCls[0] === "#")
+    {
+        //
     }
 
     //

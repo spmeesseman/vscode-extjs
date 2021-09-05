@@ -48,6 +48,12 @@ export function isExtJsFile(documentText: string | undefined)
 }
 
 
+export function isFunction(value: any)
+{
+    return value && typeof value === "function";
+}
+
+
 export function isGetterSetter(method: string): boolean
 {
     return method.startsWith("get") || method.startsWith("set") && method[3] >= "A" && method[3] <= "Z";
