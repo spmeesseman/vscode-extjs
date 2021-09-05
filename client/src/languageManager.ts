@@ -711,7 +711,7 @@ class ExtjsLanguageManager
         //        sorters: [
         //        new RegExp(`property\\s*:\\s*${property}["']+`).test(lineText)
         //
-        else if (new RegExp(`x?type\\s*:\\s*["']+${property}["']+`).test(allLineText) || !(new RegExp(`["']+[^"']*${property}\\s*[^"']*["']+`).test(allLineText)))
+        else if (new RegExp(`x?type\\s*:\\s*["']+${property}["']+`).test(allLineText) || !(new RegExp(`["']+[^"';]*${property}\\s*[^"';]*["']+`).test(allLineText)))
         {   // ComponentType.Property / ComponentType.Config | variable / parameter
             //
             component = this.getComponentInstance(property, project, position, thisCmp, logPad + "   ", logLevel);
