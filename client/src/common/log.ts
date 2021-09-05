@@ -89,8 +89,8 @@ export function error(msg: string | (string|Error)[] | Error, params?: (string|a
     }
     else {
         msg.forEach((m: string | Error) => {
-            if (msg instanceof Error) {
-                writeError(msg);
+            if (m instanceof Error) {
+                writeError(m);
             }
             else {
                 write("*** " + m, undefined, "", true);
