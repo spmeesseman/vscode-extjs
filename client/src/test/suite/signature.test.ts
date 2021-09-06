@@ -39,7 +39,6 @@ suite("Method Signature Tests", () =>
 		// on parameter #2...
 		//
 		await insertDocContent("\"me\",", toRange(71, 38, 71, 38));
-		await waitForValidation();
 
 		await testSignature(docUri, new vscode.Position(71, 43), ",", {
 			activeParameter: 1,
@@ -48,7 +47,6 @@ suite("Method Signature Tests", () =>
 		});
 
 		await insertDocContent("", toRange(71, 38, 71, 43));
-		await waitForValidation();
 	});
 
 
@@ -70,7 +68,6 @@ suite("Method Signature Tests", () =>
 		// on parameter #2...
 		//
 		await insertDocContent("\"me\",", toRange(72, 22, 72, 22));
-		await waitForValidation();
 
 		await testSignature(docUri, new vscode.Position(72, 27), ",", {
 			activeParameter: 1,
@@ -79,7 +76,6 @@ suite("Method Signature Tests", () =>
 		});
 
 		await insertDocContent("", toRange(72, 22, 72, 27));
-		await waitForValidation();
 	});
 
 
@@ -100,7 +96,6 @@ suite("Method Signature Tests", () =>
 		// on parameter #2...
 		//
 		await insertDocContent("\"me\",", toRange(192, 47, 192, 47));
-		await waitForValidation();
 
 		await testSignature(docUri, new vscode.Position(192, 52), ",", {
 			activeParameter: 1,
@@ -109,7 +104,6 @@ suite("Method Signature Tests", () =>
 		});
 
 		await insertDocContent("", toRange(192, 47, 192, 52));
-		await waitForValidation();
 	});
 
 
@@ -132,7 +126,6 @@ suite("Method Signature Tests", () =>
 		// on parameter #2...
 		//
 		await insertDocContent("\"me\",", toRange(228, 51, 228, 51));
-		await waitForValidation();
 
 		await testSignature(docUri, new vscode.Position(228, 56), ",", {
 			activeParameter: 1,
@@ -141,7 +134,6 @@ suite("Method Signature Tests", () =>
 		});
 
 		await insertDocContent("", toRange(228, 51, 228, 56));
-		await waitForValidation();
 
 		await configuration.update("intellisenseIncludePrivate", incPrivate);
 	});
@@ -155,7 +147,6 @@ suite("Method Signature Tests", () =>
 		// Insert a first parameter that will be a function call
 		//
 		await insertDocContent("me.testFn4()", toRange(108, 13, 108, 13));
-		await waitForValidation();
 
 		//
 		// Line 109
@@ -171,7 +162,6 @@ suite("Method Signature Tests", () =>
 		// on parameter #2...
 		//
 		await insertDocContent("\"me\",", toRange(108, 24, 108, 24));
-		await waitForValidation();
 
 		//
 		// 2nd parameter
@@ -186,7 +176,6 @@ suite("Method Signature Tests", () =>
 		// Remove added text, set document back to initial state
 		//
 		await insertDocContent("", toRange(108, 13, 108, 30));
-		await waitForValidation();
 	});
 
 
@@ -211,14 +200,12 @@ suite("Method Signature Tests", () =>
 		// Insert a first parameter, and trigger the signature helper again
 		//
 		await insertDocContent("\"me\",", toRange(229, 13, 229, 13));
-		await waitForValidation();
 		await testSignature(docUri, new vscode.Position(229, 18), ",", {
 			activeParameter: 1,
 			activeSignature: 0,
 			signatures: getSigInfo("a, b")
 		}, false);
 		await insertDocContent("", toRange(229, 13, 229, 18));
-		await waitForValidation();
 
 		//
 		// Line 231
@@ -233,14 +220,12 @@ suite("Method Signature Tests", () =>
 		// Insert a first parameter, and trigger the signature helper again
 		//
 		await insertDocContent("\"me\",", toRange(230, 23, 230, 23));
-		await waitForValidation();
 		await testSignature(docUri, new vscode.Position(230, 28), ",", {
 			activeParameter: 1,
 			activeSignature: 0,
 			signatures: getSigInfo("a, b")
 		}, false);
 		await insertDocContent("", toRange(230, 23, 230, 28));
-		await waitForValidation();
 
 		//
 		// Line 229
@@ -256,7 +241,6 @@ suite("Method Signature Tests", () =>
 		// on parameter #2...
 		//
 		await insertDocContent("\"me\",", toRange(231, 51, 231, 51));
-		await waitForValidation();
 
 		await testSignature(docUri, new vscode.Position(231, 56), ",", {
 			activeParameter: 1,
@@ -265,7 +249,6 @@ suite("Method Signature Tests", () =>
 		}, false);
 
 		await insertDocContent("", toRange(231, 51, 231, 56));
-		await waitForValidation();
     });
 
 

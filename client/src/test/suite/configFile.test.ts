@@ -275,30 +275,21 @@ suite("Config File Tests", () =>
 		//
 		// Write an open tooling extjs framework location
 		//
-		await insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21), true);
 		//
 		// Reset
 		//
-		await insertDocContent("extjs", toRange(3, 16, 3, 40));
-		await workspace.saveAll();
-
-		await waitForValidation();
+		await insertDocContent("extjs", toRange(3, 16, 3, 40), true);
 		//
 		// Set tests to 'false' to cover branch for user prompt for config file change
 		//
 		extjsLangMgr.setTests(false);
 		//
-		await insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("node_modules/@sencha/ext", toRange(3, 16, 3, 21), true);
 		//
 		// Reset framework path to "extjs"
 		//
-		await insertDocContent("extjs", toRange(3, 16, 3, 40));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("extjs", toRange(3, 16, 3, 40), true);
 		extjsLangMgr.setTests(true);
 	});
 
@@ -309,15 +300,11 @@ suite("Config File Tests", () =>
 		//
 		// Remove packages.dir property
 		//
-		await insertDocContent("", toRange(11, 8, 11, 2000));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("", toRange(11, 8, 11, 2000), true);
 		//
 		// Now remove packages property
 		//
-		await insertDocContent("", toRange(8, 5, 13, 5));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("", toRange(8, 5, 13, 5), true);
 		//
 		// Reset
 		//
@@ -336,15 +323,11 @@ suite("Config File Tests", () =>
 	{   //
 		// Remove frameworks.ext property
 		//
-		await insertDocContent("", toRange(3, 8, 3, 22));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("", toRange(3, 8, 3, 22), true);
 		//
 		// Now remove frameworks property
 		//
-		await insertDocContent("", toRange(1, 4, 4, 6));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("", toRange(1, 4, 4, 6), true);
 		//
 		// Reset
 		//
@@ -371,49 +354,37 @@ suite("Config File Tests", () =>
 		await closeActiveDocument();
 		await activate(appJsonUri);
 		await copyFile(appJsonPath, path.join(path.dirname(appJsonPath), "_app.json"));
-		await insertDocContent("\r\n\r\n\r\n", toRange(75, 8, 78, 10));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("\r\n\r\n\r\n", toRange(75, 8, 78, 10), true);
 	});
 
 
 	test("app.json remove classic configuration", async () =>
 	{
-		await insertDocContent("", toRange(43, 4, 71, 6));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("", toRange(43, 4, 71, 6), true);
 	});
 
 
 	test("app.json remove modern configuration", async () =>
 	{
-		await insertDocContent("", toRange(45, 4, 73, 6));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("", toRange(45, 4, 73, 6), true);
 	});
 
 
 	test("app.json add base string classpath", async () =>
 	{
-		await insertDocContent("\"classpath\": \"app\",", toRange(43, 4, 43, 40));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("\"classpath\": \"app\",", toRange(43, 4, 43, 40), true);
 	});
 
 
 	test("app.json add base array classpath", async () =>
 	{
-		await insertDocContent("\"classpath\": [\"app\"],", toRange(43, 4, 43, 42));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("\"classpath\": [\"app\"],", toRange(43, 4, 43, 42), true);
 	});
 
 
 	test("app.json remove name", async () =>
 	{
-		await insertDocContent("", toRange(1, 4, 1, 26)); // remove 'name' property
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("", toRange(1, 4, 1, 26), true); // remove 'name' property
 	});
 
 
@@ -431,12 +402,8 @@ suite("Config File Tests", () =>
 	test("app.json invalid json", async () =>
 	{
 		await activate(appJsonUri);
-		await insertDocContent("aaa^", toRange(0, 0, 0, 4));
-		await workspace.saveAll();
-		await waitForValidation();
-		await insertDocContent("{", toRange(0, 0, 0, 4));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("aaa^", toRange(0, 0, 0, 4), true);
+		await insertDocContent("{", toRange(0, 0, 0, 4), true);
 		await closeActiveDocument();
 	});
 
@@ -444,12 +411,8 @@ suite("Config File Tests", () =>
 	test("workspace.json invalid json", async () =>
 	{
 		await activate(wsJsonUri);
-		await insertDocContent("aaa^", toRange(0, 0, 0, 4));
-		await workspace.saveAll();
-		await waitForValidation();
-		await insertDocContent("{", toRange(0, 0, 0, 4));
-		await workspace.saveAll();
-		await waitForValidation();
+		await insertDocContent("aaa^", toRange(0, 0, 0, 4), true);
+		await insertDocContent("{", toRange(0, 0, 0, 4), true);
 		await closeActiveDocument();
 	});
 

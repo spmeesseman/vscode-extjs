@@ -150,10 +150,8 @@ suite("Document Tests", () =>
 		await activate(getDocUri(newDocPath2));
 
 		insertDocContent("22", toRange(0, 25, 0, 25));
-		await waitForValidation();
 
 		insertDocContent("33", toRange(0, 25, 0, 25));
-		await waitForValidation();
 
 		await vscode.workspace.saveAll();
 		await waitForValidation();
@@ -170,9 +168,7 @@ suite("Document Tests", () =>
 
 	test("Clear document content", async () =>
 	{
-		insertDocContent("", toRange(0, 0, 6, 3));
-		await vscode.workspace.saveAll();
-		await waitForValidation();
+		insertDocContent("", toRange(0, 0, 6, 3), true);
 		await waitForValidation();
 		await waitForValidation();
 		await closeActiveDocument();

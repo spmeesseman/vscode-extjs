@@ -18,7 +18,6 @@ export async function behindComments(uri: vscode.Uri)
 	// 5  */
 	//
 	await insertDocContent("VSCodeExtJS.", toRange(2, 3, 2, 3));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(2, 15), ".", {
 		items: [{ label: "common", kind: vscode.CompletionItemKind.Class }]
 	}, false, "behind comment method");
@@ -26,7 +25,6 @@ export async function behindComments(uri: vscode.Uri)
 	// Remove added text, set document back to initial state
 	//
 	await insertDocContent("", toRange(2, 3, 2, 15));
-	await waitForValidation();
 	//
 	// Line 355
 	// 354 //
@@ -67,7 +65,6 @@ export async function fullTypeLines(uri: vscode.Uri)
 	// Typing a ':' after an 'xtype:'
 	//
 	await insertDocContent("type:", toRange(189, 3, 189, 3));
-	await waitForValidation();
 	try {
 		await testCompletion(uri, new vscode.Position(189, 7), ":", { items }, true, "full type lines ':'");
 	}
@@ -79,7 +76,6 @@ export async function fullTypeLines(uri: vscode.Uri)
 	//
 	const quote = quoteChar();
 	await insertDocContent(`type: ${quote}${quote}`, toRange(189, 3, 189, 3));
-	await waitForValidation();
 	try {
 		await testCompletion(uri, new vscode.Position(189, 7), ":", { items });
 		await testCompletion(uri, new vscode.Position(189, 9), quote, { items });
@@ -93,7 +89,6 @@ export async function fullTypeLines(uri: vscode.Uri)
 	// Mid-typing type (ty...)
 	//
 	await insertDocContent("ty", toRange(216, 4, 216, 4));
-	await waitForValidation();
 	try {
 		await testCompletion(uri, new vscode.Position(216, 6), "p", { items }, true, "object 'type' configs and properties mid-word");
 		await testCompletion(uri, new vscode.Position(216, 5), "y", { items }, true, "object 'type' configs and properties mid-word");
@@ -138,7 +133,6 @@ export async function fullXTypeLines(uri: vscode.Uri)
 	// Typing a ':' after an 'xtype:'
 	//
 	await insertDocContent("xtype:", toRange(189, 3, 189, 3));
-	await waitForValidation();
 	try {
 		await testCompletion(uri, new vscode.Position(189, 8), ":", { items }, true, "full xtype lines ':'");
 	}
@@ -151,7 +145,6 @@ export async function fullXTypeLines(uri: vscode.Uri)
 	//
 	const quote = quoteChar();
 	await insertDocContent(`xtype: ${quote}${quote}`, toRange(189, 3, 189, 3));
-	await waitForValidation();
 	try {
 		await testCompletion(uri, new vscode.Position(189, 8), ":", { items });
 		await testCompletion(uri, new vscode.Position(189, 10), quote, { items });
@@ -168,14 +161,12 @@ export async function fullXTypeLines(uri: vscode.Uri)
 	// Mid-typing type (xt...)
 	//
 	await insertDocContent("xt", toRange(189, 3, 189, 3));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(189, 5), "y", { items }, true, "object 'xtype' configs and properties mid-word");
 	await testCompletion(uri, new vscode.Position(189, 4), "t", { items }, true, "object 'xtype' configs and properties mid-word");
 	//
 	// Remove added text, set document back to initial state
 	//
 	await insertDocContent("", toRange(189, 3, 189, 5));
-	await waitForValidation();
 	//
 	// Line 121-123 - should return nothing, since the component is defined
 	// in the 1st argument to Ext.create, no 'xtype: ...' items
@@ -446,7 +437,6 @@ export async function inlineClassAsParam(uri: vscode.Uri)
 	// Insert a first parameter that will be a class completion
 	//
 	await insertDocContent("VSCodeExtJS.", toRange(108, 13, 108, 13));
-	await waitForValidation();
 	//
 	// Line 109
 	// me.testFn2(me.testFn4(...
@@ -466,7 +456,6 @@ export async function inlineClassAsParam(uri: vscode.Uri)
 	// Insert a first parameter
 	//
 	await insertDocContent(", AppUtils.", toRange(108, 24, 108, 25));
-	await waitForValidation();
 	//
 	// 2nd parameter
 	//
@@ -480,7 +469,6 @@ export async function inlineClassAsParam(uri: vscode.Uri)
 	// Remove added text, set document back to initial state
 	//
 	await insertDocContent("", toRange(108, 13, 108, 35));
-	await waitForValidation();
 }
 
 
@@ -551,12 +539,10 @@ export async function instanceConfigProperties(uri: vscode.Uri)
 export async function invalidXTypeObject(uri: vscode.Uri)
 {
 	await insertDocContent("xtype: invalidXtype,\r\n\t\t", toRange(189, 3, 189, 3));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(190, 3), "u", {
 		items: []
 	}, true, "invalid xtype object");
 	await insertDocContent("", toRange(189, 3, 190, 3));
-	await waitForValidation();
 }
 
 
@@ -738,7 +724,6 @@ export async function propertyValues(uri: vscode.Uri)
 	// }...
 	//
 	await insertDocContent("\t\treadOnly:", toRange(166, 0, 166, 11));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(166, 11), ":", {
 		items: [
 			{ label: "false", kind: vscode.CompletionItemKind.Value },
@@ -763,7 +748,6 @@ export async function propertyValues(uri: vscode.Uri)
 	// Xtype string value
 	//
 	await insertDocContent("\t\tuserName:", toRange(166, 0, 166, 11));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(166, 11), ":", {
 		items: [
 			{ label: "String Value", kind: vscode.CompletionItemKind.Value }
@@ -775,7 +759,6 @@ export async function propertyValues(uri: vscode.Uri)
 	// Line 208
 	//
 	await insertDocContent("\t\tautoLoad:", toRange(207, 4, 207, 15));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(207, 15), ":", {
 		items: [
 			{ label: "false", kind: vscode.CompletionItemKind.Value },
@@ -788,7 +771,6 @@ export async function propertyValues(uri: vscode.Uri)
 	// Line 208
 	//
 	await insertDocContent("\t\tsortOnLoad:", toRange(207, 4, 207, 17));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(207, 17), ":", {
 		items: [
 			{ label: "false", kind: vscode.CompletionItemKind.Value },
@@ -801,7 +783,6 @@ export async function propertyValues(uri: vscode.Uri)
 	// Line 208
 	//
 	await insertDocContent("\t\tmodel:", toRange(207, 4, 207, 12));
-	await waitForValidation();
 	await testCompletion(uri, new vscode.Position(207, 12), ":", {
 		items: []
 	}, false, "model property values, no default type");

@@ -116,9 +116,13 @@ export async function setDocContent(content: string): Promise<boolean>
 }
 
 
-export async function insertDocContent(content: string, range: Range): Promise<boolean>
+export async function insertDocContent(content: string, range: Range, save?: boolean)
 {
-	return editor.edit(eb => eb.replace(range, content));
+	await editor.edit(eb => eb.replace(range, content));
+	if (save === true) {
+		await workspace.saveAll();
+	}
+	await waitForValidation();
 }
 
 

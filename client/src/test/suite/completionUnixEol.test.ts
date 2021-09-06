@@ -154,7 +154,7 @@ suite("Completion Tests (Unix EOL)", () =>
 
 	test("Property values", async () =>
 	{
-		completion.propertyValues(docUri);
+		await completion.propertyValues(docUri);
 	});
 
 
