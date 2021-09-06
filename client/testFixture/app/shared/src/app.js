@@ -1,3 +1,5 @@
+const { userInfo } = require("os");
+
 /**
  * @class VSCodeExtJS
  * 
@@ -373,6 +375,19 @@ Ext.define('VSCodeExtJS',
 
 		
 		
+		
+	},
+
+	/**
+	 * Main Ext.app.APplication statics test
+	 */
+	testFn16: function()
+	{
+		VSCodeExtJSApp.user = VSCodeExtJS.model.user.User.create({
+			id: 1,
+			userid: "spmeesseman",
+
+		});
 		
 	}
 

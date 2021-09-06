@@ -69,7 +69,7 @@ export function getComponentByAlias(alias: string, project: string, components: 
 	const xtypeComponents = w?.type !== "type" ? components.filter(c => c.xtypes.find(x => _match(c, x))) :
 												 components.filter(c => c.types.find(t => _match(c, t))),
 		  aliasComponents = components.filter(c => c.aliases.find(a => _match(c, a)) ||
-		  										   c.properties.find(p => p.name === "name" && c.extend?.endsWith(".app.Application") && _match(c, p)));
+		  										  (c.properties.find(p => p.name === "name" && c.extend?.endsWith(".app.Application") && _match(c, p))));
 
 	//
 	// getAliasLookup() will examine parent object's property name of the widget in the
