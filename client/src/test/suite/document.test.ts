@@ -149,9 +149,9 @@ suite("Document Tests", () =>
 		//
 		await activate(getDocUri(newDocPath2));
 
-		insertDocContent("22", toRange(0, 25, 0, 25));
+		await insertDocContent("22", toRange(0, 25, 0, 25));
 
-		insertDocContent("33", toRange(0, 25, 0, 25));
+		await insertDocContent("33", toRange(0, 25, 0, 25));
 
 		await vscode.workspace.saveAll();
 		await waitForValidation();
