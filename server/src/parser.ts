@@ -15,7 +15,7 @@ import {
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
     VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement,
     isObjectMethod, isSpreadElement, isExpression, isReturnStatement, ReturnStatement, FunctionExpression,
-    identifier, isLVal
+    identifier, isLVal, objectProperty, objectExpression
 } from "@babel/types";
 
 /**
@@ -1398,6 +1398,10 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
 
 function postParse(components: IComponent[], postTasks: any[])
 {
+    //
+    // Each parsing task may add post-task callbacks to the tasks array during the ast
+    // traverse.  Call these guys back to do any required processing.
+    //
     for (const task of postTasks)
     {
         if (utils.isFunction(task.fn)) {
@@ -1405,36 +1409,60 @@ function postParse(components: IComponent[], postTasks: any[])
         }
     }
 
-    // const mainAppComponent = components.find(c => c.extend === "Ext.app.Application");
-    // if (mainAppComponent)
-    // {
-    //     components.filter(c => c.componentClass !== mainAppComponent.componentClass).forEach(c => {
-    //         c.methods.forEach(m => {
-    //             m.variables.forEach(v => {
-    //                 if (v.name === mainAppComponent.name)
-    //                 {
-    //                     mainAppComponent.statics.push({ ...{
-    //                         doc, name,
-    //                         start: p.loc!.start,
-    //                         end: p.loc!.end,
-    //                         since: doc?.since,
-    //                         private: doc?.private || isPrivate,
-    //                         deprecated: doc?.deprecated || false,
-    //                         componentClass,
-    //                         static: doc?.static || isStatic,
-    //                         range: utils.toRange(p.loc!.start, p.loc!.end),
-    //                         value: {
-    //                             start: p.value.loc!.start,
-    //                             end: p.value.loc!.end,
-    //                             value: getPropertyValue(p)
-    //                         }
-    //                     }, ...v});
-    //                 }
-    //             });
-    //         });
-    //     });
-    // }
+    //
+    // Do some stuff for the main application class the extends 'Ext.app.Application'.
+    // The user may tend to attach objects the the main static application object throughout
+    // the application, so, search the component tree for variables that start with 'AppName.'
+    // and add these definitions to the main application class statics list.
+    //
+    const mainAppComponent = components.find(c => c.extend === "Ext.app.Application");
+    if (mainAppComponent)
+    {
+        components.filter(c => c.componentClass !== mainAppComponent.componentClass).forEach(c => {
+            c.methods.forEach(m => {
+                m.variables.forEach(v => {
+                    if (v.name.startsWith(`${mainAppComponent.name}.`))
+                    {
+                        /*
+                        const name = v.name.replace(`${mainAppComponent.name}.`, "");
+                        let staticProp = mainAppComponent.statics.find(s => s.name === name);
 
+                        if (!staticProp)
+                        {
+                            staticProp = {
+                                doc: undefined,
+                                name,
+                                start: v.start,
+                                end: v.end,
+                                private: false,
+                                deprecated: false,
+                                componentClass: v.componentClass,
+                                static: true,
+                                range: utils.toRange(v.start, v.end),
+                                value: undefined
+                            };
+                        }
+
+                        const instComponent = components.find(c => c.componentClass === (staticProp as any).componentClass);
+                        if (instComponent)
+                        {
+                            staticProp.doc = instComponent.doc;
+                            staticProp.deprecated = instComponent.deprecated || false;
+                            staticProp.private = instComponent.private || false;
+                            staticProp.since = instComponent.since;
+                        }
+
+                        mainAppComponent.statics.push(staticProp);
+                        */
+                    }
+                });
+            });
+        });
+    }
+
+    //
+    // Keep the component tree in memory for quick validation
+    //
     cacheComponents(components);
 
     return components;
