@@ -1,5 +1,20 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.11.0 (September 6th, 2021)
+
+### Bug Fixes
+
+- **Parser:** improve fail-safe ast parse, receiving non-critical parse exception on trigger char ':'
+
+### Features
+
+- **Completion:** add basic value type completion by default value
+- **Completion:** add support for static instance completion
+
+### Refactoring
+
+- **Completion:** remove unnecessary await chain
+
 ## Version 0.10.3 (September 5th, 2021)
 
 ### Bug Fixes
