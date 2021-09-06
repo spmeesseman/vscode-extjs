@@ -1146,7 +1146,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             }
         }
 
-        if (propertyDef && (propertyDef.doc || propertyDef.value?.value))
+        if (propertyDef && (propertyDef.value?.value || propertyDef.doc))
         {
             let valueCompletionItem: CompletionItem | undefined,
                 type: string | undefined,
