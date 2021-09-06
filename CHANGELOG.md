@@ -1,5 +1,12 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.10.3 (September 5th, 2021)
+
+### Bug Fixes
+
+- **Indexer:** regression - some classapaths are improperly ignored
+- **Indexer:** regression - adjust progress indicator when indexing multiple projects
+
 ## Version 0.10.2 (September 5th, 2021)
 
 ### Bug Fixes
