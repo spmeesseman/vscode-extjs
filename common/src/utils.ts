@@ -41,6 +41,12 @@ export function isArray(value: any)
 }
 
 
+export function isBoolean(value: any)
+{
+    return value && typeof value === "boolean";
+}
+
+
 export function isExtJsFile(documentText: string | undefined)
 {
     const regex = /Ext\.define\s*\([\r\n]*['"]{1}[\r\n,a-zA-Z0-9.]+['"]{1}\s*,\s*[\r\n]*\s*{/m;

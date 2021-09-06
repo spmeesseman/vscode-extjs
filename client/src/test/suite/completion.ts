@@ -726,7 +726,10 @@ export async function privates(uri: vscode.Uri)
 
 
 export async function propertyValues(uri: vscode.Uri)
-{   //
+{
+	const xtypeEol = configuration.get<boolean>("intellisenseXtypeEol", true);
+	await configuration.update("intellisenseXtypeEol", true);
+	//
 	// Line 167
 	// Within main object
 	// dockedItems: [
@@ -736,22 +739,74 @@ export async function propertyValues(uri: vscode.Uri)
 	//
 	await insertDocContent("\t\treadOnly:", toRange(166, 0, 166, 11));
 	await waitForValidation();
-
 	await testCompletion(uri, new vscode.Position(166, 11), ":", {
 		items: [
 			{ label: "false", kind: vscode.CompletionItemKind.Value },
 			{ label: "true", kind: vscode.CompletionItemKind.Value }
 		]
-	}, true, "readOnly property values");
-
+	}, true, "readOnly property values by xtype");
+	//
+	// Turn off xtype Eol setting
+	//
+	await configuration.update("intellisenseXtypeEol", false);
+	await testCompletion(uri, new vscode.Position(166, 11), ":", {
+		items: [
+			{ label: "false", kind: vscode.CompletionItemKind.Value },
+			{ label: "true", kind: vscode.CompletionItemKind.Value }
+		]
+	}, true, "readOnly property values by xtype");
+	//
+	// Re-enable xtype Eol setting
+	//
+	await configuration.update("intellisenseXtypeEol", true);
+	//
+	// Xtype string value
+	//
 	await insertDocContent("\t\tuserName:", toRange(166, 0, 166, 11));
 	await waitForValidation();
-
 	await testCompletion(uri, new vscode.Position(166, 11), ":", {
 		items: [
 			{ label: "String Value", kind: vscode.CompletionItemKind.Value }
 		]
-	}, true, "userName property value");
+	}, true, "userName property value by xtype");
+	await insertDocContent("", toRange(166, 0, 166, 11));
+	//
+	// Type/store object, boolean true/false type defined by doc comment
+	// Line 208
+	//
+	await insertDocContent("\t\tautoLoad:", toRange(207, 4, 207, 15));
+	await waitForValidation();
+	await testCompletion(uri, new vscode.Position(207, 15), ":", {
+		items: [
+			{ label: "false", kind: vscode.CompletionItemKind.Value },
+			{ label: "true", kind: vscode.CompletionItemKind.Value }
+		]
+	}, true, "autoLoad property values by type");
+	await insertDocContent("", toRange(207, 4, 207, 15));
+	//
+	// Type/store object, no doc defined type, defined by default value
+	// Line 208
+	//
+	await insertDocContent("\t\tsortOnLoad:", toRange(207, 4, 207, 17));
+	await waitForValidation();
+	await testCompletion(uri, new vscode.Position(207, 17), ":", {
+		items: [
+			{ label: "false", kind: vscode.CompletionItemKind.Value },
+			{ label: "true", kind: vscode.CompletionItemKind.Value }
+		]
+	}, false, "sortOnLoad property values by default value");
+	await insertDocContent("", toRange(207, 4, 207, 17));
+	//
+	// Type/store object, no doc defined type, undefined default value
+	// Line 208
+	//
+	await insertDocContent("\t\tmodel:", toRange(207, 4, 207, 12));
+	await waitForValidation();
+	await testCompletion(uri, new vscode.Position(207, 12), ":", {
+		items: []
+	}, false, "model property values, no default type");
+	await insertDocContent("", toRange(207, 4, 207, 12));
+	//
 	//
 	// Grid / object value
 	//
@@ -767,6 +822,10 @@ export async function propertyValues(uri: vscode.Uri)
 	// // Remove added text, set document back to initial state
 	// //
 	// await insertDocContent("", toRange(207, 4, 207, 12));
+	//
+	// Revert settings
+	//
+	await configuration.update("intellisenseXtypeEol", xtypeEol);
 }
 
 
