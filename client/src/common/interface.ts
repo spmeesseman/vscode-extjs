@@ -17,7 +17,7 @@ export interface IExtjsLanguageManager
     getFilePath: (componentClass: string, project: string, logPad: string, logLevel: number) => string | undefined;
     getProperty: (componentClass: string, property: string, project: string, isStatic: boolean, logPad: string, logLevel: number) => IProperty | undefined;
     getPropertyPosition: (property: string, cmpType: ComponentType, componentClass: string, project: string, isStatic: boolean, logPad: string, logLevel: number) => Range;
-    getLineProperties: (document: TextDocument, position: Position, logPad: string, logLevel: number) => ILineProperties;
+    getLineProperties: (document: TextDocument, position: Position, logPad: string, logLevel: number, dotRemoved?: boolean) => ILineProperties;
     getMethod: (componentClass: string, property: string, project: string, isStatic: boolean, logPad: string, logLevel: number) => IMethod| undefined;
     getModelTypeNames: (project: string) => string[];
     getNamespace: (document: TextDocument | Uri | undefined) => string;
@@ -49,10 +49,15 @@ export interface ILineProperties
     thisClass?: string;
     thisCmp?: IComponent;
     cmpType: ComponentType;
+    isInstance: boolean;
     text: string;
+    lineCls: string;
     lineText: string;
     lineTextCut: string;
+    lineTextFull: string;
+    lineTextLeft: string;
     project: string;
+    range: Range;
     component: IComponent | IPrimitive | undefined;
 }
 

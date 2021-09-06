@@ -404,7 +404,7 @@ class ExtjsLanguageManager
      * lineTextCut: The line text cut at the current position (right side)
      * property: The text that is hovered over (and flash highlighted by VSCode UI)
      */
-    getLineProperties(document: TextDocument, position: Position, logPad: string, logLevel: number): ILineProperties
+    getLineProperties(document: TextDocument, position: Position, logPad: string, logLevel: number, dotRemoved?: boolean): ILineProperties
     {
         log.methodStart("get line properties", logLevel, logPad);
 
@@ -436,8 +436,40 @@ class ExtjsLanguageManager
         let lineText = allLineText.replace(/[\s\w.\[\]]+=[\s]*(new)*\s*/, "").replace(/[\s\w]*if\s*\(\s*[!]{0,2}/, ""),
             property = document.getText(range),
             cmpType: ComponentType = ComponentType.None,
-            component: IComponent | IPrimitive | undefined;
-        const text = property;
+            component: IComponent | IPrimitive | undefined,
+            isInstance = false;
+        const text = range ? property : "",
+              lineTextFull = document.lineAt(position).text,
+              lineTextLeft = lineTextFull.substr(0, position.character).trimLeft();
+
+        //
+        // Strip off unwanted text from the line text to get the text of the item of interest
+        //
+        // For example, if a user is typing a function parameter:
+        //
+        //     me.testFn(VSCodeExtJS.)
+        //
+        // We want "VSCodeExtJS."
+        //
+        const lineTextLeftCall = dotRemoved ? lineTextLeft + "." : lineTextLeft;
+        let lineCls =  lineTextLeftCall.includes(".") ? lineTextLeftCall.substring(0, lineTextLeftCall.lastIndexOf(".")).trim() : lineTextLeftCall;
+        if (lineCls.includes("("))
+        {
+            const parenthesisIdxR = lineCls.lastIndexOf("(") + 1;
+            lineCls = lineCls.substring(parenthesisIdxR).trim();
+            if (lineCls.includes(",")) {
+                lineCls = lineCls.substring(lineCls.lastIndexOf(",", parenthesisIdxR) + 1).trim();
+            }
+        }
+        if (lineCls.includes("=")) {
+            lineCls = lineCls.substring(lineCls.lastIndexOf("=") + 1).trim();
+        }
+        if (lineCls.includes(" ")) {
+            lineCls = lineCls.substring(lineCls.lastIndexOf(" ") + 1);
+        }
+        if (lineCls.includes(";")) {
+            lineCls = lineCls.substring(lineCls.lastIndexOf(";") + 1);
+        }
 
         log.value("   trimmed line text", lineText, logLevel + 1, logPad);
         log.value("   property", property, logLevel + 1, logPad);
@@ -457,9 +489,14 @@ class ExtjsLanguageManager
                 cmpType: ComponentType.Class,
                 property,
                 text,
+                range,
                 project,
+                isInstance,
+                lineCls,
                 lineText: allLineText,
                 lineTextCut: lineText,
+                lineTextFull,
+                lineTextLeft,
                 component: thisCmp
             };
         }
@@ -479,8 +516,13 @@ class ExtjsLanguageManager
                 property,
                 text,
                 project,
+                range,
+                isInstance,
+                lineCls,
                 lineText: allLineText,
                 lineTextCut: lineText,
+                lineTextFull,
+                lineTextLeft,
                 component
             };
         }
@@ -731,6 +773,7 @@ class ExtjsLanguageManager
                 }
             }
             else {
+                isInstance = true;
                 cmpClass = component.componentClass;
                 // cmpType = component.componentClass | ComponentType.Instance;
             }
@@ -753,8 +796,13 @@ class ExtjsLanguageManager
             callee,
             text,
             project,
+            range,
+            isInstance,
+            lineCls,
             lineText: allLineText,
             lineTextCut: lineText,
+            lineTextFull,
+            lineTextLeft,
             component
         };
     }
