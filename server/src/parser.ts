@@ -42,7 +42,7 @@ export async function parseExtJsFile(options: IServerRequest)
           project = options.project,
           nameSpace = options.nameSpace,
           parsedComponents: IComponent[] = [],
-          nodeAst = ast.getComponentsAst(options.text,  options.edits, log.error);
+          nodeAst = ast.getComponentsAst(options.text, options.edits, log.error);
 
     if (!nodeAst || !nodeAst.ast || !nodeAst.text) {
         return parsedComponents;
