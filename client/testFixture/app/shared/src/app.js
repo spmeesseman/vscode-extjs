@@ -1,5 +1,3 @@
-const { userInfo } = require("os");
-
 /**
  * @class VSCodeExtJS
  * 
