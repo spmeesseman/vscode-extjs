@@ -53,6 +53,9 @@ Completion:
 	☐ Ext.Ajax.* does not work
 		Probably more singletons likes this don't work too
 		Ajax is in completion list after Ext., but nothing with Ext.Ajax.
+	☐ after = inline class doesnt work
+		VSCodeExtJSApp.user = VSCodeExtApp.model.user.User
+		no completion after the '=' sign
 
 Definition:
 
@@ -81,6 +84,10 @@ Diagnostics:
 	✔ Model fields @done(21-08-31 22:41)
 		for object param to create() and new
 	☐ Invalidate inline Ext.define in controller files
+		configuration setting - on/off
+	☐ Invalidate requires for .create
+		VSCodeExtJSApp.user = VSCodeExtApp.model.user.User.create(...)
+		Checkrequires array for VSCodeExtApp.model.user.User
 		configuration setting - on/off
 	✔ Model reference {} object - 'type' field is showing invalid @done(21-08-26 18:11)
 	✔ Model fields 'type' i.e. 'string' is getting validated and showing as no reference found @done(21-08-25 23:07)
