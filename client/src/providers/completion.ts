@@ -150,7 +150,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
             if (isInline)
             {
                 log.write("   do inline completion", 1);
-                completionItems.push(...(await this.getInlineCompletionItems(config, "   ", 2)));
+                completionItems.push(...this.getInlineCompletionItems(config, "   ", 2));
             }
             else {
                 log.write("   do dot completion", 1);
@@ -613,7 +613,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private async getInlineCompletionItems(config: ICompletionConfig, logPad: string, logLevel: number)
+    private getInlineCompletionItems(config: ICompletionConfig, logPad: string, logLevel: number)
     {
         log.methodStart("get inline completion items", logLevel, logPad);
 
@@ -737,7 +737,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         if (config.lineTextLeft && new RegExp(`x?type\\s*:\\s*${config.quoteChar}${config.quoteChar}$`).test(config.lineTextLeft))
         {
             const _addProps2 = (cmp: IComponent | undefined) => { _addProps(cmp, false); };
-            completionItems.push(...(await this.getObjectRangeCompletionItems(undefined, config, logPad + "   ", logLevel, _addProps2)));
+            completionItems.push(...this.getObjectRangeCompletionItems(undefined, config, logPad + "   ", logLevel, _addProps2));
         }
         //
         // Depending on the current position, provide the completion items...
@@ -812,9 +812,9 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                     // 'user', i.e. userName, etc
                     //
                     const _addProps2 = (cmp: IComponent | undefined) => { _addProps(cmp, true); };
-                    completionItems.push(...(await this.getObjectRangeCompletionItems(
+                    completionItems.push(...this.getObjectRangeCompletionItems(
                         undefined, config, logPad + "   ", logLevel, _addProps2
-                    )));
+                    ));
                 }
             }
             //
@@ -843,14 +843,14 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
                 {
                     const [_, property ] = m;
                     log.write("   add inline property completion", 1);
-                    completionItems.push(...(await this.getObjectRangeCompletionItems(
+                    completionItems.push(...this.getObjectRangeCompletionItems(
                         property, config, logPad + "   ", logLevel, _addProps2
-                    )));
+                    ));
                 }
                 else {
-                    completionItems.push(...(await this.getObjectRangeCompletionItems(
+                    completionItems.push(...this.getObjectRangeCompletionItems(
                         undefined, config, logPad + "   ", logLevel, _addProps2
-                    )));
+                    ));
                 }
             }
             else if (config.thisCmp.extend) // on main object
@@ -952,7 +952,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
     }
 
 
-    private async getObjectRangeCompletionItems(property: string | undefined, config: ICompletionConfig,  logPad: string, logLevel: number, addFn: (arg: IComponent) => void)
+    private getObjectRangeCompletionItems(property: string | undefined, config: ICompletionConfig,  logPad: string, logLevel: number, addFn: (arg: IComponent) => void)
     {
         log.methodStart("get object range completion Items", logLevel, logPad);
 
