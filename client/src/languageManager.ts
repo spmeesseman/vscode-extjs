@@ -1136,7 +1136,7 @@ class ExtjsLanguageManager
                 //
                 // Scan each classpath for extjs files and index
                 //
-                for (let dir of conf.classpath.filter(c => !_isIndexed(c)))
+                for (let dir of conf.classpath.filter(d => !_isIndexed(path.join(conf.baseDir, d))))
                 {
                     log.write(`   Index directory ${++currentDir} of ${conf.classpath.length}`, logLevel + 1, logPad);
                     log.write(`       ${dir}`, logLevel + 1, logPad);
