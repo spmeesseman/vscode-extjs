@@ -15,7 +15,7 @@ import {
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
     VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement,
     isObjectMethod, isSpreadElement, isExpression, isReturnStatement, ReturnStatement, FunctionExpression,
-    identifier, isLVal, objectProperty, objectExpression
+    identifier, isLVal, objectProperty, objectExpression, MemberExpression
 } from "@babel/types";
 
 /**
@@ -264,6 +264,18 @@ export async function parseExtJsFile(options: IServerRequest)
                             }
                             return true;
                         }));
+
+                        //
+                        // Set name property.
+                        // I think this is only used in the class that extends Ext.app.Application
+                        //
+                        if (componentInfo.extend === "Ext.app.Application")
+                        {
+                            const nameProperty = componentInfo.properties.find(p => p.name === "name");
+                            if (nameProperty && nameProperty.value?.value) {
+                                componentInfo.name = nameProperty.value.value;
+                            }
+                        }
                     }
 
                     log.methodDone("parse extjs file", 1, "", true);
@@ -279,7 +291,7 @@ export async function parseExtJsFile(options: IServerRequest)
         }
     }
 
-    return postParse(parsedComponents, postTasks);
+    return postParse(project, parsedComponents, postTasks);
 }
 
 
@@ -1018,9 +1030,9 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
             {
                 try {
                     const declarator = variableDeclarator(id, rightExpression),
-                            declaration = variableDeclaration("let", [ declarator ]);
+                          declaration = variableDeclaration("let", [ declarator ]);
                     declarator.loc = { ...rightExpression.loc } as SourceLocation;
-                    const variable = parseVariable(declaration, declarator, identifier.name, methodName, parentCls, postTasks);
+                    const variable = parseVariable(declaration, declarator, methodName, parentCls, postTasks);
                     if (variable) {
                         _add(variable);
                     }
@@ -1068,7 +1080,7 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
                     return;
                 }
 
-                const variable = parseVariable(node, dec, dec.id.name, methodName, parentCls, postTasks);
+                const variable = parseVariable(node, dec, methodName, parentCls, postTasks);
                 if (variable) {
                     _add(variable);
                 }
@@ -1080,12 +1092,60 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
 }
 
 
-function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varName: string, methodName: string, parentCls: string, postTasks: any[]): IVariable | undefined
+function buildCallerCls(object: any): string
+{
+    let foundObj = true,
+        callerCls = object.property.name;
+
+    object = object.object;
+    while (isMemberExpression(object))
+    {
+        if (isIdentifier(object.property))
+        {
+            callerCls = object.property.name + "." + callerCls;
+            object = object.object;
+        }
+        else {
+            foundObj = false;
+            break;
+        }
+    }
+
+    if (!foundObj) {
+        return object.property.name;
+    }
+
+    //
+    // Add the base identifier to caller cls name, e.g. "VSCodeExtJS" in the comments
+    // example.  We looped until we found it but it has not been added yet.
+    //
+    if (isIdentifier(object)) {
+        callerCls = object.name + "." + callerCls;
+    }
+
+    return callerCls;
+}
+
+
+function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, methodName: string, parentCls: string, postTasks: any[]): IVariable | undefined
 {
     let isNewExp = false,
         callee,
         args,
-        callerCls = "";
+        callerCls: string | undefined,
+        varName: string;
+
+    if (isIdentifier(dec.id))
+    {
+        varName = dec.id.name;
+    }
+    else if (isMemberExpression(dec.id))
+    {
+        varName = buildCallerCls(dec.id);
+    }
+    else {
+        varName = "_";
+    }
 
     if (isNewExpression(dec.init))
     {
@@ -1145,40 +1205,18 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, varNa
             // Build the fill class name by traversing down each MemberExpression until the
             // Identifier is found, in this example 'VSCodeExtJS'.
             //
-            let object: any = callee.object;
-            if (isMemberExpression(object) && isIdentifier(object.property))
+            if (isMemberExpression(callee.object) && isIdentifier(callee.object.property))
             {
-                let foundObj = true;
-                callerCls = object.property.name;
-                object = object.object;
-                while (isMemberExpression(object))
-                {
-                    if (isIdentifier(object.property))
-                    {
-                        callerCls = object.property.name + "." + callerCls;
-                        object = object.object;
-                    }
-                    else {
-                        foundObj = false;
-                        break;
-                    }
-                }
-                if (!foundObj) {
-                    return;
-                }
-                //
-                // Add the base identifier to caller cls name, e.g. "VSCodeExtJS" in the comments
-                // example.  We looped until we found it but it has not been added yet.
-                //
-                if (isIdentifier(object)) {
-                    callerCls = object.name + "." + callerCls;
-                }
+                callerCls = buildCallerCls(callee.object);
             }
-            else if (isThisExpression(object))
+            else if (isThisExpression(callee.object))
             {
                 callerCls = "this";
             }
             else {
+                return;
+            }
+            if (!callerCls) {
                 return;
             }
         }
@@ -1396,7 +1434,7 @@ function parseWidgets(objEx: ObjectExpression, text: string, component: ICompone
 }
 
 
-function postParse(components: IComponent[], postTasks: any[])
+function postParse(project: string, parsedComponents: IComponent[], postTasks: any[])
 {
     //
     // Each parsing task may add post-task callbacks to the tasks array during the ast
@@ -1405,9 +1443,14 @@ function postParse(components: IComponent[], postTasks: any[])
     for (const task of postTasks)
     {
         if (utils.isFunction(task.fn)) {
-            task.fn(components, ...task.args);
+            task.fn(parsedComponents, ...task.args);
         }
     }
+
+    //
+    // Keep the component tree in memory for quick validation
+    //
+    cacheComponents(parsedComponents);
 
     //
     // Do some stuff for the main application class the extends 'Ext.app.Application'.
@@ -1423,7 +1466,6 @@ function postParse(components: IComponent[], postTasks: any[])
                 m.variables.forEach(v => {
                     if (v.name.startsWith(`${mainAppComponent.name}.`))
                     {
-                        /*
                         const name = v.name.replace(`${mainAppComponent.name}.`, "");
                         let staticProp = mainAppComponent.statics.find(s => s.name === name);
 
@@ -1441,9 +1483,13 @@ function postParse(components: IComponent[], postTasks: any[])
                                 range: utils.toRange(v.start, v.end),
                                 value: undefined
                             };
+                            mainAppComponent.statics.push(staticProp);
+                        }
+                        else {
+                            staticProp.clsInst = v.componentClass;
                         }
 
-                        const instComponent = components.find(c => c.componentClass === (staticProp as any).componentClass);
+                        const instComponent = extjs.getComponent(v.componentClass, project, components);
                         if (instComponent)
                         {
                             staticProp.doc = instComponent.doc;
@@ -1452,18 +1498,15 @@ function postParse(components: IComponent[], postTasks: any[])
                             staticProp.since = instComponent.since;
                         }
 
-                        mainAppComponent.statics.push(staticProp);
-                        */
+                        //
+                        // Re-cache
+                        //
+                        cacheComponents([mainAppComponent]);
                     }
                 });
             });
         });
     }
 
-    //
-    // Keep the component tree in memory for quick validation
-    //
-    cacheComponents(components);
-
-    return components;
+    return parsedComponents;
 }

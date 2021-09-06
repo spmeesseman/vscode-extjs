@@ -37,6 +37,7 @@ export enum VariableType
 
 export interface IExtJsBase extends IRange
 {
+    clsInst?: string;
     componentClass: string;
     name: string;
     range: IRange;
