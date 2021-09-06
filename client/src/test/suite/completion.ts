@@ -776,7 +776,7 @@ export async function propertyValues(uri: vscode.Uri)
 			{ label: "false", kind: vscode.CompletionItemKind.Value },
 			{ label: "true", kind: vscode.CompletionItemKind.Value }
 		]
-	}, false, "sortOnLoad property values by default value");
+	}, true, "sortOnLoad property values by default value");
 	await insertDocContent("", toRange(207, 4, 207, 17));
 	//
 	// Type/store object, no doc defined type, undefined default value
