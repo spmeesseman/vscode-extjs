@@ -1075,7 +1075,7 @@ class ExtjsLanguageManager
                         await storage.update(tsKey, (new Date()).toString());
                     }
 
-                    pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * (100 / this.config.length)));
+                    pct = Math.round((cfgPct * currentCfgIdx) + (++currentFileIdx / components.length * cfgPct));
                     await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment);
                 }
                 //
@@ -1156,11 +1156,12 @@ class ExtjsLanguageManager
                         //
                         // Report progress
                         //
-                        pct = Math.round((cfgPct * currentCfgIdx + (currentCfgIdx * 2)) + (++currentFileIdx / numFiles * (100 / this.config.length)));
+                        pct = Math.round((cfgPct * currentCfgIdx + (currentCfgIdx * 2)) + (++currentFileIdx / numFiles * cfgPct));
                         await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment);
                     }
-                    processedDirs.push(dir);
-                    this.dirNamespaceMap.set(path.join(conf.baseDir, dir), conf.name);
+                    const fullClasspathDir = path.join(conf.baseDir, dir);
+                    processedDirs.push(fullClasspathDir);
+                    this.dirNamespaceMap.set(fullClasspathDir, conf.name);
                 }
                 //
                 // Udpdate progress percent
