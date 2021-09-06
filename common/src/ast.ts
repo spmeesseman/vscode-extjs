@@ -71,28 +71,38 @@ export function getComponentsAst(text: string, edits: IEdit[], logErrFn?: (arg: 
                 if (edit.start === end) {
                     end++;
                 }
-                for (let tryNum = end; tryNum >= edit.start && end >= 0; tryNum--)
-                {
-                    text = text.substring(0, end - 1) + text.substring(end);
-                    try {
-                        ast = parse(text);
-                        success = true;
-                        if (logErrFn) {
-                            logErrFn("cut " + (end - 1).toString() + " , " + end.toString());
+                //
+                // Blank the entire edited line
+                //
+                text = text.substring(0, text.lastIndexOf("\n", end - 1) + 1) + text.substring(end);
+                try {
+                    ast = parse(text);
+                    success = true;
+                }
+                catch (ex)
+                {   //
+                    // Try removing pieces of the edit
+                    //
+                    for (let tryNum = end; tryNum >= edit.start && end >= 0; tryNum--)
+                    {
+                        text = text.substring(0, end - 1) + text.substring(end);
+                        try {
+                            ast = parse(text);
+                            success = true;
+                            break;
                         }
-                        break;
-                    }
-                    catch (ex) {
-                        if (logErrFn && tryNum === edit.start) {
-                            logErrFn(ex);
+                        catch (ex) {
+                            if (logErrFn && tryNum === edit.start) {
+                                logErrFn(ex);
+                            }
                         }
+                        end--;
                     }
-                    end--;
                 }
             }
 
             //
-            // Try to parse the syntax error.  THis rarely works since the error usually
+            // Try to parse the syntax error.  This rarely works since the error usually
             // occurs on a separate line from the actual edit.
             //
             if (!success)
