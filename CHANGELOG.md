@@ -1,5 +1,11 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.12.0 (September 6th, 2021)
+
+### Features
+
+- **GoTo Definition:** add support for handlers and listener methods located in view controller.
+
 ## Version 0.11.1 (September 6th, 2021)
 
 ### Bug Fixes
