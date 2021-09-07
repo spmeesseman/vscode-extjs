@@ -25,9 +25,9 @@ import { argv } from "process";
 // Specify files to test.  SHould be * for full test, use filename for debugging
 // specific tests themselves.
 //
-// const fileToTest = "*";
+const fileToTest = "*";
 // const fileToTest = "configFile";
-const fileToTest = "definition";
+// const fileToTest = "definition";
 // const fileToTest = "document";
 // const fileToTest = "hover";
 // const fileToTest = "commands";
