@@ -32,7 +32,7 @@ class ExtJsTypeDefinitionProvider implements TypeDefinitionProvider
 
         const { cmpClass, cmpType, property, thisClass, project } = extjsLangMgr.getLineProperties(document, position, "   ", 2);
 
-        if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
+        if (property && cmpClass && cmpType !== ComponentType.None)
         {
             log.value("   component class", cmpClass, 2);
             const fsPath = extjsLangMgr.getFilePath(cmpClass, project, "   ", 2);
