@@ -43,7 +43,7 @@ Completion:
 	☐ Apply defaults for 'items'
 		look for xtype and apply same logic as if it was in item object itself
 	☐ Grid columns, column config
-	☐ Statics on main app inline.
+	✔ Statics on main app inline. @done(21-09-06 15:51)
 		i.e. GEMS.user.  'user' properties do not have completion
 		Scan for GEMS.user= in alll files?  Or create static file mapping to types (like eslint globals)
 	☐ Main app inline
@@ -121,7 +121,7 @@ JsDoc:
 		Format and remove all @ markers
 	☐ Object properties
 		e.g., xtype: 'viewtoolbar', noRemoteActions: true, ....' ... show doc for all ocnfigs/props like noRemoteActions
-	☐ Method doc needs work
+	✔ Method doc needs work @done(21-09-05 11:25)
 		title line should contain params
 		i think doc is better in one spot than the other, i.e. completion vs.hover, cant remember
 
@@ -158,7 +158,7 @@ Miscellaneous:
 	☐ Aliases should not be added to xtypes for widget scraping now that all is implemented
 		syntaxTree.js parseClassDef
 	✔ Renamed/moved file doesnt get cached.  validates, but no hover, completion, etc @done(21-08-28 10:24)
-	☐ if a doc is edited, closed w/o saving, mem cache needs to be reset
+	☐ if a doc is edited, closed w/o saving, mem cache needs to be reset @high
 		fs cache will hold previous value still, since no persist until save
 	☐ Review namespace usage
 		is it correct to use 'name' property from app.json
@@ -167,6 +167,10 @@ Miscellaneous:
 	☐ Support post Cmd6.7+ projects with npm installed ext-core
 	☐ Cmd project package.json
 		subfolders property, refernces to all cmd packages
+	☐ Manual instance mapping
+		e.g. configuration setting to treat all instances of App.facility as App.model.facility.Facility
+	☐ 'fix requires' ifno requires array exists
+		it is created correctly, but is tabbed over twoce instead of once
 
 Signature:
 
