@@ -4,9 +4,9 @@ import {
     Position, TextDocument, Uri
 } from "vscode";
 import { extjsLangMgr } from "../extension";
-import { ComponentType, utils } from "../../../common";
+import { ComponentType, extjs, utils } from "../../../common";
 import * as log from "../common/log";
-import { getPropertyRange, shouldIgnoreType } from "../common/clientUtils";
+import { getPropertyRange, shouldIgnoreType, toIPosition } from "../common/clientUtils";
 
 
 class ExtJsDefinitionProvider implements DefinitionProvider
@@ -30,9 +30,9 @@ class ExtJsDefinitionProvider implements DefinitionProvider
         // Indexer finished, proceed...
         //
 
-        const { cmpType, property, cmpClass, thisClass, project } = extjsLangMgr.getLineProperties(document, position, "   ", 2);
+        const { cmpType, property, cmpClass, thisClass, project, thisCmp } = extjsLangMgr.getLineProperties(document, position, "   ", 2);
 
-        if (property && cmpClass && cmpType !== undefined && cmpType !== ComponentType.None)
+        if (property && cmpClass && cmpType !== ComponentType.None)
         {
             log.value("   component class", cmpClass, 2);
             const fsPath = extjsLangMgr.getFilePath(cmpClass, project, "   ", 2);
@@ -51,6 +51,24 @@ class ExtJsDefinitionProvider implements DefinitionProvider
                 };
             }
         }
+        else if (thisCmp)
+        {
+            const controllerProp = thisCmp.properties.find(p => p.name === "controller");
+            if (controllerProp && controllerProp.value && controllerProp.value.value)
+            {
+                const controller = extjs.getComponentByAlias(`controller.${controllerProp.value.value}`, project, extjsLangMgr.getComponents(), toIPosition(position), thisCmp);
+                if (controller) {
+                    const uri = Uri.file(controller.fsPath),
+                          { start, end } = extjsLangMgr.getPropertyPosition(property, ComponentType.Method, controller.componentClass, project, false, "   ", 2),
+                          range = getPropertyRange(property, thisClass, start, end, position);
+                    location = {
+                        uri,
+                        range
+                    };
+                }
+            }
+        }
+
         log.methodDone("provide definition", 1, "");
         return location;
     }
