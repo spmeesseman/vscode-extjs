@@ -204,16 +204,7 @@ suite("Code Action Tests", () =>
 		// Open file with bad requires block
 		//
 		const mainGridUri = getDocUri("app/shared/src/main/Grid.js");
-		try {
-			const doc = await vscode.workspace.openTextDocument(mainGridUri);
-			await vscode.window.showTextDocument(doc);
-			assert(vscode.window.activeTextEditor, "No active editor");
-		} catch (e) {
-			console.error(e);
-		}
-		await waitForValidation();
-		await waitForValidation();
-
+		await activate(mainGridUri);
 		//
 		// The uses array:
 		//
@@ -223,7 +214,6 @@ suite("Code Action Tests", () =>
     	// 12   ]
 		// 13
 		//
-
 		const data: vscode.CodeAction[] = [{
 			title: "Ignore errors of this type (this line only)",
 			command: {
@@ -259,8 +249,7 @@ suite("Code Action Tests", () =>
 			assert.fail("undefined range for uses quick fix 1");
 		}
 
-		await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
-		await waitForValidation();
+		await closeActiveDocument();
 	});
 
 
