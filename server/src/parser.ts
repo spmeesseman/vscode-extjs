@@ -15,7 +15,7 @@ import {
     isThisExpression, isAwaitExpression, SourceLocation, Node, isAssignmentExpression, VariableDeclaration,
     VariableDeclarator, variableDeclarator, variableDeclaration, isBooleanLiteral, ObjectMethod, SpreadElement,
     isObjectMethod, isSpreadElement, isExpression, isReturnStatement, ReturnStatement, FunctionExpression,
-    identifier, isLVal, objectProperty, objectExpression, MemberExpression
+    identifier, isLVal, objectProperty, objectExpression, MemberExpression, isNumberLiteral, isNumericLiteral
 } from "@babel/types";
 
 /**
@@ -1095,14 +1095,33 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
 function buildCallerCls(object: any): string
 {
     let foundObj = true,
+        callerCls: string;
+
+    if (isNumericLiteral(object.property)) {
+        callerCls = `[${object.property.value}]`;
+    }
+    else if (isCallExpression(object.property)) {
+        callerCls = object.property.callee.property.name;
+    }
+    else {
         callerCls = object.property.name;
+    }
 
     object = object.object;
-    while (isMemberExpression(object))
+    while (isMemberExpression(object) as any)
     {
         if (isIdentifier(object.property))
         {
             callerCls = object.property.name + "." + callerCls;
+            object = object.object;
+        }
+        else if (isNumericLiteral(object.property))
+        {
+            callerCls = `[${object.property.value}]` + callerCls;
+            object = object.object;
+        }
+        else if (isCallExpression(object.property)) {
+            callerCls = `${object.property.callee.property.name}()` + callerCls;
             object = object.object;
         }
         else {
@@ -1461,48 +1480,53 @@ function postParse(project: string, parsedComponents: IComponent[], postTasks: a
     const mainAppComponent = components.find(c => c.extend === "Ext.app.Application");
     if (mainAppComponent)
     {
-        components.filter(c => c.componentClass !== mainAppComponent.componentClass).forEach(c => {
-            c.methods.forEach(m => {
-                m.variables.forEach(v => {
-                    if (v.name.startsWith(`${mainAppComponent.name}.`))
-                    {
-                        const name = v.name.replace(`${mainAppComponent.name}.`, "");
-                        let staticProp = mainAppComponent.statics.find(s => s.name === name);
-
-                        if (!staticProp)
+        components.filter(c => c.componentClass !== mainAppComponent.componentClass).forEach(c =>
+        {
+            c.methods.forEach(m =>
+            {
+                m.variables.forEach(v =>
+                {
+                    try {
+                        if (v.name.startsWith(`${mainAppComponent.name}.`))
                         {
-                            staticProp = {
-                                doc: undefined,
-                                name,
-                                start: v.start,
-                                end: v.end,
-                                private: false,
-                                deprecated: false,
-                                componentClass: v.componentClass,
-                                static: true,
-                                range: utils.toRange(v.start, v.end),
-                                value: undefined
-                            };
-                            mainAppComponent.statics.push(staticProp);
-                        }
-                        else {
-                            staticProp.clsInst = v.componentClass;
-                        }
+                            const name = v.name.replace(`${mainAppComponent.name}.`, "");
+                            let staticProp = mainAppComponent.statics.find(s => s.name === name);
 
-                        const instComponent = extjs.getComponent(v.componentClass, project, components);
-                        if (instComponent)
-                        {
-                            staticProp.doc = instComponent.doc;
-                            staticProp.deprecated = instComponent.deprecated || false;
-                            staticProp.private = instComponent.private || false;
-                            staticProp.since = instComponent.since;
-                        }
+                            if (!staticProp)
+                            {
+                                staticProp = {
+                                    doc: undefined,
+                                    name,
+                                    start: v.start,
+                                    end: v.end,
+                                    private: false,
+                                    deprecated: false,
+                                    componentClass: v.componentClass,
+                                    static: true,
+                                    range: utils.toRange(v.start, v.end),
+                                    value: undefined
+                                };
+                                mainAppComponent.statics.push(staticProp);
+                            }
+                            else {
+                                staticProp.clsInst = v.componentClass;
+                            }
 
-                        //
-                        // Re-cache
-                        //
-                        cacheComponents([mainAppComponent]);
-                    }
+                            const instComponent = extjs.getComponent(v.componentClass, project, components);
+                            if (instComponent)
+                            {
+                                staticProp.doc = instComponent.doc;
+                                staticProp.deprecated = instComponent.deprecated || false;
+                                staticProp.private = instComponent.private || false;
+                                staticProp.since = instComponent.since;
+                            }
+
+                            //
+                            // Re-cache
+                            //
+                            cacheComponents([mainAppComponent]);
+                        }
+                    } catch {}
                 });
             });
         });
