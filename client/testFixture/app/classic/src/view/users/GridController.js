@@ -35,6 +35,12 @@ Ext.define('VSCodeExtJS.view.users.GridController',
     },
 
 
+    onOkClick: function(btn)
+    {
+        console.log("ok");
+    },
+
+
     onView: function()
     {
         var me = this;

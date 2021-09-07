@@ -67,7 +67,11 @@ Ext.define('VSCodeExtJS.view.users.Grid',
     
     dockedItems: [
     {
-        xtype: 'toolbar'
+        xtype: 'toolbar',
+        items: [{
+            text: 'OK',
+            handler: 'onOkClick'
+        }]
     },
     {
         xtype: 'pagingtoolbar',

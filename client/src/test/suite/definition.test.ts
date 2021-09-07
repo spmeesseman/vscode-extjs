@@ -1,8 +1,7 @@
 
 import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate, toRange, waitForValidation, closeActiveDocument } from "./helper";
-import { configuration } from "../../common/configuration";
+import { getDocUri, activate, toRange, closeActiveDocument } from "./helper";
 
 
 suite("Definition Tests", () =>
@@ -11,8 +10,9 @@ suite("Definition Tests", () =>
 	const docUri = getDocUri("app/shared/src/app.js");
 
 
-	suiteSetup(async () =>
+	suiteSetup(async function()
     {
+		this.timeout(45 * 1000);
 		await activate(docUri);
 	});
 
@@ -285,8 +285,7 @@ suite("Definition Tests", () =>
 
 
 	test("No definition", async () =>
-    {
-		//
+    {   //
 		// app.js Line 151
 		// me.test3 = AppUtils.alertError("test");
 		// 'me' is not set
@@ -295,6 +294,39 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(241, 16), []); // "type: 'string'"" hits shouldIgnoreType()
 		await testDefinition(docUri, new vscode.Position(230, 16), []); // someClass.someMethod();
     });
+
+
+	test("Methods defined in controller", async () =>
+	{
+		const gridUri = getDocUri("app/classic/src/view/users/Grid.js");
+		await activate(gridUri);
+		//
+		// Line 73
+		// handler: 'onOkClick'
+		//
+		await testDefinition(gridUri, new vscode.Position(72, 26), [
+		{
+			uri: getDocUri("app/classic/src/view/users/GridController.js"),
+			range: toRange(37, 4, 40, 6)
+		}]);
+		//
+		// Line 65
+		// afterrender: 'onAfterRender'
+		//
+		await testDefinition(gridUri, new vscode.Position(64, 26), [
+		{
+			uri: getDocUri("app/classic/src/view/users/GridController.js"),
+			range: toRange(30, 4, 34, 6)
+		}]);
+		await closeActiveDocument();
+		//
+		// Line 106
+		// Nothing
+		// xtype : 'datecolumn'
+		//
+		await testDefinition(gridUri, new vscode.Position(105, 22), []);
+		await closeActiveDocument();
+	});
 
 
 	test("Non-ExtJS document", async () =>
