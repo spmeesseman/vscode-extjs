@@ -1,5 +1,11 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.11.1 (September 6th, 2021)
+
+### Bug Fixes
+
+- **Parser:** indexing fails on property expressions with inline numeric literal
+
 ## Version 0.11.0 (September 6th, 2021)
 
 ### Bug Fixes
