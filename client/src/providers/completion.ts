@@ -80,8 +80,8 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               lineTextFull = document.lineAt(position).text,
               range = document.getWordRangeAtPosition(position),
               text = range ? document.getText(range) : "",
-              quotesRegex = new RegExp(`(?<=(?:"|')[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?=(?:("|')))$`),
-              commentRegex = new RegExp(`(?<=\\/\\/|\\s*\\*\\s*|\\/\\*\\*[^;]*)(?<!\\*\\/)[^.\\*\\/]+${text}`),
+              quotesRegex = new RegExp(`(?<=(?:"|')[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?=(?:("|')))$`, "i"),
+              commentRegex = new RegExp(`(?<=\\/\\/|\\s*\\*\\s*|\\/\\*\\*[^;]*)(?<!\\*\\/)[^.\\*\\/]+${text}`, "i"),
               inComments = commentRegex.test(lineTextFull),
               inQuotes = quotesRegex.test(lineTextFull);
 
@@ -108,7 +108,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (!inComments && !inQuotes)
         {
-            let lineProperties,
+            let  lineProperties,
                 lineTextLeftPrevProp;
             const lineTextLeft = lineTextLeftPrevProp = lineTextFull.substr(0, position.character).trimLeft(),
                   dotIdx = lineTextLeftPrevProp.lastIndexOf(".", position.character),
