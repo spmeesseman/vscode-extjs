@@ -1140,7 +1140,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
 
             if (propertyDef.doc)
             {
-                type = propertyDef.doc.type;
+                type = propertyDef.doc.type.toLowerCase();
             }
 
             if (!type && propertyDef.value?.value)

@@ -251,68 +251,6 @@ class JsDocParser
 
         let lineProperty = "", lineType = "",
             lineValue: string | undefined, lineTrail = "";
-        const lineParts = line.split(" ");
-        //
-        // Examples:
-        //
-        //     @param {Object} opt Delivery options.
-        //     @param {String} msg The specific error message.
-        //     Some more descriptive text about the above property.
-        //     @param {Boolean} [show=true]  Show the button to open a help desk ticket
-        //     Some more descriptive text about the above property.
-        //
-        // Trailing line text i.e. 'Some more descriptive text about the above property' gets
-        // stored into 'lineTrail'.  THis is placed "before" the default value extracted from a
-        // first line i.e. [show=true].
-        //
-        if (lineParts.length > 1)
-        {   //
-            // Check for no type i.e. @param propName the description here
-            //
-            if (!lineParts[1].match(/\{[A-Z(\[\])]+\}/i))
-            {
-                lineType = "";
-                lineProperty = lineParts[1];
-                if (lineParts.length > 2)
-                {
-                    lineParts.shift();
-                    lineParts.shift();
-                    lineTrail = lineParts.join(" ");
-                }
-                else {
-                    lineParts.shift();
-                    lineTrail = "";
-                }
-            }
-            //
-            // Has type i.e. @param {String} propName the description here
-            //
-            else if (lineParts.length > 2)
-            {
-                lineType = lineParts[1];
-                lineProperty = lineParts[2];
-                if (lineParts.length > 3)
-                {
-                    lineParts.shift();
-                    lineParts.shift();
-                    lineParts.shift();
-                    lineTrail = lineParts.join(" ");
-                }
-            }
-        }
-
-        //
-        // If no property name was found, then there's nothing to add to the markdown, exit
-        // lineProperty is property or [property=value]
-        //
-        if (!lineProperty) {
-            return;
-        }
-        
-        if (lineProperty.indexOf("=") !== -1) {
-            lineProperty = lineProperty.substring(0, lineProperty.indexOf("=")).replace(/[\[\]=]/g, "").trim();
-        }
-
         //
         // Check for a default value, for example:
         //
@@ -323,13 +261,22 @@ class JsDocParser
         //
         let match, body = "";
         doc = doc.replace(/\r\n +\*/g, "\r\n").replace(/\n +\*/g, "\n");
-        const regex = new RegExp(`@param\\s*(\\{[\\w\\.]+\\})*\\s*\\[?${lineProperty}(?: *= *([\\w"\`' ]*) *\\]?)*([^]*?)(?=^@param|@return|@since|@[a-z]+|ENDPARAMS)`, "gm");
-        if ((match = regex.exec(doc + "ENDPARAMS")) !== null)
+        let regex = /@param\s*(\{[\w.*]+\})*\s*\[?(\w+)(?: *= *([\w"`' ]*) *\]?)*[^]+$/;
+        if ((match = regex.exec(line)) !== null)
         {
-            const [ _, mType, mDefault, mBody ] = match;
-            body = mBody?.trim();
+            const [ _, mType, mProperty, mDefault ] = match;
             lineType = mType?.replace(/[\{\}]/g, "").replace("*", "any").toLowerCase();
             lineValue = mDefault ;
+            lineProperty = mProperty;
+            regex = new RegExp(`@param\\s*(?:\\{[\\w\\.]+\\})*\\s*\\[?${lineProperty}(?: *= *(?:[\\w"\`' ]*) *\\]?)*([^]*?)(?=^@[a-z]+|ENDPARAMS)`, "gm");
+            if ((match = regex.exec(doc + "ENDPARAMS")) !== null)
+            {
+                const [ _, mBody ] = match;
+                body = mBody?.trim();
+            }
+        }
+        else {
+            return;
         }
 
         log.value("          name", lineProperty, 5);
