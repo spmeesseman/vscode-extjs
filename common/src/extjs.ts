@@ -7,7 +7,8 @@ export function getComponent(componentClass: string | undefined, project: string
 {
 	logger?.methodStart("get component", logLevel, logPad, false, [["component class", componentClass], ["project", project]]);
 	const component = componentClass ? (components.find(c => c.componentClass === componentClass && project === c.project) ||
-					  						getComponentByAlias(componentClass, project, components, position, thisCmp, logger, logPad + "   ", logLevel)) :
+										getComponentByPosition(componentClass, position, thisCmp) ||
+					  					getComponentByAlias(componentClass, project, components, position, thisCmp, logger, logPad + "   ", logLevel)) :
 										undefined;
 	logger?.methodDone("get component", logLevel, logPad, false, [["found", !!component]]);
 	return component;
@@ -129,7 +130,7 @@ export function getComponentByAlias(alias: string, project: string, components: 
  * @param position The cursor position within the document
  * @param thisCmp The component class of the current document
  */
-export function getAliasLookup(components: IComponent[], position: IPosition | undefined, thisCmp: IComponent | undefined)
+function getAliasLookup(components: IComponent[], position: IPosition | undefined, thisCmp: IComponent | undefined)
 {
 	let component: IComponent | undefined;
 
@@ -166,7 +167,17 @@ export function getAliasLookup(components: IComponent[], position: IPosition | u
 }
 
 
-export function getWidgetByPosition(position: IPosition, component: IComponent)
+function getComponentByPosition(componentClass: string, position?: IPosition, thisCmp?: IComponent)
+{
+	if (position && thisCmp)
+	{
+		// TODO - getComponentByPosition()
+	}
+    return undefined;
+}
+
+
+function getWidgetByPosition(position: IPosition, component: IComponent)
 {
     return component.widgets.find(w => isPositionInRange(position, w.range));
 }

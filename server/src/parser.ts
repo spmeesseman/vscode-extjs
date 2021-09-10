@@ -2,7 +2,7 @@
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as log from "./lib/log";
-import { parseDoc } from "./lib/commentParser";
+import { parseDoc } from "./lib/jsdocParser";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable, extjs,
     DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange,

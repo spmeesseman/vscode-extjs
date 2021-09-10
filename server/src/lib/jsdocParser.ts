@@ -42,7 +42,7 @@ enum MarkdownStringMode
 }
 
 
-class CommentParser
+class JsDocParser
 {
 
     private boldItalic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
@@ -734,5 +734,5 @@ class CommentParser
 
 export function parseDoc(property: string, type: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, doc: string, logPad = "")
 {
-    return (new CommentParser()).toIJsDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, doc, logPad)
+    return (new JsDocParser()).toIJsDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, doc, logPad)
 }
