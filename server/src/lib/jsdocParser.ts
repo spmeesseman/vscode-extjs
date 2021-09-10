@@ -165,22 +165,25 @@ class JsDocParser
 
     private handleDeprecatedLine(line: string, jsdoc: IJsDoc)
     {
-        let rtnLine: string,
+        let depLine: string,
             match;
 
         match = line.match(/@deprecated ?(.+)*/);
         if (match)
         {
             const [ _, comment ] = match;
-            rtnLine = `${this.bold("deprecated")} ${comment}`;
+            depLine = `${this.bold("deprecated")} ${comment}`;
         }
         else {
-            rtnLine = this.bold("deprecated");
+            depLine = this.bold("deprecated");
         }
 
         jsdoc.deprecated = true;
 
-        this.pushMarkdown(`${MarkdownChars.NewLine}${rtnLine}`, jsdoc);
+        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
+        }
+        this.pushMarkdown(depLine, jsdoc);
 
         log.value("      insert deprecated line", line.trim(), 5);
     }
@@ -195,8 +198,11 @@ class JsDocParser
                 return this.boldItalic(matched);
             });
         }
+        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
+        }
+        this.pushMarkdown(textLine, jsdoc);
         log.value("      insert text line", textLine, 5);
-        this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
     }
 
 
@@ -205,7 +211,10 @@ class JsDocParser
         let textLine = line.trim();
         // textLine = this.italic(textLine, false, true);
         jsdoc.private = true;
-        this.pushMarkdown(`${MarkdownChars.NewLine}${this.bold("private")}`, jsdoc);
+        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
+        }
+        this.pushMarkdown(this.bold("private"), jsdoc);
         log.value("      insert private line", textLine, 5);
     }
 
@@ -222,7 +231,10 @@ class JsDocParser
             // cfgLine = lineParts[0] + this.boldItalic(property) + " " + lineParts[1];
         }
         else {
-            this.pushMarkdown(`${MarkdownChars.NewLine}${cfgLine}`, jsdoc);
+            if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+                this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
+            }
+            this.pushMarkdown(cfgLine, jsdoc);
         }
 
         log.value("      insert object line", cfgLine, 5);
@@ -265,7 +277,7 @@ class JsDocParser
         if ((match = regex.exec(line)) !== null)
         {
             const [ _, mType, mProperty, mDefault ] = match;
-            lineType = mType?.replace(/[\{\}]/g, "").replace("*", "any").toLowerCase();
+            lineType = mType?.replace(/[\{\}]/g, "").replace("*", "any");
             lineValue = mDefault ;
             lineProperty = mProperty;
             regex = new RegExp(`@param\\s*(?:\\{[\\w\\.]+\\})*\\s*\\[?${lineProperty}(?: *= *(?:[\\w"\`' ]*) *\\]?)*([^]*?)(?=^@[a-z]+|ENDPARAMS)`, "gm");
@@ -304,7 +316,7 @@ class JsDocParser
         if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
             this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
         }
-        if (!jsdoc.body.endsWith(`${MarkdownChars.NewLine}${MarkdownChars.NewLine}${MarkdownChars.NewLine}`)) {
+        if (!jsdoc.body.endsWith(`${MarkdownChars.NewLine}${MarkdownChars.NewLine}`)) {
             this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
         }
     
@@ -314,7 +326,7 @@ class JsDocParser
 
         if (lineValue)
         {
-            trailers.push(`${MarkdownChars.NewLine} ${this.italic("Defaults to:")} \`${lineValue.replace(/`/g, "")}\`${MarkdownChars.NewLine}${MarkdownChars.NewLine}`);
+            trailers.push(`${MarkdownChars.NewLine}${this.italic("Defaults to:")} \`${lineValue.replace(/`/g, "")}\`${MarkdownChars.NewLine}${MarkdownChars.NewLine}`);
         }
         else {
             this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
@@ -339,7 +351,10 @@ class JsDocParser
             rtnLine = `${MarkdownChars.Code}returns: ${jsdoc.returns}`;
         }
 
-        this.pushMarkdown(`${MarkdownChars.NewLine}${rtnLine}`, jsdoc);
+        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
+        }
+        this.pushMarkdown(rtnLine, jsdoc);
 
         log.value("      insert returns line", rtnLine, 5);
     }
@@ -347,7 +362,7 @@ class JsDocParser
 
     private handleSinceLine(line: string, jsdoc: IJsDoc)
     {
-        let rtnLine: string;
+        let sinceLine: string;
 
         let match;
         match = line.match(/@since +[vV]*(?:ersion)* *([0-9.-]+)*/);
@@ -355,15 +370,18 @@ class JsDocParser
         {
             const [ _, version ] = match;
             jsdoc.since = `v${version}`;
-            rtnLine = `${MarkdownChars.NewLine}${MarkdownChars.Italic}since version ${version}${MarkdownChars.Italic}`;
+            sinceLine = `${MarkdownChars.NewLine}${MarkdownChars.Italic}since version ${version}${MarkdownChars.Italic}`;
         }
         else {
             jsdoc.since = "?";
-            rtnLine = `${MarkdownChars.NewLine}${MarkdownChars.Italic}since version ?${MarkdownChars.Italic}`;
+            sinceLine = `${MarkdownChars.NewLine}${MarkdownChars.Italic}since version ?${MarkdownChars.Italic}`;
         }
 
-        this.pushMarkdown(`${MarkdownChars.NewLine}${rtnLine}`, jsdoc);
-        log.value("      insert since line", rtnLine, 5);
+        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
+        }
+        this.pushMarkdown(sinceLine, jsdoc);
+        log.value("      insert since line", sinceLine, 5);
     }
 
 
@@ -389,7 +407,11 @@ class JsDocParser
             }
         }
         log.value("      insert text line", textLine, 5);
-        this.pushMarkdown(MarkdownChars.NewLine + textLine, jsdoc);
+
+        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
+        }
+        this.pushMarkdown(textLine, jsdoc);
     }
 
 
