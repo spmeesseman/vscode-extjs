@@ -51,6 +51,7 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         "xtype", "extend", "requires", "alias", "alternateClassName", "singleton", "statics"
     ];
 
+
     async provideCompletionItems(document: TextDocument, position: Position)
     {
 
@@ -273,21 +274,6 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
         //
         if (cmp.doc && cmp.doc.title) {
             completionItem.documentation = new MarkdownString().appendCodeblock(cmp.doc.title).appendMarkdown(cmp.doc.body);
-        }
-
-        //
-        // If a text edit triggers a completion in the middle of the expression we need to
-        // make sure to replace the existing right side part if the user selects from the
-        // completion items.  Use `additionalTextEdits` on the completion item to accomplish.
-        //
-        const lineText = config.document.lineAt(config.position).text,
-              lineTextLeftCurCharInclusive = lineText.substr(0, config.position.character + 1),
-              lineTextRight = lineText.replace(lineTextLeftCurCharInclusive, ""),
-              rTextMatch = lineTextRight.match(/([a-zA-Z_0-9]+)/);
-        if (rTextMatch && rTextMatch[1])
-        {
-            const rRange = new Range(config.position, new Position(config.position.line, config.position.character + rTextMatch[1].length));
-            completionItem.additionalTextEdits = [ TextEdit.replace(rRange, "") ];
         }
 
         //
