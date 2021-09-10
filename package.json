@@ -1,6 +1,6 @@
 {
     "name": "vscode-extjs",
-    "version": "0.12.0",
+    "version": "0.12.1",
     "displayName": "ExtJs Intellisense",
     "author": "Scott Meesseman",
     "description": "ExtJS Intellisense - Code completion and more",

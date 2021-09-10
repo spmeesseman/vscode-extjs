@@ -1,5 +1,16 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.12.1 (September 9th, 2021)
+
+### Bug Fixes
+
+- **Hover:** some code blocks are not properly formatted in the markdown
+- **Hover:** doc has multiple new lines in random spots
+- **Hover:** method parameters list in 2nd line is showing type for some params instead of param name.
+- **Completion:** completion is active within comments when typing a new word that starts with an upper case character.
+- **Hover:** hover info is incorrect for string literal class names if there are multiple classes with the same final part of the dot separated class name.
+- **Completion:** if a text edit triggers a completion in the middle of the expression, selecting a completion is deleting a random # of trailing characters.
+
 ## Version 0.12.0 (September 6th, 2021)
 
 ### Features
