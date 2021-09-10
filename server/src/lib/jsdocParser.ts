@@ -479,12 +479,6 @@ class JsDocParser
 
     private pushMarkdown(doc: string, jsdoc: IJsDoc)
     {
-        if (doc.startsWith(MarkdownChars.Code)) {
-            if (jsdoc.body.endsWith(MarkdownChars.NewLine)) {
-                jsdoc.body = jsdoc.body.substring(0, jsdoc.body.length - MarkdownChars.NewLine.length);
-            }
-            jsdoc.body += ` ${MarkdownChars.NewLine}`
-        }
         jsdoc.body += doc;
     }
 
