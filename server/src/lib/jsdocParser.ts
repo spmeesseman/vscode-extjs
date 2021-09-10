@@ -38,7 +38,8 @@ enum MarkdownStringMode
     Param,
     Returns,
     Since,
-    Singleton
+    Singleton,
+    Text
 }
 
 
@@ -113,6 +114,9 @@ class JsDocParser
 		else if (line.length > 3 && (line.substring(0, 3) === "   " || line[0] === "\t"))
 		{
 			mode = MarkdownStringMode.Code;
+		}
+		else {
+			mode = MarkdownStringMode.Text;
 		}
 		return mode;
 	}
@@ -261,8 +265,10 @@ class JsDocParser
             return;
         }
 
-        let lineProperty = "", lineType = "",
-            lineValue: string | undefined, lineTrail = "";
+        let lineProperty = "",
+            lineType = "",
+            lineValue: string | undefined,
+            docLine: string | undefined;
         //
         // Check for a default value, for example:
         //
@@ -271,15 +277,16 @@ class JsDocParser
         // If a default value is found, set 'lineValue' and this is added to the 'trailers'
         // array to be placed at the end of the params documentation body
         //
-        let match, body = "";
+        let match, body = "No documentation found";
         doc = doc.replace(/\r\n +\*/g, "\r\n").replace(/\n +\*/g, "\n");
-        let regex = /@param\s*(\{[\w.*]+\})*\s*\[?(\w+)(?: *= *([\w"`' ]*) *\]?)*[^]+$/;
+        let regex = /@param\s*(\{[\w.*]+\})*\s*\[?(\w+)(?: *= *([\w"`' ]*) *)*\]? *([^]+)?$/;
         if ((match = regex.exec(line)) !== null)
         {
-            const [ _, mType, mProperty, mDefault ] = match;
-            lineType = mType?.replace(/[\{\}]/g, "").replace("*", "any");
+            const [ _, mType, mProperty, mDefault, mDocLine ] = match;
+            lineType = mType?.replace(/[\{\}]/g, "").replace("*", "any").replace(/\//g, "|");
             lineValue = mDefault ;
             lineProperty = mProperty;
+            docLine = mDocLine;
             regex = new RegExp(`@param\\s*(?:\\{[\\w\\.]+\\})*\\s*\\[?${lineProperty}(?: *= *(?:[\\w"\`' ]*) *\\]?)*([^]*?)(?=^@[a-z]+|ENDPARAMS)`, "gm");
             if ((match = regex.exec(doc + "ENDPARAMS")) !== null)
             {
@@ -305,9 +312,9 @@ class JsDocParser
         });
 
         let paramLine = `${MarkdownChars.Code}parameter ${lineProperty}: ${lineType}`;
-        if (lineTrail) {
-            // paramLine += `${MarkdownChars.NewLine}${MarkdownChars.LongDash} ${lineTrail}`;
-            paramLine += `${MarkdownChars.NewLine}${lineTrail}`;
+        if (docLine) {
+            // paramLine += `${MarkdownChars.NewLine}${MarkdownChars.LongDash} ${docLine}`;
+            paramLine += `${MarkdownChars.NewLine}${docLine}`;
         }
 
         //
@@ -472,6 +479,12 @@ class JsDocParser
 
     private pushMarkdown(doc: string, jsdoc: IJsDoc)
     {
+        if (doc.startsWith(MarkdownChars.Code)) {
+            if (jsdoc.body.endsWith(MarkdownChars.NewLine)) {
+                jsdoc.body = jsdoc.body.substring(0, jsdoc.body.length - MarkdownChars.NewLine.length);
+            }
+            jsdoc.body += ` ${MarkdownChars.NewLine}`
+        }
         jsdoc.body += doc;
     }
 
@@ -521,25 +534,25 @@ class JsDocParser
         log.methodStart("build markdown string from comment", 4, logPad, false, [["comment", comment]]);
 
         const commentFmt = comment?.trim()
-            //
-            // Clean up beginning of string /**\n...
-            //
-            .replace(/^[\* \t\n\r]+/, "");
-            //
-            // Format line breaks to Clojure standard
-            //
-            // .replace(/\n/, newLine)
-            // //
-            // // Remove leading "* " for each line in the comment
-            // //
-            // .replace(/\* /, "")
-            // //
-            // // Bold @ tags
-            // //
-            // .replace(/@[a-z]+ /, function(match) {
-            //     return "_**" + match.trim() + "**_ ";
-            // })
-            // .trim();
+                                    //
+                                    // Clean up beginning of string /**\n...
+                                    //
+                                    .replace(/^[\* \t\n\r]+/, "");
+                                    //
+                                    // Format line breaks to Clojure standard
+                                    //
+                                    // .replace(/\n/, newLine)
+                                    // //
+                                    // // Remove leading "* " for each line in the comment
+                                    // //
+                                    // .replace(/\* /, "")
+                                    // //
+                                    // // Bold @ tags
+                                    // //
+                                    // .replace(/@[a-z]+ /, function(match) {
+                                    //     return "_**" + match.trim() + "**_ ";
+                                    // })
+                                    // .trim();
 
         const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/),
               maxLines = 100;
@@ -555,6 +568,10 @@ class JsDocParser
                 continue;
             }
 
+            //
+            // Skip control comments
+            // TODO - these tags should be a configurable setting
+            //
             if (currentLine === 0 && (line.includes("eslint") || line.includes("vscode-extjs"))) {
                 continue;
             }
@@ -567,20 +584,19 @@ class JsDocParser
             // Remove line breaks, we format later depending on comment parts, done w/ Clojure
             // standard line breaks
             //
-            line = line
-            .replace(/\n/, "")
-            //
-            // Remove leading "* " for each line in the comment
-            //
-            .replace(/\* /, "")
-            .replace(/\s*\*$/, ""); // <- Blank lines
-            //
-            // Italicize @ tags
-            //
-            // .replace(/@[a-z]+ /, function(match) {
-            //     return "_" + match.trim() + "_";
-            // });
-            // .trim();
+            line = line.replace(/\n/, "")
+                        //
+                        // Remove leading "* " for each line in the comment
+                        //
+                        .replace(/\* /, "")
+                        .replace(/\s*\*$/, ""); // <- Blank lines
+                        //
+                        // Italicize @ tags
+                        //
+                        // .replace(/@[a-z]+ /, function(match) {
+                        //     return "_" + match.trim() + "_";
+                        // });
+                        // .trim();
 
             log.value("   process line", line, 4);
 
@@ -603,6 +619,7 @@ class JsDocParser
             if (indented && mode !== MarkdownStringMode.Code)
             {
                 this.pushMarkdown(indented, jsdoc);
+                this.pushMarkdown(`${MarkdownChars.NewLine}<!-- -->`, jsdoc);
                 indented = "";
             }
 
@@ -668,7 +685,7 @@ class JsDocParser
             {
                 this.handleLinkLine(line, jsdoc);
             }
-            else
+            else // mode === MarkdownStringMode.Text
             {
                 this.handleTextLine(line, jsdoc);
             }
