@@ -1031,8 +1031,9 @@ class ExtjsLanguageManager
             [ "project", project ], [ "# of configurations", this.config.length ]
         ]);
 
-        const processedDirs: string[] = [],
-              cfgPct = (this.config && this.config.length ? 100 / this.config.length : 100) - 2;
+        const cacheTImePercent = 2,
+              processedDirs: string[] = [],
+              cfgPct = (this.config && this.config.length ? 100 / this.config.length : 100) - cacheTImePercent;
         let currentCfgIdx = 0,
             components: IComponent[] = [],
             pct = 0;
@@ -1099,7 +1100,7 @@ class ExtjsLanguageManager
             {
                 const toRemove: IComponent[] = [];
                 components = JSON.parse(storedComponents);
-                increment = Math.round(1 / components.length * (cfgPct + 2));
+                increment = Math.round(1 / components.length * (cfgPct + cacheTImePercent));
                 //
                 // Request load components from server
                 //
@@ -1150,7 +1151,7 @@ class ExtjsLanguageManager
                 // Udpdate progress percent
                 //
                 ++currentCfgIdx;
-                pct = Math.round(cfgPct * currentCfgIdx + ((currentCfgIdx - 1) * 2));
+                pct = Math.round(cfgPct * currentCfgIdx + ((currentCfgIdx - 1) * cacheTImePercent));
                 await this.updateIndexingProgress(progress, "Caching", projectName, pct, increment);
                 //
                 // Update server
@@ -1185,7 +1186,7 @@ class ExtjsLanguageManager
                 //
                 // Set progress increment
                 //
-                increment = Math.round(1 / numFiles * (cfgPct + 2));
+                increment = Math.round(1 / numFiles * (cfgPct + cacheTImePercent));
                 log.blank();
                 log.write(`   Indexing ${numFiles} files in ${conf.classpath.length} classpath directories`, logLevel, logPad);
                 //
@@ -1211,7 +1212,7 @@ class ExtjsLanguageManager
                         //
                         // Report progress
                         //
-                        pct = Math.round((cfgPct * currentCfgIdx + (currentCfgIdx * 2)) + (++currentFileIdx / numFiles * cfgPct));
+                        pct = Math.round((cfgPct * currentCfgIdx + (currentCfgIdx * cacheTImePercent)) + (++currentFileIdx / numFiles * cfgPct));
                         await this.updateIndexingProgress(progress, "Indexing", projectName, pct, increment);
                     }
                     const fullClasspathDir = path.join(conf.baseDir, dir);
@@ -1221,22 +1222,23 @@ class ExtjsLanguageManager
                 //
                 // Udpdate progress percent
                 //
-                let inc = 2;
+                let inc = cacheTImePercent;
                 ++currentCfgIdx;
-                pct = Math.round(currentCfgIdx * cfgPct + ((currentCfgIdx - 1) * 2));
+                pct = Math.round(currentCfgIdx * cfgPct + ((currentCfgIdx - 1) * cacheTImePercent));
                 await this.updateIndexingProgress(progress, "Caching", projectName, pct, increment);
                 //
                 // Update entire component tree in fs cache
                 //
                 if (components.length > 0)
                 {
+                    const ts = (new Date()).toString();
                     --inc;
                     await fsStorage.update(storageKey, JSON.stringify(components));
                     await this.updateIndexingProgress(progress, "Caching", projectName, ++pct, increment);
                     for (const c of components) {
-                        await storage.update(getTimestampKey(c.fsPath), (new Date()).toString());
+                        await storage.update(getTimestampKey(c.fsPath), ts);
                     }
-                    await storage.update(storageKey + "_TIMESTAMP", (new Date()).toString());
+                    await storage.update(storageKey + "_TIMESTAMP", ts);
                 }
                 //
                 // Udpdate progress percent
