@@ -20,10 +20,10 @@ import { storage } from "./common/storage";
 import { configuration } from "./common/configuration";
 import { ConfigParser } from "./common/configParser";
 import { showReIndexButton } from "./commands/indexFiles";
-import { ILineProperties, ITestsConfig } from "./common/interface";
+import { IExtjsLanguageManager, ILineProperties, ITestsConfig } from "./common/interface";
 
 
-class ExtjsLanguageManager
+class ExtjsLanguageManager implements IExtjsLanguageManager
 {   //
     // When an update requires a re-index, change the name of this flag
     //
@@ -427,13 +427,14 @@ class ExtjsLanguageManager
         //
         //     1. const x = new Ext.util.DelayedTask(...)
         //     2. if (!Util.checkOneSelected(...)) {
+        //     3. new Ext.util.DelayedTask(() => ...)
         //
         // We want it stripped up to the callee of the property we're looking at
         //
         //     1. Ext.util.DelayedTask(...)
         //     2. Util.checkOneSelected(...)) {
         //
-        let lineText = allLineText.replace(/[\s\w.\[\]]+=[\s]*(new)*\s*/, "").replace(/[\s\w]*if\s*\(\s*[!]{0,2}/, ""),
+        let lineText = allLineText.replace(/(?:[\s\w.\[\]]+=)*[\s]*(new)*\s*/, "").replace(/[\s\w]*if\s*\(\s*[!]{0,2}/, ""),
             property = document.getText(range),
             cmpType: ComponentType = ComponentType.None,
             component: IComponent | IPrimitive | undefined,
@@ -617,8 +618,19 @@ class ExtjsLanguageManager
         // else if (lineText.match(new RegExp(`${property}\\s*\\((?:\\)|\\s*[\\w_ ,\\{\\}.:\\r\\n]+)`)))
         // else if (lineText.match(new RegExp(`${property}\\s*\\([ \\W\\w\\{]*\\)\\s*[;,\\)]+\\s*\\{*$`)))
         else if (new RegExp(`${property}\\s*\\(`).test(lineText))
-        {
-            component = this.getComponent(lineText.replace(/[^a-z0-9\.]/gi, "").trim(), project, logPad + "   ", logLevel + 1, toIPosition(position), thisCmp);
+        {   //
+            // Remove trailing arguments
+            // Ex. new Ext.util.DelayedTask(() => {}).delay(100);
+            // property = DelayedTask
+            // lineCls = Ext.util
+            //
+            let lineTextTrim = lineText;
+            const trailingParIdx = lineTextTrim.indexOf("(");
+            if (trailingParIdx > lineTextTrim.indexOf(property)) {
+                lineTextTrim = lineTextTrim.substring(0, trailingParIdx);
+            }
+            lineTextTrim = lineTextTrim.replace(/[^a-z0-9._]/gi, "").trim();
+            component = this.getComponent(lineTextTrim, project, logPad + "   ", logLevel + 1, toIPosition(position), thisCmp);
             cmpType = component ? ComponentType.Class : ComponentType.Method;
         }
         //
