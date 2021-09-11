@@ -2,7 +2,7 @@
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as log from "./lib/log";
-import { parseDoc } from "./lib/jsdocParser";
+import { getDefaultIJsDoc, parseDoc } from "./lib/jsdocParser";
 import {
     ast, IComponent, IConfig, IMethod, IXtype, IProperty, IVariable, extjs,
     DeclarationType, IParameter, utils, VariableType, IRequire, IAlias, IObjectRange,
@@ -83,6 +83,7 @@ export async function parseExtJsFile(options: IServerRequest)
 
                         const componentInfo: IComponent = {
                             name: args[0].value,
+                            doc: getDefaultIJsDoc("class"),
                             baseNameSpace,
                             fsPath,
                             project,
@@ -94,6 +95,7 @@ export async function parseExtJsFile(options: IServerRequest)
                             objectRanges: [],
                             properties: [],
                             privates: [],
+                            since: "",
                             singleton: false,
                             start: path.node.loc!.start,
                             statics: [],
@@ -137,9 +139,9 @@ export async function parseExtJsFile(options: IServerRequest)
 
                         if (isExpressionStatement(path.container)) {
                             componentInfo.doc = getJsDoc(args[0].value, "class", args[0].value, false, false, componentInfo.singleton, path.container.leadingComments);
-                            componentInfo.since = componentInfo.doc?.since;
-                            componentInfo.private = componentInfo.doc?.private;
-                            componentInfo.deprecated = componentInfo.doc?.deprecated;
+                            componentInfo.since = componentInfo.doc.since;
+                            componentInfo.private = componentInfo.doc.private;
+                            componentInfo.deprecated = componentInfo.doc.deprecated;
                         }
 
                         if (isObjectProperty(propertyExtend))
@@ -316,7 +318,7 @@ function getJsDoc(property: string,  type: "property" | "param" | "cfg" | "class
     comments?.forEach((c) => {
         commentsStr += c.value;
     });
-    return commentsStr ? parseDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, commentsStr, "   ") : undefined;
+    return parseDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, commentsStr, "   ");
 }
 
 
@@ -647,9 +649,9 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nam
                     const doc = getJsDoc(name, "cfg", componentClass, false, false, false, it.leadingComments);
                     p.push({
                         doc, name,
-                        since: doc?.since,
-                        private: doc?.private || false,
-                        deprecated: doc?.deprecated || false,
+                        since: doc.since,
+                        private: doc.private || false,
+                        deprecated: doc.deprecated || false,
                         start: it.loc!.start,
                         end: it.loc!.end,
                         getter: "get" + utils.toProperCase(name),
@@ -701,14 +703,14 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
                     start: m.loc!.start,
                     end: m.loc!.end,
                     variables,
-                    returns: doc?.returns,
-                    since: doc?.since,
-                    private: doc?.private || isPrivate,
-                    deprecated: doc?.deprecated || false,
+                    returns: doc.returns,
+                    since: doc.since,
+                    private: doc.private || isPrivate,
+                    deprecated: doc.deprecated || false,
                     objectRanges: getMethodObjectRanges(m, propertyName),
                     bodyStart: m.value.body.loc!.start,
                     bodyEnd: m.value.body.loc!.end,
-                    static: doc?.static || isStatic,
+                    static: doc.static || isStatic,
                     range: utils.toRange(m.loc!.start, m.loc!.end),
                     value: undefined
                 });
@@ -869,11 +871,11 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
                     doc, name,
                     start: p.loc!.start,
                     end: p.loc!.end,
-                    since: doc?.since,
-                    private: doc?.private || isPrivate,
-                    deprecated: doc?.deprecated || false,
+                    since: doc.since,
+                    private: doc.private || isPrivate,
+                    deprecated: doc.deprecated || false,
                     componentClass,
-                    static: doc?.static || isStatic,
+                    static: doc.static || isStatic,
                     range: utils.toRange(p.loc!.start, p.loc!.end),
                     value: {
                         start: p.value.loc!.start,
@@ -1026,21 +1028,21 @@ function parseVariables(objEx: ObjectProperty, text: string | undefined, parentC
                 rightExpression = node.expression;
                 id = identifier("_");
             }
-            if (isCallExpression(rightExpression) && isLVal(id))
-            {
-                try {
-                    const declarator = variableDeclarator(id, rightExpression),
-                          declaration = variableDeclaration("let", [ declarator ]);
-                    declarator.loc = { ...rightExpression.loc } as SourceLocation;
-                    const variable = parseVariable(declaration, declarator, methodName, parentCls, postTasks);
-                    if (variable) {
-                        _add(variable);
-                    }
-                }
-                catch (e) {
-                    log.error(e);
-                }
-            }
+            // if (isCallExpression(rightExpression) && isLVal(id))
+            // {
+            //     try {
+            //         const declarator = variableDeclarator(id, rightExpression),
+            //               declaration = variableDeclaration("let", [ declarator ]);
+            //         declarator.loc = { ...rightExpression.loc } as SourceLocation;
+            //         const variable = parseVariable(declaration, declarator, methodName, parentCls, postTasks);
+            //         if (variable) {
+            //             _add(variable);
+            //         }
+            //     }
+            //     catch (e) {
+            //         log.error(e);
+            //     }
+            // }
             // if (params)
             // {
             //     for (const p of params)
@@ -1096,6 +1098,12 @@ function buildCallerCls(object: any): string
 {
     let foundObj = true,
         callerCls: string;
+
+    if (isCallExpression(object)) {
+        while (isCallExpression(object)) {
+            object = object.callee;
+        }
+    }
 
     if (isNumericLiteral(object.property)) {
         callerCls = `[${object.property.value}]`;
@@ -1225,6 +1233,10 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, metho
             // Identifier is found, in this example 'VSCodeExtJS'.
             //
             if (isMemberExpression(callee.object) && isIdentifier(callee.object.property))
+            {
+                callerCls = buildCallerCls(callee.object);
+            }
+            else if (isCallExpression(callee.object))
             {
                 callerCls = buildCallerCls(callee.object);
             }
@@ -1495,7 +1507,7 @@ function postParse(project: string, parsedComponents: IComponent[], postTasks: a
                             if (!staticProp)
                             {
                                 staticProp = {
-                                    doc: undefined,
+                                    doc: parseDoc(name, "class", v.componentClass, false, true, false, "", "   "),
                                     name,
                                     start: v.start,
                                     end: v.end,
