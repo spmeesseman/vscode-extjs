@@ -256,7 +256,7 @@ suite("Method Signature Tests", () =>
 	{
 		const jssUri = getDocUri("app/js/script1.js");
 		await activate(jssUri);
-		await testSignature(jssUri, new vscode.Position(2, 16), "(", {
+		await testSignature(jssUri, new vscode.Position(2, 15), "(", {
 			activeParameter: 1,
 			activeSignature: 0,
 			signatures: getSigInfo("a, b")
@@ -295,7 +295,7 @@ async function testSignature(docUri: vscode.Uri, position: vscode.Position, trig
 	expectedSignatureHelp.signatures.forEach((expectedItem, i) =>
 	{
 		let found = false;
-		actualSignatureHelp.signatures.forEach((actualItem) => {
+		actualSignatureHelp?.signatures.forEach((actualItem) => {
 			if (actualItem.label === expectedItem.label) {
 				assert.ok(actualItem.parameters.length === expectedItem.parameters.length);
 				expectedItem.parameters.forEach((expectedParam, j) =>
