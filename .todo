@@ -56,6 +56,13 @@ Completion:
 	☐ after = inline class doesnt work
 		VSCodeExtJSApp.user = VSCodeExtApp.model.user.User
 		no completion after the '=' sign
+	☐ In comments still firing in some places
+	    /**
+	     * @param {Ext.container} remove If `true`, removes...... [getting completion here]
+		 */
+	☐ Local instance vars with multiple down/up/prev/next
+		e.g. const asrButton = view.up('app-main').down('asrbutton');
+		typing asrButton. shows nothing
 
 Definition:
 
@@ -63,6 +70,9 @@ Definition:
 	☐ Models
 	☐ Children of alias do not work
 		e.g. AppUtils.GridColumn
+	☐ Local instance vars with multiple down/up/prev/next
+		e.g. const asrButton = view.up('app-main').down('asrbutton');
+		no definition found for asrButton
 
 Diagnostics:
 
@@ -124,6 +134,9 @@ JsDoc:
 	✔ Method doc needs work @done(21-09-05 11:25)
 		title line should contain params
 		i think doc is better in one spot than the other, i.e. completion vs.hover, cant remember
+	☐ Local instance vars with multiple down/up/prev/next
+		e.g. const asrButton = view.up('app-main').down('asrbutton');
+		hover over asrButton anywhere in the function shows nothing
 
 Miscellaneous:
 
