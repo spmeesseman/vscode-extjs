@@ -387,6 +387,24 @@ Ext.define('VSCodeExtJS',
 
 		});
 		
+	},
+
+	/**
+	 * Multiple callee object test
+	 */
+	testFn17: function()
+	{
+		const view = this.getView(),
+			  physDropdown1 = view.down('physiciandropdown')
+			  physDropdown2 = view.down('panel').down('panel').next('physiciandropdown');
+		const xyz = this.down('panel').down('panel').down('#thisPatItemId');
+		console.log(xyz);
+		console.log(physDropdown);
+
+		physDropdown1.load();
+		physDropdown2.load();
+		xyz.load();
+
 	}
 
 });
