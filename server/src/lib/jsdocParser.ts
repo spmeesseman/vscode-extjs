@@ -481,27 +481,19 @@ class JsDocParser
     {
         jsdoc.body += doc;
     }
+    
 
-
-    toIJsDoc(property: string, pType: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comment: string | undefined, logPad = ""): IJsDoc | undefined
+    toIJsDoc(property: string, pType: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comment: string | undefined, logPad = ""): IJsDoc
     {
-        if (!comment || !property) {
-            return;
-        }
+        const jsdoc = getDefaultIJsDoc(pType);
 
-        const jsdoc: IJsDoc = {
-            body: "",
-            deprecated: false,
-            private: false,
-            pType,
-            returns: "",
-            since: "",
-            singleton: false,
-            static: false,
-            params: [],
-            title: "",
-            type: ""
-        };
+        if (!comment) {
+            jsdoc.private = isPrivate;
+            jsdoc.static = isStatic;
+            jsdoc.singleton = isSingleton;
+            this.populateTitle(property, componentClass, jsdoc);
+            return jsdoc;
+        }
 
         //
         // JSDoc comments in the following form:
@@ -709,6 +701,24 @@ class JsDocParser
         return jsdoc;
     }
 
+}
+
+
+export function getDefaultIJsDoc(pType: "property" | "param" | "cfg" | "class" | "method" | "unknown"): IJsDoc
+{
+    return {
+        body: "",
+        deprecated: false,
+        private: false,
+        pType,
+        returns: "",
+        since: "",
+        singleton: false,
+        static: false,
+        params: [],
+        title: "",
+        type: ""
+    };
 }
 
 

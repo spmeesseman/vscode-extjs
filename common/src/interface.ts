@@ -66,7 +66,7 @@ export interface IComponent extends IExtJsBase
     bodyEnd: IPosition;
     configs: IConfig[];
     deprecated?: boolean;
-    doc?: IJsDoc;
+    doc: IJsDoc;
     extend?: string;
     fsPath: string;
     methods: IMethod[];
@@ -79,7 +79,7 @@ export interface IComponent extends IExtJsBase
     project: string;
     properties: IProperty[];
     requires?: IRequires;
-    since?: string;
+    since: string;
     singleton: boolean;
     statics: (IProperty | IMethod)[];
     types: IType[];
@@ -214,7 +214,7 @@ export interface IMethod extends IPropertyBase
     objectRanges: IObjectRange[];
     params: IParameter[];
     variables: IVariable[];
-    returns: string | undefined;
+    returns: string;
     static: boolean;
 }
 
@@ -256,7 +256,7 @@ export interface IPrimitive extends IExtJsBase
 
 export interface IPropertyBase extends IExtJsBase
 {
-    doc?: IJsDoc;
+    doc: IJsDoc;
     private: boolean;
     deprecated: boolean;
     since?: string;

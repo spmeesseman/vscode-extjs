@@ -395,7 +395,7 @@ Ext.define('VSCodeExtJS',
 	testFn17: function()
 	{
 		const view = this.getView(),
-			  physDropdown1 = view.down('physiciandropdown')
+			  physDropdown1 = view.down('physiciandropdown'),
 			  physDropdown2 = view.down('panel').down('panel').next('physiciandropdown');
 		const xyz = this.down('panel').down('panel').down('#thisPatItemId');
 		console.log(xyz);
