@@ -293,6 +293,11 @@ suite("Definition Tests", () =>
 		await testDefinition(docUri, new vscode.Position(150, 3), []);
 		await testDefinition(docUri, new vscode.Position(241, 16), []); // "type: 'string'"" hits shouldIgnoreType()
 		await testDefinition(docUri, new vscode.Position(230, 16), []); // someClass.someMethod();
+		//
+		// Line 292
+		// text: 'test2',
+		//
+		await testDefinition(docUri, new vscode.Position(291, 12), []); // no controller method, no nothing
     });
 
 

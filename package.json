@@ -78,6 +78,8 @@
         "test": "npm run coverage-clean && npm run rebuild && node ./dist/client/test/runTest.js",
         "test2": "npm run coverage-clean && npm run rebuild && nyc node ./dist/client/test/runTest.js",
         "test3": "rimraf c:\\code\\data\\user-data\\cacheddata && npm run test",
+        "test4": "c:\\Code\\git\\bin\\bash.exe ./script/e2e.sh",
+        "test5": "nyc npm run test4",
         "test:after": "npm run coverage-full_off",
         "test:before": "npm run rebuild && npm run coverage-full_on",
         "test:openreport": "npm run coverage-open-report",

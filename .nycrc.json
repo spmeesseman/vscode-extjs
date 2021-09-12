@@ -1,0 +1,18 @@
+{
+    "extends": "@istanbuljs/nyc-config-typescript",
+    "extension": [
+      ".ts"
+    ],
+    "report-dir": "./coverage",
+    "reporter": ["text-summary", "html", "lcov", "cobertura" ],
+    "all": true,
+    "silent": false,
+    "instrument": true,
+    "hookRequire": true,
+    "hookRunInContext": true,
+    "hookRunInThisContext": true,
+    "showProcessTree": true,
+    "useSpawnWrap": true,
+    "include": ["dist/**/*.js"],
+    "exclude": [ "dist/client/test/**", "dist/client/providers/tasks/**" ] 
+  }
