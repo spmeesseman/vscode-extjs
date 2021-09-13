@@ -56,11 +56,11 @@ Completion:
 	☐ after = inline class doesnt work
 		VSCodeExtJSApp.user = VSCodeExtApp.model.user.User
 		no completion after the '=' sign
-	☐ In comments still firing in some places
+	✔ In comments still firing in some places @done(21-09-12 20:46)
 	    /**
 	     * @param {Ext.container} remove If `true`, removes...... [getting completion here]
 		 */
-	☐ Local instance vars with multiple down/up/prev/next
+	✔ Local instance vars with multiple down/up/prev/next @done(21-09-11 18:44)
 		e.g. const asrButton = view.up('app-main').down('asrbutton');
 		typing asrButton. shows nothing
 

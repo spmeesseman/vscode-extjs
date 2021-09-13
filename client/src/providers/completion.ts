@@ -81,8 +81,15 @@ class ExtJsCompletionItemProvider implements CompletionItemProvider
               range = document.getWordRangeAtPosition(position),
               text = range ? document.getText(range) : "",
               quotesRegex = new RegExp(`(?<=(?:"|')[^;]*)[^.]*[,]{0,1}\\s*${text}:*\\s*(?=(?:("|')))$`, "i"),
-              commentRegex = new RegExp(`(?<=\\/\\/|\\s*\\*\\s*|\\/\\*\\*[^;]*)(?<!\\*\\/)[^.\\*\\/]+${text}`, "i"),
-              inComments = commentRegex.test(lineTextFull),
+              commentIdx = lineTextFull.lastIndexOf("/**", position.character),
+              commentIdx2 = lineTextFull.lastIndexOf(" *", position.character),
+              commentIdx3 = lineTextFull.lastIndexOf("//", position.character),
+              commentIdxHigh = commentIdx > commentIdx2 ? commentIdx : commentIdx2,
+              commentIdxEnd = lineTextFull.lastIndexOf("*/", position.character),
+              textIdx = lineTextFull.lastIndexOf(text, position.character),
+              // commentRegex = new RegExp(`(?<=\\/\\/|\\s*\\*\\s*|\\/\\*\\*[^;]*)(?<!\\*\\/)[^\\*\\/]+${text}`, "i"),
+              // inComments = commentRegex.test(lineTextFull),
+              inComments = ((commentIdxHigh !== -1) && (commentIdxEnd === -1 || commentIdxEnd > textIdx)) || (commentIdx3 !== -1 && commentIdx3 < textIdx),
               inQuotes = quotesRegex.test(lineTextFull);
 
         log.values([
