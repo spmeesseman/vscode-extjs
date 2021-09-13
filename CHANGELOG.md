@@ -1,5 +1,17 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.13.0 (September 12th, 2021)
+
+### Bug Fixes
+
+- **Completion:** inline completion is still active in comments with certain line conditions.
+- **Definition:** does not work for inline properties that have a trailing inline method call expression
+- **Completion:** local variables that are set with multiple up/down/left/right calls are not indexed properly.
+
+### Features
+
+- **Hover:** form basic hover doc for items that do not contain actual jsdoc
+
 ## Version 0.12.1 (September 9th, 2021)
 
 ### Bug Fixes
