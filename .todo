@@ -138,6 +138,7 @@ JsDoc:
 	☐ Local instance vars with multiple down/up/prev/next
 		e.g. const asrButton = view.up('app-main').down('asrbutton');
 		hover over asrButton anywhere in the function shows nothing
+	☐ Multi-type tag does not get parsed, i.e. {Boolean|String}, parameter is missing in doc
 
 Miscellaneous:
 
