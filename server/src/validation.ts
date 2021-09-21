@@ -313,9 +313,73 @@ function validateXtype(widget: IWidget, thisCmp: IComponent, diagRelatedInfoCapa
 		{
 			const requires = [],
 				  requiredXtypes: string[] = [];
-			let thisXType: string | undefined;
-			requires.push(...(thisCmp.requires?.value || []));
-
+			let thisXType: string | undefined,
+				refCount = 0;
+			//
+			// Push the requires classes that are included by each file of the requires listed in this file
+			//
+			const pushInheritedRequires = (req: IRequires) =>
+			{
+				req.value.forEach(r =>
+				{
+					const reqCmp = extjs.getComponent(r.name, thisCmp.project, components);
+					if (reqCmp && reqCmp.requires?.value)
+					{
+						requires.push(...reqCmp.requires.value);
+						refCount += reqCmp.requires.value.length;
+						if (refCount < 150) {
+							pushInheritedRequires(reqCmp.requires);
+						}
+					}
+				});
+			};
+			//
+			// Push the requires classes listed in this component file
+			//
+			if (thisCmp.requires?.value) {
+				requires.push(...thisCmp.requires.value);
+				pushInheritedRequires(thisCmp.requires);
+			}
+			//
+			// Push the requires classes listed in the main Ext.application, these are loaded at app load time
+			//
+			const mainAppComponent = components.find(c => c.extend === "Ext.app.Application");
+			if (mainAppComponent)
+			{
+				if (mainAppComponent.requires?.value) {
+					requires.push(...mainAppComponent.requires.value);
+					pushInheritedRequires(mainAppComponent.requires);
+				}
+				if (mainAppComponent.models?.value) {
+					requires.push(...mainAppComponent.models.value);
+				}
+				if (mainAppComponent.stores?.value) {
+					requires.push(...mainAppComponent.stores.value);
+				}
+			}
+			//
+			// Push the requires classes listed in classes extended.
+			//
+			let extCmpCls = thisCmp.extend;
+			while (extCmpCls)
+			{
+				const extCmp = extjs.getComponent(extCmpCls, thisCmp.project, components);
+				if (extCmp && extCmp.requires?.value)
+				{
+					requires.push(...extCmp.requires.value);
+					refCount += extCmp.requires.value.length;
+					if (refCount < 150) {
+						pushInheritedRequires(extCmp.requires);
+						extCmpCls = extCmp.extend;
+					}
+					else {
+						extCmpCls = undefined;
+					}
+				}
+				else {
+					extCmpCls = undefined;
+				}
+			}
 			//
 			// Ignore if this is the defined xtype of the component itself
 			//
@@ -324,7 +388,6 @@ function validateXtype(widget: IWidget, thisCmp: IComponent, diagRelatedInfoCapa
 			}
 			else if (requires.length > 0)
 			{
-				// const requiredXtypes: string[] = [];
 				for (const require of requires)
 				{
 					if (require.name !== widgetCls) {

@@ -114,6 +114,8 @@ export async function parseExtJsFile(options: IServerRequest)
                         log.value("   Component", args[0].value, 1);
 
                         const propertyRequires = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "requires");
+                        const propertyModels = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "models");
+                        const propertyStores = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "stores");
                         const propertyUses = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "uses");
                         const propertyAlias = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alias");
                         const propertyAlternateCls = args[1].properties.find(p => isObjectProperty(p) && isIdentifier(p.key) && p.key.name === "alternateClassName");
@@ -160,6 +162,26 @@ export async function parseExtJsFile(options: IServerRequest)
                                 end: propertyRequires.loc!.end,
                             };
                             logProperties("requires", componentInfo.requires?.value);
+                        }
+
+                        if (isObjectProperty(propertyModels))
+                        {
+                            componentInfo.models = {
+                                value: parseStringArray(propertyModels),
+                                start: propertyModels.loc!.start,
+                                end: propertyModels.loc!.end,
+                            };
+                            logProperties("models", componentInfo.models?.value);
+                        }
+
+                        if (isObjectProperty(propertyStores))
+                        {
+                            componentInfo.stores = {
+                                value: parseStringArray(propertyStores),
+                                start: propertyStores.loc!.start,
+                                end: propertyStores.loc!.end,
+                            };
+                            logProperties("stores", componentInfo.stores?.value);
                         }
 
                         if (isObjectProperty(propertyUses))

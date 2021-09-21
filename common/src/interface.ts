@@ -72,6 +72,7 @@ export interface IComponent extends IExtJsBase
     methods: IMethod[];
     mixins?: IMixins;
     model?: string;
+    models?: IRequires;
     nameSpace: string;
     objectRanges: IObjectRange[];
     package?: string;
@@ -83,6 +84,7 @@ export interface IComponent extends IExtJsBase
     since: string;
     singleton: boolean;
     statics: (IProperty | IMethod)[];
+    stores?: IRequires;
     types: IType[];
     uses?: IRequires;
     widgets: IWidget[];
