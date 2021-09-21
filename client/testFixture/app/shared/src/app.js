@@ -408,15 +408,14 @@ Ext.define('VSCodeExtJS',
 	},
 
 	/**
-	 * Test fn18 description
+	 * fn18 - Doc Links and Multi-Type params test.
 	 *
 	 * See {@link #method-testFn2}
-	 *
-	 * See {@link VSCodeExtJS.view.common.PhysicianDropdown}
-	 *
-	 * See {@link VSCodeExtJS.view.common.PhysicianDropdown#method-getPinNumber}
-	 *
+	 * See {@link VSCodeExtJS.common.PhysicianDropdown}
+	 * See {@link VSCodeExtJS.common.PhysicianDropdown#getPinNumber}
+	 * See {@link VSCodeExtJS.common.PhysicianDropdown#method-getPinNumber getPinNumber Function}
 	 * See {@link Ext.panel.Panel}
+	 * See {@link Ext.ux.ServerUtilities SvrUtils}
 	 *
 	 * @param {String} a Test a
 	 * @param {VSCodeExtJS.common.PhysicianDropdown} b Test b
@@ -430,7 +429,9 @@ Ext.define('VSCodeExtJS',
 
 	testFn19: function()
 	{
-		this.testFn18();
+		const physDropdown1 = view.down('physiciandropdown');
+		this.testFn18("test", physDropdown1, 444, "4");
+		
 	}
 
 });
