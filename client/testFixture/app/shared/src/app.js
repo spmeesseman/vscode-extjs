@@ -405,6 +405,32 @@ Ext.define('VSCodeExtJS',
 		physDropdown2.load();
 		xyz.load();
 
+	},
+
+	/**
+	 * Test fn18 description
+	 *
+	 * See {@link #method-testFn2}
+	 *
+	 * See {@link VSCodeExtJS.view.common.PhysicianDropdown}
+	 *
+	 * See {@link VSCodeExtJS.view.common.PhysicianDropdown#method-getPinNumber}
+	 *
+	 * See {@link Ext.panel.Panel}
+	 *
+	 * @param {String} a Test a
+	 * @param {VSCodeExtJS.common.PhysicianDropdown} b Test b
+	 * @param {Boolean|Number} c Test2 c
+	 * @param {String / Object} d Test2 d
+	 */
+	testFn18: function(a, b, c, d)
+	{
+		console.log("test jsdoc linksand multi-type");
+	},
+
+	testFn19: function()
+	{
+		this.testFn18();
 	}
 
 });

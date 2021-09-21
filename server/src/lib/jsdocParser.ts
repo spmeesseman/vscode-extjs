@@ -46,6 +46,13 @@ enum MarkdownStringMode
 class JsDocParser
 {
 
+    private bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
+    {
+        return (leadingSpace ? " " : "") + MarkdownChars.Bold + text + MarkdownChars.Bold +
+               (trailingSpace ? " " : "");
+    }
+
+
     private boldItalic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
     {
         return (leadingSpace ? " " : "") + MarkdownChars.BoldItalicStart + text +
@@ -53,10 +60,11 @@ class JsDocParser
     }
 
 
-    private bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
+    private convertLinks(doc: string)
     {
-        return (leadingSpace ? " " : "") + MarkdownChars.Bold + text + MarkdownChars.Bold +
-               (trailingSpace ? " " : "");
+        return doc.replace(/\{\s*@link [\w]+\s*\}/g, (matched) => {
+            return this.boldItalic(matched);
+        });
     }
 
 
@@ -75,10 +83,6 @@ class JsDocParser
 				case "@class":
 					mode = MarkdownStringMode.Class;
 					break;
-				case "@link":
-                case "{@link":
-				    mode = MarkdownStringMode.Link;
-				    break;
 				case "@property":
 					mode = MarkdownStringMode.Property;
 					break;
@@ -193,23 +197,6 @@ class JsDocParser
     }
 
 
-    private handleLinkLine(line: string, jsdoc: IJsDoc)
-    {
-        let textLine = line.trim();
-        if (textLine.match(/\{\s*@link [\w]+\s*\}/))
-        {
-            textLine = textLine.replace(/\{\s*@link [\w]+\s*\}/, (matched) => {
-                return this.boldItalic(matched);
-            });
-        }
-        if (!jsdoc.body.endsWith(MarkdownChars.NewLine)) {
-            this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
-        }
-        this.pushMarkdown(textLine, jsdoc);
-        log.value("      insert text line", textLine, 5);
-    }
-
-
     private handlePrivateLine(line: string, jsdoc: IJsDoc)
     {
         let textLine = line.trim();
@@ -279,15 +266,15 @@ class JsDocParser
         //
         let match, body = "No documentation found";
         doc = doc.replace(/\r\n +\*/g, "\r\n").replace(/\n +\*/g, "\n");
-        let regex = /@param\s*(\{[\w.*]+\})*\s*\[?(\w+)(?: *= *([\w"`' ]*) *)*\]? *([^]+)?$/;
+        let regex = /@param\s*(\{[\w.*|\/ ]+\})*\s*\[?(\w+)(?: *= *([\w"`' ]*) *)*\]? *([^]+)?$/;
         if ((match = regex.exec(line)) !== null)
         {
             const [ _, mType, mProperty, mDefault, mDocLine ] = match;
-            lineType = mType?.replace(/[\{\}]/g, "").replace("*", "any").replace(/\//g, "|");
+            lineType = mType?.replace(/[\{\}]/g, "").replace("*", "any").replace(/\//g, "|").replace(/\|/g, " | ").replace(/ +/g, ' ');
             lineValue = mDefault ;
             lineProperty = mProperty;
             docLine = mDocLine;
-            regex = new RegExp(`@param\\s*(?:\\{[\\w\\.]+\\})*\\s*\\[?${lineProperty}(?: *= *(?:[\\w"\`' ]*) *\\]?)*([^]*?)(?=^@[a-z]+|ENDPARAMS)`, "gm");
+            regex = new RegExp(`@param\\s*(?:\\{[\\w\\.*|\\/ ]+\\})*\\s*\\[?${lineProperty}(?: *= *(?:[\\w"\`' ]*) *\\]?)*([^]*?)(?=^@[a-z]+|ENDPARAMS)`, "gm");
             if ((match = regex.exec(doc + "ENDPARAMS")) !== null)
             {
                 const [ _, mBody ] = match;
@@ -479,7 +466,7 @@ class JsDocParser
 
     private pushMarkdown(doc: string, jsdoc: IJsDoc)
     {
-        jsdoc.body += doc;
+        jsdoc.body += this.convertLinks(doc);
     }
     
 
@@ -666,10 +653,6 @@ class JsDocParser
             else if (mode === MarkdownStringMode.Singleton)
             {
                 this.handleTagLine(line, jsdoc);
-            }
-            else if (mode === MarkdownStringMode.Link)
-            {
-                this.handleLinkLine(line, jsdoc);
             }
             else // mode === MarkdownStringMode.Text
             {
