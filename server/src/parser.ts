@@ -138,7 +138,7 @@ export async function parseExtJsFile(options: IServerRequest)
                         }
 
                         if (isExpressionStatement(path.container)) {
-                            componentInfo.doc = getJsDoc(args[0].value, "class", args[0].value, false, false, componentInfo.singleton, path.container.leadingComments);
+                            componentInfo.doc = getJsDoc(args[0].value, "class", args[0].value, fsPath, false, false, componentInfo.singleton, path.container.leadingComments, postTasks);
                             componentInfo.since = componentInfo.doc.since;
                             componentInfo.private = componentInfo.doc.private;
                             componentInfo.deprecated = componentInfo.doc.deprecated;
@@ -208,7 +208,7 @@ export async function parseExtJsFile(options: IServerRequest)
 
                         if (isObjectProperty(propertyConfig))
                         {
-                            componentInfo.configs.push(...parseConfig(propertyConfig, componentInfo.componentClass, nameSpace));
+                            componentInfo.configs.push(...parseConfig(propertyConfig, componentInfo.componentClass, fsPath, nameSpace, postTasks));
                         }
                         logProperties("configs", componentInfo.configs);
 
@@ -226,7 +226,7 @@ export async function parseExtJsFile(options: IServerRequest)
 
                         if (propertyProperty && propertyProperty.length)
                         {
-                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass, nameSpace, false, false));
+                            componentInfo.properties.push(...parseProperties(propertyProperty as ObjectProperty[], componentInfo.componentClass, fsPath, nameSpace, false, false, postTasks));
                         }
                         logProperties("properties", componentInfo.properties);
 
@@ -286,13 +286,6 @@ export async function parseExtJsFile(options: IServerRequest)
         }
     });
 
-    for (const task of postTasks)
-    {
-        if (utils.isFunction(task.fn)) {
-            task.fn(parsedComponents, ...task.args);
-        }
-    }
-
     return postParse(project, parsedComponents, postTasks);
 }
 
@@ -312,13 +305,13 @@ function cacheComponents(componentsToCache: IComponent[])
 }
 
 
-function getJsDoc(property: string,  type: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comments: readonly Comment[] | null)
+function getJsDoc(property: string,  type: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, fsPath: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comments: readonly Comment[] | null, postTasks: any[])
 {
     let commentsStr = "";
     comments?.forEach((c) => {
         commentsStr += c.value;
     });
-    return parseDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, commentsStr, "   ");
+    return parseDoc(property, type, componentClass, fsPath, isPrivate, isStatic, isSingleton, commentsStr, postTasks,  "   ");
 }
 
 
@@ -635,7 +628,7 @@ function parseClassDefProperties(propertyNode: ObjectProperty, componentClass: s
 }
 
 
-function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nameSpace: string)
+function parseConfig(propertyConfig: ObjectProperty, componentClass: string, fsPath: string, nameSpace: string, postTasks: any[])
 {
     const configs: IConfig[] = [];
     if (isObjectExpression(propertyConfig.value))
@@ -646,7 +639,7 @@ function parseConfig(propertyConfig: ObjectProperty, componentClass: string, nam
                 const name = isIdentifier(it.key) ? it.key.name : undefined;
                 if (name)
                 {
-                    const doc = getJsDoc(name, "cfg", componentClass, false, false, false, it.leadingComments);
+                    const doc = getJsDoc(name, "cfg", componentClass, fsPath, false, false, false, it.leadingComments, postTasks);
                     p.push({
                         doc, name,
                         since: doc.since,
@@ -692,7 +685,7 @@ function parseMethods(propertyMethods: ObjectProperty[], text: string | undefine
             const propertyName = isIdentifier(m.key) ? m.key.name : undefined;
             if (propertyName)
             {
-                const doc = getJsDoc(propertyName, "method", componentClass, isPrivate, isStatic, false, m.leadingComments),
+                const doc = getJsDoc(propertyName, "method", componentClass, fsPath, isPrivate, isStatic, false, m.leadingComments, postTasks),
                       params = parseParams(m, text, componentClass, doc),
                       variables = parseVariables(m, text, componentClass, (m.value.loc?.start.line || 1) - 1, postTasks, params);
                 methods.push({
@@ -856,7 +849,7 @@ function parseObjectRanges(props: (ObjectMethod | ObjectProperty | SpreadElement
 }
 
 
-function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, nameSpace: string, isStatic: boolean, isPrivate: boolean): IProperty[]
+function parseProperties(propertyProperties: ObjectProperty[], componentClass: string, fsPath: string, nameSpace: string, isStatic: boolean, isPrivate: boolean, postTasks: any[]): IProperty[]
 {
     const properties: IProperty[] = [];
     propertyProperties.forEach((p) =>
@@ -866,7 +859,7 @@ function parseProperties(propertyProperties: ObjectProperty[], componentClass: s
             const name = isIdentifier(p.key) ? p.key.name : undefined;
             if (name && ignoreProperties.indexOf(name) === -1)
             {
-                const doc = getJsDoc(name, "property", componentClass, isPrivate, isStatic, false, p.leadingComments);
+                const doc = getJsDoc(name, "property", componentClass, fsPath, isPrivate, isStatic, false, p.leadingComments, postTasks);
                 properties.push({
                     doc, name,
                     start: p.loc!.start,
@@ -973,7 +966,7 @@ function parsePropertyBlock(staticsConfig: ObjectProperty, componentClass: strin
         const propertyProperty = staticsConfig.value.properties.filter(p => isObjectProperty(p) && isIdentifier(p.key) && !isFunctionExpression(p.value));
 
         block.push(...parseMethods(propertyMethod as ObjectProperty[], text, componentClass, isStatic, isPrivate, fsPath, postTasks));
-        block.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, nameSpace, isStatic, isPrivate));
+        block.push(...parseProperties(propertyProperty as ObjectProperty[], componentClass, fsPath, nameSpace, isStatic, isPrivate, postTasks));
     }
     return block;
 }
@@ -1306,7 +1299,7 @@ function parseVariable(node: VariableDeclaration, dec: VariableDeclarator, metho
         postTasks.push(
         {
             args: [ instCls, parentCls, variable ],
-            fn: (components: IComponent[], instanceCls: string, thisCls: string, variable: IVariable) =>
+            fn: (components: IComponent[], componentCache: IComponent[], instanceCls: string, thisCls: string, variable: IVariable) =>
             {
                 const component = components.find(c => c.componentClass === thisCls);
                 if (component)
@@ -1473,8 +1466,8 @@ function postParse(project: string, parsedComponents: IComponent[], postTasks: a
     //
     for (const task of postTasks)
     {
-        if (utils.isFunction(task.fn)) {
-            task.fn(parsedComponents, ...task.args);
+        if (utils.isFunction(task.fn) && !task.postCache) {
+            task.fn(parsedComponents, components, ...task.args);
         }
     }
 
@@ -1482,6 +1475,27 @@ function postParse(project: string, parsedComponents: IComponent[], postTasks: a
     // Keep the component tree in memory for quick validation
     //
     cacheComponents(parsedComponents);
+
+    //
+    // Each parsing task may add post-task callbacks to the tasks array during the ast
+    // traverse, and specify that it should be called post-cache.  Call these guys back
+    // to do any required processing.
+    //
+    // let postCacheTasks = false;
+    for (const task of postTasks)
+    {
+        if (utils.isFunction(task.fn) && task.postCache)
+        {
+            // postCacheTasks = true;
+            task.fn(parsedComponents, components, ...task.args);
+        }
+    }
+    // if (postCacheTasks)
+    // {   //
+    //     // Re-cache since post tasks may have modified the component array
+    //     //
+    //     cacheComponents(parsedComponents);
+    // }
 
     //
     // Do some stuff for the main application class the extends 'Ext.app.Application'.
@@ -1507,7 +1521,7 @@ function postParse(project: string, parsedComponents: IComponent[], postTasks: a
                             if (!staticProp)
                             {
                                 staticProp = {
-                                    doc: parseDoc(name, "class", v.componentClass, false, true, false, "", "   "),
+                                    doc: parseDoc(name, "class", v.componentClass, c.fsPath, false, true, false, "", postTasks, "   "),
                                     name,
                                     start: v.start,
                                     end: v.end,

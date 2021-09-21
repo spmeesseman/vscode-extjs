@@ -1,8 +1,9 @@
 
 import { MarkupContent } from "vscode-languageserver";
 // import { MarkedString } from "vscode-languageserver-types"
-import { IJsDoc } from "../../../common"
+import { IComponent, IJsDoc } from "../../../common"
 import * as log from "./log";
+import { globalSettings } from "../server";
 
 
 enum MarkdownChars
@@ -45,6 +46,7 @@ enum MarkdownStringMode
 
 class JsDocParser
 {
+    private fsPath: string = '';
 
     private bold(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
     {
@@ -62,9 +64,51 @@ class JsDocParser
 
     private convertLinks(doc: string)
     {
-        return doc.replace(/\{\s*@link [\w]+\s*\}/g, (matched) => {
-            return this.boldItalic(matched);
-        });
+        let match,
+            fDoc = doc;
+        //
+        // @link VSCodeExtJS.view.common.PhysicianDropdown#method-getPinNumber getPinNumber EE}
+        //       ^                                         ^      ^            ^
+        //       Group1                                   Group2 Group3        Group4
+        //
+        while ((match = /\{\s*@link +([\w.]*(?:#(?:(\w+)-)*(\w+)*)*)(?:\s*([\w ]+))*\}/g.exec(doc)) !== null)
+        {
+            let linkLine = match[4];
+
+            if (!linkLine)
+            {
+                if (!match[1].includes("#")) {
+                    linkLine = match[1];
+                }
+                else {
+                    if (match[3]) {
+                        linkLine = match[3];
+                    }
+                    else if (match[2]) {
+                        linkLine = match[2];
+                    }
+                    else {
+                        linkLine = match[1];
+                    }
+                }
+            }
+
+            linkLine = this.link(linkLine, match[1]);
+
+            if (match[4] && match[2]) {
+                linkLine += ` (${match[2]})`;
+            }
+            else if (match[2] && match[1] && match[1].startsWith("#")) {
+                linkLine += ` (${match[2]})`;
+            }
+            else if (match[1] && match[1].includes("#") && match[2] && linkLine.includes(match[3])) {
+                linkLine += ` (${match[2]})`;
+            }
+
+            doc = doc.replace(match[0], linkLine);
+        }
+
+        return doc;
     }
 
 
@@ -286,7 +330,11 @@ class JsDocParser
         }
 
         log.value("          name", lineProperty, 5);
-        if (lineType) {
+        if (!lineType) {
+            log.write("          implicitly set type to 'any'", 5);
+            lineType = "any";
+        }
+        else {
             log.value("          type", lineType, 5);
         }
 
@@ -411,8 +459,30 @@ class JsDocParser
 
     private italic(text: string, leadingSpace?: boolean, trailingSpace?: boolean)
     {
-        return (leadingSpace ? " " : "") + MarkdownChars.Italic + text +
-            MarkdownChars.Italic + (trailingSpace ? " " : "");
+        return (leadingSpace ? " " : "") + MarkdownChars.Italic + text + MarkdownChars.Italic + (trailingSpace ? " " : "");
+    }
+
+
+    private link(text: string, link: string, leadingSpace?: boolean, trailingSpace?: boolean)
+    {
+        let linkMd = text || link;
+        if (text && link)
+        {
+            if (!link.startsWith("#"))
+            {
+                // const linkParts = link.split(".");
+                // linkParts[linkParts.length - 1] = `${linkParts[linkParts.length - 1]}.js`;
+                // link = linkParts.join(path.sep);
+                linkMd = `[${text}]([[[${link}]]])`; // replace(/\./g, path.sep)
+            }
+            else {
+                if (link.includes("-")) {
+                    link = link.substring(link.indexOf("-") + 1);
+                }
+                linkMd = `[${text}](file:///${this.fsPath.replace(/\\/g, "/")}#${link})`;
+            }
+        }
+        return (leadingSpace ? " " : "") + linkMd + (trailingSpace ? " " : "");
     }
 
 
@@ -470,9 +540,10 @@ class JsDocParser
     }
     
 
-    toIJsDoc(property: string, pType: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comment: string | undefined, logPad = ""): IJsDoc
+    toIJsDoc(property: string, pType: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, fsPath: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, comment: string | undefined, logPad = ""): IJsDoc
     {
         const jsdoc = getDefaultIJsDoc(pType);
+        this.fsPath = fsPath;
 
         if (!comment) {
             jsdoc.private = isPrivate;
@@ -527,7 +598,8 @@ class JsDocParser
                                     // })
                                     // .trim();
 
-        const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*( |$)/),
+        // const docLines = commentFmt.split(/\r{0,1}\n{1}\s*\*(?: |$)/),
+        const docLines = commentFmt.split("\n"),
               maxLines = 100;
         let mode: MarkdownStringMode | undefined,
             indented = "",
@@ -537,15 +609,11 @@ class JsDocParser
 
         for (let line of docLines)
         {
-            if (!line.trim()) {
-                continue;
-            }
-
             //
             // Skip control comments
             // TODO - these tags should be a configurable setting
             //
-            if (currentLine === 0 && (line.includes("eslint") || line.includes("vscode-extjs"))) {
+            if (currentLine === 0 && (line.includes("eslint") || line.includes("vscode-extjs") || line.includes("/**"))) {
                 continue;
             }
 
@@ -557,23 +625,14 @@ class JsDocParser
             // Remove line breaks, we format later depending on comment parts, done w/ Clojure
             // standard line breaks
             //
-            line = line.replace(/\n/, "")
-                        //
-                        // Remove leading "* " for each line in the comment
-                        //
-                        .replace(/\* /, "")
-                        .replace(/\s*\*$/, ""); // <- Blank lines
-                        //
-                        // Italicize @ tags
-                        //
-                        // .replace(/@[a-z]+ /, function(match) {
-                        //     return "_" + match.trim() + "_";
-                        // });
-                        // .trim();
+            line = line.replace(/\n/, "").replace(/\*\/? /, "").replace(/\s*\*$/, "").trim();
+            if (line === "*") {
+                line = "";
+            }
+            log.value("   process line", line ?? "Empty", 4);
 
-            log.value("   process line", line, 4);
-
-            if (!line.trim()) {
+            if (!line) {
+                this.pushMarkdown(MarkdownChars.NewLine, jsdoc);
                 continue;
             }
 
@@ -705,7 +764,53 @@ export function getDefaultIJsDoc(pType: "property" | "param" | "cfg" | "class" |
 }
 
 
-export function parseDoc(property: string, type: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, doc: string, logPad = "")
+function doLink(components: IComponent[], componentCache: IComponent[], text: string, link: string, jsdoc: IJsDoc)
 {
-    return (new JsDocParser()).toIJsDoc(property, type, componentClass, isPrivate, isStatic, isSingleton, doc, logPad)
+    let docLink = link,
+        fsLink = link.split("#");
+    const component = components.find(c => fsLink[0] === c.componentClass) ||
+          componentCache.find(c => fsLink[0] === c.componentClass);
+
+    if (component)
+    {
+        const docSite = globalSettings.docURL[component.package || component.nameSpace],
+              toolkit = globalSettings.toolkit || "classic";
+        if (fsLink[1]) {
+            if (fsLink[1].includes("-")) {
+                fsLink[1] = fsLink[1].substring(fsLink[1].indexOf("-") + 1);
+            }
+            fsLink[1] = "#" + fsLink[1];
+        }
+        if (docSite)
+        {
+            docLink = `${docSite}/${toolkit}/${fsLink[0]}.html${fsLink[1] || ""}`;
+        }
+        else {
+            docLink = `file:///${component.fsPath.replace(/\\/g, "/")}${fsLink[1] || ""}`;
+        }
+    }
+    
+    jsdoc.body = jsdoc.body.replace(text, docLink);
+}
+
+
+export function parseDoc(property: string, type: "property" | "param" | "cfg" | "class" | "method" | "unknown", componentClass: string, fsPath: string, isPrivate: boolean, isStatic: boolean, isSingleton: boolean, doc: string, postTasks: any[], logPad = "")
+{
+    let match;
+    const jsdoc = (new JsDocParser()).toIJsDoc(property, type, componentClass, fsPath, isPrivate, isStatic, isSingleton, doc, logPad);
+    if (jsdoc.body)
+    {   //
+        // Post-processing, complete links
+        //
+        const regex = /\[\[\[([\w.\-_#]+)\]\]\]/gm;
+        while ((match = regex.exec(jsdoc.body)) !== null)
+        {
+            postTasks.push({
+                postCache: true,
+                args: [ match[0], match[1], jsdoc ],
+                fn: doLink
+            });
+        }
+    }
+    return jsdoc;
 }
