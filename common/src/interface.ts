@@ -74,6 +74,7 @@ export interface IComponent extends IExtJsBase
     model?: string;
     nameSpace: string;
     objectRanges: IObjectRange[];
+    package?: string;
     private?: boolean;
     privates: (IProperty | IMethod)[];
     project: string;

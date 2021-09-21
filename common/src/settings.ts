@@ -14,6 +14,7 @@ export const defaultSettings: ISettings =
     debugClient: false,
     debugServer: false,
     debugLevel: 1,
+    docURL: {},
     exclude: [],
     frameworkDirectory: undefined,
     ignoreErrors: [],
@@ -23,7 +24,7 @@ export const defaultSettings: ISettings =
     intellisenseIncludePrivate: false,
     intellisenseXtypeEol: true,
     quoteCharacter: "single",
-    toolkit: undefined,
+    toolkit: "classic",
     validateXTypes: true,
     validationDelay: 1250
 };
@@ -38,6 +39,7 @@ export interface ISettings
     debugClient: boolean;
     debugServer: boolean;
     debugLevel: 1 | 2 | 3 | 4 | 5;
+    docURL: any;
     exclude: string[];
     ignoreErrors: IError[];
     ignoreTypes: string[];
@@ -47,7 +49,7 @@ export interface ISettings
     intellisenseXtypeEol: boolean;
     frameworkDirectory: string | undefined;
     quoteCharacter: "single" | "double";
-    toolkit: string | undefined;
+    toolkit: "classic" | "modern";
     validateXTypes: boolean;
     validationDelay: number;
 }

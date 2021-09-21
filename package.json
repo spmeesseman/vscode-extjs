@@ -325,6 +325,14 @@
                     "default": 1,
                     "markdownDescription": "Set logging verbosity - `1 Low | 5 High`."
                 },
+                "extjsIntellisense.docURL": {
+                    "type": "object",
+                    "default": {
+                        "Ext": "https://docs.sencha.com/extjs/7.4.0"
+                    },
+                    "title": "Doc URL",
+                    "description": "URL's to use for viewing documentation via Hover link, keyed by namespace or package name. (Experimental)"
+                },
                 "extjsIntellisense.enableTaskView": {
                     "type": "boolean",
                     "default": false,
@@ -358,6 +366,10 @@
                         "**/work/**"
                     ],
                     "markdownDescription": "Paths (glob patterns) to exclude / ignore, applies to `#extjsIntellisense.include#` only"
+                },
+                "extjsIntellisense.frameworkDirectory": {
+                    "type": "string",
+                    "description": "Directory to the ExtJS Framework. If not specified, the first framework directory found by the Indexer will be used."
                 },
                 "extjsIntellisense.include": {
                     "type": "array",
@@ -408,10 +420,6 @@
                     "type": "boolean",
                     "default": true,
                     "markdownDescription": "Add an end of line character when an `XType` selection is made in the completion list."
-                },
-                "extjsIntellisense.frameworkDirectory": {
-                    "type": "string",
-                    "description": "Directory to the ExtJS Framework. If not specified, the first framework directory found by the Indexer will be used."
                 },
                 "extjsIntellisense.quoteCharacter": {
                     "type": "string",
