@@ -215,7 +215,7 @@ export class ConfigParser
                           wsFullPath = d.replace(/\$\{workspace.dir\}/, baseDir).replace(/\$\{toolkit.name\}/, toolkit);
                     log.write("      add dependency package", 1, logPad);
                     log.value("         path", wsRelPath, 1, logPad);
-                    const { classpath, ns } = await this.parsePackageJson(path.normalize(path.join(wsFullPath, "package.json")), baseDir, logPad + "      ");
+                    const { classpath, ns } = await this.parsePackageJson(path.normalize(path.join(wsFullPath, "package.json")), baseDir, logPad + "         ");
                     if (classpath.length > 0)
                     {
                         for (const clsPath of classpath)
@@ -234,6 +234,7 @@ export class ConfigParser
                     else if (!conf.classpath.includes(wsRelPath)) {
                         conf.classpath.push(wsRelPath);
                     }
+                    log.write("      add dependency package complete", 1, logPad);
                 }
             }
         }
@@ -381,10 +382,11 @@ export class ConfigParser
                 }
             }
 
-            const relPath = path.relative(baseDir, path.dirname(packageJsonFile));
+            const relPath = path.relative(baseDir, path.dirname(packageJsonFile)),
+                  toolkit = configuration.get<string>("toolkit", "classic");
             for (const i in classpath) {
                 // eslint-disable-next-line no-template-curly-in-string
-                classpath[i] = path.normalize(classpath[i].replace("${package.dir}", relPath));
+                classpath[i] = path.normalize(classpath[i].replace("${package.dir}", relPath).replace("${toolkit.name}", toolkit));
             }
         }
 
