@@ -1114,7 +1114,7 @@ class ExtjsLanguageManager implements IExtjsLanguageManager
                 components = JSON.parse(storedComponents);
                 increment = Math.round(1 / components.length * (cfgPct + cacheTImePercent));
                 //
-                // Request load components from server
+                // Process components from file cache.  Check modification and re-index when necessary.
                 //
                 for (const c of components.filter(c => !_isIndexed(c.fsPath)))
                 {   //
