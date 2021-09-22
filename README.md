@@ -15,7 +15,7 @@
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs/pulls)
 [![GitHub last commit](https://img.shields.io/github/last-commit/spmeesseman/vscode%2dextjs.svg?logo=github)](https://github.com/spmeesseman/vscode-extjs)
 
-_**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 50-60% done.  The extension is stable, and at the point where it is helping with development, so I released it.  Version 1.0.0 will be released once I think I have most of what I want in there completed.
+_**IMPORTANT NOTE**_: *This extension is a work in progress, ~ 60-70% done.  The extension is stable, and at the point where it is helping with development, so I released it.  Version 1.0.0 will be released once I think I have most of what I want in there completed.  Note that most of the pre 1.0.0 releases are going to require a re-indexing when installed.
 
 ## Table of Contents
 
