@@ -65,7 +65,7 @@ suite("Storage Tests", () =>
 		process.env.APPDATA = "";
 		process.env.USERPROFILE = "test";
 		dataPath = getUserDataPath("win32");
-		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0\\test\\AppData\\Roaming\\vscode");
+		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.1\\test\\AppData\\Roaming\\vscode");
 		//
 		// Set environment variables for specific test
 		//
@@ -74,7 +74,7 @@ suite("Storage Tests", () =>
 		process.env.APPDATA = dataPath2;
 		process.env.USERPROFILE = dataPath3;
 		dataPath = getUserDataPath("nothing");
-		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0");
+		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.1");
 		//
 		// Set environment variables for specific test
 		//
@@ -106,7 +106,7 @@ suite("Storage Tests", () =>
 		process.env.APPDATA = "";
 		process.env.USERPROFILE = "";
 		dataPath = getUserDataPath("win32");
-		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0\\AppData\\Roaming\\vscode");
+		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.1\\AppData\\Roaming\\vscode");
 		//
 		// Set environment variables for specific test
 		//
@@ -115,13 +115,13 @@ suite("Storage Tests", () =>
 		process.env.USERPROFILE = "";
 		process.env.VSCODE_APPDATA = "";
 		dataPath = getUserDataPath("linux");
-		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0\\.config\\vscode");
+		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.1\\.config\\vscode");
 		dataPath = getUserDataPath("win32");
-		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0\\AppData\\Roaming\\vscode");
+		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.1\\AppData\\Roaming\\vscode");
 		dataPath = getUserDataPath("darwin");
-		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0\\Library\\Application Support\\vscode");
+		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.1\\Library\\Application Support\\vscode");
 		dataPath = getUserDataPath("invalid_platform");
-		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.0");
+		assert.strictEqual(dataPath, "C:\\Projects\\vscode-extjs\\.vscode-test\\vscode-win32-archive-1.60.1");
 		//
 		// Set environment variables for specific test
 		//
