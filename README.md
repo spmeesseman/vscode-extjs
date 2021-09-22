@@ -154,20 +154,18 @@ Aside from that, the ExtJs Language Server provides everything else it is capabl
 7. Method Signature / inline parameter helper with JsDoc.
 8. Hover JsDoc for all classes, methods, properties, configs, xtypes and class string literals.
 9. Static vs. Instance Intellisense.
-10. Go To Definition for xtype string literals (credits to [qzsiniong](#thank-you)).
-11. Go To Type Definition for variables.
-12. XType validation and requires field checking (credits to [qzsiniong](#thank-you)).
-13. Command Pallette command for fixing invalidated xtype declarations (credits to [qzsiniong](#thank-you)).
-14. Diagnostic Quick Fix and Command Pallette command for fixing invalidated xtype declarations.
-15. Parses [app.json](#the-appjson-extjs-project-file), *workspace.json*, and *package.json* files for auto-import of classpaths, including dependencies.
-16. Turn on/off the inclusion of deprecated class members into Intellisense directly in VSCode Settings.
-17. Turn on/off the inclusion of private class members into Intellisense directly in VSCode Settings.
-18. Configure specific classpaths for Indexing directly in VSCode Settings.
-19. @since, @deprecated, and @private JsDoc tags and Intellisense tags.
-20. Parsing performance is slightly slower the first time the extension loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
-21. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
-22. Configurable validation timeout useful for slower systems.
-23. Miscellaneous custom validations.
+10. Go To Type Definition for variables and xtypes.
+11. XType validation and requires field checking.
+12. Diagnostic *Quick Fix* for invalidated types and xtypes.
+13. Parses [app.json](#the-appjson-extjs-project-file), *workspace.json*, and *package.json* files for auto-import of classpaths, including dependencies.
+14. Turn on/off the inclusion of deprecated class members into Intellisense directly in VSCode Settings.
+15. Turn on/off the inclusion of private class members into Intellisense directly in VSCode Settings.
+16. Configure specific classpaths for Indexing directly in VSCode Settings.
+17. @since, @deprecated, and @private JsDoc tags and Intellisense tags.
+18. Parsing performance is slightly slower the first time the extension loads, but subsequent usage sees parsing performance @ ~ 1.4-1.5x faster.
+19. Parses ES2016+ syntax using latest Babel code parser and AST traversal.
+20. Configurable validation timeout useful for slower systems.
+21. Miscellaneous custom validations.
 
 ## JsDoc
 
