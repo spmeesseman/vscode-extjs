@@ -1,5 +1,17 @@
 # VSCODE-EXTJS CHANGE LOG
 
+## Version 0.14.0 (September 21st, 2021)
+
+### Bug Fixes
+
+- **Validation:** the 'requires' validation should consider the 'requires' properties of all hierarchical component classes included, as well as the included classes from extended classes and Ext.app.Application.
+- **Jsdoc Parser:** params that define as more than one type, e.g. {String|Boolean}, are not parsed/found.
+- **Config Parser:** classpath values with the ${toolkit.name} build property in the path do not get found/parsed when reading a package.json file for the a package listed in workspace.json.
+
+### Features
+
+- **Hover:** add link processing to jsdoc
+
 ## Version 0.13.0 (September 12th, 2021)
 
 ### Bug Fixes
