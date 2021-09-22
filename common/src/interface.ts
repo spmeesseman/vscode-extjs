@@ -75,7 +75,6 @@ export interface IComponent extends IExtJsBase
     models?: IRequires;
     nameSpace: string;
     objectRanges: IObjectRange[];
-    package?: string;
     private?: boolean;
     privates: (IProperty | IMethod)[];
     project: string;
@@ -134,6 +133,7 @@ export interface IConf
     loader?: any;
     modern?: any;
     name: string;
+    namespace: string;
     output?: any;
     production?: any;
     resource?: any;

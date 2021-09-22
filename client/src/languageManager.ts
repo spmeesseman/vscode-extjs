@@ -27,7 +27,7 @@ class ExtjsLanguageManager implements IExtjsLanguageManager
 {   //
     // When an update requires a re-index, change the name of this flag
     //
-    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.14.0";
+    private forceReIndexOnUpdateFlag = "vscode-extjs-flags-0.14.1";
 
     private isIndexing = false;
     private isValidating = false;

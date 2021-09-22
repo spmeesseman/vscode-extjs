@@ -1,9 +1,8 @@
 
 import { Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { configuration } from "./configuration";
-import { IConf } from  "../../../common";
+import { IConf, pathExists, readFile, utils } from  "../../../common";
 import * as log from "./log";
-import { pathExists, readFile } from "../../../common/lib/fs";
 import * as json5 from "json5";
 import * as path from "path";
 
@@ -174,28 +173,26 @@ export class ConfigParser
                     //         "@sencha/ext-core": "7.2.0"
                     //     }
                     //
-                    const { classpath } = await this.parsePackageJson(fwJsonFsPath, baseDir, logPad + "   ", /@sencha/);
-                    const fwSdkConf = {
-                        name: "Ext",
-                        classpath,
-                        baseDir,
-                        baseWsDir,
-                        buildDir,
-                        wsDir,
-                        frameworkDir
-                    };
-                    this.logConf(fwSdkConf);
-                    confs.push(fwSdkConf);
+                    const fwSdkConf = await this.parsePackageJson(fwJsonFsPath, baseDir, baseWsDir, wsDir, logPad + "   ", /@sencha/);
+                    if (fwSdkConf)
+                    {
+                        fwSdkConf.name = "Ext";
+                        fwSdkConf.buildDir = buildDir;
+                        fwSdkConf.frameworkDir = frameworkDir;
+                        this.logConf(fwSdkConf);
+                        confs.push(fwSdkConf);
+                    }
                 }
                 else {
-                    const cmdConf = {
+                    const cmdConf: IConf = {
 						name: "Ext",
 						classpath: [ wsConf.frameworks.ext ],
                         baseDir,
                         baseWsDir,
                         buildDir,
                         wsDir,
-                        frameworkDir
+                        frameworkDir,
+                        namespace: "Ext"
 					};
                     log.write("   this is a sencha cmd project", 1, logPad);
                     log.value("   add ws.json framework path", wsConf.frameworks.ext, 1, logPad);
@@ -211,23 +208,31 @@ export class ConfigParser
                       toolkit = configuration.get<string>("toolkit", "classic");
                 for (const d of dirs)
                 {
-                    const wsRelPath = d.replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit),
-                          wsFullPath = d.replace(/\$\{workspace.dir\}/, baseDir).replace(/\$\{toolkit.name\}/, toolkit);
+                    const wsRelPath = d.trim().replace(/\$\{workspace.dir\}[/\\]{1}/, "").replace(/\$\{toolkit.name\}/, toolkit),
+                          wsFullPath = d.trim().replace(/\$\{workspace.dir\}/, baseDir).replace(/\$\{toolkit.name\}/, toolkit);
                     log.write("      add dependency package", 1, logPad);
                     log.value("         path", wsRelPath, 1, logPad);
-                    const { classpath, ns } = await this.parsePackageJson(path.normalize(path.join(wsFullPath, "package.json")), baseDir, logPad + "         ");
-                    if (classpath.length > 0)
+                    const pkgJsonFile = path.normalize(path.join(wsFullPath, "package.json")),
+                          pkgConf = await this.parsePackageJson(pkgJsonFile, baseDir, baseWsDir, wsDir, logPad + "         ");
+                    if (pkgConf && pkgConf.classpath.length > 0)
                     {
-                        for (const clsPath of classpath)
+                        for (const clsPath of pkgConf.classpath)
                         {
-                            if (confs.length > 1 && ns === "Ext")
+                            if (pkgConf.namespace === "Ext")
                             {
-                                if (!confs[1].classpath.includes(clsPath)) {
-                                    confs[1].classpath.push(clsPath);
+                                if (confs.length > 1)
+                                {
+                                    if (!confs[1].classpath.includes(clsPath)) {
+                                        confs[1].classpath.push(clsPath);
+                                    }
+                                }
+                                else if (!conf.classpath.includes(clsPath)) {
+                                    conf.classpath.push(clsPath);
                                 }
                             }
-                            else if (!conf.classpath.includes(clsPath)) {
-                                conf.classpath.push(clsPath);
+                            else {
+                                this.logConf(pkgConf);
+					            confs.push(pkgConf);
                             }
                         }
                     }
@@ -251,6 +256,10 @@ export class ConfigParser
                 confs[1].classpath.every((c) => {
                     log.write(`            ${c}`, 1, logPad);
                 });
+                for (let i = 2; i < confs.length; i++) {
+                    log.write("   dependency package conf:");
+                    this.logConf(confs[i]);
+                }
 			}
             config.push(...confs);
         }
@@ -299,6 +308,7 @@ export class ConfigParser
                         const fwConf: IConf = {
                             classpath: [ path.normalize(path.relative(baseDir, conf.framework)) ],
                             name: "Ext",
+                            namespace: "Ext",
                             baseDir,
                             baseWsDir: ".", // path.relative(baseDir, conf.framework),
                             buildDir: "",
@@ -322,10 +332,9 @@ export class ConfigParser
     }
 
 
-    private async parsePackageJson(packageJsonFile: string, baseDir: string, logPad: string, includeDependency?: RegExp)
+    private async parsePackageJson(packageJsonFile: string, baseDir: string, baseWsDir: string, wsDir: string, logPad: string, includeDependency?: RegExp)
     {
-        let ns: string | undefined;
-        const classpath: string[] = [];
+        let conf: IConf | undefined;
 
         log.methodStart("parse package.json", 1, logPad, false, [["file", packageJsonFile]]);
 
@@ -339,7 +348,18 @@ export class ConfigParser
 
             if (packageJson && packageJson.sencha)
             {
-                ns = packageJson.sencha.namespace;
+                if (packageJson.sencha.classpath && !utils.isArray(packageJson.sencha.classpath))
+                {
+                    packageJson.sencha.classpath = [ packageJson.sencha.classpath ];
+                }
+                else {
+                    packageJson.sencha.classpath = [];
+                }
+
+                conf = packageJson.sencha as IConf;
+                conf.baseDir = baseDir;
+                conf.baseWsDir = baseWsDir;
+                conf.wsDir = wsDir;
 
                 if (includeDependency && packageJson.dependencies)
                 {
@@ -347,51 +367,47 @@ export class ConfigParser
                     {
                         if (includeDependency.test(dep))
                         {
-                            const fwPath = path.normalize(path.join(baseDir, "node_modules", dep, "package.json"));
-                            classpath.push(...(await this.parsePackageJson(fwPath, baseDir, logPad + "   ", includeDependency)).classpath);
-                            log.write(`   add dependency package classpaths'${dep}'`, 1, logPad);
-                            log.value("      path", fwPath, 1, logPad);
-                            log.value("      version", packageJson.dependencies[dep], 1, logPad);
+                            const depPath = path.normalize(path.join(baseDir, "node_modules", dep, "package.json")),
+                                  depConf = await this.parsePackageJson(depPath, baseDir, baseWsDir, wsDir, logPad + "   ", includeDependency);
+                            if (depConf)
+                            {
+                                conf.classpath.push(...depConf.classpath);
+                                log.write(`   add dependency package classpaths'${dep}'`, 1, logPad);
+                                log.value("      path", depPath, 1, logPad);
+                                log.value("      version", packageJson.dependencies[dep], 1, logPad);
+                            }
                         }
                     }
                 }
 
-                if (packageJson.sencha.classpath)
+                if (conf.classic && conf.classic.classpath)
                 {
-                    let packageClsPath: string | string[] =  packageJson.sencha.classpath;
-                    if (!(packageClsPath instanceof Array)) {
-                        packageClsPath = [ packageClsPath ];
-                    }
-                    classpath.push(...packageClsPath);
-                }
-                if (packageJson.sencha.classic && packageJson.sencha.classic.classpath)
-                {
-                    let packageClsPathClassic: string | string[] = packageJson.sencha.classic.classpath;
+                    let packageClsPathClassic: string | string[] = conf.classic.classpath;
                     if (!(packageClsPathClassic instanceof Array)) {
                         packageClsPathClassic = [ packageClsPathClassic ];
                     }
-                    classpath.push(...packageClsPathClassic);
+                    conf.classpath.push(...packageClsPathClassic);
                 }
-                if (packageJson.sencha.modern && packageJson.sencha.modern.classpath)
+                if (conf.modern && conf.modern.classpath)
                 {
-                    let packageClsPathModern: string | string[] = packageJson.sencha.modern.classpath;
+                    let packageClsPathModern: string | string[] = conf.modern.classpath;
                     if (!(packageClsPathModern instanceof Array)) {
                         packageClsPathModern = [ packageClsPathModern ];
                     }
-                    classpath.push(...packageClsPathModern);
+                    conf.classpath.push(...packageClsPathModern);
                 }
-            }
 
-            const relPath = path.relative(baseDir, path.dirname(packageJsonFile)),
-                  toolkit = configuration.get<string>("toolkit", "classic");
-            for (const i in classpath) {
-                // eslint-disable-next-line no-template-curly-in-string
-                classpath[i] = path.normalize(classpath[i].replace("${package.dir}", relPath).replace("${toolkit.name}", toolkit));
+                const relPath = path.relative(baseDir, path.dirname(packageJsonFile)),
+                      toolkit = configuration.get<string>("toolkit", "classic");
+                for (const i in conf.classpath) {
+                    // eslint-disable-next-line no-template-curly-in-string
+                    conf.classpath[i] = path.normalize(conf.classpath[i].replace("${package.dir}", relPath).replace("${toolkit.name}", toolkit));
+                }
             }
         }
 
         log.methodDone("parse package.json", 1, logPad);
-        return { classpath, ns };
+        return conf;
     }
 
 
@@ -414,6 +430,7 @@ export class ConfigParser
                     const sConf: IConf = {
                         classpath: [ clsPathRel ],
                         name: pathParts[0],
+                        namespace: pathParts[0],
                         baseDir: path.normalize(pathParts[1]),
                         baseWsDir: clsPathRel,
                         buildDir: "",
@@ -440,6 +457,7 @@ export class ConfigParser
                 const fwConf: IConf = {
                     classpath: [ path.normalize(fwDirectory) ],
                     name: "Ext",
+                    namespace: "Ext",
                     baseDir: fwDirectory,
                     baseWsDir: ".",
                     buildDir: "",

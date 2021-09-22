@@ -773,7 +773,7 @@ function doLink(components: IComponent[], componentCache: IComponent[], text: st
 
     if (component)
     {
-        const docSite = globalSettings.docURL[component.package || component.nameSpace],
+        const docSite = globalSettings.docURL[component.nameSpace],
               toolkit = globalSettings.toolkit || "classic";
         if (fsLink[1]) {
             if (fsLink[1].includes("-")) {

@@ -113,7 +113,7 @@ Diagnostics:
 		e.g. User Mgmt AppUtilities.js line 6978
 	☐ Invalidate improper static/private call.
 		e.g. private call only on instances, static calls only on full classpath names or alternateClassNames
-	☐ Ensure require should examine requires block up the inheritance tree, and up reference tree
+	✔ Ensure require should examine requires block up the inheritance tree, and up reference tree @done(21-09-21 22:34)
 		each requires should read the requires for that defined component, and up
 	✔ extend: 'Ext.app.ViewController' is invalidated @done(21-09-04 13:20)
 
@@ -121,7 +121,7 @@ JsDoc:
 
 	☐ If jsdoc isn't present for an overridden method, then check for parent method jsdoc
 	☐ Handle the @inheritdoc tag
-	☐ Handle links
+	✔ Handle links @done(21-09-21 22:31)
 	☐ Make type doc line class part a link
 		i.e. 'class component: Ext.Component', make Ext.Component a gotto def link 
 	☐ Hovering over a string in a requires/uses/models/stores block should display the doc for that class
@@ -138,7 +138,7 @@ JsDoc:
 	☐ Local instance vars with multiple down/up/prev/next
 		e.g. const asrButton = view.up('app-main').down('asrbutton');
 		hover over asrButton anywhere in the function shows nothing
-	☐ Multi-type tag does not get parsed, i.e. {Boolean|String}, parameter is missing in doc
+	✔ Multi-type tag does not get parsed, i.e. {Boolean|String}, parameter is missing in doc @done(21-09-21 22:31)
 
 Miscellaneous:
 
@@ -160,7 +160,7 @@ Miscellaneous:
 	✘ FS cache - check to see if can get away with not persisting object range info @cancelled(21-08-29 07:17)
 		i think this is only used on the active document, which is always re-indexed anyway when opened
 	✔ Namespace can be removed from mapping references throughout code @done(21-08-26 18:12)
-	☐ Packages referenced from app.json should have own cache location
+	✔ Packages referenced from app.json should have own cache location @done(21-09-21 22:35)
 		use pkg namespace name extracted from pacage.json in pkg dir
 		currently get stored in main app namespace storage file
 	✔ Object ranges don't have to persist to cache. @done(21-08-28 10:24)

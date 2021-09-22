@@ -235,7 +235,9 @@ export async function inlineClass(uri: vscode.Uri)
 		}, true, "inline property start U2");
 	}
 
-	try { // **
+	await waitForValidation();
+
+	try { // ***
 		await testCompletion(uri, new vscode.Position(95, 3), "V", {
 			items: [
 				{ label: "VSCodeExtJS", kind: vscode.CompletionItemKind.Class },
